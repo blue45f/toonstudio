@@ -56,6 +56,14 @@ describe("StudioCanvasContextMenu", () => {
     canvas.remove();
   });
 
+  it("페이지에 배치한 같은 캐릭터의 컷을 갱신한 다음 메뉴를 닫는다", () => {
+    const order: string[] = [];
+    const props = createProps({ onRefreshLinkedCuts: () => order.push("refresh"), onClose: () => order.push("close") });
+    render(<StudioCanvasContextMenu {...props} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: /이 페이지의 같은 캐릭터 컷 갱신|Refresh this character/ }));
+    expect(order).toEqual(["refresh", "close"]);
+  });
+
   it("renders nothing while closed", () => {
     render(<StudioCanvasContextMenu {...createProps({ open: false })} />);
     expect(screen.queryByRole("menu")).toBeNull();

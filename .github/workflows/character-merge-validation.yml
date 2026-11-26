@@ -19,6 +19,10 @@ on:
       - "apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts*"
       - "apps/web/src/domains/creator/studio-router/studio-route-manifest*"
       - "scripts/verify-character-contact-naturalness.mjs"
+      - "scripts/verify-studio-vrm-cooperative-capture.mjs"
+      - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
+      - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
+      - "apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority*"
   push:
     branches: ["main", "release/salvage-integration-20260908"]
     paths:
@@ -36,6 +40,10 @@ on:
       - "apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts*"
       - "apps/web/src/domains/creator/studio-router/studio-route-manifest*"
       - "scripts/verify-character-contact-naturalness.mjs"
+      - "scripts/verify-studio-vrm-cooperative-capture.mjs"
+      - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
+      - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
+      - "apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority*"
 
   workflow_dispatch:
 permissions:
@@ -50,7 +58,7 @@ concurrency:
 jobs:
   character-merge-validation:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       NODE_OPTIONS: --max-old-space-size=8192
     # Repository-wide lint/typecheck/build are executed once by required CI/core.
@@ -59,12 +67,49 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          fetch-depth: 2
+      - name: 연결된 컷 캡처 검증 범위 확인
+        id: linked-cuts
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only HEAD^1 HEAD -- \
+            'apps/web/src/domains/creator/character-shaper/*linked-cut*' \
+            'apps/web/src/domains/creator/character-shaper/StudioCharacterCutRefreshRunner*' \
+            'apps/web/src/domains/creator/character-shaper/StudioCharacterShaper.tsx' \
+            'apps/web/src/domains/creator/vrm/studio-vrm-linked-cut-frame*' \
+            'apps/web/src/domains/creator/vrm/studio-vrm-raster-capture*' \
+            'apps/web/src/domains/creator/vrm/useStudioVrmPoserRuntimeE.ts' \
+            'apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts' \
+            'scripts/verify-studio-vrm-cooperative-capture.mjs')
+          if [[ -n "$changed" ]]; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          fi
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: 실제 VRM으로 연결된 컷의 프레임과 픽셀 검증
+        if: steps.linked-cuts.outputs.run == 'true'
+        env:
+          TOONSPECTRUM_CHARACTER_GPU_LANE: swiftshader
+          TOONSPECTRUM_VERIFY_DIR: ${{ runner.temp }}/vrm-linked-cut-capture
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          node scripts/verify-studio-vrm-cooperative-capture.mjs
+      - name: 연결된 컷 픽셀 측정과 렌더 이미지 저장
+        if: always() && steps.linked-cuts.outputs.run == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: vrm-linked-cut-capture
+          path: |
+            ${{ runner.temp }}/vrm-linked-cut-capture/result.json
+            ${{ runner.temp }}/vrm-linked-cut-capture/*.png
+          if-no-files-found: error
+          retention-days: 7
       - name: Check camera compiler and import rules
         run: pnpm exec eslint --max-warnings=0 apps/web/src/domains/creator/vrm/StudioVrmCameraDirector.tsx apps/web/src/domains/creator/studio-router/StudioRouteCollaborationGateway.test.tsx apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts.test.tsx
       - name: Verify contact naturalness against production math
@@ -81,6 +126,13 @@ jobs:
             apps/web/src/domains/creator/vrm/studio-vrm-portrait-framing.test.ts \
             apps/web/src/domains/creator/vrm/studio-vrm-prop-rig.test.ts \
             apps/web/src/domains/creator/vrm/studio-vrm-prop-grip-contact.test.ts \
+            apps/web/src/domains/creator/vrm/studio-vrm-linked-cut-frame.test.ts \
+            apps/web/src/domains/creator/character-shaper/StudioCharacterCutRefreshRunner.test.tsx \
+            apps/web/src/domains/creator/character-shaper/studio-character-linked-cut-refresh.test.ts \
+            apps/web/src/domains/creator/character-shaper/use-linked-cut-capture.test.tsx \
+            apps/web/src/domains/creator/character-shaper/StudioCharacterShaper.capture.test.tsx \
+            apps/web/src/domains/creator/canvas/StudioCanvasContextMenu.test.tsx \
+            apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority.persistence.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteCollaborationGateway.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts.test.tsx \
             apps/web/src/domains/creator/studio-router/studio-route-manifest.test.ts

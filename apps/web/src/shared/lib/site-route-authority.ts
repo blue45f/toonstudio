@@ -106,6 +106,8 @@ export const SITE_ROUTE_ALIASES = {
   "/brush-lab": "/studio/assets/brushes/new",
   "/canvas": "/studio/canvas",
   "/challenges": "/showcase/challenges",
+  "/character-lab": "/studio/character",
+  "/character-shaper": "/studio/assets/characters/new",
   "/create/challenges": "/showcase/challenges",
   "/create/promo": "/showcase/promo",
   "/creator-hub": "/studio",
@@ -119,10 +121,12 @@ export const SITE_ROUTE_ALIASES = {
   "/new": "/create",
   "/principles": "/about/principles",
   "/publishing": "/studio/publish",
+  "/research/character-3d": "/studio/character",
   "/research/story": "/story-lab",
   "/shaper": "/studio/assets/characters/new",
   "/story": "/story-lab",
   "/studio/brush-lab": "/studio/assets/brushes/new",
+  "/studio/character-lab": "/studio/character",
   "/tour": "/product-tour",
 } as const satisfies Readonly<Record<string, string>>;
 

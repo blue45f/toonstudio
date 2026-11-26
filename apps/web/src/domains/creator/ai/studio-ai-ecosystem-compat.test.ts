@@ -80,6 +80,12 @@ describe("OpenAI flagship compatibility helpers (shared/ai/openai-model-compat)"
     });
     expect(clientReasoningBody).not.toHaveProperty("temperature");
     expect(clientReasoningBody).not.toHaveProperty("max_tokens");
+    expect(normalizeOpenAiLegacyChatBody("gpt-4.1-mini", clientReasoningBody)).toEqual({
+      model: "gpt-4.1-mini",
+      messages: clientReasoningBody.messages,
+      max_tokens: 4200,
+      response_format: { type: "json_object" },
+    });
 
     const pingNormalized = normalizeOpenAiLegacyChatBody("gpt-5.5", {
       model: "gpt-4o-mini",

@@ -68,8 +68,13 @@ export function readLegacyAppearance(value: unknown, fileName: string, catalog: 
     } });
   }
   const colors = isRecord(source.colors) ? source.colors : {};
+  const packageRecipe = value.version === 3 && isRecord(source.source) && source.source.kind === "package";
+  const tint = isRecord(source.hairColor) ? source.hairColor.packageBaseTint : undefined;
+  const tintLook = value.format === LEGACY_LOOK_FORMAT && (value.scope === "full" || value.scope === "colors") && tint !== undefined;
+  // 패키지의 일반 hair 팔레트 값은 재질에 적용되지 않는다. 직접 고른 틴트가 없으면 모델의 알베도를 보존한다.
+  const hairBase = packageRecipe || tintLook ? tint : colors.hair;
   for (const [legacy, target] of COLOR_TARGETS) {
-    const color = colors[legacy];
+    const color = legacy === "hair" ? hairBase : colors[legacy];
     if (color === undefined) continue;
     if (typeof color !== "string" || !/^#[0-9a-f]{6}$/iu.test(color)) throw new Error("invalid-color");
     parts.push({ key: `color-${target}`, label: legacy, payload: { colors: { [target]: color.toLowerCase() } } });

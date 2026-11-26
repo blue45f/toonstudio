@@ -30,12 +30,14 @@ import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioScopedWriteTargetPicker } from "./StudioScopedWriteTargetPicker";
 import { StudioScopedWriteAuthorityContext } from "../studio-collab/studio-scoped-write-context";
 import { hasVisibleLegacyMixboxStrokes } from "../brush-lab/brush-studio-v6-legacy-pigment";
+import type { StudioLinkedCutRefreshRequest } from "../character-shaper/StudioCharacterCutRefreshRunner";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 import "../studio-shell/studio-visual-identity.css";
 import "../studio-shell/studio-visual-identity-v2.css";
 
 const StudioCuttoonEditorContextMenu = lazy(() => import("./StudioCuttoonEditorContextMenu").then(module => ({ default: module.StudioCuttoonEditorContextMenu })));
+const StudioCharacterCutRefreshRunner = lazyRetry(() => import("../character-shaper/StudioCharacterCutRefreshRunner"), "StudioCharacterCutRefreshRunner");
 const StudioDraftSaveCenter = lazy(() => import("../StudioDraftSaveCenter").then((module) => ({ default: module.StudioDraftSaveCenter })));
 const StudioSaveStatusChromeMount = lazy(() => import("../StudioSaveStatusChromeMount").then((module) => ({ default: module.StudioSaveStatusChromeMount })));
 const StudioDrawingAppBar = lazyRetry(
@@ -58,6 +60,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
 
 function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity();
+  const [cutRefresh, setCutRefresh] = useState<StudioLinkedCutRefreshRequest | null>(null);
   const [previewDisplay, setPreviewDisplay] = useState<StudioOfflinePreviewDisplay | null>(null);
   const offlinePreviewPhase = previewDisplay && previewDisplay.workId === s.workId && s.sourceHydrationPending
     ? previewDisplay.phase : undefined;
@@ -269,7 +272,16 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         <StudioOfflineOwnerPreviewVisibility.Provider value={setPreviewDisplay}>
           <StudioCuttoonEditorWorkspace {...s} />
         </StudioOfflineOwnerPreviewVisibility.Provider>
-        {s.contextMenu.visible && <Suspense fallback={null}><StudioCuttoonEditorContextMenu {...s} /></Suspense>}
+        {s.contextMenu.visible && <Suspense fallback={null}>
+          <StudioCuttoonEditorContextMenu {...s} onRefreshLinkedCuts={(documentId) => {
+            if (!cutRefresh && s.currentPageIdRef.current === s.activePage.id) {
+              setCutRefresh({ documentId, page: s.activePage, ticket: s.captureStudioMutationTicket() });
+            }
+          }} />
+        </Suspense>}
+        {cutRefresh && <Suspense fallback={null}>
+          <StudioCharacterCutRefreshRunner request={cutRefresh} session={s} onClose={() => setCutRefresh(null)} />
+        </Suspense>}
       </Container>
     {canvasOnlyMode ? (
       <div className="pointer-events-none fixed left-[env(safe-area-inset-left)] right-[env(safe-area-inset-right)] top-[max(0.5rem,env(safe-area-inset-top))] z-[80] flex flex-wrap justify-center gap-2 px-2">
