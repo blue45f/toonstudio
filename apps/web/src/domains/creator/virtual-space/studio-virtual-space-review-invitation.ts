@@ -125,6 +125,11 @@ export interface StudioVirtualSpaceReviewChoice {
   readonly title: string;
   readonly artifactTitle: string;
   readonly createdAt: string;
+  readonly priorApproval?: {
+    readonly decidedAt: string;
+    readonly beforeRefs: StudioRevisionRecord["blobRefs"];
+    readonly afterRefs: StudioRevisionRecord["blobRefs"];
+  };
 }
 export type StudioVirtualSpaceReviewChoices = {
   readonly ok: true;
@@ -160,7 +165,12 @@ export async function listStudioVirtualSpaceReviewHistory(
         revisionId: revision.id, rootGraphHash: revision.rootGraphHash });
       if (!candidate) continue;
       if (choices.length >= MAX_SUBJECTS) { truncated = true; break; }
-      choices.push(Object.freeze({ subject: candidate, title: review.title, artifactTitle: artifact.title, createdAt: review.createdAt }));
+      const priorApproval = review.status === "approved" && review.decidedAt && review.decidedBy
+        && revision.operationLast !== null && current.revision.operationLast !== null
+        && revision.operationLast < current.revision.operationLast
+        ? { decidedAt: review.decidedAt, beforeRefs: revision.blobRefs, afterRefs: current.revision.blobRefs } : undefined;
+      choices.push(Object.freeze({ subject: candidate, title: review.title, artifactTitle: artifact.title,
+        createdAt: review.createdAt, priorApproval }));
     }
     return Object.freeze({ ok: true, choices: Object.freeze(choices), truncated });
   } catch (error) { return serverFailure(error); }
