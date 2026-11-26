@@ -83,4 +83,27 @@ describe("redactCreatorSensitiveText (한국형 복합 PII 마스킹 및 오탐 
       expect(res.sanitizedText).toBe(prose);
     }
   });
+
+  it("대량 반복 탭·점이 포함된 적대적 입력(ReDoS)에서도 50ms 미만의 선형 시간으로 처리한다", () => {
+    // V8 정규식 초기 JIT 컴파일 비용을 분리하기 위해 짧은 워밍업 1회를 먼저 수행한다.
+    redactCreatorSensitiveText("워밍업 텍스트");
+
+    const adversarialCases = [
+      `계좌${"\t".repeat(50_000)}!`,
+      `카톡${"\t".repeat(50_000)}!`,
+      "\t".repeat(50_000),
+      `${"a.".repeat(25_000)}!`,
+      `서울 강남구 역삼동${"\t".repeat(50_000)}!`,
+    ];
+
+    for (const payload of adversarialCases) {
+      const startedAt = performance.now();
+      const res = redactCreatorSensitiveText(payload);
+      const elapsedMs = performance.now() - startedAt;
+
+      expect(res.redactedCount).toBe(0);
+      expect(res.sanitizedText).toBe(payload);
+      expect(elapsedMs).toBeLessThan(50);
+    }
+  });
 });
