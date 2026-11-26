@@ -118,7 +118,7 @@ export const ENGINEERING_ATLAS_LOCAL_FIRST_WAVES5TO22_DURABILITY: readonly Engin
       {
         title: "Wen Xia et al. · FastCDC: A Fast and Efficient Content-Defined Chunking Approach",
         url: "https://www.usenix.org/conference/atc16/technical-sessions/presentation/xia",
-        kind: "paper",
+        kind: "article",
         note: t("Gear 롤링 해시 기반 고속 콘텐츠 정의 청킹 설계 논문", "USENIX ATC paper on Gear-hash content-defined deduplication"),
       },
     ],

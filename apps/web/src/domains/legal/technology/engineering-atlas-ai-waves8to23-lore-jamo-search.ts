@@ -117,7 +117,7 @@ export const ENGINEERING_ATLAS_AI_WAVES8TO23_LORE_JAMO_SEARCH: readonly Engineer
       {
         title: "Kaiming He et al. · Guided Image Filtering (O(N) Edge-Preserving Smoothing)",
         url: "https://ieeexplore.ieee.org/document/6319316",
-        kind: "paper",
+        kind: "article",
         note: t("적분 영상 상자 합으로 커널 반경에 무관하게 O(N)에 도는 가이드 필터 논문", "IEEE TPAMI paper on radius-independent O(N) guided alpha matting"),
       },
       {
@@ -260,7 +260,7 @@ export const ENGINEERING_ATLAS_AI_WAVES8TO23_LORE_JAMO_SEARCH: readonly Engineer
       {
         title: "Stephen Robertson & Hugo Zaragoza · The Probabilistic Relevance Framework: BM25 and Beyond",
         url: "https://dl.acm.org/doi/10.1561/1500000019",
-        kind: "paper",
+        kind: "article",
         note: t("필드별 길이 정규화와 가중치를 결합하는 BM25 / BM25F 정보검색 표준 논문", "Foundational monograph on BM25 and multi-field BM25F ranking"),
       },
     ],

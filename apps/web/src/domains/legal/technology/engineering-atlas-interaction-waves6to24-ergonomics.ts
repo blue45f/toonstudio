@@ -118,7 +118,7 @@ export const ENGINEERING_ATLAS_INTERACTION_WAVES6TO24_ERGONOMICS: readonly Engin
       {
         title: "James F. Allen · Maintaining Knowledge about Temporal Intervals",
         url: "https://dl.acm.org/doi/10.1145/182.358434",
-        kind: "paper",
+        kind: "article",
         note: t("서사 시간 구간 선후·포함 제약 그래프 모델링의 고전 논문", "Foundational CACM paper on interval-based temporal constraint reasoning"),
       },
       {
@@ -263,7 +263,7 @@ export const ENGINEERING_ATLAS_INTERACTION_WAVES6TO24_ERGONOMICS: readonly Engin
       {
         title: "I. Scott MacKenzie · Fitts' Law as a Research and Design Tool in HCI",
         url: "https://www.yorku.ca/mack/hci92.html",
-        kind: "paper",
+        kind: "article",
         note: t("항상 양수를 보장하는 섀넌 공식 ID = log2(1 + D/W) 정립 논문", "Seminal HCI paper establishing the Shannon ID = log2(1 + D/W) formulation"),
       },
       {

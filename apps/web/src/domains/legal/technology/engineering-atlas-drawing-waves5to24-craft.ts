@@ -117,7 +117,7 @@ export const ENGINEERING_ATLAS_DRAWING_WAVES5TO24_CRAFT: readonly EngineeringAtl
       {
         title: "Inigo Quilez · Smooth Minimum (smin) Distance Functions",
         url: "https://iquilezles.org/articles/smin/",
-        kind: "paper",
+        kind: "article",
         note: t("다항식 C1 연속 스무스 불리언 거리장 유도식", "Derivation of polynomial C1 smooth boolean SDF operators"),
       },
       {

@@ -108,13 +108,13 @@ export const THREE_D_WAVES5TO23_SPATIAL_CARDS: readonly EngineeringAtlasEntry[] 
       {
         title: "Peter-Pike Sloan · Stupid Spherical Harmonics (SH) Tricks",
         url: "https://www.ppsloan.org/publications/StupidSH36.pdf",
-        kind: "paper",
+        kind: "article",
         note: t("L2 구면 조화 기저 9계수를 이용한 실시간 확산 조도 재구성", "Real-time diffuse irradiance reconstruction with 9 L2 SH coefficients"),
       },
       {
         title: "Robert Bridson et al. · Curl-Noise for Procedural Fluid Flow",
         url: "https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph2007-curlnoise.pdf",
-        kind: "paper",
+        kind: "article",
         note: t("포텐셜 장의 회전(Curl)으로 무발산 속도장을 얻는 원전 논문", "Foundational paper deriving divergence-free velocity fields via curl"),
       },
     ],
@@ -256,13 +256,13 @@ export const THREE_D_WAVES5TO23_SPATIAL_CARDS: readonly EngineeringAtlasEntry[] 
       {
         title: "Ladislav Kavan et al. · Skinning with Dual Quaternions",
         url: "https://dl.acm.org/doi/10.1145/1342250.1342252",
-        kind: "paper",
+        kind: "article",
         note: t("강체 변환 혼합으로 관절 부피 붕괴를 막는 듀얼 쿼터니언 스키닝 원전", "Foundational paper eliminating candy-wrapper collapse via dual quaternions"),
       },
       {
         title: "Joost van Dongen · Interior Mapping — A New Technique for Rendering Realistic Buildings",
         url: "https://cg.ivd.kit.edu/publications/p2008/interior_mapping_van_dongen_2008.pdf",
-        kind: "paper",
+        kind: "article",
         note: t("외벽 쿼드 광선-평면 교차만으로 방 내부를 그리는 실내 매핑 기법", "Ray-plane intersection inside facade quads with zero interior geometry"),
       },
     ],
@@ -401,7 +401,7 @@ export const THREE_D_WAVES5TO23_SPATIAL_CARDS: readonly EngineeringAtlasEntry[] 
       {
         title: "Ryan Schmidt et al. · Interactive Decal Compositing with Discrete Exponential Maps",
         url: "https://dl.acm.org/doi/10.1145/1141911.1141930",
-        kind: "paper",
+        kind: "article",
         note: t("곡면 메쉬 위 측지 극좌표 (r, θ) 데칼 매핑을 제안한 SIGGRAPH 논문", "SIGGRAPH paper introducing discrete exponential map (r, θ) surface decals"),
       },
       {

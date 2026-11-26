@@ -363,7 +363,7 @@ function materializeCheck(raw: RawCheckSpec, globalIdx: number): PreflightCheckR
 export function createCleanEpisodePreflightInput(
   overrides: Partial<EpisodeMasterPreflightInput> = {},
 ): EpisodeMasterPreflightInput {
-  return Object.freeze({
+  return Object.freeze<EpisodeMasterPreflightInput>({
     episodeId: overrides.episodeId ?? "ep-030-grand-milestone",
     episodeNumber: overrides.episodeNumber ?? 30,
     portal: overrides.portal ?? {

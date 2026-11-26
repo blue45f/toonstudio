@@ -116,7 +116,7 @@ export const ENGINEERING_ATLAS_REALTIME_WAVES5TO20_SOVEREIGN_COLLAB: readonly En
       {
         title: "Murat Demirbas et al. · Logical Physical Clocks and Consistent Snapshots (HLC)",
         url: "https://cse.buffalo.edu/tech-reports/2014-04.pdf",
-        kind: "paper",
+        kind: "article",
         note: t("물리 시계 근접성과 논리 인과 순서를 결합한 HLC 원전 보고서", "Original technical report defining Hybrid Logical Clocks"),
       },
       {
