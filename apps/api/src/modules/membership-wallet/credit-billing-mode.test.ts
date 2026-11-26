@@ -42,13 +42,31 @@ describe("AppSettingPaidOperationsStore (어드민 유료화 토글 영속 스�
     expect(await store.getPaidOperationsEnabled()).toBe(false);
   });
 
-  it("DB 조회 오류 시 fail-closed(false)로 안전 폴백한다", async () => {
+  it("이전에 ON을 읽었어도 DB 조회 오류나 미설정 상태에서는 OFF로 판정한다", async () => {
+    const read = vi.fn<() => Promise<boolean | null>>()
+      .mockResolvedValueOnce(true)
+      .mockRejectedValueOnce(new Error("db unavailable"))
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(true);
     const store = new AppSettingPaidOperationsStore({
-      read: async () => {
-        throw new Error("db unavailable");
-      },
+      read,
       write: async () => undefined,
     });
+    expect(await store.getPaidOperationsEnabled()).toBe(true);
+    expect(await store.getPaidOperationsEnabled()).toBe(false);
+    expect(await store.getPaidOperationsEnabled()).toBe(false);
+    expect(await store.getPaidOperationsEnabled()).toBe(true);
+  });
+
+  it("ON의 영속 저장이 실패하면 다음 조회에서 ON으로 반영되지 않는다", async () => {
+    const store = new AppSettingPaidOperationsStore({
+      read: async () => null,
+      write: async () => {
+        throw new Error("write failed");
+      },
+    });
+
+    await expect(store.setPaidOperationsEnabled(true)).rejects.toThrow("write failed");
     expect(await store.getPaidOperationsEnabled()).toBe(false);
   });
 });
@@ -109,7 +127,7 @@ describe("CreditBillingModeService (사업자등록 전 무결제 검증 ↔ 정
     expect(waitlist.totalWaitlistCount).toBe(1);
   });
 
-  it("어드민 토글 ON 전환 즉시 구독·유료 크레딧 충전이 열리고 결제 확인 후 만료 없는 크레딧이 적립된다", async () => {
+  it("어드민 토글을 켜도 독립 구매 정책이 꺼져 있으면 유료 크레딧을 적립하지 않는다", async () => {
     const grantAsset = vi.fn(async () => ({ granted: true, lotId: "lot-2", accountId: "acc-1", amount: 1000 }));
     const gate = new InMemoryPaidOperationsSettingStore(false);
     const service = new CreditBillingModeService(
@@ -123,25 +141,18 @@ describe("CreditBillingModeService (사업자등록 전 무결제 검증 ↔ 정
     expect(mode.paidOperationsEnabled).toBe(true);
     expect(mode.mode).toBe("paid-credit-active");
     expect(mode.subscriptionsEnabled).toBe(true);
-    expect(mode.creditPurchasesEnabled).toBe(true);
+    expect(mode.creditPurchasesEnabled).toBe(false);
 
-    const purchased = await service.purchaseCreditPack("user-1", {
-      packId: "credit-pack-1000",
-      requestId: "req-on-1",
-      paymentConfirmationId: "pg-confirmed-1",
-    });
-    expect(purchased.credits).toBe(1_000);
-    expect(purchased.krwPrice).toBe(10_000);
-    expect(purchased.expiresAt).toBeNull();
-    expect(grantAsset).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: "user-1",
-        asset: "studio_credit",
-        amount: 1_000,
-        source: "purchase",
-        expiresAt: null,
+    await expect(
+      service.purchaseCreditPack("user-1", {
+        packId: "credit-pack-1000",
+        requestId: "req-on-1",
       }),
-    );
+    ).rejects.toMatchObject({
+      status: 403,
+      response: expect.objectContaining({ code: "credit_purchase_disabled" }),
+    });
+    expect(grantAsset).not.toHaveBeenCalled();
   });
 });
 

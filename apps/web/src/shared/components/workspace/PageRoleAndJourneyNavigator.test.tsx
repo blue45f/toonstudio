@@ -366,6 +366,22 @@ describe("PageRoleAndJourneyNavigator 컴포넌트", () => {
     expect(useUi.getState().commandPaletteOpen).toBe(true);
   });
 
+  it("설정의 공간 안내가 닫혀 있어도 단축키로 소재 검색을 열고 입력란에 초점을 옮긴다", async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/settings/ai"]}>
+        <PageRoleAndJourneyNavigator pathname="/settings/ai" defaultCollapsed />
+      </MemoryRouter>,
+    );
+    const guide = container.querySelector("details");
+    expect(guide?.open).toBe(false);
+
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true, shiftKey: true });
+    const dialog = await screen.findByRole("dialog");
+    expect(guide?.open).toBe(false);
+    expect(dialog.closest("details")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(within(dialog).getByRole("combobox")));
+  });
+
   it("영문 로케일에서는 소재 검색 런처 라벨이 Assets (⌘⇧K)로 표시된다", () => {
     useI18n.getState().setLang("en");
     render(

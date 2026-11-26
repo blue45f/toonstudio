@@ -16,7 +16,7 @@ describe("studio-ai-byok-preset-apply", () => {
     });
   });
 
-  it("OpenAI 프리셋 적용 시 종료된 dall-e-3 모델은 현역 gpt-image-1.5로 자동 전환한다", () => {
+  it("OpenAI 프리셋 적용 시 종료된 dall-e-3 모델은 현역 gpt-image-2.6-flare로 자동 전환한다", () => {
     const preset = STUDIO_AI_BYOK_PROVIDER_PRESETS[0];
     const result = applyByokPreset(preset, {
       baseUrl: "https://api.openai.com/v1",
@@ -24,7 +24,7 @@ describe("studio-ai-byok-preset-apply", () => {
     });
     expect(result).toEqual({
       found: true,
-      settings: { baseUrl: "https://api.openai.com/v1", imageModel: "gpt-image-1.5" },
+      settings: { baseUrl: "https://api.openai.com/v1", imageModel: "gpt-image-2.6-flare" },
     });
   });
 

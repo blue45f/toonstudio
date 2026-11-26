@@ -1,3 +1,4 @@
+import { DIALOGUE_TONE_LABELS } from "../apps/api/src/modules/studio-ai/openai-assist/studio-openai-prompt-catalog";
 import {
   StudioOpenAiCreativeAssistRequestSchema,
   type OpenAiAssistStructuredResult,
@@ -59,12 +60,24 @@ export const HUMAN_EVALUATION_RUBRIC = {
   status: "not-performed",
   scale: { 0: "중요한 수정 필요", 1: "작은 수정 후 사용 가능", 2: "그대로 참고 가능" },
   axes: ["의미·사실·조건 보존", "화자·관계·말투", "자연스러운 한국어와 감정 절제", "모바일 길이·호흡·실용성", "요청한 창작 목적 충족"],
+  dialogueReview: "세 안을 하나씩 원문과 대조한다. line과 subBubble만 읽고 행동 주체, 사건 발생 여부와 부정 대상, 기한·조건·세부 사실, 발화 의도가 달라졌거나 강조·해설이 새로 생긴 대목을 기록한다. 그 뒤 말투와 호흡의 차이를 평가한다.",
   note: "모델명을 가린 실제 응답을 사례별로 비교해야 한다. 자동 계약 통과는 한국어 품질 점수가 아니며, 10개 사례로 일반 성능 우열을 추정하지 않는다.",
 } as const;
 
 export function evaluateCreditOutput(result: OpenAiAssistStructuredResult): readonly { name: string; passed: boolean }[] {
-  // JSON 파싱·필드 타입·길이 제한은 실제 서비스가 이미 검사했다. 여기서는 요청한 개수만 추가 확인한다.
-  if (result.mode === "dialogue-polish") return [{ name: "three-tone-alternatives", passed: result.data.balloons.length === 3 }];
+  if (result.mode === "dialogue-polish") {
+    const { balloons } = result.data;
+    const labels = new Set(balloons.map((item) => item.toneLabel));
+    // 말풍선 경계나 줄바꿈만 옮긴 문장은 같은 대안이다. 비교할 때만 공백을 정리한다.
+    const lines = balloons.map(({ line, subBubble }) => `${line} ${subBubble}`.normalize("NFC").trim().replace(/\s+/gu, " "));
+    return [{
+      name: "three-tone-alternatives",
+      passed: balloons.length === DIALOGUE_TONE_LABELS.length
+        && DIALOGUE_TONE_LABELS.every((label) => labels.has(label))
+        && balloons.every(({ line }) => line.trim().length > 0)
+        && new Set(lines).size === balloons.length,
+    }];
+  }
   if (result.mode === "script-to-cuts") return [{ name: "four-sequential-cuts", passed: result.data.cuts.length === 4 && result.data.cuts.every((cut, index) => cut.cutNumber === index + 1) }];
   if (result.mode === "idea-remix") return [{ name: "five-distinct-lenses", passed: result.data.angles.length === 5 && new Set(result.data.angles.map((angle) => angle.lens)).size === 5 }];
   return [{ name: "service-schema", passed: true }];

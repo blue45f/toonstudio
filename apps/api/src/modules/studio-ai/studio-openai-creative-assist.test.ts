@@ -972,7 +972,7 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
         }
       }
     }
-    expect(buildModeSystemInstruction("dialogue-polish")).toContain("최대 12개");
+    expect(buildModeSystemInstruction("dialogue-polish")).toContain("총 3개");
     expect(buildModeSystemInstruction("mcp-workflow-macro")).toContain("240자 이내");
     expect(buildModeSystemInstruction("export-preflight-coach")).toContain("연속성 fix");
     expect(buildModeSystemInstruction("idea-remix")).toContain("메타 식별자");

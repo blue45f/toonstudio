@@ -75,13 +75,12 @@ import {
   type StudioAiReferenceImageDataUrlMetadata,
   type StudioAiResolvedImageReference,
 } from "./studio-ai-reference-images";
+import { studioImageFormatField } from "./studio-ai-image-format";
 import { isStudioAiConfigured, type StudioAiSettings } from "./studio-ai-settings";
 import { aiErrorText } from "./studio-ai-error-i18n";
 
 import {
-  appendOpenAiImageEditCommonFields,
   buildOpenAiConnectionTestBody,
-  buildOpenAiImageGenerationBody,
   buildOpenAiTextCompletionBody,
   normalizeOpenAiImageSize,
 } from "./studio-ai-model-compat";
@@ -361,19 +360,20 @@ function unifiedCloudFailure(error: unknown): StudioAiResult<never> {
 
 async function postImageJson(
   settings: StudioAiSettings,
-  body: unknown,
+  body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<StudioAiResult<unknown>> {
   if (!usesUnifiedCloudRouting(settings)) {
+    const formatField = studioImageFormatField(settings);
     return postJson(
       buildUrl(settings.baseUrl, settings.imageGenerationPath),
       settings.apiKey,
-      body,
+      formatField ? { ...body, [formatField[0]]: formatField[1] } : body,
       signal,
     );
   }
   try {
-    return { ok: true, data: await userAiLegacyJson("image", body, signal) };
+    return { ok: true, data: await userAiLegacyJson("image", { ...body, response_format: "b64_json" }, signal) };
   } catch (error) {
     return unifiedCloudFailure(error);
   }
@@ -385,6 +385,10 @@ async function postImageForm(
   signal?: AbortSignal,
 ): Promise<StudioAiResult<unknown>> {
   if (!usesUnifiedCloudRouting(settings)) {
+    const formatField = studioImageFormatField(settings);
+    if (formatField) {
+      form.set(formatField[0], formatField[1]);
+    }
     return postForm(
       buildUrl(settings.baseUrl, settings.imageEditPath),
       settings.apiKey,
@@ -393,6 +397,7 @@ async function postImageForm(
     );
   }
   try {
+    form.set("response_format", "b64_json");
     return { ok: true, data: await userAiLegacyForm(form, signal) };
   } catch (error) {
     return unifiedCloudFailure(error);
@@ -472,16 +477,11 @@ function readImageEditResult(result: StudioAiResult<unknown>): StudioAiResult<{ 
 
 // ── 기능별 얇은 래퍼 ─────────────────────────────────────────────────────────
 
-/**
- * (1) 배경 생성 — 텍스트 프롬프트를 OpenAI Images Generations 형태 API로 보내 배경 이미지를 받는다.
- * response_format:"b64_json"을 항상 요청한다 — 응답이 바로 data URL로 변환 가능해 원격 이미지
- * URL을 별도로 fetch할 필요가 없고(CORS/캔버스 오염 위험 원천 차단), 캔버스 export(toDataURL 등)도
- * 항상 안전하다. 제공자가 b64_json을 지원하지 않고 url만 반환하면 parse_error로 실패한다(§5).
- */
+/** 배경 생성 결과의 base64 이미지를 캔버스에서 쓸 수 있는 PNG data URL로 반환한다. */
 export async function generateBackgroundImage(
   settings: StudioAiSettings,
   prompt: string,
-  opts: { size?: StudioAiImageSize; signal?: AbortSignal } = {}
+  opts: { size?: StudioAiImageSize; quality?: "low"; signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string; width: number; height: number; model: string }>> {
   const trimmed = prompt.trim();
   if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.backgroundPromptRequired", "배경 프롬프트를 입력하세요.") };
@@ -489,8 +489,13 @@ export async function generateBackgroundImage(
     return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   const size = opts.size ?? DEFAULT_STUDIO_AI_IMAGE_SIZE;
-  const { body } = buildOpenAiImageGenerationBody(settings.imageModel, trimmed, size);
-  const result = await postImageJson(settings, body, opts.signal);
+  const result = await postImageJson(settings, {
+    model: settings.imageModel,
+    prompt: trimmed,
+    n: 1,
+    size: normalizeOpenAiImageSize(settings.imageModel, size),
+    ...(opts.quality && { quality: opts.quality }),
+  }, opts.signal);
   if (!result.ok) return result;
   const b64 = extractFirstB64Json(result.data);
   if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
@@ -526,7 +531,9 @@ export async function colorizeLineArt(
   }
   const form = new FormData();
   form.set("image", blob, "lineart.png");
-  appendOpenAiImageEditCommonFields(form, settings.imageModel, trimmed);
+  form.set("prompt", trimmed);
+  form.set("model", settings.imageModel);
+  form.set("n", "1");
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
@@ -583,7 +590,9 @@ export async function convertImageToAnimeStyle(
   }
   const form = new FormData();
   form.set("image", blob, "source.png");
-  appendOpenAiImageEditCommonFields(form, settings.imageModel, buildAnimeStyleEditPrompt(extraDirection, purpose));
+  form.set("prompt", buildAnimeStyleEditPrompt(extraDirection, purpose));
+  form.set("model", settings.imageModel);
+  form.set("n", "1");
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
@@ -644,7 +653,9 @@ export async function generateConsistentCharacterImage(
   }
   const form = new FormData();
   form.set("image", blob, "character-reference.png");
-  appendOpenAiImageEditCommonFields(form, settings.imageModel, buildCharacterConsistencyPrompt(trimmed));
+  form.set("prompt", buildCharacterConsistencyPrompt(trimmed));
+  form.set("model", settings.imageModel);
+  form.set("n", "1");
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
@@ -869,7 +880,9 @@ export async function generateImageWithRoleReferences(
   for (const image of admitted) {
     form.append("image[]", image.blob, image.filename);
   }
-  appendOpenAiImageEditCommonFields(form, settings.imageModel, providerPrompt);
+  form.set("prompt", providerPrompt);
+  form.set("model", settings.imageModel);
+  form.set("n", "1");
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 

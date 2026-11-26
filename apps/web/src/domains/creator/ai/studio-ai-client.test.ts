@@ -2060,16 +2060,17 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
       expect(roleRef.ok).toBe(true);
       expect(((mockFetch.mock.calls[5] as unknown as [string, RequestInit])[1].body as FormData).get("response_format")).toBeNull();
 
-      // 6) STUDIO_AI_DEFAULT_SETTINGS uses active gpt-image-1.5 (not retired dall-e-3)
-      expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe("gpt-image-1.5");
+      // 6) STUDIO_AI_DEFAULT_SETTINGS uses active gpt-image-2.6-flare (not retired dall-e-3)
+      expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe("gpt-image-2.6-flare");
       const defaultPortrait = await generateBackgroundImage(
         { ...STUDIO_AI_DEFAULT_SETTINGS, apiKey: "sk-test-key" },
         "새벽 편의점 앞",
         { size: "1024x1792" },
       );
-      expect(defaultPortrait).toMatchObject({ ok: true, data: { width: 1024, height: 1536, model: "gpt-image-1.5" } });
+      expect(defaultPortrait).toMatchObject({ ok: true, data: { width: 1024, height: 1536, model: "gpt-image-2.6-flare" } });
       const defaultBody = JSON.parse((mockFetch.mock.calls[6] as unknown as [string, RequestInit])[1].body as string);
       expect(defaultBody.size).toBe("1024x1536");
+      expect(defaultBody.output_format).toBe("png");
       expect(defaultBody.response_format).toBeUndefined();
     });
   });
