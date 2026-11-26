@@ -156,14 +156,19 @@ export function CharacterShaperArtStyleSection({
                       title={`피부 ${hex}`}
                       onClick={() => binding.commitColor("skin", hex)}
                       className={cn(
-                        "grid size-7 place-items-center rounded-md border border-line transition-transform duration-150 hover:scale-105 disabled:opacity-45 motion-reduce:transition-none motion-reduce:transform-none",
+                        "group/swatch grid size-[44px] shrink-0 place-items-center rounded-md disabled:opacity-45",
                         STUDIO_FOCUS_RING,
                       )}
                     >
                       <span
-                        className="size-5 rounded-sm outline-1 -outline-offset-1 outline-black/15"
-                        style={{ backgroundColor: hex }}
-                      />
+                        aria-hidden
+                        className="pointer-events-none grid size-7 place-items-center rounded-md border border-line transition-transform duration-150 group-hover/swatch:scale-105 motion-reduce:transition-none motion-reduce:transform-none"
+                      >
+                        <span
+                          className="size-5 rounded-sm outline-1 -outline-offset-1 outline-black/15"
+                          style={{ backgroundColor: hex }}
+                        />
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -180,14 +185,19 @@ export function CharacterShaperArtStyleSection({
                       title={`헤어 ${hex}`}
                       onClick={() => binding.commitColor("hairBase", hex)}
                       className={cn(
-                        "grid size-7 place-items-center rounded-md border border-line transition-transform duration-150 hover:scale-105 disabled:opacity-45 motion-reduce:transition-none motion-reduce:transform-none",
+                        "group/swatch grid size-[44px] shrink-0 place-items-center rounded-md disabled:opacity-45",
                         STUDIO_FOCUS_RING,
                       )}
                     >
                       <span
-                        className="size-5 rounded-sm outline-1 -outline-offset-1 outline-black/15"
-                        style={{ backgroundColor: hex }}
-                      />
+                        aria-hidden
+                        className="pointer-events-none grid size-7 place-items-center rounded-md border border-line transition-transform duration-150 group-hover/swatch:scale-105 motion-reduce:transition-none motion-reduce:transform-none"
+                      >
+                        <span
+                          className="size-5 rounded-sm outline-1 -outline-offset-1 outline-black/15"
+                          style={{ backgroundColor: hex }}
+                        />
+                      </span>
                     </button>
                   ))}
                 </div>

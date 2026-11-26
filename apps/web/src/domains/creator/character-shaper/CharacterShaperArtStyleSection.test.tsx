@@ -88,6 +88,28 @@ describe("CharacterShaperArtStyleSection", () => {
     expect(binding.commitColor).toHaveBeenCalledWith("hairBase", "#151417");
   });
 
+  it("keeps recommendation colors compact inside 44px skin and hair buttons that apply the color", () => {
+    const binding = makeBinding();
+    render(
+      <CharacterShaperSessionSettingsProvider>
+        <CharacterShaperArtStyleSection binding={binding} locked={false} defaultOpen />
+      </CharacterShaperSessionSettingsProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId("shaper-art-style-pack-jp-shounen-ink"));
+    const skin = screen.getByRole("button", { name: /피부색 #f6d8c0$/u });
+    const hair = screen.getByRole("button", { name: /헤어색 #151417$/u });
+    for (const swatch of [skin, hair]) {
+      expect(swatch.classList.contains("size-[44px]")).toBe(true);
+      expect(swatch.firstElementChild?.classList.contains("size-7")).toBe(true);
+      fireEvent.click(swatch);
+    }
+
+    expect(binding.commitColor).toHaveBeenCalledTimes(2);
+    expect(binding.commitColor).toHaveBeenCalledWith("skin", "#f6d8c0");
+    expect(binding.commitColor).toHaveBeenCalledWith("hairBase", "#151417");
+  });
+
   it("commits OKLab-derived hair-tip color on 1-click button and renders derived 27-channel swatches", () => {
     const binding = makeBinding();
     render(
