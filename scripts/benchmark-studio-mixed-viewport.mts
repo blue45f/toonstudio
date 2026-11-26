@@ -1,15 +1,15 @@
 /** Run the actual Studio app from this checkout. Local isolated UI only, no account or cloud save. */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import { expect } from '@playwright/test';
-import { chromium } from 'playwright';
-import { createServer } from 'vite';
+import { chromium, type Page } from 'playwright';
 
 import { REPO_ROOT, WEB_PUBLIC } from './lib/repo-paths.mjs';
+import { findFreePort, stopChildProcess, waitForServer } from './lib/studio-verify-preview-harness.mjs';
 import { openStudioAllTools, openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, prepareStudioBg3dViewportCapture, selectStudioBg3dTaskTab } from './lib/studio-bg3d-ui-interactions';
 
 const output = path.resolve(process.env.STUDIO_MIXED_VIEWPORT_OUT ?? 'artifacts/mixed-viewport');
@@ -23,14 +23,17 @@ for (const file of [vrm, glb]) {
   assets[file] = { sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length };
 }
 await mkdir(output, { recursive: true });
-const server = await createServer({ configFile: path.join(REPO_ROOT, 'apps/web/vite.config.ts'),
-  server: { host: '127.0.0.1', port: 0 }, logLevel: 'warn' });
+const port = await findFreePort();
+const origin = 'http://127.0.0.1:' + port;
+// Keep Vite's native ESM configuration and React compiler outside the TypeScript QA launcher.
+const server = spawn(process.execPath, [
+  path.join(REPO_ROOT, 'node_modules/vite/bin/vite.js'), '--config', 'apps/web/vite.config.ts',
+  '--host', '127.0.0.1', '--port', String(port), '--strictPort',
+], { cwd: REPO_ROOT, stdio: ['ignore', 'inherit', 'inherit'] });
 let browser;
+let observedPage: Page | undefined;
 try {
-  await server.listen();
-  const address = server.httpServer?.address();
-  if (!address || typeof address === 'string') throw new Error('No local Studio server');
-  const origin = 'http://127.0.0.1:' + address.port;
+  await waitForServer(origin + '/studio/canvas', { timeoutMs: 120000 });
   const args = process.env.STUDIO_MIXED_VIEWPORT_RENDERER === 'native' ? [] :
     ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
   browser = await chromium.launch({ args });
@@ -41,6 +44,7 @@ try {
     localStorage.setItem('toonstudio-studio-mobile-hint-dismissed', '1');
   });
   const page = await context.newPage();
+  observedPage = page;
   page.setDefaultTimeout(120000);
   page.on('pageerror', error => console.error('[Studio page]', error));
   const received = new Set<string>();
@@ -106,7 +110,14 @@ try {
     browser: browser.version(), build: 'Studio app served by Vite with the source checkout', launchArgs: args };
   await writeFile(path.join(output, 'timing.json'), JSON.stringify({ ...metadata, ...timing }, null, 2) + '\n');
   console.log('[mixed-viewport] ' + JSON.stringify({ sha, samples: timing.sampleCount, p50Ms: timing.p50, p95Ms: timing.p95, gpu: timing.gpu, counts: timing.counts, viewport: timing.buffer }));
+} catch (error) {
+  if (observedPage) {
+    await observedPage.screenshot({ path: path.join(output, 'failed-view.png'), timeout: 10000 }).catch(() => {});
+    const controls = await observedPage.locator('body').innerText({timeout: 5000}).catch(() => '');
+    await writeFile(path.join(output, 'failure.txt'), String(error) + '\n' + controls.slice(-18000));
+  }
+  throw error;
 } finally {
   await browser?.close();
-  await server.close();
+  await stopChildProcess(server);
 }
