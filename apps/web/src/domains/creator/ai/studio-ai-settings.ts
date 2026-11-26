@@ -4,6 +4,8 @@
  *
  * 필드 단위 기본값 폴백이 정책이다: 저장값 하나가 깨졌다고 나머지까지 잃지 않는다.
  */
+import { DEFAULT_OPENAI_IMAGE_MODEL } from "@/shared/ai/openai-image-model";
+
 /** Web Storage 호환 인터페이스 — 호출자가 수명(session/persistent)을 명시적으로 선택한다. */
 export interface StudioAiStorage {
   getItem(key: string): string | null;
@@ -31,7 +33,7 @@ export interface StudioAiSettings {
 export const STUDIO_AI_DEFAULT_SETTINGS: StudioAiSettings = {
   baseUrl: "https://api.openai.com/v1",
   apiKey: "",
-  imageModel: "gpt-image-2.6-flare",
+  imageModel: DEFAULT_OPENAI_IMAGE_MODEL,
   textModel: "gpt-4o-mini",
   imageGenerationPath: "/images/generations",
   imageEditPath: "/images/edits",

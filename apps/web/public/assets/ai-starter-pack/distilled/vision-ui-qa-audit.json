@@ -1,0 +1,762 @@
+{
+  "schemaVersion": "1.1.0",
+  "idea": "idea-5-ai-vision-ui-ux-qa-audit",
+  "round": "v2",
+  "auditedAt": "2026-11-26T04:50:16.499Z",
+  "model": {
+    "requested": "gpt-6.2-astra",
+    "actual": "gpt-6.2-astra",
+    "store": false,
+    "latencyMs": 79271
+  },
+  "tokenUsage": {
+    "promptTokens": 12939,
+    "completionTokens": 4695,
+    "totalTokens": 17634,
+    "reasoningTokens": 0
+  },
+  "comparison": {
+    "v1AuditedAt": "2026-11-26T03:59:59.981Z",
+    "v2AuditedAt": "2026-11-26T04:50:16.499Z",
+    "v1Score": 74,
+    "v2Score": 87,
+    "delta": 13,
+    "screens": [
+      {
+        "id": "landing-desktop",
+        "viewport": "1440×900",
+        "v1Score": 81,
+        "v2Score": 82,
+        "delta": 1,
+        "v1AxisScores": {
+          "calmAtelierVisualHierarchy": 80,
+          "canvasDominance82Plus": 82,
+          "koreanPlainLanguage": 94,
+          "zeroAiSlop": 58,
+          "touchHitAreaAndResponsiveness": 92
+        },
+        "v2AxisScores": {
+          "calmAtelierVisualHierarchy": 76,
+          "canvasDominance82Plus": 81,
+          "koreanPlainLanguage": 92,
+          "zeroAiSlop": 70,
+          "touchHitAreaAndResponsiveness": 91
+        }
+      },
+      {
+        "id": "studio-canvas-desktop",
+        "viewport": "1440×900",
+        "v1Score": 90,
+        "v2Score": 93,
+        "delta": 3,
+        "v1AxisScores": {
+          "calmAtelierVisualHierarchy": 80,
+          "canvasDominance82Plus": 98,
+          "koreanPlainLanguage": 87,
+          "zeroAiSlop": 91,
+          "touchHitAreaAndResponsiveness": 94
+        },
+        "v2AxisScores": {
+          "calmAtelierVisualHierarchy": 85,
+          "canvasDominance82Plus": 98,
+          "koreanPlainLanguage": 89,
+          "zeroAiSlop": 94,
+          "touchHitAreaAndResponsiveness": 99
+        }
+      },
+      {
+        "id": "studio-ai-settings-desktop",
+        "viewport": "1440×900",
+        "v1Score": 58,
+        "v2Score": 83,
+        "delta": 25,
+        "v1AxisScores": {
+          "calmAtelierVisualHierarchy": 53,
+          "canvasDominance82Plus": 38,
+          "koreanPlainLanguage": 67,
+          "zeroAiSlop": 66,
+          "touchHitAreaAndResponsiveness": 64
+        },
+        "v2AxisScores": {
+          "calmAtelierVisualHierarchy": 76,
+          "canvasDominance82Plus": 76,
+          "koreanPlainLanguage": 84,
+          "zeroAiSlop": 88,
+          "touchHitAreaAndResponsiveness": 91
+        }
+      },
+      {
+        "id": "studio-home-desktop",
+        "viewport": "1440×900",
+        "v1Score": 81,
+        "v2Score": 91,
+        "delta": 10,
+        "v1AxisScores": {
+          "calmAtelierVisualHierarchy": 81,
+          "canvasDominance82Plus": 90,
+          "koreanPlainLanguage": 87,
+          "zeroAiSlop": 86,
+          "touchHitAreaAndResponsiveness": 59
+        },
+        "v2AxisScores": {
+          "calmAtelierVisualHierarchy": 88,
+          "canvasDominance82Plus": 94,
+          "koreanPlainLanguage": 90,
+          "zeroAiSlop": 93,
+          "touchHitAreaAndResponsiveness": 90
+        }
+      },
+      {
+        "id": "studio-canvas-mobile",
+        "viewport": "390×844",
+        "v1Score": 72,
+        "v2Score": 90,
+        "delta": 18,
+        "v1AxisScores": {
+          "calmAtelierVisualHierarchy": 67,
+          "canvasDominance82Plus": 72,
+          "koreanPlainLanguage": 73,
+          "zeroAiSlop": 85,
+          "touchHitAreaAndResponsiveness": 62
+        },
+        "v2AxisScores": {
+          "calmAtelierVisualHierarchy": 85,
+          "canvasDominance82Plus": 86,
+          "koreanPlainLanguage": 90,
+          "zeroAiSlop": 92,
+          "touchHitAreaAndResponsiveness": 97
+        }
+      },
+      {
+        "id": "studio-ai-settings-mobile",
+        "viewport": "390×844",
+        "v1Score": 60,
+        "v2Score": 82,
+        "delta": 22,
+        "v1AxisScores": {
+          "calmAtelierVisualHierarchy": 47,
+          "canvasDominance82Plus": 30,
+          "koreanPlainLanguage": 64,
+          "zeroAiSlop": 77,
+          "touchHitAreaAndResponsiveness": 81
+        },
+        "v2AxisScores": {
+          "calmAtelierVisualHierarchy": 76,
+          "canvasDominance82Plus": 72,
+          "koreanPlainLanguage": 84,
+          "zeroAiSlop": 88,
+          "touchHitAreaAndResponsiveness": 90
+        }
+      }
+    ]
+  },
+  "v1Baseline": {
+    "auditedAt": "2026-11-26T03:59:59.981Z",
+    "overallScore": 74,
+    "screens": [
+      {
+        "id": "landing-desktop",
+        "viewport": "1440×900",
+        "overallScore": 81,
+        "scores": {
+          "calmAtelierVisualHierarchy": 80,
+          "canvasDominance82Plus": 82,
+          "koreanPlainLanguage": 94,
+          "zeroAiSlop": 58,
+          "touchHitAreaAndResponsiveness": 92
+        }
+      },
+      {
+        "id": "studio-canvas-desktop",
+        "viewport": "1440×900",
+        "overallScore": 90,
+        "scores": {
+          "calmAtelierVisualHierarchy": 80,
+          "canvasDominance82Plus": 98,
+          "koreanPlainLanguage": 87,
+          "zeroAiSlop": 91,
+          "touchHitAreaAndResponsiveness": 94
+        }
+      },
+      {
+        "id": "studio-ai-settings-desktop",
+        "viewport": "1440×900",
+        "overallScore": 58,
+        "scores": {
+          "calmAtelierVisualHierarchy": 53,
+          "canvasDominance82Plus": 38,
+          "koreanPlainLanguage": 67,
+          "zeroAiSlop": 66,
+          "touchHitAreaAndResponsiveness": 64
+        }
+      },
+      {
+        "id": "studio-home-desktop",
+        "viewport": "1440×900",
+        "overallScore": 81,
+        "scores": {
+          "calmAtelierVisualHierarchy": 81,
+          "canvasDominance82Plus": 90,
+          "koreanPlainLanguage": 87,
+          "zeroAiSlop": 86,
+          "touchHitAreaAndResponsiveness": 59
+        }
+      },
+      {
+        "id": "studio-canvas-mobile",
+        "viewport": "390×844",
+        "overallScore": 72,
+        "scores": {
+          "calmAtelierVisualHierarchy": 67,
+          "canvasDominance82Plus": 72,
+          "koreanPlainLanguage": 73,
+          "zeroAiSlop": 85,
+          "touchHitAreaAndResponsiveness": 62
+        }
+      },
+      {
+        "id": "studio-ai-settings-mobile",
+        "viewport": "390×844",
+        "overallScore": 60,
+        "scores": {
+          "calmAtelierVisualHierarchy": 47,
+          "canvasDominance82Plus": 30,
+          "koreanPlainLanguage": 64,
+          "zeroAiSlop": 77,
+          "touchHitAreaAndResponsiveness": 81
+        }
+      }
+    ]
+  },
+  "browserCapture": {
+    "capturedAt": "2026-11-26T04:48:33.723Z",
+    "note": "Standalone Vite dev server v2 re-capture on :5181 (NestJS API :4001 intentionally not running; /api/* proxy 502s counted separately from app console errors).",
+    "routes": [
+      {
+        "id": "landing-desktop",
+        "file": "01-landing-desktop.png",
+        "requestedRoute": "/",
+        "finalPath": "/",
+        "httpStatus": 200,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageErrorsCount": 0,
+        "consoleErrorsCount": 5,
+        "appConsoleErrorsCount": 0,
+        "apiProxy502Count": 5,
+        "brokenImagesCount": 0,
+        "hitAreaStats": {
+          "visibleInteractiveControls": 28,
+          "controlsUnder24px": 1,
+          "controlsUnder36px": 1,
+          "controlsUnder44px": 1
+        },
+        "canvasMetrics": null
+      },
+      {
+        "id": "studio-canvas-desktop",
+        "file": "02-studio-canvas-desktop.png",
+        "requestedRoute": "/studio/canvas",
+        "finalPath": "/studio/canvas?room=work-instant-mwx2nooy-grxc",
+        "httpStatus": 200,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageErrorsCount": 0,
+        "consoleErrorsCount": 7,
+        "appConsoleErrorsCount": 0,
+        "apiProxy502Count": 7,
+        "brokenImagesCount": 0,
+        "hitAreaStats": {
+          "visibleInteractiveControls": 44,
+          "controlsUnder24px": 0,
+          "controlsUnder36px": 0,
+          "controlsUnder44px": 0
+        },
+        "canvasMetrics": {
+          "studioCanvasViewport": {
+            "tag": "div",
+            "id": null,
+            "width": 1392,
+            "height": 856,
+            "visibleWidth": 1392,
+            "visibleHeight": 856,
+            "top": 44,
+            "left": 48,
+            "viewportPct": 91.94
+          },
+          "studioCanvasWorkspace": {
+            "tag": "div",
+            "id": "studio-canvas-workspace",
+            "width": 1392,
+            "height": 856,
+            "visibleWidth": 1392,
+            "visibleHeight": 856,
+            "top": 44,
+            "left": 48,
+            "viewportPct": 91.94
+          },
+          "largestCanvasElement": {
+            "tag": "canvas",
+            "id": null,
+            "width": 1392,
+            "height": 2088,
+            "visibleWidth": 1392,
+            "visibleHeight": 856,
+            "top": 44,
+            "left": 48,
+            "viewportPct": 91.94
+          },
+          "canvasCount": 18,
+          "topBarHeightPx": 44
+        }
+      },
+      {
+        "id": "studio-ai-settings-desktop",
+        "file": "03-studio-ai-settings-desktop.png",
+        "requestedRoute": "/studio/ai-settings",
+        "finalPath": "/settings/ai?source=studio",
+        "httpStatus": 200,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageErrorsCount": 0,
+        "consoleErrorsCount": 10,
+        "appConsoleErrorsCount": 0,
+        "apiProxy502Count": 10,
+        "brokenImagesCount": 0,
+        "hitAreaStats": {
+          "visibleInteractiveControls": 41,
+          "controlsUnder24px": 1,
+          "controlsUnder36px": 1,
+          "controlsUnder44px": 1
+        },
+        "canvasMetrics": null
+      },
+      {
+        "id": "studio-home-desktop",
+        "file": "04-studio-home-desktop.png",
+        "requestedRoute": "/studio",
+        "finalPath": "/studio",
+        "httpStatus": 200,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageErrorsCount": 0,
+        "consoleErrorsCount": 5,
+        "appConsoleErrorsCount": 0,
+        "apiProxy502Count": 5,
+        "brokenImagesCount": 0,
+        "hitAreaStats": {
+          "visibleInteractiveControls": 35,
+          "controlsUnder24px": 1,
+          "controlsUnder36px": 1,
+          "controlsUnder44px": 1
+        },
+        "canvasMetrics": null
+      },
+      {
+        "id": "studio-canvas-mobile",
+        "file": "05-studio-canvas-mobile.png",
+        "requestedRoute": "/studio/canvas",
+        "finalPath": "/studio/canvas?room=work-instant-mwx2nz7q-wbxr",
+        "httpStatus": 200,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "pageErrorsCount": 0,
+        "consoleErrorsCount": 8,
+        "appConsoleErrorsCount": 0,
+        "apiProxy502Count": 8,
+        "brokenImagesCount": 0,
+        "hitAreaStats": {
+          "visibleInteractiveControls": 19,
+          "controlsUnder24px": 0,
+          "controlsUnder36px": 0,
+          "controlsUnder44px": 0
+        },
+        "canvasMetrics": {
+          "studioCanvasViewport": {
+            "tag": "div",
+            "id": null,
+            "width": 390,
+            "height": 800,
+            "visibleWidth": 390,
+            "visibleHeight": 800,
+            "top": 44,
+            "left": 0,
+            "viewportPct": 94.79
+          },
+          "studioCanvasWorkspace": {
+            "tag": "div",
+            "id": "studio-canvas-workspace",
+            "width": 390,
+            "height": 800,
+            "visibleWidth": 390,
+            "visibleHeight": 800,
+            "top": 44,
+            "left": 0,
+            "viewportPct": 94.79
+          },
+          "largestCanvasElement": {
+            "tag": "canvas",
+            "id": null,
+            "width": 390,
+            "height": 800,
+            "visibleWidth": 390,
+            "visibleHeight": 800,
+            "top": 44,
+            "left": 0,
+            "viewportPct": 94.79
+          },
+          "canvasCount": 23,
+          "topBarHeightPx": 44
+        }
+      },
+      {
+        "id": "studio-ai-settings-mobile",
+        "file": "06-studio-ai-settings-mobile.png",
+        "requestedRoute": "/studio/ai-settings",
+        "finalPath": "/settings/ai?source=studio",
+        "httpStatus": 200,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "pageErrorsCount": 0,
+        "consoleErrorsCount": 11,
+        "appConsoleErrorsCount": 0,
+        "apiProxy502Count": 11,
+        "brokenImagesCount": 0,
+        "hitAreaStats": {
+          "visibleInteractiveControls": 25,
+          "controlsUnder24px": 1,
+          "controlsUnder36px": 1,
+          "controlsUnder44px": 1
+        },
+        "canvasMetrics": null
+      }
+    ]
+  },
+  "audit": {
+    "auditSummaryKo": "캔버스는 두 기기 모두 실측 점유율 82%를 넘겼고, 44px 상단바 안에서 원고 제목과 연결 상태를 잘림 없이 읽을 수 있다. 다만 모바일에서는 캔버스 요소가 차지하는 면적과 실제로 보이는 흰 원고 면적의 차이가 크다. 작업 홈은 새 원고와 예제를 첫 화면에서 바로 열 수 있지만, AI 설정은 안내와 상태 요약을 여러 겹 지나야 키 입력란에 닿는다. 여섯 화면에서 사용을 막는 잘림이나 겹침은 확인되지 않아 P0는 없으며, 가장 먼저 손볼 곳은 모바일 원고 시야와 설정 입력란의 위치다.",
+    "overallScore": 87,
+    "crossScreenStrengths": [
+      "두 캔버스 모두 상단바를 한 줄로 유지했고, 노출된 조작 요소는 모두 44px 기준을 충족한다.",
+      "‘이어서 작업’, ‘여기에 API 키를 붙여 넣으세요’처럼 다음 행동을 알려 주는 한국어가 쓰였다.",
+      "여섯 화면 모두 가로 넘침과 깨진 이미지가 없다. 모바일에서도 설정 탭과 등록 버튼의 글자가 잘리지 않는다.",
+      "연결 상태를 큰 경고창 대신 짧은 문구로 표시해 원고와 설정을 가리지 않는다."
+    ],
+    "crossScreenTopPriorities": [
+      {
+        "priority": "P1",
+        "title": "모바일 캔버스는 흰 원고의 실제 시야를 별도로 평가하기",
+        "affectedScreens": [
+          "studio-canvas-mobile"
+        ],
+        "action": "캔버스 요소 점유율과 별도로 흰 원고의 가시 면적을 측정한다. 원고 비율은 유지하되 ‘폭 맞춤’과 ‘쪽 전체 보기’를 제공해 아래쪽 어두운 여백을 사용자가 조절하게 한다."
+      },
+      {
+        "priority": "P1",
+        "title": "AI 설정에서 안내보다 키 입력을 먼저 보여 주기",
+        "affectedScreens": [
+          "studio-ai-settings-desktop",
+          "studio-ai-settings-mobile"
+        ],
+        "action": "공간 안내는 제목 옆으로 접고 보관 안내는 입력란 아래로 옮긴다. ‘추가’와 ‘등록’이 별도 단계라면 각각 무엇을 추가하고 등록하는지 버튼에 명시한다."
+      },
+      {
+        "priority": "P1",
+        "title": "첫 화면의 강조점을 작품 시작에 모으기",
+        "affectedScreens": [
+          "landing-desktop"
+        ],
+        "action": "대표 그림의 발광 효과와 높이를 줄이고, 제작 단계와 아이디어 입력을 시작 버튼에 더 가깝게 배치한다."
+      },
+      {
+        "priority": "P2",
+        "title": "비캔버스 화면의 작은 조작 영역 확인하기",
+        "affectedScreens": [
+          "landing-desktop",
+          "studio-ai-settings-desktop",
+          "studio-home-desktop",
+          "studio-ai-settings-mobile"
+        ],
+        "action": "네 캡처에서 각각 24px 미만으로 집계된 컨트롤 하나를 DOM에서 식별한다. 아이콘 크기는 유지하고 누를 수 있는 영역만 44×44px 이상으로 넓힌다."
+      }
+    ],
+    "screens": [
+      {
+        "id": "landing-desktop",
+        "route": "/",
+        "viewport": "1440×900",
+        "overallScore": 82,
+        "scores": {
+          "calmAtelierVisualHierarchy": 76,
+          "canvasDominance82Plus": 81,
+          "koreanPlainLanguage": 92,
+          "zeroAiSlop": 70,
+          "touchHitAreaAndResponsiveness": 91
+        },
+        "canvasDominanceNote": "작품 시작 버튼과 아이디어 입력란은 모두 첫 화면에 있지만, 오른쪽 대표 그림만 약 618×380px이고 입력 영역은 y=616px에서 시작한다.",
+        "visualObservations": [
+          "왼쪽에는 두 줄 제목과 산호색 ‘작품 시작하기’ 버튼이 있고, 오른쪽 그림에는 청록색 화면 윤곽과 보라색 빛의 궤적이 보인다.",
+          "그림 아래에 이야기 준비·원고 그리기·작품 완성이 한 줄로 이어지고, 그 아래 입력 상자와 추천 항목 여섯 개가 놓인다."
+        ],
+        "strengths": [
+          "처음 온 사람이 ‘작품 시작하기’와 ‘둘러보기’ 중 하나를 바로 고를 수 있다.",
+          "‘예: 비 오는 날의 첫사랑’이 빈 입력란에 어떤 내용을 쓰면 될지 알려 준다."
+        ],
+        "polishItems": [
+          {
+            "priority": "P1",
+            "area": "첫 화면 대표 그림",
+            "issue": "작품 시작 버튼보다 큰 발광 일러스트가 시선을 끌고 실제 입력 도구는 제작 단계 아래에 있다.",
+            "recommendation": "대표 그림 높이를 약 300px로 줄이고 빛의 궤적을 약하게 처리한 뒤, 확보한 높이만큼 제작 단계와 입력란을 올린다.",
+            "expectedImpact": "웹툰의 분위기는 남기면서 첫 아이디어를 적는 곳을 더 빨리 찾을 수 있다."
+          },
+          {
+            "priority": "P2",
+            "area": "입력란 아래 추천 항목",
+            "issue": "‘세로 웹툰 (800×무한)’과 ‘인스타툰 4컷 (1080²)’은 작품 형식보다 규격 표기를 먼저 해석하게 한다.",
+            "recommendation": "기본 이름은 ‘세로 웹툰’, ‘정사각 4컷’으로 쓰고 정확한 크기는 선택 후 표시한다.",
+            "expectedImpact": "처음 만드는 사람도 원하는 형식을 빠르게 고를 수 있다."
+          }
+        ]
+      },
+      {
+        "id": "studio-canvas-desktop",
+        "route": "/studio/canvas?room=work-instant-mwx2nooy-grxc",
+        "viewport": "1440×900",
+        "overallScore": 93,
+        "scores": {
+          "calmAtelierVisualHierarchy": 85,
+          "canvasDominance82Plus": 98,
+          "koreanPlainLanguage": 89,
+          "zeroAiSlop": 94,
+          "touchHitAreaAndResponsiveness": 99
+        },
+        "canvasDominanceNote": "캔버스 점유율은 91.94%이며, 단일 44px 상단바에 파일부터 보기/도움말까지 메뉴 7개를 배치해 기준을 충족한다.",
+        "visualObservations": [
+          "왼쪽 위에 ‘제목 없는 원고’와 ‘연결 대기’가 두 줄로 온전히 보인다.",
+          "상단 메뉴 바로 오른쪽에 제작 단계 다섯 개와 저장·공유·출고 등의 버튼이 같은 높이로 이어진다.",
+          "페이지·되돌리기 묶음은 원고 상단에, 배율은 왼쪽 아래에, 책·키보드·물음표 버튼은 오른쪽에 떠 있다."
+        ],
+        "strengths": [
+          "왼쪽 도구 막대 외에는 큰 고정 패널이 없어 원고 중앙을 넓게 쓸 수 있다.",
+          "선택한 펜과 현재 단계인 ‘3 작화/채색’이 구분되며, 컨트롤 44개 모두 44px 기준을 충족한다."
+        ],
+        "polishItems": [
+          {
+            "priority": "P1",
+            "area": "상단 메뉴와 제작 단계",
+            "issue": "메뉴 수는 기준 안이지만 메뉴 7개, 단계 5개, 실행 버튼이 연달아 놓여 현재 단계 주변의 글자가 빽빽하다.",
+            "recommendation": "현재 단계는 그대로 표시하고 나머지 단계는 현재 단계 버튼을 눌러 고르게 한다. 확보한 폭은 메뉴 사이 간격에 쓴다.",
+            "expectedImpact": "상단바를 늘리지 않고도 메뉴와 작업 단계의 역할을 구분할 수 있다."
+          },
+          {
+            "priority": "P2",
+            "area": "원고 상단 페이지 조작부",
+            "issue": "작은 페이지 조작부 아래의 넓고 짙은 그림자가 흰 원고 위에서 버튼만큼 눈에 띈다.",
+            "recommendation": "그림자의 번짐과 불투명도를 낮추고 얇은 테두리로 경계를 남긴다.",
+            "expectedImpact": "페이지 조작부를 알아볼 수 있으면서 원고에 시선이 머문다."
+          }
+        ]
+      },
+      {
+        "id": "studio-ai-settings-desktop",
+        "route": "/settings/ai?source=studio",
+        "viewport": "1440×900",
+        "overallScore": 83,
+        "scores": {
+          "calmAtelierVisualHierarchy": 76,
+          "canvasDominance82Plus": 76,
+          "koreanPlainLanguage": 84,
+          "zeroAiSlop": 88,
+          "touchHitAreaAndResponsiveness": 91
+        },
+        "canvasDominanceNote": "키 입력란은 첫 화면 안인 y=617px에 보이지만, 그 앞에 공간 도구·공간 안내·설정 제목·연결 요약·탭·보관 안내가 차례로 놓인다.",
+        "visualObservations": [
+          "‘AI 설정’ 제목 위에 ‘공간 지도’ 등 버튼 세 개와 청록색 테두리의 공간 안내 줄이 별도로 있다.",
+          "키 보관 안내가 가로로 긴 상자 하나를 차지하고, 아래 등록 카드에는 입력란 옆 ‘추가’와 다음 줄 ‘등록’이 보인다.",
+          "하단에는 ‘내 키’와 ‘ToonStudio AI’의 현재 상태가 나란히 표시된다."
+        ],
+        "strengths": [
+          "키 등록이 선택 사항임을 제목에 명시해 키부터 준비해야 한다는 부담을 줄인다.",
+          "시작하기·AI 사용 순서·고급 설정을 나누고 현재 탭을 밑줄로 표시했다."
+        ],
+        "polishItems": [
+          {
+            "priority": "P1",
+            "area": "설정 제목 위 공간 안내",
+            "issue": "환경 설정에 들어온 뒤에도 공간 이동 도구와 위치 안내가 본문보다 먼저 두 줄을 차지한다.",
+            "recommendation": "공간 이동 도구를 제목 옆 ‘공간 안내’ 메뉴로 합치고 연결 요약 아래에 등록 카드를 바로 붙인다.",
+            "expectedImpact": "어디에 키를 넣는지 먼저 보고 필요할 때만 공간 도구를 열 수 있다."
+          },
+          {
+            "priority": "P1",
+            "area": "키 입력란의 ‘추가’와 ‘등록’",
+            "issue": "버튼 이름만으로는 붙여 넣은 키를 적용할 때 어느 쪽을 눌러야 하는지 구분하기 어렵다.",
+            "recommendation": "한 단계면 ‘키 등록’으로 합치고, 여러 키를 모아 등록하는 방식이면 ‘목록에 추가’와 ‘추가한 키 등록’으로 구분한다.",
+            "expectedImpact": "키 입력 후 다음 행동과 등록 완료 시점이 분명해진다."
+          },
+          {
+            "priority": "P2",
+            "area": "키 보관 안내",
+            "issue": "‘현재 브라우저 문서의 메모리에만 보관됩니다’는 창작자보다 개발자에게 익숙한 표현이다.",
+            "recommendation": "입력란 아래에 ‘키는 이 탭에서만 잠시 보관해요’라고 표시한다.",
+            "expectedImpact": "보관 범위를 짧게 이해하고 바로 키를 입력할 수 있다."
+          }
+        ]
+      },
+      {
+        "id": "studio-home-desktop",
+        "route": "/studio",
+        "viewport": "1440×900",
+        "overallScore": 91,
+        "scores": {
+          "calmAtelierVisualHierarchy": 88,
+          "canvasDominance82Plus": 94,
+          "koreanPlainLanguage": 90,
+          "zeroAiSlop": 93,
+          "touchHitAreaAndResponsiveness": 90
+        },
+        "canvasDominanceNote": "첫 화면에 새 작업·파일 가져오기, 네 가지 바로 시작 항목, 예제 두 개의 ‘이어서 작업’까지 모두 보인다.",
+        "visualObservations": [
+          "왼쪽 탐색의 ‘내 작업’이 선택돼 있고 본문 제목도 ‘내 작업’이다.",
+          "‘개인 작업은 아직 없습니다’라는 안내 아래 ‘작업 목록’이 있으며, 두 카드의 제목에 각각 ‘샘플 원고’와 ‘예제’가 붙는다.",
+          "상단 오른쪽 ‘파일 가져오기’와 바로 시작 줄의 ‘원고 파일 불러오기’가 함께 보인다."
+        ],
+        "strengths": [
+          "세로 웹툰과 4컷 만화의 차이를 ‘위아래로 읽는 웹툰’, ‘네 칸으로 만드는 이야기’로 쉽게 설명한다.",
+          "예제에 서로 다른 원고 미리보기와 실행 버튼이 있어 개인 작업이 없어도 시작할 수 있다."
+        ],
+        "polishItems": [
+          {
+            "priority": "P2",
+            "area": "빈 작업 안내와 작업 목록 제목",
+            "issue": "개인 작업이 없다고 읽은 직후 ‘작업 목록’에 카드가 나와 제목을 읽어야 예제임을 알 수 있다.",
+            "recommendation": "개인 작업이 없는 상태에서는 이 묶음의 제목을 ‘열어 볼 예제’로 바꾸고 버튼도 ‘예제 열기’로 맞춘다.",
+            "expectedImpact": "내가 만든 작업과 체험용 원고를 목록 제목만 보고 구별할 수 있다."
+          },
+          {
+            "priority": "P2",
+            "area": "파일 가져오기 진입점",
+            "issue": "상단의 ‘파일 가져오기’와 카드의 ‘원고 파일 불러오기’가 비슷한 행동을 다른 말로 안내한다.",
+            "recommendation": "대상이 같다면 이름을 ‘원고 가져오기’로 통일하고, 다르다면 카드에 대상 형식을 명시한다.",
+            "expectedImpact": "어느 버튼이 내 파일에 맞는지 비교하는 시간을 줄인다."
+          }
+        ]
+      },
+      {
+        "id": "studio-canvas-mobile",
+        "route": "/studio/canvas?room=work-instant-mwx2nz7q-wbxr",
+        "viewport": "390×844",
+        "overallScore": 90,
+        "scores": {
+          "calmAtelierVisualHierarchy": 85,
+          "canvasDominance82Plus": 86,
+          "koreanPlainLanguage": 90,
+          "zeroAiSlop": 92,
+          "touchHitAreaAndResponsiveness": 97
+        },
+        "canvasDominanceNote": "단일 44px 바 아래 캔버스 요소는 94.79%지만, 흰 원고는 CSS 좌표로 약 y=44~629px, 즉 도구가 덮는 부분을 빼기 전에도 화면의 약 69%다.",
+        "visualObservations": [
+          "상단에는 뒤로가기·원고 제목과 연결 대기·저장·출고·편집이 있고, 제목과 상태 두 줄 모두 읽힌다.",
+          "흰 원고 왼쪽에 ‘6px’와 ‘100%’ 조절부가 세로로 떠 있고, 원고 아래 어두운 영역에는 양쪽에 작은 아이콘이 있다.",
+          "하단에는 펜·지우개·브러시·필터·색·레이어·더보기까지 일곱 자리가 보인다."
+        ],
+        "strengths": [
+          "상단에 전체 메뉴를 펼치지 않고 ‘편집’으로 묶어 390px에서도 저장과 출고를 바로 찾을 수 있다.",
+          "하단 도구는 아이콘과 이름을 함께 보여 주며, 노출된 컨트롤 19개 모두 44px 기준을 충족한다."
+        ],
+        "polishItems": [
+          {
+            "priority": "P1",
+            "area": "흰 원고와 하단 도구 막대 사이",
+            "issue": "흰 원고가 끝난 뒤 하단 도구 막대까지 약 170px가 어두운 영역이라 실측 점유율만큼 원고가 넓게 보이지 않는다.",
+            "recommendation": "원고 비율을 늘이지 말고 ‘폭 맞춤’과 ‘쪽 전체 보기’를 제공한다. 초기 배율별로 실제 보이는 원고 면적도 함께 검수한다.",
+            "expectedImpact": "한 쪽 전체를 볼 때와 세부를 그릴 때 각각 필요한 시야를 확보한다."
+          },
+          {
+            "priority": "P2",
+            "area": "왼쪽 펜 조절부",
+            "issue": "두 슬라이더와 그림자가 원고 왼쪽을 약 245px 높이로 덮는다.",
+            "recommendation": "값을 조절한 뒤 ‘6px · 100%’ 버튼 하나로 접을 수 있게 하고 터치 영역은 44px 이상 유지한다.",
+            "expectedImpact": "펜 설정을 잃지 않으면서 왼쪽 그림을 더 많이 볼 수 있다."
+          }
+        ]
+      },
+      {
+        "id": "studio-ai-settings-mobile",
+        "route": "/settings/ai?source=studio",
+        "viewport": "390×844",
+        "overallScore": 82,
+        "scores": {
+          "calmAtelierVisualHierarchy": 76,
+          "canvasDominance82Plus": 72,
+          "koreanPlainLanguage": 84,
+          "zeroAiSlop": 88,
+          "touchHitAreaAndResponsiveness": 90
+        },
+        "canvasDominanceNote": "390px 화면에서 등록 카드가 약 y=477px, 실제 입력란은 약 y=582px에 시작하며 등록 버튼까지는 하단 탐색 위에 온전히 보인다.",
+        "visualObservations": [
+          "상단 로고 아래에 공간 안내, 돌아가기 링크와 ‘AI 설정’, 연결 요약과 탭이 각각 별도 줄을 차지한다.",
+          "키 보관 문구가 독립된 테두리 안에 있고, 등록 카드에서는 입력란과 ‘추가’가 한 줄, ‘등록’과 직접 연결 버튼이 다음 줄에 놓인다.",
+          "‘이미지·음성 연동 키’ 링크까지 하단 탐색 막대 위에서 읽을 수 있다."
+        ],
+        "strengths": [
+          "세 탭의 이름이 한 줄에 들어가고 선택한 ‘시작하기’가 배경색과 밑줄로 구분된다.",
+          "데스크톱의 긴 연결 설명을 덜어내고 연결 개수와 사용 방식만 나란히 남겼다."
+        ],
+        "polishItems": [
+          {
+            "priority": "P1",
+            "area": "공간 안내부터 키 등록 카드까지",
+            "issue": "입력하기 전에 위치 안내와 연결 요약, 별도의 보관 문구를 지나 화면 높이의 약 69%까지 내려와야 한다.",
+            "recommendation": "공간 안내를 제목 옆에 접어 두고, 보관 문구는 입력란 아래 도움말로 옮긴다. 탭과 등록 카드 사이에는 한 단의 여백만 둔다.",
+            "expectedImpact": "첫눈에 입력란이 들어오고 등록 이후의 상태를 보여 줄 자리도 생긴다."
+          },
+          {
+            "priority": "P1",
+            "area": "등록 카드의 실행 버튼",
+            "issue": "‘추가’와 ‘등록’이 서로 다른 줄에 있고 직접 연결 버튼까지 나란히 보여 기본 절차가 한눈에 드러나지 않는다.",
+            "recommendation": "기본 동작을 ‘키 등록’으로 강조하고 직접 연결은 보조 링크로 낮춘다. ‘추가’ 단계가 꼭 필요하면 ‘목록에 추가’로 명시한다.",
+            "expectedImpact": "처음 키를 붙여 넣는 사람이 어떤 버튼부터 눌러야 하는지 알 수 있다."
+          },
+          {
+            "priority": "P2",
+            "area": "키 등록 설명",
+            "issue": "‘어느 서비스 키인지 알아보고 주소·모델은 자동으로 맞춰요’와 여러 키 입력 안내가 좁은 카드에서 세 줄을 차지한다.",
+            "recommendation": "기본 설명은 ‘키를 붙여 넣으면 서비스를 자동으로 찾아요’로 줄이고 여러 키 등록 방법은 도움말로 분리한다.",
+            "expectedImpact": "기술 용어를 읽기 전에 입력을 시작할 수 있다."
+          }
+        ]
+      }
+    ]
+  }
+}

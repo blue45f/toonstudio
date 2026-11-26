@@ -53,6 +53,7 @@ jobs:
             /*
             !/apps/web/public/assets/
             /apps/web/public/assets/atelier/
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/ai-starter-pack/' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/*.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/refined-v8/*.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/refined-v8/thumbnails/*.png' || '' }}

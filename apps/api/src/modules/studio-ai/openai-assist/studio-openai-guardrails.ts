@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
 
 import { HttpException, HttpStatus } from "@nestjs/common";
+import {
+  redactCreatorSensitiveText,
+  type RedactedCreatorText,
+} from "@toonstudio/contracts/studio-pii-redactor";
+
+export { redactCreatorSensitiveText, type RedactedCreatorText };
 
 export type EnvLike = Partial<Record<string, string | undefined>>;
 
@@ -12,15 +18,30 @@ export const OPENAI_FREE_DATA_SHARE_MODELS = new Set([
   "gpt-4.1-mini",
   "gpt-4o",
 ]);
+export const OPENAI_FLAGSHIP_ALLOWED_MODELS = new Set([
+  "gpt-4.1",
+  "gpt-5.4-mini",
+  "gpt-5.5",
+  "gpt-6.2-astra",
+  "gpt-6.2-sol",
+]);
 export const GEMINI_FREE_TIER_MODELS = new Set([
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
 ]);
-const ALLOWED_OPENAI_MODELS = OPENAI_FREE_DATA_SHARE_MODELS;
+const ALLOWED_OPENAI_MODELS = new Set([
+  ...OPENAI_FREE_DATA_SHARE_MODELS,
+  ...OPENAI_FLAGSHIP_ALLOWED_MODELS,
+]);
 const RETIRED_OPENAI_MODELS = new Set(["gpt-4.1-nano", "gpt-4.1-nano-2025-04-14"]);
+const OPENAI_REASONING_MODEL_PATTERN = /^(?:gpt-5|gpt-6|o3|o4)/iu;
 
 export function isOpenAiFreeShareModel(model: string): boolean {
   return OPENAI_FREE_DATA_SHARE_MODELS.has(model.trim().toLowerCase());
+}
+
+export function isOpenAiReasoningModel(model: string): boolean {
+  return OPENAI_REASONING_MODEL_PATTERN.test(model.trim());
 }
 
 export function isOpenAiRetiredModel(model: string): boolean {
@@ -32,6 +53,8 @@ export function isGeminiFreeTierModel(model: string): boolean {
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_REASONING_TIMEOUT_MS = 60_000;
+const MAX_TIMEOUT_MS = 90_000;
 const DEFAULT_BURST_LIMIT_PER_MINUTE = 5;
 const DEFAULT_HOURLY_REQUEST_LIMIT = 20;
 const DEFAULT_DAILY_REQUEST_LIMIT = 60;
@@ -40,16 +63,6 @@ const MAX_TRACKED_ACTOR_BUCKETS = 1_024;
 
 const ORG_ID_PATTERN = /^org-[A-Za-z0-9_-]{4,80}$/u;
 const PROJECT_ID_PATTERN = /^proj_[A-Za-z0-9_-]{4,80}$/u;
-
-// 모듈 로드 시 1회 컴파일해 요청당 정규식 재생성 비용을 없앤다.
-const SECRET_KEY_PATTERN =
-  /\b(?:sk-[A-Za-z0-9_-]{16,}|Bearer\s+[A-Za-z0-9._-]{20,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{30,}|xox[baprs]-[A-Za-z0-9-]{16,})\b/gu;
-const RESIDENT_ID_PATTERN = /\b\d{6}-?[1-8]\d{6}\b/gu;
-const CARD_NUMBER_PATTERN =
-  /\b(?:\d{4}[-\s]?){3}\d{4}\b|\b\d{4}[-\s]?\d{6}[-\s]?\d{5}\b/gu;
-const EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu;
-const PHONE_PATTERN =
-  /(?:(?<!\w)\+82[-\s.]?0?1[016789]|\b(?:01[016789]|02|0[3-6][1-5]|070))[-\s.]?\d{3,4}[-\s.]?\d{4}\b/gu;
 
 export interface StudioOpenAiCreativeConfig {
   readonly configured: boolean;
@@ -103,7 +116,12 @@ export function resolveStudioOpenAiCreativeConfig(
     modelConfigurationError,
     organizationId: ORG_ID_PATTERN.test(rawOrg) ? rawOrg : null,
     projectId: PROJECT_ID_PATTERN.test(rawProject) ? rawProject : null,
-    timeoutMs: parsePositiveLimit(env.STUDIO_OPENAI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS, 5_000, 60_000),
+    timeoutMs: parsePositiveLimit(
+      env.STUDIO_OPENAI_TIMEOUT_MS,
+      isOpenAiReasoningModel(model) ? DEFAULT_REASONING_TIMEOUT_MS : DEFAULT_TIMEOUT_MS,
+      5_000,
+      MAX_TIMEOUT_MS,
+    ),
     limits: {
       burstPerMinute: parsePositiveLimit(
         env.STUDIO_OPENAI_BURST_LIMIT_PER_MINUTE,
@@ -130,36 +148,6 @@ export function resolveStudioOpenAiCreativeConfig(
         20_000,
       ),
     },
-  };
-}
-
-export interface RedactedCreatorText {
-  readonly sanitizedText: string;
-  readonly redactedCount: number;
-}
-
-/**
- * 외부 AI 전송 전 원고·메모에 섞여 들어간 개인정보(이메일, 전화번호, 주민·외국인등록번호, 카드번호)와
- * 실수로 붙여 넣은 API 키·토큰 문자열을 마스킹한다.
- */
-export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
-  let redactedCount = 0;
-  const replaceCounted = (input: string, pattern: RegExp, token: string): string =>
-    input.replace(pattern, () => {
-      redactedCount += 1;
-      return token;
-    });
-
-  let current = raw;
-  current = replaceCounted(current, SECRET_KEY_PATTERN, "[비밀키 마스킹됨]");
-  current = replaceCounted(current, RESIDENT_ID_PATTERN, "[주민번호 비공개]");
-  current = replaceCounted(current, CARD_NUMBER_PATTERN, "[카드번호 비공개]");
-  current = replaceCounted(current, EMAIL_PATTERN, "[이메일 비공개]");
-  current = replaceCounted(current, PHONE_PATTERN, "[연락처 비공개]");
-
-  return {
-    sanitizedText: current,
-    redactedCount,
   };
 }
 

@@ -9,6 +9,8 @@
  * 만지지 않는다.
  */
 
+import { DEFAULT_OPENAI_IMAGE_MODEL, isRetiredOpenAiImageModel } from "./openai-model-compat";
+
 import type { StudioAiByokProviderPreset } from "./studio-ai-byok-providers";
 
 export interface StudioAiByokSettings {
@@ -27,8 +29,12 @@ export function applyByokPreset(
 ): StudioAiByokPresetApplyResult {
   if (!preset) return { found: false, settings: current };
   if (preset.id === "custom") return { found: true, settings: current };
+  // 종료된 OpenAI 이미지 모델(dall-e-3 등)만 현역 기본 모델로 교체하고, 사용자 지정 모델명은 유지한다.
+  const imageModel = preset.id === "openai" && isRetiredOpenAiImageModel(current.imageModel)
+    ? DEFAULT_OPENAI_IMAGE_MODEL
+    : current.imageModel;
   return {
     found: true,
-    settings: { baseUrl: preset.baseUrl, imageModel: current.imageModel },
+    settings: { baseUrl: preset.baseUrl, imageModel },
   };
 }

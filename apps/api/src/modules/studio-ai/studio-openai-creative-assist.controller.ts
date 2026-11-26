@@ -52,8 +52,15 @@ async function withRequestAbort<T>(
   };
   request.once("aborted", abort);
   response.once("close", onClose);
-  // Node 24는 완료된 POST 본문도 소진한 뒤 destroyed로 표시한다.
-  if (request.aborted || (response.destroyed && !response.writableEnded) || (request.destroyed && request.complete === false)) abort();
+  // Node 18+에서는 body-parser가 POST 본문을 끝까지 읽으면 request.complete === true인 상태로
+  // request.destroyed === true가 되므로, 본문 미완료 파기나 응답 소켓 종료만 실제 취소로 판정한다.
+  if (
+    request.aborted ||
+    (response.destroyed && !response.writableEnded) ||
+    (request.destroyed && request.complete === false)
+  ) {
+    abort();
+  }
 
   try {
     return await run(controller.signal);

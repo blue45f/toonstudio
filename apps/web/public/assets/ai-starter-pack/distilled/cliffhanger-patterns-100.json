@@ -1,0 +1,909 @@
+{
+  "generatedAt": "2026-11-26T04:52:28.009Z",
+  "models": [
+    "gpt-6.2-astra"
+  ],
+  "totalPatterns": 100,
+  "patterns": [
+    {
+      "id": "E01",
+      "nameKo": "사진 밖의 촬영자",
+      "genreKo": "학교 미스터리",
+      "scrollGapPx": 420,
+      "penultimateCutKo": "졸업 앨범 단체 사진. 실종된 담임을 포함해 그날 교실에 있던 서른한 명의 얼굴에 동그라미가 쳐져 있다.",
+      "finalCutHookKo": "반장 안경알에 비친 손이 셔터를 누른다. 손목엔 담임이 늘 차던 실팔찌.",
+      "readerCommentPredictionKo": "그럼 맨 뒷줄에 서 있는 선생님은 누구야?"
+    },
+    {
+      "id": "E02",
+      "nameKo": "답장까지 한 뼘",
+      "genreKo": "캠퍼스 로맨스",
+      "scrollGapPx": 160,
+      "penultimateCutKo": "축제 뒤풀이 테이블 밑에서 짝사랑 상대에게 문자를 보낸다. '나 먼저 갈게. 너 좋아해서 더는 친구처럼 못 있겠다.'",
+      "finalCutHookKo": "맞은편 운동화가 급히 빠져나간다. 뒤이어 답장이 뜬다. '잠깐만. 나 신발 끈.'",
+      "readerCommentPredictionKo": "잡으러 가겠단 말을 이렇게 하네. 제발 천천히 걸어!"
+    },
+    {
+      "id": "E03",
+      "nameKo": "닫히는 호적",
+      "genreKo": "궁중 로맨스 판타지",
+      "scrollGapPx": 540,
+      "penultimateCutKo": "공작과의 정략결혼을 피하려고 황실의 양녀가 된 주인공. 마르는 잉크 위로 금박 족보가 덮인다.",
+      "finalCutHookKo": "족보를 받아 든 공작이 자기 이름에 그어진 붉은 줄을 짚는다. '저도 오늘 파양됐습니다, 전하.'",
+      "readerCommentPredictionKo": "둘 다 혼담 피하려고 따로 움직이다가 다시 혼인 가능해진 거냐고."
+    },
+    {
+      "id": "E04",
+      "nameKo": "무음실의 두 번째 자막",
+      "genreKo": "오컬트 스릴러",
+      "scrollGapPx": 680,
+      "penultimateCutKo": "방음 부스에서 성우가 묻는다. '거기 누구 있어요?' 음성 인식 화면에는 자기 대사 한 줄뿐이다.",
+      "finalCutHookKo": "빈 의자가 움푹 꺼진다. 대사 아래 작은 회색 자막. '[고개를 끄덕이는 소리]'",
+      "readerCommentPredictionKo": "대답보다 저걸 소리로 알아듣는 프로그램이 더 무섭다."
+    },
+    {
+      "id": "E05",
+      "nameKo": "결승선 뒤의 바통",
+      "genreKo": "육상 스포츠",
+      "scrollGapPx": 240,
+      "penultimateCutKo": "마지막 주자가 결승선을 끊는다. 전광판 1위. 코치가 두 팔을 벌린다.",
+      "finalCutHookKo": "주자가 코치를 지나 빈 5레인에 바통을 내민다. '언니, 약속한 데까지 왔어.' 바통 끝에 손가락 자국이 하나씩 패인다.",
+      "readerCommentPredictionKo": "5레인 비워 둔 게 그냥 기권 팀 때문이 아니었네."
+    },
+    {
+      "id": "E06",
+      "nameKo": "영수증의 마지막 한 줄",
+      "genreKo": "생활 추리",
+      "scrollGapPx": 300,
+      "penultimateCutKo": "사라진 아빠의 마지막 장보기 영수증. 우유, 달걀, 딸기잼. 딸은 평범한 아침거리였다고 생각한다.",
+      "finalCutHookKo": "접힌 끝을 펴니 '빈 병 반환 −100원'. 딸의 시선이 아빠가 십 년째 편지를 모아 둔 초록 유리병의 빈자리로 간다.",
+      "readerCommentPredictionKo": "마트에서 병 수거해 가기 전에 찾아야 돼."
+    },
+    {
+      "id": "E07",
+      "nameKo": "패자의 선택창",
+      "genreKo": "게임 판타지",
+      "scrollGapPx": 380,
+      "penultimateCutKo": "용사에게 쓰러진 슬라임. 눈앞에 익숙한 창이 뜬다. '다시 시작하시겠습니까?'",
+      "finalCutHookKo": "선택화살표가 슬라임 대신 울고 있는 용사 머리 위에 뜬다. '이 아이에게 몇 번째 승리를 주시겠습니까? 〈 407 〉'",
+      "readerCommentPredictionKo": "용사가 계속 도전한 게 아니라 슬라임이 계속 져 준 거였어?"
+    },
+    {
+      "id": "E08",
+      "nameKo": "한 벌 남은 예복",
+      "genreKo": "시대극",
+      "scrollGapPx": 460,
+      "penultimateCutKo": "왕의 수의를 완성한 침선장이 남은 비단을 갠다. 밖에서는 아직 쾌유를 비는 종이 울린다.",
+      "finalCutHookKo": "상궁이 아주 작은 치수표를 놓는다. '남은 천으론 곤룡포를. 내일 아침에 걸음마부터 시킬 겁니다.'",
+      "readerCommentPredictionKo": "멀쩡한 세자가 있는데 왜 걸음마하는 애를 왕으로 세워?"
+    },
+    {
+      "id": "E09",
+      "nameKo": "취소선 아래의 약속",
+      "genreKo": "재회 로맨스",
+      "scrollGapPx": 220,
+      "penultimateCutKo": "헤어진 연인이 함께 쓰던 달력. 이사 날, 마지막 장에서 '서른 살에 여기서 만나기'에 그어진 굵은 줄을 발견한다.",
+      "finalCutHookKo": "달력을 떼자 벽지에 눌러 쓴 자국이 남았다. '취소선 아님. 아래 지도임.' 선 끝은 바로 옆집.",
+      "readerCommentPredictionKo": "옆집 초인종 누르는 데까지 보고 자야겠는데?"
+    },
+    {
+      "id": "E10",
+      "nameKo": "증인의 호칭",
+      "genreKo": "법정 드라마",
+      "scrollGapPx": 500,
+      "penultimateCutKo": "보호 칸막이 너머의 증인에게 판사가 묻는다. '피고인과 어떤 관계입니까?'",
+      "finalCutHookKo": "음성 변조기 너머 대답. '아직은 모자 관계입니다.' 방청석의 원고가 입양 동의서를 반으로 접는다.",
+      "readerCommentPredictionKo": "재판 끝나면 누가 누구의 가족이 되는 거지?"
+    },
+    {
+      "id": "E11",
+      "nameKo": "빈 접시의 평가",
+      "genreKo": "요리 경연",
+      "scrollGapPx": 320,
+      "penultimateCutKo": "우승 후보의 접시만 손대지 않은 노심사위원. 탈락을 직감한 요리사가 접시를 거두려 한다.",
+      "finalCutHookKo": "심사위원이 품에서 찌그러진 도시락을 꺼낸다. '싸 가도 됩니까? 이 맛을 기억하는 사람이 병원에 하나 더 있어서.'",
+      "readerCommentPredictionKo": "가게 불난 뒤로 흩어진 주방 식구 중 한 분인가 봐."
+    },
+    {
+      "id": "E12",
+      "nameKo": "거울의 늦은 퇴근",
+      "genreKo": "직장 괴담",
+      "scrollGapPx": 740,
+      "penultimateCutKo": "마지막 직원이 엘리베이터에서 내려 집으로 향한다. 스테인리스 문이 닫힌다.",
+      "finalCutHookKo": "문에 비친 직원은 아직 안쪽에 있다. 넥타이를 풀며 지하 4층을 누른다. '자, 이제 우리 근무.'",
+      "readerCommentPredictionKo": "낮에 대리가 한숨 쉰 컷도 반사상만 입이 웃던데."
+    },
+    {
+      "id": "E13",
+      "nameKo": "낙찰자의 잔돈",
+      "genreKo": "골동품 미스터리",
+      "scrollGapPx": 260,
+      "penultimateCutKo": "시골 경매에서 아무도 찾지 않던 빈 액자가 천 원에 팔린다. 주인공은 마수걸이라며 손님에게 오백 원을 거슬러 준다.",
+      "finalCutHookKo": "손님이 떠난 뒤 액자 자리에 동전만 남는다. 동전 속 학이 사라지고, 액자를 든 손님 어깨 위로 긴 흰 날개가 펴진다.",
+      "readerCommentPredictionKo": "액자가 아니라 잔돈 받으러 온 손님이었네."
+    },
+    {
+      "id": "E14",
+      "nameKo": "추가 시간의 출처",
+      "genreKo": "축구 판타지",
+      "scrollGapPx": 350,
+      "penultimateCutKo": "은퇴 경기 종료 1초 전, 노장이 페널티 지역에서 넘어진다. 심판이 난처한 얼굴로 손목시계를 본다.",
+      "finalCutHookKo": "전광판에 추가 시간 3분. 벤치의 막내 휴대폰엔 '선수 수명 3분 양도 완료'.",
+      "readerCommentPredictionKo": "막내가 시즌 내내 3분씩 일찍 교체된 이유가 이거야?"
+    },
+    {
+      "id": "E15",
+      "nameKo": "대역의 커튼콜",
+      "genreKo": "연극 드라마",
+      "scrollGapPx": 410,
+      "penultimateCutKo": "아픈 주연 대신 첫 공연을 마친 대역 배우. 객석이 일어서고 꽃다발이 올라온다.",
+      "finalCutHookKo": "꽃 사이 카드에 주연의 글씨. '박수 끝나도 나오지 마. 객석 맨 앞에 앉은 나, 내가 아니야.'",
+      "readerCommentPredictionKo": "첫 줄에서 계속 한 박자 늦게 박수 치던 사람이구나."
+    },
+    {
+      "id": "E16",
+      "nameKo": "복구된 공백",
+      "genreKo": "근미래 수사극",
+      "scrollGapPx": 600,
+      "penultimateCutKo": "기억 복원사가 의뢰인의 잃어버린 일곱 살 생일을 복구한다. 케이크 앞 아이가 촛불을 끈다.",
+      "finalCutHookKo": "어두워진 화면에서 아이가 복원사를 똑바로 본다. '아저씨, 이번엔 엄마한테 이 부분 팔지 마요.'",
+      "readerCommentPredictionKo": "잊은 쪽이 의뢰인만은 아닌 것 같은데."
+    },
+    {
+      "id": "E17",
+      "nameKo": "봉인보다 작은 열쇠",
+      "genreKo": "던전 판타지",
+      "scrollGapPx": 480,
+      "penultimateCutKo": "백 년간 닫힌 던전 문. 대장장이가 전설의 열쇠를 꽂자 쇳소리가 나지만 문은 그대로다.",
+      "finalCutHookKo": "문 아래 손바닥만 한 쪽문이 열린다. 안에서 작은 손이 빈 밥그릇을 민다. 바닥에 새긴 글씨. '아빠 늦었어.'",
+      "readerCommentPredictionKo": "초반에 대장장이가 검은 못 만들어도 숟가락은 잘 만든다더니."
+    },
+    {
+      "id": "E18",
+      "nameKo": "최종 면접의 질문자",
+      "genreKo": "오피스 역전극",
+      "scrollGapPx": 190,
+      "penultimateCutKo": "십 년 전 자신을 해고한 대표 앞에 다시 앉은 주인공. 대표가 웃으며 이력서를 요구한다.",
+      "finalCutHookKo": "주인공이 이력서 대신 모래시계를 뒤집는다. '대표 재신임 심사입니다. 지난 십 년부터 말씀해 주시죠.'",
+      "readerCommentPredictionKo": "비서가 아까부터 대표 말고 주인공한테 물 따라 준 이유!"
+    },
+    {
+      "id": "E19",
+      "nameKo": "이름을 먹은 출석부",
+      "genreKo": "학원 괴담",
+      "scrollGapPx": 560,
+      "penultimateCutKo": "대답하지 않으면 사라지는 야간 자습 시간. 마지막 학생이 '네'라고 외치자 모두 안도한다.",
+      "finalCutHookKo": "출석부 맨 아래 '담임' 칸이 생긴다. 텅 빈 교탁에서 분필이 굴러온다. '선생님 대신 대답할 사람?'",
+      "readerCommentPredictionKo": "대답하면 살아나는 거야, 그 사람이 평생 담임 되는 거야?"
+    },
+    {
+      "id": "E20",
+      "nameKo": "엔딩 크레디트의 현재형",
+      "genreKo": "메타 로맨스",
+      "scrollGapPx": 620,
+      "penultimateCutKo": "영화 속에 갇힌 주인공이 마침내 정해진 키스 장면을 끝낸다. 두 사람 사이로 흰 크레디트가 오른다.",
+      "finalCutHookKo": "남주가 올라가는 자막 한 줄을 손으로 붙든다. '단역: 너'. 그가 처음으로 카메라 밖을 본다. '이름은 써 주고 끝내야지.'",
+      "readerCommentPredictionKo": "여태 이름 못 물어본 게 대본에 없어서였어?"
+    },
+    {
+      "id": "E21",
+      "nameKo": "고쳐 쓴 혼인 서약",
+      "genreKo": "계약결혼 로맨스",
+      "scrollGapPx": 280,
+      "penultimateCutKo": "계약 만료일, 아내가 이혼 서류를 내민다. 남편은 군말 없이 서명하고 낡은 계약서를 찢는다.",
+      "finalCutHookKo": "그가 남긴 반쪽에 첫 조항만 온전하다. '고용 관계가 끝나기 전에는 고백하지 않는다.' 현관 밖에서 초인종이 울린다.",
+      "readerCommentPredictionKo": "퇴근하고 1초 만에 고백하러 출근한 거냐."
+    },
+    {
+      "id": "E22",
+      "nameKo": "분실물의 주인 찾기",
+      "genreKo": "도시 판타지",
+      "scrollGapPx": 400,
+      "penultimateCutKo": "지하철 분실물 센터. 아이가 투명 우산을 고른다. '이거 우리 엄마 거예요. 펴면 알아요.'",
+      "finalCutHookKo": "우산 안쪽으로만 장맛비가 쏟아진다. 빗속 여자가 김 서린 비닐에 손가락으로 쓴다. '접지 마.'",
+      "readerCommentPredictionKo": "직원님 일단 우산 손잡이 꽉 잡아요."
+    },
+    {
+      "id": "E23",
+      "nameKo": "순위표의 빈 의자",
+      "genreKo": "아이돌 서바이벌",
+      "scrollGapPx": 330,
+      "penultimateCutKo": "데뷔권 마지막 자리에 주인공의 이름이 호명된다. 그런데 그가 데려간 건 탈락한 연습생의 접이식 의자다.",
+      "finalCutHookKo": "의자를 자기 자리 위에 포개고 마이크를 켠다. '한 표를 부정 투표로 신고합니다. 작년에 죽은 제 동생 계정입니다.'",
+      "readerCommentPredictionKo": "한 표 차로 붙었잖아. 저걸 지금 자기 입으로 말한다고?"
+    },
+    {
+      "id": "E24",
+      "nameKo": "만조 때만 닿는 층",
+      "genreKo": "해양 미스터리",
+      "scrollGapPx": 720,
+      "penultimateCutKo": "섬 호텔의 엘리베이터. 만조 알림이 울리자 층수 표시 아래 물결표 하나가 켜진다.",
+      "finalCutHookKo": "문이 열리면 바닷물 한 방울 없는 로비. 실종 전단 속 아이가 늙은 지배인 차림으로 열쇠를 건넨다. '엄마 방은 그대로예요.'",
+      "readerCommentPredictionKo": "엄마한텐 사흘인데 아이는 여기서 몇 년을 기다린 거야."
+    },
+    {
+      "id": "E25",
+      "nameKo": "사과문의 첫 글자",
+      "genreKo": "연예계 미스터리",
+      "scrollGapPx": 250,
+      "penultimateCutKo": "생방송 사과문을 읽는 배우가 자꾸 틀린 곳에서 줄을 바꾼다. 매니저가 카메라 뒤에서 이를 악문다.",
+      "finalCutHookKo": "팬이 자막 줄머리에 점을 찍는다. '내 / 가 / 쓴 / 게 / 아 / 냐'. 배우가 다음 줄을 읽지 않고 카메라를 기다린다.",
+      "readerCommentPredictionKo": "다음 첫 글자까지 실시간으로 팬이 골라 주길 기다리는 건가?"
+    },
+    {
+      "id": "E26",
+      "nameKo": "승객 수의 나머지",
+      "genreKo": "우주 SF",
+      "scrollGapPx": 580,
+      "penultimateCutKo": "동면선의 마지막 승객이 깨어난다. 선장은 300개 캡슐에 빈칸이 없는지 직접 확인한다.",
+      "finalCutHookKo": "착륙 심사 화면. '입국 300명 승인 / 귀국 1명 환영'. 선장 발밑에만 낯선 행성의 집 열쇠가 출력된다.",
+      "readerCommentPredictionKo": "선장이 처음 온 행성 지도를 너무 잘 읽기는 했어."
+    },
+    {
+      "id": "E27",
+      "nameKo": "한 칸 앞선 콘티",
+      "genreKo": "창작 미스터리",
+      "scrollGapPx": 360,
+      "penultimateCutKo": "웹툰 작가가 빈 마지막 칸을 앞에 두고 잠든다. 고양이만 태블릿 앞을 서성인다.",
+      "finalCutHookKo": "아침에 완성된 한 컷. 침대 밑에서 올려다본 작가와 고양이의 얼굴이다. 둘 다 아직 밑을 들여다본 적이 없다.",
+      "readerCommentPredictionKo": "확인하려고 들여다보는 순간 저 컷이 완성되잖아."
+    },
+    {
+      "id": "E28",
+      "nameKo": "호패 반쪽의 짝",
+      "genreKo": "사극 수사물",
+      "scrollGapPx": 310,
+      "penultimateCutKo": "포졸이 도망친 죄인의 반쪽 호패를 증거로 올린다. 현감은 나무의 갈라진 면을 오래 들여다본다.",
+      "finalCutHookKo": "현감이 자기 호패에서 관직을 덧댄 얇은 판을 뗀다. 두 반쪽이 맞물린다. 이어진 이름은 현감도 죄인도 아닌 포졸의 것.",
+      "readerCommentPredictionKo": "증거 올린 포졸은 알고 갖고 온 걸까?"
+    },
+    {
+      "id": "E29",
+      "nameKo": "요일을 건너뛴 도시락",
+      "genreKo": "타임슬립 가족극",
+      "scrollGapPx": 430,
+      "penultimateCutKo": "월요일 아침마다 돌아가신 엄마의 도시락이 문 앞에 온다. 딸은 빈 통에 처음으로 답장을 넣는다. '나 이제 잘 먹고 살아.'",
+      "finalCutHookKo": "다음 날, 화요일인데 도시락이 와 있다. 안에는 반찬 대신 이 빠진 젖니. '엄마, 나 오늘도 혼자 먹어?' 일곱 살 때 자기 글씨다.",
+      "readerCommentPredictionKo": "이제 딸이 자기 어릴 적 도시락 싸 주는 차례구나."
+    },
+    {
+      "id": "E30",
+      "nameKo": "바둑판 밖의 착수",
+      "genreKo": "바둑 성장극",
+      "scrollGapPx": 210,
+      "penultimateCutKo": "프로 입단 최종국. 스승에게 배운 대로라면 한 집 반 승리. 제자가 마지막 흑돌을 든다.",
+      "finalCutHookKo": "맞은편 소녀가 돌통을 여는 순간, 안쪽 뚜껑에 같은 필체의 글씨가 보인다. '그 애가 이 수를 두면 내 왼손이 돌아온 거다.'",
+      "readerCommentPredictionKo": "왼손 다치고 바둑 접은 스승님이 두 사람한테 다른 반쪽씩 가르쳤나."
+    },
+    {
+      "id": "E31",
+      "nameKo": "보증금 대신 맡긴 계절",
+      "genreKo": "자취 판타지",
+      "scrollGapPx": 470,
+      "penultimateCutKo": "가난한 신입생이 보증금 없는 옥탑방 계약서에 도장을 찍는다. 특약은 '봄 한 철 예치'.",
+      "finalCutHookKo": "창밖 벚꽃이 한꺼번에 진다. 고향의 엄마에게서 영상 통화. '얘, 네 졸업식 날 사진에 왜 너만 겨울옷이니?'",
+      "readerCommentPredictionKo": "올봄 한 번이 아니라 인생에 있던 봄을 걷어 간 거야?"
+    },
+    {
+      "id": "E32",
+      "nameKo": "포옹의 시차",
+      "genreKo": "초능력 로맨스",
+      "scrollGapPx": 520,
+      "penultimateCutKo": "늘 5초 뒤의 감촉을 먼저 느끼는 여주. 등을 감싼 온기에 돌아보니 좋아하는 사람이 다가온다.",
+      "finalCutHookKo": "5초 뒤 그는 손을 내민 채 멈춰 있다. 온기는 여전히 등 뒤. 귓가에 자기 목소리가 들린다. '이번엔 저 손 잡지 마.'",
+      "readerCommentPredictionKo": "미래의 내가 말리는 연애라니 이유만 듣고 손잡자."
+    },
+    {
+      "id": "E33",
+      "nameKo": "원본에만 없는 흉터",
+      "genreKo": "미술품 추리",
+      "scrollGapPx": 340,
+      "penultimateCutKo": "감정사가 자화상 두 점을 나란히 놓는다. 뺨의 흉터가 없는 쪽을 진품이라 판정한다. 화가가 다치기 전 작품이므로.",
+      "finalCutHookKo": "불을 끄자 진품 속 화가가 옆 그림을 향해 손을 뻗는다. 액자 사이 벽에 붉은 물감 한 줄. '내일은 내가 아플 차례야.'",
+      "readerCommentPredictionKo": "위작이 원본 대신 늙고 다쳐 온 건가."
+    },
+    {
+      "id": "E34",
+      "nameKo": "무승부의 상속인",
+      "genreKo": "재벌 가족극",
+      "scrollGapPx": 270,
+      "penultimateCutKo": "남매가 유산 분할표에 정확히 절반씩 서명한다. 공증인이 마지막 봉투를 연다. '동률일 때만 공개합니다.'",
+      "finalCutHookKo": "낡은 분식집 외상 장부와 아버지의 메모. '둘이 반반 냈으면, 이제 너희 엄마 몫을 사 와라.' 장부 맨 아래엔 오늘 날짜의 김밥 한 줄.",
+      "readerCommentPredictionKo": "죽은 줄 알았던 엄마가 아직도 그 집에서 외상 긋고 있어?"
+    },
+    {
+      "id": "E35",
+      "nameKo": "배경음의 반 박자",
+      "genreKo": "음악 미스터리",
+      "scrollGapPx": 390,
+      "penultimateCutKo": "해체한 밴드의 마지막 녹음. 드러머였던 주인공은 박자가 밀린 자기 소리만 지워 달라고 한다.",
+      "finalCutHookKo": "드럼 트랙을 꺼도 반 박자 늦은 두드림이 남는다. 유리 너머 텅 빈 부스 바닥이 같은 박자로 들썩인다.",
+      "readerCommentPredictionKo": "녹음 당시에 난 소린데 지금도 밑에서 치고 있다고?"
+    },
+    {
+      "id": "E36",
+      "nameKo": "용사의 반품 기한",
+      "genreKo": "이세계 코미디",
+      "scrollGapPx": 180,
+      "penultimateCutKo": "마왕을 물리친 용사가 원래 세계로 갈 포털을 연다. 왕국 사람들이 환호하며 손수건을 흔든다.",
+      "finalCutHookKo": "포털 너머 편의점 직원이 영수증을 본다. '손님, 세트 상품이라 마왕도 같이 주셔야 환불돼요.' 뒤에서 마왕이 슬그머니 왕관을 벗는다.",
+      "readerCommentPredictionKo": "마왕님 방금까지 시체 연기하고 계셨냐고."
+    },
+    {
+      "id": "E37",
+      "nameKo": "불 꺼진 방의 시청자",
+      "genreKo": "스트리머 스릴러",
+      "scrollGapPx": 650,
+      "penultimateCutKo": "은퇴 방송 종료 버튼을 누른다. 모니터의 시청자 수가 1에서 0으로 내려간다.",
+      "finalCutHookKo": "방 불까지 끄자 모니터에 비친 창문마다 '방송 종료'가 하나씩 뜬다. 맞은편 단 한 집만 '다음 회차 자동 재생'.",
+      "readerCommentPredictionKo": "저 사람 방송을 보던 게 아니라 각자 다른 방송에 나오고 있었나 봐."
+    },
+    {
+      "id": "E38",
+      "nameKo": "유언장의 수신 확인",
+      "genreKo": "회귀 복수극",
+      "scrollGapPx": 290,
+      "penultimateCutKo": "회귀한 상속녀가 지난 생 자신을 배신한 가족들 앞으로 가짜 유언장을 보낸다. 봉투마다 다른 액수를 적었다.",
+      "finalCutHookKo": "보내지 않은 네 번째 봉투가 돌아온다. 발신인은 지난 생의 자신. '숫자 바꾸는 건 세 번째에도 실패했어.'",
+      "readerCommentPredictionKo": "회귀가 처음이라는 기억부터 가짜였네."
+    },
+    {
+      "id": "E39",
+      "nameKo": "입양 사진의 역광",
+      "genreKo": "반려동물 드라마",
+      "scrollGapPx": 440,
+      "penultimateCutKo": "보호소 노견의 입양 사진을 찍는다. 개는 새 보호자를 보지 않고 카메라 뒤 봉사자의 손만 바라본다.",
+      "finalCutHookKo": "인화된 사진 속 개의 눈동자에만 봉사자가 아이로 비친다. 아이 손의 목줄엔 노견의 옛 이름. 봉사자가 사진을 두 손으로 잡는다. '누렁아?'",
+      "readerCommentPredictionKo": "봉사자는 오늘 알아봤는데 개는 첫날부터 알아봤겠지."
+    },
+    {
+      "id": "E40",
+      "nameKo": "전학생의 자리값",
+      "genreKo": "학원 심리극",
+      "scrollGapPx": 230,
+      "penultimateCutKo": "전학생이 유일하게 빈 창가 자리에 앉자 반 아이들의 휴대폰이 일제히 울린다.",
+      "finalCutHookKo": "전학생 폰에만 입금 알림. '착석료 32명분'. 옆자리 아이가 동전을 책상에 놓는다. '난 현금. 대신 넌 내 말도 들어야 돼.'",
+      "readerCommentPredictionKo": "저 자리 반장석이야 피고인석이야?"
+    },
+    {
+      "id": "E41",
+      "nameKo": "눈이 먼저 녹은 발자국",
+      "genreKo": "설산 미스터리",
+      "scrollGapPx": 700,
+      "penultimateCutKo": "고립된 산장에서 구조 신호를 기다린다. 새벽 눈밭에 산장 쪽으로 오는 발자국 한 줄이 나타난다.",
+      "finalCutHookKo": "문 쪽 자국부터 눈이 차례로 녹으며 맨바닥의 글씨가 드러난다. '나가지 마. 이건 내가 나간 자국이야.' 마지막 획은 아직 젖어 있다.",
+      "readerCommentPredictionKo": "들어오는 걸 봤는데 나간 자국이면 시간이 거꾸로 흐르나?"
+    },
+    {
+      "id": "E42",
+      "nameKo": "짝이 바뀐 번역",
+      "genreKo": "외교 로맨스 판타지",
+      "scrollGapPx": 320,
+      "penultimateCutKo": "적국 왕자의 청혼을 통역관이 조약 문구로 순화해 전한다. 여왕은 태연히 평화 협정에 서명한다.",
+      "finalCutHookKo": "여왕이 통역관의 귓가에 정확한 적국 말로 속삭인다. '그가 자네한테 한 청혼을 왜 내가 받아야 하지?'",
+      "readerCommentPredictionKo": "여왕님 1화부터 둘이 눈 맞는 거 다 듣고 계셨네."
+    },
+    {
+      "id": "E43",
+      "nameKo": "마지막 칸의 배송지",
+      "genreKo": "택배 판타지",
+      "scrollGapPx": 370,
+      "penultimateCutKo": "죽은 이의 물건을 배달하는 기사가 마지막 상자를 스캔한다. 수취인도 발송인도 자기 이름.",
+      "finalCutHookKo": "배송지는 주소가 아니라 '오늘 처음 울음을 참은 곳'. 상자 안에서 낮에 웃으며 떠나보낸 딸의 배냇종이 딸랑인다.",
+      "readerCommentPredictionKo": "죽은 사람 물건만 오는 줄 알았는데 대체 누가 보낸 거야."
+    },
+    {
+      "id": "E44",
+      "nameKo": "오답에 찍힌 만점",
+      "genreKo": "입시 학원물",
+      "scrollGapPx": 200,
+      "penultimateCutKo": "모두 같은 모범 답안을 외운 논술 시험. 장학생만 백지를 낸다. 교사가 채점표에 100을 쓴다.",
+      "finalCutHookKo": "교사는 100점짜리 빈 답안지를 시험지 유출 조사관 앞에 놓는다. '이 학생은 문제지까지 백지였어요. 나머지는 뭘 보고 답을 썼죠?'",
+      "readerCommentPredictionKo": "장학생 잡으러 온 조사관이 반 전체를 보게 됐네."
+    },
+    {
+      "id": "E45",
+      "nameKo": "축가의 생략된 주어",
+      "genreKo": "친구 로맨스",
+      "scrollGapPx": 300,
+      "penultimateCutKo": "친구의 결혼식에서 직접 쓴 축가를 부른다. '오래 좋아했어'에서 신랑도 신부도 눈을 내리깐다.",
+      "finalCutHookKo": "반주자가 악보를 한 장 넘긴다. 뒷면에 연필로 쓴 지시. '여기서 네가 날 보면, 다음 절 부를게.' 피아노 소리만 뚝 멎는다.",
+      "readerCommentPredictionKo": "신랑 신부는 알고 자리 만들어 준 거지? 반주자 얼굴 보여 줘."
+    },
+    {
+      "id": "E46",
+      "nameKo": "안개가 걷힌 지도 밖",
+      "genreKo": "항해 모험",
+      "scrollGapPx": 760,
+      "penultimateCutKo": "평생 그린 세계 지도의 마지막 섬에 도착한 지도 제작자. 절벽 끝에서 안개가 갈라진다.",
+      "finalCutHookKo": "바다 너머 거대한 종이 여백에 어린 딸의 글씨가 떠 있다. '아빠, 여기부터는 내가 그려도 돼?' 하늘에서 파란 크레용 끝이 내려온다.",
+      "readerCommentPredictionKo": "잠깐만 따님 아빠 발밑에는 파란색 칠하면 안 돼요."
+    },
+    {
+      "id": "E47",
+      "nameKo": "판결 뒤의 이의 신청",
+      "genreKo": "저승 법정극",
+      "scrollGapPx": 490,
+      "penultimateCutKo": "망자가 무죄를 받고 환생문 앞에 선다. 판사가 마지막으로 묻는다. '이 판결에 이의 있습니까?'",
+      "finalCutHookKo": "망자의 그림자가 발에서 떨어져 증인석에 앉는다. '저 사람은 모릅니다. 밤엔 제가 대신 살았거든요.'",
+      "readerCommentPredictionKo": "그럼 낮에 번 공덕으로 둘 중 누구를 환생시켜야 해?"
+    },
+    {
+      "id": "E48",
+      "nameKo": "결제 직전의 미래 평점",
+      "genreKo": "근미래 블랙코미디",
+      "scrollGapPx": 170,
+      "penultimateCutKo": "미래의 내가 남긴 후기만 보이는 앱. 고민 끝에 청혼 반지를 장바구니에 담자 별 다섯 개가 뜬다.",
+      "finalCutHookKo": "후기를 펼친다. '반지 덕에 이혼은 잘했습니다.' 판매자 답글은 연인의 계정. '다행이다. 그럼 이제 나랑 결혼하자.'",
+      "readerCommentPredictionKo": "청혼 상대랑 이혼 상대가 다르다고? 장바구니 닫지 마."
+    },
+    {
+      "id": "E49",
+      "nameKo": "정각을 거부한 종지기",
+      "genreKo": "중세 판타지",
+      "scrollGapPx": 610,
+      "penultimateCutKo": "자정이 되면 성문 밖 사람들이 돌이 된다. 종지기는 마지막 피난민이 들어설 때까지 밧줄을 쥐고 버틴다.",
+      "finalCutHookKo": "울리지 않은 종 안에서 작은 주먹이 열두 번 두드린다. 종지기의 돌손이 갈라지며 아이 목소리가 샌다. '아빠, 여긴 이제 아침이야.'",
+      "readerCommentPredictionKo": "돌 된 사람들이 사라진 게 아니라 종 저편에서 사는 거였어?"
+    },
+    {
+      "id": "E50",
+      "nameKo": "첫 컷으로 열린 옆문",
+      "genreKo": "루프 미스터리",
+      "scrollGapPx": 800,
+      "penultimateCutKo": "백 번째 하루가 끝난다. 주인공은 늘 첫 장면으로 돌아가는 현관문 대신, 한 번도 열린 적 없는 옆문 앞에서 잠든다.",
+      "finalCutHookKo": "첫 화 첫 컷과 똑같은 아침 식탁. 단, 이번 시점은 식탁 아래다. 어린 주인공이 몰래 건넨 쪽지에 적혀 있다. '드디어 내 차례까지 내려왔네.'",
+      "readerCommentPredictionKo": "첫 화 다시 보러 감. 그때도 식탁보 밑에 손 나와 있었어?"
+    },
+    {
+      "id": "B2-01",
+      "nameKo": "반송된 고백",
+      "genreKo": "캠퍼스 로맨스",
+      "scrollGapPx": 720,
+      "penultimateCutKo": "졸업 날 보냈던 연애편지가 십 년 만에 돌아온다. 봉투엔 ‘수취 거절’.",
+      "finalCutHookKo": "봉투를 뒤집자 뜯었다 붙인 자리에 작은 글씨. ‘거절한 거 나 아니야.’",
+      "readerCommentPredictionKo": "그럼 그때 누가 우편함을 열었는데?"
+    },
+    {
+      "id": "B2-02",
+      "nameKo": "빈칸의 상속인",
+      "genreKo": "재벌 드라마",
+      "scrollGapPx": 640,
+      "penultimateCutKo": "세 남매가 유언장의 빈 서명란을 들여다본다. ‘아버지가 끝내 못 정하셨네.’",
+      "finalCutHookKo": "종이를 든 막내의 손끝에 오돌토돌한 점이 걸린다. 시각장애인 가정부가 손을 내민다. ‘읽어 드릴까요?’",
+      "readerCommentPredictionKo": "1화에서 할아버지가 점자 배우던 게 이거였어?"
+    },
+    {
+      "id": "B2-03",
+      "nameKo": "거꾸로 차는 게이지",
+      "genreKo": "던전 판타지",
+      "scrollGapPx": 540,
+      "penultimateCutKo": "마지막 보스의 체력이 0이 된다. 힐러가 지팡이를 내려놓는다.",
+      "finalCutHookKo": "보스 바 아래 감춰졌던 두 번째 바가 화면을 끝까지 채운다. ‘봉인 해제율 100%’.",
+      "readerCommentPredictionKo": "보스가 우리를 막아 주던 거였냐고"
+    },
+    {
+      "id": "B2-04",
+      "nameKo": "통화 종료 후의 대답",
+      "genreKo": "심리 스릴러",
+      "scrollGapPx": 880,
+      "penultimateCutKo": "혼자 사는 주인공이 엄마와 통화를 끝낸다. ‘응, 나도 사랑해.’ 화면이 꺼진다.",
+      "finalCutHookKo": "소파 등받이 뒤, 전화기 효과음 없는 맨말풍선 하나. ‘엄마는?’",
+      "readerCommentPredictionKo": "저 말풍선 꼬리 때문에 폰 멀리함"
+    },
+    {
+      "id": "B2-05",
+      "nameKo": "왕관의 자국",
+      "genreKo": "궁중 판타지",
+      "scrollGapPx": 600,
+      "penultimateCutKo": "성녀가 왕관을 벗겨 보인다. ‘진짜 왕이라면 이마에 별이 남습니다.’ 왕의 이마는 깨끗하다.",
+      "finalCutHookKo": "왕관을 받치고 있던 시동이 얼른 두 손을 감춘다. 손바닥 한가운데 붉은 별.",
+      "readerCommentPredictionKo": "이마 한정인 줄 안 건 우리랑 성녀뿐이네"
+    },
+    {
+      "id": "B2-06",
+      "nameKo": "유일한 미열람",
+      "genreKo": "오피스 미스터리",
+      "scrollGapPx": 480,
+      "penultimateCutKo": "팀장이 익명 제보를 단톡에 올린다. ‘제보자만 아는 내용입니다.’ 숫자 1만 남는다.",
+      "finalCutHookKo": "회의실 전원이 폰을 든 와중에, 빈 팀원 명단 아래 접속 표시가 뜬다. ‘사내 제보함 봇 · 입력 중’.",
+      "readerCommentPredictionKo": "사람 찾고 있었는데 봇이 제보한 거면 소름"
+    },
+    {
+      "id": "B2-07",
+      "nameKo": "주문보다 먼저 난 맛",
+      "genreKo": "음식 판타지",
+      "scrollGapPx": 560,
+      "penultimateCutKo": "죽은 이의 마지막 끼니를 맛보는 요리사가 손님의 빈 접시에 숟가락을 댄다.",
+      "finalCutHookKo": "입안에 생일 미역국 맛이 번진다. 주방 너머 아들이 부른다. ‘아빠, 내일 생일엔 뭐 해 줄 거야?’",
+      "readerCommentPredictionKo": "내일 그 국 끓이면 안 되는 거지?"
+    },
+    {
+      "id": "B2-08",
+      "nameKo": "사진 밖의 손금",
+      "genreKo": "가족 미스터리",
+      "scrollGapPx": 740,
+      "penultimateCutKo": "실종된 쌍둥이 중 누가 돌아왔는지 묻자 소년이 가족사진 속 왼쪽 아이를 짚는다.",
+      "finalCutHookKo": "엄마는 손가락 대신 사진 액자에 비친 손바닥을 본다. ‘너, 그 사진 찍어 준 애구나.’",
+      "readerCommentPredictionKo": "둘이 아니라 셋이었어?"
+    },
+    {
+      "id": "B2-09",
+      "nameKo": "홈 관중의 침묵",
+      "genreKo": "스포츠",
+      "scrollGapPx": 960,
+      "penultimateCutKo": "무명 투수가 처음으로 시속 160을 찍는다. 특대 숫자 아래 관중석은 기묘하게 조용하다.",
+      "finalCutHookKo": "포수가 일어나 전광판을 가리킨다. 구속 칸은 고장 나 비어 있고, 160은 오늘의 투구 수다.",
+      "readerCommentPredictionKo": "감독 대체 언제부터 카운트 안 봤냐"
+    },
+    {
+      "id": "B2-10",
+      "nameKo": "소문자의 주인",
+      "genreKo": "학원 로맨스",
+      "scrollGapPx": 420,
+      "penultimateCutKo": "익명 고민함에 매일 ‘i’로 답장을 달던 짝사랑 상대가 전학 간다.",
+      "finalCutHookKo": "텅 빈 게시판에 오늘도 붙은 답장. 아래층에서 올려다보면 ‘i’는 거꾸로 쓴 느낌표다. 난간 아래 후배가 웃는다.",
+      "readerCommentPredictionKo": "그래서 맨날 아래층 구도로 나왔구나!"
+    },
+    {
+      "id": "B2-11",
+      "nameKo": "해피엔딩 뒤의 커서",
+      "genreKo": "메타 판타지",
+      "scrollGapPx": 1080,
+      "penultimateCutKo": "악녀가 원작의 결말을 바꾸고 작별한다. 흰 바탕에 ‘끝.’",
+      "finalCutHookKo": "마침표 옆 커서가 두 번 깜빡이더니 한 줄이 추가된다. ‘이상이 피고의 진술입니다.’",
+      "readerCommentPredictionKo": "잠깐 우리 지금까지 누구 진술 읽은 거야"
+    },
+    {
+      "id": "B2-12",
+      "nameKo": "사라진 배경음의 출처",
+      "genreKo": "음악 드라마",
+      "scrollGapPx": 640,
+      "penultimateCutKo": "은퇴한 피아니스트가 무대에서 손을 뗀다. 반주가 멈췄는데 낮은 도가 한 음 더 울린다.",
+      "finalCutHookKo": "무대 밑 연습실에서 어린 딸이 건반을 누르고 있다. ‘틀린 데부터 다시 해, 엄마.’",
+      "readerCommentPredictionKo": "엄마가 옛날에 하던 말 그대로 돌려줬네"
+    },
+    {
+      "id": "B2-13",
+      "nameKo": "틀리지 않은 예보",
+      "genreKo": "재난 SF",
+      "scrollGapPx": 820,
+      "penultimateCutKo": "도시의 마지막 기상캐스터가 맑은 하늘을 등지고 ‘오후 세 시 폭우’를 끝까지 고집한다.",
+      "finalCutHookKo": "세 시 정각, 지하철 계단 아래에서 우산들이 한꺼번에 펼쳐진다. 비는 지하 천장에서 내린다.",
+      "readerCommentPredictionKo": "저 하늘 자체가 지붕인 거 아니야?"
+    },
+    {
+      "id": "B2-14",
+      "nameKo": "빌린 그림자의 반납일",
+      "genreKo": "도시 판타지",
+      "scrollGapPx": 680,
+      "penultimateCutKo": "그림자 전당포에서 겨우 이자를 낸 주인공. 발밑 그림자가 제자리로 기어온다.",
+      "finalCutHookKo": "그림자는 발목까지만 와서 고개를 젓는다. 등에 업은 작은 그림자가 주인공을 향해 손을 흔든다.",
+      "readerCommentPredictionKo": "저당 잡힌 동안 애가 생겼다고?"
+    },
+    {
+      "id": "B2-15",
+      "nameKo": "커플링 안쪽의 직함",
+      "genreKo": "계약 결혼",
+      "scrollGapPx": 520,
+      "penultimateCutKo": "계약 종료 날 남편이 한 번도 빼지 않던 반지를 식탁에 놓고 떠난다.",
+      "finalCutHookKo": "안쪽 각인은 아내 이름이 아니라 ‘소품 2번’. 서랍 속 소품함에는 진짜 결혼반지와 오늘 출발하는 편도표 두 장.",
+      "readerCommentPredictionKo": "소품은 두고 진짜로 떠나자는 거지? 빨리 공항 가"
+    },
+    {
+      "id": "B2-16",
+      "nameKo": "회귀하지 않는 얼룩",
+      "genreKo": "회귀 스릴러",
+      "scrollGapPx": 560,
+      "penultimateCutKo": "일곱 번째 월요일. 머그잔도 깨끗하고 창문도 닫혔다. 완벽한 초기화다.",
+      "finalCutHookKo": "매번 커피를 쏟았던 책상 아래로 시선이 내려간다. 얼룩 일곱 개를 잇자 동료의 책상 밑 얼룩이 답하듯 화살표를 이룬다.",
+      "readerCommentPredictionKo": "혼자 루프 돈 게 아니었잖아"
+    },
+    {
+      "id": "B2-17",
+      "nameKo": "자막이 먼저 아는 이별",
+      "genreKo": "청각장애 로맨스",
+      "scrollGapPx": 500,
+      "penultimateCutKo": "첫 데이트 내내 엉뚱한 자동 자막에 웃던 두 사람. 상대가 입을 열기도 전에 ‘미안해’가 뜬다.",
+      "finalCutHookKo": "실시간 자막 옆 조그만 연필 아이콘. 상대가 테이블 밑에서 직접 친 다음 문장, ‘아직 네 손을 놓기 싫어.’",
+      "readerCommentPredictionKo": "오류인 척 진심 쓰는 거 너무 반칙임"
+    },
+    {
+      "id": "B2-18",
+      "nameKo": "승소 비용 청구서",
+      "genreKo": "법정 판타지",
+      "scrollGapPx": 720,
+      "penultimateCutKo": "악마 변호사가 수명을 담보로 맡긴 의뢰인의 무죄를 받아 낸다. ‘청구는 패소자에게.’",
+      "finalCutHookKo": "피고석의 의뢰인은 그대로인데, 방청석 엄마 머리만 하얗게 센다. 판결문 뒷장에 ‘원고: 어머니’.",
+      "readerCommentPredictionKo": "엄마가 자기 아들을 고소한 이유부터 들어야겠다"
+    },
+    {
+      "id": "B2-19",
+      "nameKo": "두 번째 신부 입장",
+      "genreKo": "현대 멜로",
+      "scrollGapPx": 900,
+      "penultimateCutKo": "신부가 버진로드 끝에 도착한다. 식장 문이 닫히자 또다시 입장곡이 흐른다.",
+      "finalCutHookKo": "신부가 신랑의 손 대신 뒤로 손을 내민다. 늘 하객석에만 앉던 엄마가 면사포를 쓰고 서 있다. ‘이번엔 내가 엄마 손 잡을게.’",
+      "readerCommentPredictionKo": "엄마 서랍 속 오래된 청첩장이 여기서 나오네"
+    },
+    {
+      "id": "B2-20",
+      "nameKo": "택배 무게의 소수점",
+      "genreKo": "생활 미스터리",
+      "scrollGapPx": 460,
+      "penultimateCutKo": "아버지가 남긴 빈 택배 상자들. 무게는 매번 3.21, 4.07, 5.12kg으로 제각각이다.",
+      "finalCutHookKo": "가족 달력의 실종 신고일 6월 19일 위에 마지막 송장을 포갠다. ‘6.19kg / 반송 사유: 아직 안 떠남’.",
+      "readerCommentPredictionKo": "아빠 날짜를 무게 칸에 몰래 적고 계셨네"
+    },
+    {
+      "id": "B2-21",
+      "nameKo": "첫 팬의 탈퇴 사유",
+      "genreKo": "아이돌 성장물",
+      "scrollGapPx": 600,
+      "penultimateCutKo": "첫 1위를 한 밤, 데뷔 전부터 남아 있던 팬클럽 1호의 탈퇴 알림이 뜬다.",
+      "finalCutHookKo": "탈퇴 사유 ‘이제 무대에서 인사할게.’ 내일 합동 무대 큐시트 맨 위, 해체한 옛 듀엣의 이름.",
+      "readerCommentPredictionKo": "1호 팬 설마 먼저 그만둔 멤버였어?"
+    },
+    {
+      "id": "B2-22",
+      "nameKo": "반대편의 구조 신호",
+      "genreKo": "우주 SF",
+      "scrollGapPx": 1000,
+      "penultimateCutKo": "표류선 창밖으로 구조선 불빛이 다가온다. 선장이 모스 신호로 ‘생존자 여섯’을 보낸다.",
+      "finalCutHookKo": "마주 선 창문 너머 똑같은 선장이 고개를 젓고 등 뒤를 가리킨다. 그쪽 창에 비친 이쪽 생존자는 일곱.",
+      "readerCommentPredictionKo": "세어 보러 위로 올라간 사람 나뿐 아니지"
+    },
+    {
+      "id": "B2-23",
+      "nameKo": "오답의 저작권",
+      "genreKo": "입시 드라마",
+      "scrollGapPx": 420,
+      "penultimateCutKo": "모의고사 전교 꼴찌가 만점자와 풀이가 같다며 부정행위로 불려 간다.",
+      "finalCutHookKo": "꼴찌가 풀이 중간의 낙서를 가리킨다. ‘이건 루트가 아니라 제 동생 이름이에요.’ 만점자의 답에도 똑같이 적혀 있다.",
+      "readerCommentPredictionKo": "베낀 방향부터 반대였잖아"
+    },
+    {
+      "id": "B2-24",
+      "nameKo": "없는 방의 이용 후기",
+      "genreKo": "호텔 괴담",
+      "scrollGapPx": 760,
+      "penultimateCutKo": "야간 직원이 존재하지 않는 404호 후기를 지운다. ‘직원분이 문 열어 줘서 살았어요.’",
+      "finalCutHookKo": "삭제 직후 문 두드리는 소리. 프런트 바닥 매트가 들썩이고 그 밑에 거꾸로 박힌 숫자 404가 보인다.",
+      "readerCommentPredictionKo": "호텔에서 방 찾을 때 옆만 보고 있었네"
+    },
+    {
+      "id": "B2-25",
+      "nameKo": "검집에 남은 대사",
+      "genreKo": "무협",
+      "scrollGapPx": 620,
+      "penultimateCutKo": "제자가 실종된 사부의 검을 뽑는다. 검신엔 아무 유언도 새겨져 있지 않다.",
+      "finalCutHookKo": "검집 안에서 늙은 목소리가 한숨을 쉰다. ‘넌 꼭 꺼내야 말을 듣더라.’ 제자 허리의 빈 검집이 혼자 절을 한다.",
+      "readerCommentPredictionKo": "명검 말고 검집이 사부냐고ㅋㅋ"
+    },
+    {
+      "id": "B2-26",
+      "nameKo": "미래 일기의 시제",
+      "genreKo": "타임슬립 로맨스",
+      "scrollGapPx": 540,
+      "penultimateCutKo": "내일 일을 알려 주던 일기장에 ‘우리는 헤어졌다’가 적힌다. 주인공이 약속 장소로 달린다.",
+      "finalCutHookKo": "기다리던 연인이 일기장을 받아 문장 끝에 한 자를 더한다. ‘우리는 헤어졌다가’. 마르지 않은 잉크가 그의 손가락에 묻는다.",
+      "readerCommentPredictionKo": "누가 쓰는지 들켰는데 다음 말은 왜 안 보여 줘"
+    },
+    {
+      "id": "B2-27",
+      "nameKo": "마지막 자리의 예약자",
+      "genreKo": "로드 판타지",
+      "scrollGapPx": 780,
+      "penultimateCutKo": "망자를 태우는 버스에서 기사가 마지막 빈자리를 닦는다. 오늘이 정년이다.",
+      "finalCutHookKo": "종점에서 교복 입은 딸이 운전석을 두드린다. ‘거긴 내 자리야, 아빠. 오늘은 뒤에 타.’",
+      "readerCommentPredictionKo": "딸이 마중 온 건지 데리러 온 건지 너무 무섭다"
+    },
+    {
+      "id": "B2-28",
+      "nameKo": "후원 취소의 선물",
+      "genreKo": "인터넷 방송",
+      "scrollGapPx": 460,
+      "penultimateCutKo": "무명 스트리머가 거액 후원을 돌려준다. ‘병원비라면서요. 치료부터 받아요.’",
+      "finalCutHookKo": "환불 완료와 동시에 방송 제목이 바뀐다. ‘면접 종료’. 시청자 목록에 면접 보러 갔다 떨어졌던 방송국 PD들이 줄지어 뜬다.",
+      "readerCommentPredictionKo": "미담보다 저런 식으로 면접 본 방송국이 더 수상한데"
+    },
+    {
+      "id": "B2-29",
+      "nameKo": "가짜 달의 식",
+      "genreKo": "동양 판타지",
+      "scrollGapPx": 920,
+      "penultimateCutKo": "공주가 연못 속 달을 깨뜨리자 예언대로 하늘의 달도 사라진다.",
+      "finalCutHookKo": "검게 빈 하늘에 손톱만 한 초승달이 다시 뜬다. 연못을 들여다보는 거대한 눈의 흰자위다.",
+      "readerCommentPredictionKo": "하늘이 연못 보고 있던 얼굴이었어?"
+    },
+    {
+      "id": "B2-30",
+      "nameKo": "재생바 밖의 목소리",
+      "genreKo": "연예계 미스터리",
+      "scrollGapPx": 680,
+      "penultimateCutKo": "은퇴 배우의 마지막 인터뷰 영상이 00:00에서 멈춘다. 편집자가 헤드폰을 벗는다.",
+      "finalCutHookKo": "헤드폰을 벗고서야 또렷해지는 한마디. ‘그 부분은 빼 주세요.’ 꺼진 모니터에 배우 대신 등 뒤 의자가 비친다. 방금까지 비어 있던 자리다.",
+      "readerCommentPredictionKo": "화면 안에서 찾던 사람 지금 방 안에 있잖아"
+    },
+    {
+      "id": "B2-31",
+      "nameKo": "대역의 커튼콜",
+      "genreKo": "연극 드라마",
+      "scrollGapPx": 840,
+      "penultimateCutKo": "평생 대역이던 배우가 첫 단독 커튼콜에 선다. 객석 전체가 기립한다.",
+      "finalCutHookKo": "관객들이 무대를 보는 게 아니라 뒤를 돌아본다. 맨 뒷줄의 원로 배우가 그를 향해 무릎을 굽혀 정식으로 배역 인사를 건넨다.",
+      "readerCommentPredictionKo": "배역 물려주는 인사가 1화랑 정확히 반대 방향이네"
+    },
+    {
+      "id": "B2-32",
+      "nameKo": "여권 속 다음 도장",
+      "genreKo": "여행 미스터리",
+      "scrollGapPx": 520,
+      "penultimateCutKo": "기억을 잃은 여자가 여권의 마지막 입국 도장을 따라 고향 공항에 도착한다.",
+      "finalCutHookKo": "심사관이 도장을 들다가 멈춘다. 빈 페이지에 오늘 날짜 잉크가 아직 젖어 있다. ‘손님, 방금 어느 문으로 나가셨어요?’",
+      "readerCommentPredictionKo": "공항에 같은 여권 가진 사람이 또 있는 거잖아"
+    },
+    {
+      "id": "B2-33",
+      "nameKo": "반려견이 고른 유령",
+      "genreKo": "힐링 오컬트",
+      "scrollGapPx": 640,
+      "penultimateCutKo": "유령을 보면 짖는 개 앞에 실종 가족 셋이 선다. 개는 누구에게도 짖지 않는다.",
+      "finalCutHookKo": "안심한 주인공이 돌아서자 개가 처음으로 그의 바지 끝을 물고 낑낑댄다. 가족 셋의 발밑엔 그림자가 있고 그의 발밑만 환하다.",
+      "readerCommentPredictionKo": "짖지도 못하고 붙잡기만 하는 거 너무 슬퍼"
+    },
+    {
+      "id": "B2-34",
+      "nameKo": "마감 원고의 다른 손",
+      "genreKo": "창작 미스터리",
+      "scrollGapPx": 480,
+      "penultimateCutKo": "손목을 다친 작가가 마감 불가 문자를 쓰는데 담당자 답장. ‘원고 잘 받았습니다.’",
+      "finalCutHookKo": "첨부 원고 마지막 칸은 지금의 병실. 침대 밑에서 삐져나온 펜촉이 현실보다 한 획 먼저 그녀의 발을 그린다.",
+      "readerCommentPredictionKo": "지금 침대에서 내려가면 그린 대로 되는 거야?"
+    },
+    {
+      "id": "B2-35",
+      "nameKo": "집값에 포함된 기억",
+      "genreKo": "부동산 판타지",
+      "scrollGapPx": 620,
+      "penultimateCutKo": "오랜 셋방을 드디어 산 부부가 계약서 마지막 조항 ‘기억 일체 승계’에 웃으며 서명한다.",
+      "finalCutHookKo": "서명 직후 둘 다 같은 벽장을 향해 달린다. 문고리에 손이 겹친다. ‘당신도 저 안에서 기다렸어?’",
+      "readerCommentPredictionKo": "집주인 기억이 아니라 집 자체의 기억 아냐?"
+    },
+    {
+      "id": "B2-36",
+      "nameKo": "동점의 다른 의미",
+      "genreKo": "바둑 성장물",
+      "scrollGapPx": 460,
+      "penultimateCutKo": "치매가 온 스승과 둔 마지막 판. 제자가 계가판을 보고 웃는다. ‘오늘도 비겼네요.’",
+      "finalCutHookKo": "스승이 흰 돌 한 알을 제자 손에 쥐여 준다. 돌 밑의 글씨 ‘첫 승’. 스승 쪽 돌통에는 같은 글씨가 새겨진 돌이 가득하다.",
+      "readerCommentPredictionKo": "기억 잊을 때마다 제자 첫 승을 준비한 거야?"
+    },
+    {
+      "id": "B2-37",
+      "nameKo": "왕의 초상 뒷면",
+      "genreKo": "사극 미스터리",
+      "scrollGapPx": 740,
+      "penultimateCutKo": "역모의 증거라는 선왕의 초상. 화공이 겉장을 벗기자 똑같은 왕의 얼굴이 또 나온다.",
+      "finalCutHookKo": "두 장을 햇빛에 겹친다. 얼굴은 포개지는데 목 뒤 점 하나가 옮겨 가 있다. 대비가 휘장을 걷는다. ‘둘 중 누구를 묻었느냐.’",
+      "readerCommentPredictionKo": "대비는 둘이란 걸 처음부터 알고 있었네"
+    },
+    {
+      "id": "B2-38",
+      "nameKo": "빌런이 누른 항소",
+      "genreKo": "히어로 법정물",
+      "scrollGapPx": 540,
+      "penultimateCutKo": "악당에게 무죄가 선고된다. 영웅도 검사도 망연한데 악당만 판결 단말기에 다가간다.",
+      "finalCutHookKo": "‘피고인 항소’ 버튼을 누르는 손. ‘날 유죄로 만들어. 그래야 그날 피해자가 누구였는지 기록에 남아.’",
+      "readerCommentPredictionKo": "얘가 그동안 재판 끈 진짜 이유 뭐야"
+    },
+    {
+      "id": "B2-39",
+      "nameKo": "오늘만 틀린 거울",
+      "genreKo": "뷰티 판타지",
+      "scrollGapPx": 600,
+      "penultimateCutKo": "매일 내일 얼굴을 보여 주던 거울에 처음으로 지금 얼굴이 비친다. 주인공이 안도하며 눈물을 닦는다.",
+      "finalCutHookKo": "거울 속 얼굴은 눈물을 닦지 않는다. 흘러내린 한 줄기가 유리 안쪽 성에를 녹여 ‘하루만 더’라는 손글씨를 드러낸다.",
+      "readerCommentPredictionKo": "내일의 내가 오늘한테 시간 빌리는 거야?"
+    },
+    {
+      "id": "B2-40",
+      "nameKo": "침묵권의 통역",
+      "genreKo": "외교 SF",
+      "scrollGapPx": 660,
+      "penultimateCutKo": "첫 외계 사절이 한 시간째 아무 말도 하지 않는다. 인간 대표가 회담 결렬을 선언하려 한다.",
+      "finalCutHookKo": "통역사가 보청기를 끄자 자막이 쏟아진다. ‘우리도 한 시간째 당신들의 대답을 기다립니다.’ 회담장 식물 잎이 일제히 사절 쪽으로 눕는다.",
+      "readerCommentPredictionKo": "소리 말고 공기 움직임으로 말하는 종족인가"
+    },
+    {
+      "id": "B2-41",
+      "nameKo": "폐점 후 첫 손님",
+      "genreKo": "동네 상권 드라마",
+      "scrollGapPx": 700,
+      "penultimateCutKo": "삼십 년 된 문방구 셔터가 마지막으로 내려온다. 주인이 계산대에서 첫 외상 장부를 꺼낸다.",
+      "finalCutHookKo": "셔터 밑으로 낡은 동전 하나와 쪽지가 밀려온다. ‘지우개값 갚으러 왔어요. 건물값은 제가 받을 차례고요.’",
+      "readerCommentPredictionKo": "그때 그 꼬마가 새 건물주라고? 편인지 적인지 말을 해"
+    },
+    {
+      "id": "B2-42",
+      "nameKo": "엔딩 크레디트의 실종자",
+      "genreKo": "영화 미스터리",
+      "scrollGapPx": 1040,
+      "penultimateCutKo": "실종된 동생을 찾던 언니가 오래된 독립영화의 단역 명단을 끝까지 훑는다. 동생 이름은 없다.",
+      "finalCutHookKo": "검은 화면 맨 밑, 단 한 줄의 ‘이 영화를 언니에게’. 그 아래 오늘 극장 좌석 번호와 같은 숫자 옆으로 작은 화살표가 오른쪽을 가리킨다.",
+      "readerCommentPredictionKo": "옆자리 제발 빈자리 아니라고 해 줘"
+    },
+    {
+      "id": "B2-43",
+      "nameKo": "처음 울린 퇴근 종",
+      "genreKo": "노동 판타지",
+      "scrollGapPx": 520,
+      "penultimateCutKo": "잠들지 않는 광산에 처음으로 퇴근 종이 울린다. 광부들이 환호하며 갱도를 빠져나온다.",
+      "finalCutHookKo": "다 비운 갱도가 거대한 입처럼 하품한다. 관리 장부에 새 출근 도장이 찍힌다. ‘야간 근무자: 산’.",
+      "readerCommentPredictionKo": "그래서 노동자 한 명은 꼭 남으라고 했냐"
+    },
+    {
+      "id": "B2-44",
+      "nameKo": "축의금 봉투의 과거형",
+      "genreKo": "재회 로맨스",
+      "scrollGapPx": 480,
+      "penultimateCutKo": "파혼하고 봉투를 돌려주던 신부가 연락 끊긴 첫사랑 이름을 발견한다.",
+      "finalCutHookKo": "현금 대신 옛날 영화표 반쪽. 뒷면엔 ‘결혼 축하했어.’ 반대편 우체국 도장은 파혼 발표 일주일 전이다.",
+      "readerCommentPredictionKo": "과거형 하나 때문에 다음 화 못 참겠네"
+    },
+    {
+      "id": "B2-45",
+      "nameKo": "한 칸 남은 엘리베이터",
+      "genreKo": "아파트 괴담",
+      "scrollGapPx": 860,
+      "penultimateCutKo": "여덟 명이 탄 8인승 승강기. 층마다 아이가 ‘아직 한 명 더 타요’라며 열림을 누른다.",
+      "finalCutHookKo": "1층에서 일곱이 내리고 아이만 남는다. 그제야 울리는 만원 경보. 아이가 빈 공간을 올려다본다. ‘이제 다 컸네, 아빠.’",
+      "readerCommentPredictionKo": "탈 때마다 빈칸이 커 보이던 게 아빠 자리였어?"
+    },
+    {
+      "id": "B2-46",
+      "nameKo": "지워진 정답의 압흔",
+      "genreKo": "추리 학원물",
+      "scrollGapPx": 500,
+      "penultimateCutKo": "사라진 반장의 쪽지시험 답안은 백지. 친구가 뒷장에 연필을 눕혀 문지른다.",
+      "finalCutHookKo": "글자가 아니라 교실 자리표가 드러난다. 오늘 전학 온 아이 자리만 동그라미. 시험 날짜는 한 달 전이다.",
+      "readerCommentPredictionKo": "전학생 올 거 반장만 미리 알았구나"
+    },
+    {
+      "id": "B2-47",
+      "nameKo": "맞바뀐 구독 알림",
+      "genreKo": "크리에이터 로맨스",
+      "scrollGapPx": 440,
+      "penultimateCutKo": "얼굴 없는 라디오 DJ가 짝사랑하던 청취자에게 마지막 사연을 읽어 준다. ‘이제 방송 꺼요.’",
+      "finalCutHookKo": "방송이 끝나자 옆집 벽 너머에서 익숙한 알림음. 자기 채널이 아니라 딱 한 명만 구독하던 그의 비공개 채널이 켜진다. 제목 ‘이번엔 내가 읽을게’.",
+      "readerCommentPredictionKo": "저 얇은 벽을 사이에 두고 몇 년을 방송한 거야"
+    },
+    {
+      "id": "B2-48",
+      "nameKo": "비어 있는 용의 비늘",
+      "genreKo": "모험 판타지",
+      "scrollGapPx": 720,
+      "penultimateCutKo": "용의 마지막 비늘을 얻은 소녀가 천 장짜리 갑옷의 빈칸을 채운다.",
+      "finalCutHookKo": "완성된 갑옷이 안에서부터 숨을 쉰다. 소녀의 쇄골 아래 비늘 하나가 떨어지며 똑같은 빈칸이 생긴다.",
+      "readerCommentPredictionKo": "용을 살리는 갑옷인 줄 알았는데 용을 옮기는 거였어?"
+    },
+    {
+      "id": "B2-49",
+      "nameKo": "합의서의 세 번째 의자",
+      "genreKo": "이혼 드라마",
+      "scrollGapPx": 600,
+      "penultimateCutKo": "원만히 헤어지기로 한 부부가 조정실에 마주 앉는다. 옆의 작은 의자는 비워 둔다.",
+      "finalCutHookKo": "문이 열리고 성인이 된 딸이 작은 의자 대신 조정위원석에 앉는다. 서류 제목을 고친다. ‘제 양육비 말고, 엄마의 미지급 노동부터요.’",
+      "readerCommentPredictionKo": "작은 의자 볼 때 아직도 딸이 애인 줄 안 건 부모뿐이네"
+    },
+    {
+      "id": "B2-50",
+      "nameKo": "첫 컷으로 열린 뒷문",
+      "genreKo": "루프 미스터리",
+      "scrollGapPx": 1120,
+      "penultimateCutKo": "탈출에 성공한 주인공이 처음 본 골목으로 돌아온다. 간판, 빗줄기, 행인까지 1화 첫 컷 그대로.",
+      "finalCutHookKo": "그가 1화에서는 지나쳤던 독자 쪽을 돌아본다. ‘이번엔 보였지?’ 첫 컷의 하얀 칸 사이로 누군가 문틈처럼 손을 내민다.",
+      "readerCommentPredictionKo": "잠깐만 1화 첫 여백에도 진짜 손 있었나 보고 온다"
+    }
+  ]
+}

@@ -223,5 +223,26 @@ describe("parseScenarioScenesResponse", () => {
     expect(plan.scenes[0]?.continuity?.location).toBe("학교 교실");
     expect(plan.scenes[0]?.continuity?.time).toBe("밤");
   });
+
+  it("extracts JSON object safely when dialogue contains unbalanced braces and masks PII in buildScenarioScenesPrompt", () => {
+    const raw = `설명 {참고}\n${JSON.stringify({
+      characterDescription: "은테 안경 사서",
+      scenes: [{ imagePrompt: "도서관 밤", dialogue: "하늘: [알림] 힘내자 :}" }],
+    })}`;
+    const parsed = parseScenarioScenesResponse(raw);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.scenes[0]?.dialogue).toBe("하늘: [알림] 힘내자 :}");
+    }
+
+    const prompt = buildScenarioScenesPrompt(
+      "서울 강남구 대치동 은마아파트 5동 1201호에서 시작하는 이야기",
+      4,
+      "작가 정산 국민은행 123401-04-987654 / 카톡 ID: secret_writer",
+    );
+    expect(prompt.user).not.toContain("은마아파트 5동 1201호");
+    expect(prompt.user).not.toContain("123401-04-987654");
+    expect(prompt.user).not.toContain("secret_writer");
+  });
 });
 

@@ -16,6 +16,7 @@ import { prepareApprovedDialogueReview } from "./openai-assist/approved-dialogue
 import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
 import {
   DEFAULT_OPENAI_MODEL,
+  isOpenAiReasoningModel,
   redactCreatorSensitiveText,
   resolveStudioOpenAiCreativeConfig,
   StudioOpenAiRateLimiter,
@@ -48,6 +49,18 @@ export {
 
 const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
 const MAX_OUTPUT_TOKENS = 1_400;
+const NON_REASONING_LONG_OUTPUT_TOKENS = 3_200;
+const REASONING_MODEL_MIN_OUTPUT_TOKENS = 4_000;
+const REASONING_MODEL_COMPLEX_OUTPUT_TOKENS = 6_000;
+const COMPLEX_REASONING_ASSIST_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
+  "mcp-workflow-macro",
+]);
+const MULTI_RECORD_NON_REASONING_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
+  "script-to-cuts",
+  "continuity-plot-audit",
+  "localization-glossary-check",
+]);
+const LONG_INPUT_OUTPUT_HEADROOM_CHARS = 800;
 const MAX_ERROR_BODY_BYTES = 8_192;
 
 interface OpenAiRequestOptions {
@@ -62,6 +75,8 @@ interface StructuredCompletion<T> {
   readonly userPrompt: string;
   readonly piiRedactedCount: number;
   readonly maxOutputTokens: number;
+  readonly assistMode?: StudioOpenAiAssistMode;
+  readonly rawInputLength?: number;
   readonly parse: (content: string) => T;
 }
 
@@ -245,6 +260,8 @@ export class StudioOpenAiCreativeAssistService {
       systemInstruction: buildModeSystemInstruction(input.mode),
       schemaSpec: MODE_JSON_SCHEMAS[input.mode],
       maxOutputTokens: MAX_OUTPUT_TOKENS,
+      assistMode: input.mode,
+      rawInputLength: input.inputText.length,
       parse: (raw) => this.parseModeOutput(input.mode, raw),
     }, options);
   }
@@ -309,6 +326,26 @@ export class StudioOpenAiCreativeAssistService {
     try {
       let response: Response;
       let responseText: string;
+      const reasoningModel = isOpenAiReasoningModel(config.model);
+      const rawInputLength = completion.rawInputLength ?? completion.userPrompt.length;
+      const isLongInput = rawInputLength >= LONG_INPUT_OUTPUT_HEADROOM_CHARS;
+      const isComplexReasoningMode =
+        reasoningModel &&
+        completion.assistMode !== undefined &&
+        (COMPLEX_REASONING_ASSIST_MODES.has(completion.assistMode) ||
+          (isLongInput && MULTI_RECORD_NON_REASONING_MODES.has(completion.assistMode)));
+      const needsLongNonReasoningOutput = !reasoningModel && isLongInput;
+      const baseMaxTokens = Math.max(1, completion.maxOutputTokens);
+      const maxCompletionTokens = reasoningModel
+        ? Math.max(
+            baseMaxTokens,
+            isComplexReasoningMode
+              ? REASONING_MODEL_COMPLEX_OUTPUT_TOKENS
+              : REASONING_MODEL_MIN_OUTPUT_TOKENS,
+          )
+        : needsLongNonReasoningOutput
+          ? Math.max(baseMaxTokens, NON_REASONING_LONG_OUTPUT_TOKENS)
+          : baseMaxTokens;
       try {
         response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, {
           method: "POST",
@@ -316,8 +353,8 @@ export class StudioOpenAiCreativeAssistService {
           body: JSON.stringify({
             model: config.model,
             store: false,
-            temperature: 0.65,
-            max_completion_tokens: completion.maxOutputTokens,
+            ...(reasoningModel ? { reasoning_effort: "low" } : { temperature: 0.65 }),
+            max_completion_tokens: maxCompletionTokens,
             messages: [
               { role: "system", content: systemInstruction },
               { role: "user", content: userPrompt },
@@ -399,6 +436,7 @@ export class StudioOpenAiCreativeAssistService {
         });
       }
       if (firstChoice.finish_reason === "length") {
+        quota.release();
         throw new BadGatewayException({
           code: "OPENAI_OUTPUT_TRUNCATED",
           message: "답변이 길어 중간에 잘렸어요. 한 장면이나 짧은 문단 단위로 나누어 요청해 주세요.",
@@ -507,6 +545,19 @@ export class StudioOpenAiCreativeAssistService {
         code: "OPENAI_SCHEMA_MISMATCH",
         message: "AI 보조 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
       });
+    }
+    if (validated.mode === "scroll-pacing-auditor" && validated.data.beatPacing.length > 0) {
+      const meanGap = Math.round(
+        validated.data.beatPacing.reduce((sum, item) => sum + item.recommendedGapPx, 0) /
+          validated.data.beatPacing.length,
+      );
+      const syncedAverageGapPx = Math.min(1_600, Math.max(16, meanGap));
+      if (syncedAverageGapPx !== validated.data.averageGapPx) {
+        return {
+          mode: "scroll-pacing-auditor",
+          data: { ...validated.data, averageGapPx: syncedAverageGapPx },
+        };
+      }
     }
     return validated;
   }

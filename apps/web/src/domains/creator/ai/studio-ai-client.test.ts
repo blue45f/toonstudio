@@ -51,6 +51,7 @@ const CONFIGURED: StudioAiSettings = {
   ...STUDIO_AI_DEFAULT_SETTINGS,
   baseUrl: "https://api.example.com/v1",
   apiKey: "sk-test-key",
+  imageModel: "custom-image-model",
 };
 
 function createAbortAwareFetch() {
@@ -1908,6 +1909,169 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
       const result = await testAiConnection(CONFIGURED);
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.code).toBe("http_error");
+    });
+
+    it("uses max_completion_tokens instead of max_tokens when testing reasoning models", async () => {
+      const mockFetch = vi.fn(
+        async () => new Response(JSON.stringify({ choices: [{ message: { content: "pong" } }] }), { status: 200 }),
+      );
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+      const result = await testAiConnection({ ...CONFIGURED, textModel: "gpt-5.5" });
+      expect(result.ok).toBe(true);
+      const [, init] = mockFetch.mock.calls[0] as unknown as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      expect(body.max_tokens).toBeUndefined();
+      expect(body.max_completion_tokens).toBe(16);
+    });
+  });
+
+  describe("OpenAI reasoning text & gpt-image-* compatibility", () => {
+    it("sends response_format json_object for JSON tasks and omits temperature + uses max_completion_tokens for GPT-5/GPT-6/o3/o4", async () => {
+      const paletteJson = JSON.stringify({
+        name: "밤안개 누아르",
+        colors: [
+          { hex: "#0f172a", role: "주조색" },
+          { hex: "#38bdf8", role: "림라이트" },
+        ],
+      });
+      const mockFetch = vi.fn(async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: paletteJson } }] }), { status: 200 }),
+      );
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+      // 1) Legacy non-reasoning JSON task: keeps temperature & max_tokens AND adds response_format: json_object
+      const legacyResult = await suggestColorPalette(CONFIGURED, "느와르 야간");
+      expect(legacyResult.ok).toBe(true);
+      const legacyBody = JSON.parse((mockFetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+      expect(legacyBody.response_format).toEqual({ type: "json_object" });
+      expect(legacyBody.temperature).toBe(0.7);
+      expect(legacyBody.max_tokens).toBe(500);
+      expect(legacyBody.max_completion_tokens).toBeUndefined();
+
+      // 2) Reasoning model (gpt-5.5 / gpt-6.2-astra): omits temperature, switches to max_completion_tokens >= 2048
+      for (const reasoningModel of ["gpt-5.5", "gpt-6.2-astra", "o3-mini"]) {
+        mockFetch.mockClear();
+        const res = await suggestColorPalette({ ...CONFIGURED, textModel: reasoningModel }, "느와르 야간");
+        expect(res.ok).toBe(true);
+        const body = JSON.parse((mockFetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+        expect(body.model).toBe(reasoningModel);
+        expect(body.temperature).toBeUndefined();
+        expect(body.max_tokens).toBeUndefined();
+        expect(body.max_completion_tokens).toBeGreaterThanOrEqual(2_048);
+        expect(body.response_format).toEqual({ type: "json_object" });
+      }
+
+      // 3) Plain text task (suggestSceneComposition): omits response_format even on reasoning model
+      mockFetch.mockClear();
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ choices: [{ message: { content: "- 로우 앵글 클로즈업" } }] }), { status: 200 }),
+      );
+      const textRes = await suggestSceneComposition({ ...CONFIGURED, textModel: "gpt-5.5" }, "옥상 대치 장면");
+      expect(textRes.ok).toBe(true);
+      const textBody = JSON.parse((mockFetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+      expect(textBody.response_format).toBeUndefined();
+      expect(textBody.temperature).toBeUndefined();
+      expect(textBody.max_completion_tokens).toBeGreaterThanOrEqual(2_048);
+
+      // 4) Top-level JSON array tasks (translateDialogueBatch / suggestDialogueLines):
+      // MUST omit response_format: json_object (which forces a single JSON object and drops array items on OpenAI)
+      mockFetch.mockClear();
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ choices: [{ message: { content: JSON.stringify([{ id: "b1", text: "Hi!" }]) } }] }),
+          { status: 200 },
+        ),
+      );
+      const trRes = await translateDialogueBatch(
+        { ...CONFIGURED, textModel: "gpt-5.5" },
+        [{ id: "b1", text: "안녕!" }],
+        "영어",
+        "",
+      );
+      expect(trRes.ok).toBe(true);
+      const trBody = JSON.parse((mockFetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+      expect(trBody.response_format).toBeUndefined();
+      expect(trBody.max_completion_tokens).toBeGreaterThanOrEqual(2_048);
+
+      mockFetch.mockClear();
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify([{ speaker: "민수", text: "안녕!", kind: "speech" }]) } }],
+          }),
+          { status: 200 },
+        ),
+      );
+      const dlgRes = await suggestDialogueLines({ ...CONFIGURED, textModel: "gpt-6.2-astra" }, "교실 첫인사");
+      expect(dlgRes.ok).toBe(true);
+      const dlgBody = JSON.parse((mockFetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+      expect(dlgBody.response_format).toBeUndefined();
+      expect(dlgBody.max_completion_tokens).toBeGreaterThanOrEqual(2_048);
+    });
+
+    it("omits response_format and normalizes 1024x1792 / 1792x1024 for gpt-image-* across all 5 image functions", async () => {
+      const mockFetch = vi.fn(
+        async () => new Response(JSON.stringify({ data: [{ b64_json: btoa("gpt-image-bytes") }] }), { status: 200 }),
+      );
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+      const gptImageSettings: StudioAiSettings = { ...CONFIGURED, baseUrl: STUDIO_AI_DEFAULT_SETTINGS.baseUrl, imageModel: "gpt-image-1.5" };
+      const samplePng = pngDataUrl(0x55);
+
+      // 1) generateBackgroundImage portrait normalization
+      const bgPortrait = await generateBackgroundImage(gptImageSettings, "비 오는 서울 골목", { size: "1024x1792" });
+      expect(bgPortrait).toMatchObject({ ok: true, data: { width: 1024, height: 1536 } });
+      const bgPortraitBody = JSON.parse((mockFetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+      expect(bgPortraitBody.size).toBe("1024x1536");
+      expect(bgPortraitBody.response_format).toBeUndefined();
+      expect(bgPortraitBody.output_format).toBe("png");
+
+      // 1b) generateBackgroundImage landscape normalization on gpt-image-2.6-sunburst
+      const bgLandscape = await generateBackgroundImage(
+        { ...gptImageSettings, imageModel: "gpt-image-2.6-sunburst" },
+        "노을 지는 옥상",
+        { size: "1792x1024" },
+      );
+      expect(bgLandscape).toMatchObject({ ok: true, data: { width: 1536, height: 1024 } });
+      const bgLandscapeBody = JSON.parse((mockFetch.mock.calls[1] as unknown as [string, RequestInit])[1].body as string);
+      expect(bgLandscapeBody.size).toBe("1536x1024");
+      expect(bgLandscapeBody.response_format).toBeUndefined();
+
+      // 2) colorizeLineArt
+      const colorized = await colorizeLineArt(gptImageSettings, samplePng, "따뜻한 수채화 채색");
+      expect(colorized.ok).toBe(true);
+      expect(((mockFetch.mock.calls[2] as unknown as [string, RequestInit])[1].body as FormData).get("response_format")).toBeNull();
+
+      // 3) convertImageToAnimeStyle
+      const anime = await convertImageToAnimeStyle(gptImageSettings, samplePng);
+      expect(anime.ok).toBe(true);
+      expect(((mockFetch.mock.calls[3] as unknown as [string, RequestInit])[1].body as FormData).get("response_format")).toBeNull();
+
+      // 4) generateConsistentCharacterImage
+      const character = await generateConsistentCharacterImage(gptImageSettings, samplePng, "놀라며 뒤돌아보는 표정");
+      expect(character.ok).toBe(true);
+      expect(((mockFetch.mock.calls[4] as unknown as [string, RequestInit])[1].body as FormData).get("response_format")).toBeNull();
+
+      // 5) generateImageWithRoleReferences
+      const roleRef = await generateImageWithRoleReferences(
+        { ...gptImageSettings, imageModel: "chatgpt-image-latest" },
+        [{ referenceId: "hero", role: "character", dataUrl: samplePng }],
+        "지하철 승강장에서 기다리는 장면",
+      );
+      expect(roleRef.ok).toBe(true);
+      expect(((mockFetch.mock.calls[5] as unknown as [string, RequestInit])[1].body as FormData).get("response_format")).toBeNull();
+
+      // 6) 기기 기본 이미지 모델과 세로 출력 크기
+      expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe("gpt-image-2.6-flare");
+      const defaultPortrait = await generateBackgroundImage(
+        { ...STUDIO_AI_DEFAULT_SETTINGS, apiKey: "sk-test-key" },
+        "새벽 편의점 앞",
+        { size: "1024x1792" },
+      );
+      expect(defaultPortrait).toMatchObject({ ok: true, data: { width: 1024, height: 1536, model: "gpt-image-2.6-flare" } });
+      const defaultBody = JSON.parse((mockFetch.mock.calls[6] as unknown as [string, RequestInit])[1].body as string);
+      expect(defaultBody.size).toBe("1024x1536");
+      expect(defaultBody.response_format).toBeUndefined();
     });
   });
 });

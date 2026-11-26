@@ -1,0 +1,3218 @@
+{
+  "generatedAt": "2026-11-26T04:52:28.009Z",
+  "models": [
+    "gpt-5.5-2026-04-23"
+  ],
+  "themeBatches": 10,
+  "totalPresets": 100,
+  "themes": [
+    {
+      "customId": "bg3d-presets-1",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "서울 도심·지하철·편의점·골목",
+      "presets": [
+        {
+          "id": "seoul-urban-001",
+          "titleKo": "출근길 지하철역 입구 와이드 컷",
+          "timeOfDay": "morning",
+          "lensMm": 24,
+          "fovDeg": 84,
+          "cameraPos": [
+            -6.5,
+            2.1,
+            4.2
+          ],
+          "cameraTarget": [
+            0,
+            1.2,
+            0.4
+          ],
+          "keyLightHex": "#FFF1D0",
+          "rimLightHex": "#8EC5FF",
+          "fogDensity": 0.018,
+          "dofFocusM": 5.5,
+          "props": [
+            "지하철역 2호선 출입구 표지",
+            "에스컬레이터 난간",
+            "출근 인파 실루엣",
+            "교통카드 충전기",
+            "버스정류장 표지",
+            "가로수",
+            "보도블록",
+            "출근용 백팩"
+          ],
+          "webtoonUseCaseKo": "등교·출근 장면의 첫 컷, 주인공이 도시 속으로 들어가는 도입부에 적합"
+        },
+        {
+          "id": "seoul-urban-002",
+          "titleKo": "지하철 개찰구 정면 긴장 컷",
+          "timeOfDay": "noon",
+          "lensMm": 35,
+          "fovDeg": 63,
+          "cameraPos": [
+            0,
+            1.45,
+            6
+          ],
+          "cameraTarget": [
+            0,
+            1.25,
+            0
+          ],
+          "keyLightHex": "#EAF4FF",
+          "rimLightHex": "#7BD0FF",
+          "fogDensity": 0.006,
+          "dofFocusM": 4,
+          "props": [
+            "개찰구 라인",
+            "교통카드 태그 패널",
+            "노선도 벽면",
+            "CCTV",
+            "형광등 천장",
+            "안내 표지판",
+            "무인 정산기",
+            "바닥 유도선"
+          ],
+          "webtoonUseCaseKo": "주인공이 누군가를 발견하거나 추격이 시작되는 순간의 정면 구도에 적합"
+        },
+        {
+          "id": "seoul-urban-003",
+          "titleKo": "전동차 문 앞 로우앵글 대치 컷",
+          "timeOfDay": "night",
+          "lensMm": 28,
+          "fovDeg": 75,
+          "cameraPos": [
+            -1.8,
+            0.55,
+            3.2
+          ],
+          "cameraTarget": [
+            0,
+            1.45,
+            0.2
+          ],
+          "keyLightHex": "#D9F2FF",
+          "rimLightHex": "#FF4F7B",
+          "fogDensity": 0.01,
+          "dofFocusM": 2.8,
+          "props": [
+            "열린 전동차 문",
+            "스크린도어 경고 스티커",
+            "발 빠짐 주의 표지",
+            "플랫폼 안전선",
+            "LED 행선지 표시기",
+            "손잡이 실루엣",
+            "반사 바닥",
+            "승객 다리 실루엣"
+          ],
+          "webtoonUseCaseKo": "전철 탑승 직전의 대치, 이별, 추격 장면에서 인물의 압박감을 강조하기 좋음"
+        },
+        {
+          "id": "seoul-urban-004",
+          "titleKo": "비 오는 편의점 앞 네온 감성 컷",
+          "timeOfDay": "night",
+          "lensMm": 50,
+          "fovDeg": 47,
+          "cameraPos": [
+            -3,
+            1.35,
+            4.5
+          ],
+          "cameraTarget": [
+            0,
+            1.25,
+            0
+          ],
+          "keyLightHex": "#B8E7FF",
+          "rimLightHex": "#FF6AD5",
+          "fogDensity": 0.035,
+          "dofFocusM": 4.2,
+          "props": [
+            "편의점 유리문",
+            "삼각김밥 포스터",
+            "우산꽂이",
+            "젖은 아스팔트",
+            "네온 간판",
+            "플라스틱 의자",
+            "행사용 배너",
+            "빗물 웅덩이"
+          ],
+          "webtoonUseCaseKo": "밤비 속 만남, 고백 전 침묵, 아르바이트 퇴근 장면의 감성 컷에 적합"
+        },
+        {
+          "id": "seoul-urban-005",
+          "titleKo": "편의점 내부 계산대 오버숄더 컷",
+          "timeOfDay": "night",
+          "lensMm": 35,
+          "fovDeg": 63,
+          "cameraPos": [
+            1.2,
+            1.65,
+            2.8
+          ],
+          "cameraTarget": [
+            -0.4,
+            1.35,
+            0.2
+          ],
+          "keyLightHex": "#FFFFFF",
+          "rimLightHex": "#80FFEA",
+          "fogDensity": 0.002,
+          "dofFocusM": 2,
+          "props": [
+            "계산대 POS기",
+            "바코드 스캐너",
+            "담배 진열장",
+            "즉석커피 머신",
+            "행사 POP",
+            "카드 단말기",
+            "봉투 걸이",
+            "계산대 앞 초콜릿 진열대"
+          ],
+          "webtoonUseCaseKo": "손님과 알바생의 대화, 결제 중 어색한 재회, 단서가 오가는 컷에 좋음"
+        },
+        {
+          "id": "seoul-urban-006",
+          "titleKo": "서울 골목길 석양 역광 추적 컷",
+          "timeOfDay": "sunset",
+          "lensMm": 70,
+          "fovDeg": 34,
+          "cameraPos": [
+            -5,
+            1.2,
+            7
+          ],
+          "cameraTarget": [
+            0,
+            1.25,
+            0
+          ],
+          "keyLightHex": "#FFB15E",
+          "rimLightHex": "#FFD9A0",
+          "fogDensity": 0.02,
+          "dofFocusM": 6,
+          "props": [
+            "좁은 골목 담벼락",
+            "전봇대",
+            "전선 뭉치",
+            "오토바이",
+            "분리수거 봉투",
+            "낡은 철문",
+            "에어컨 실외기",
+            "골목 끝 석양"
+          ],
+          "webtoonUseCaseKo": "도망치는 인물, 뒤쫓는 시선, 과거 회상으로 전환되는 석양 골목 장면에 적합"
+        },
+        {
+          "id": "seoul-urban-007",
+          "titleKo": "고시원 골목 심야 공포 컷",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 84,
+          "cameraPos": [
+            2.5,
+            1.1,
+            5.2
+          ],
+          "cameraTarget": [
+            0,
+            1.4,
+            0.1
+          ],
+          "keyLightHex": "#6FA8FF",
+          "rimLightHex": "#B6FF5C",
+          "fogDensity": 0.045,
+          "dofFocusM": 3.5,
+          "props": [
+            "고시원 간판",
+            "깜빡이는 보안등",
+            "좁은 계단",
+            "녹슨 방범창",
+            "배달 음식 봉투",
+            "검은 쓰레기봉투",
+            "벽 낙서",
+            "골목 CCTV"
+          ],
+          "webtoonUseCaseKo": "스릴러·미스터리에서 뒤따라오는 기척, 실종 단서 발견, 불길한 귀가 장면에 적합"
+        },
+        {
+          "id": "seoul-urban-008",
+          "titleKo": "대로변 횡단보도 하이앵글 컷",
+          "timeOfDay": "noon",
+          "lensMm": 18,
+          "fovDeg": 100,
+          "cameraPos": [
+            0,
+            8,
+            6
+          ],
+          "cameraTarget": [
+            0,
+            0.9,
+            0
+          ],
+          "keyLightHex": "#F5F7FF",
+          "rimLightHex": "#BFD7FF",
+          "fogDensity": 0.004,
+          "dofFocusM": 9,
+          "props": [
+            "대형 횡단보도",
+            "차선 표시",
+            "택시",
+            "버스",
+            "신호등",
+            "상가 간판",
+            "인도 펜스",
+            "건물 유리 파사드"
+          ],
+          "webtoonUseCaseKo": "도심 규모감을 보여주는 전환 컷, 인물의 고립감이나 약속 장소 도착 장면에 적합"
+        },
+        {
+          "id": "seoul-urban-009",
+          "titleKo": "지하상가 계단 아래 시선 컷",
+          "timeOfDay": "noon",
+          "lensMm": 28,
+          "fovDeg": 75,
+          "cameraPos": [
+            0,
+            0.75,
+            -3.8
+          ],
+          "cameraTarget": [
+            0,
+            1.8,
+            1.2
+          ],
+          "keyLightHex": "#F0FFF8",
+          "rimLightHex": "#FFE27A",
+          "fogDensity": 0.012,
+          "dofFocusM": 3.2,
+          "props": [
+            "지하상가 계단",
+            "타일 벽",
+            "화장품 매장 간판",
+            "휴대폰 케이스 진열대",
+            "천장 형광등",
+            "방향 안내판",
+            "계단 손잡이",
+            "벽면 광고 포스터"
+          ],
+          "webtoonUseCaseKo": "계단 위에서 인물이 등장하는 장면, 우연한 마주침, 아래에서 올려다보는 심리적 압박 컷에 좋음"
+        },
+        {
+          "id": "seoul-urban-010",
+          "titleKo": "새벽 편의점 뒷골목 비밀 대화 컷",
+          "timeOfDay": "morning",
+          "lensMm": 85,
+          "fovDeg": 28,
+          "cameraPos": [
+            -2.2,
+            1.55,
+            4
+          ],
+          "cameraTarget": [
+            0,
+            1.45,
+            0
+          ],
+          "keyLightHex": "#D6ECFF",
+          "rimLightHex": "#FF9E6E",
+          "fogDensity": 0.03,
+          "dofFocusM": 3.8,
+          "props": [
+            "편의점 후문",
+            "맥주 박스",
+            "파란 플라스틱 팔레트",
+            "담배꽁초 재떨이",
+            "음료수 박스",
+            "실외기 팬",
+            "새벽 배달 오토바이",
+            "희미한 간판 불빛"
+          ],
+          "webtoonUseCaseKo": "밤샘 후 속마음 고백, 비밀 거래, 사건의 진실을 털어놓는 클로즈업 대화 장면에 적합"
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-2",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "한국 고등학교 교실·복도·옥상·운동장",
+      "presets": [
+        {
+          "id": "kr-highschool-01-classroom-window-morning",
+          "titleKo": "아침 창가 자리 감성 클로즈업",
+          "timeOfDay": "morning",
+          "lensMm": 50,
+          "fovDeg": 39.6,
+          "cameraPos": [
+            2.2,
+            1.45,
+            3.1
+          ],
+          "cameraTarget": [
+            0.4,
+            1.25,
+            0.2
+          ],
+          "keyLightHex": "#FFE2A8",
+          "rimLightHex": "#BBD7FF",
+          "fogDensity": 0.012,
+          "dofFocusM": 2.1,
+          "props": [
+            "2인용 책상과 의자 배열",
+            "창가 커튼",
+            "교과서와 필통",
+            "학생 가방",
+            "칠판 일부",
+            "분필 가루",
+            "창문 블라인드 그림자"
+          ],
+          "webtoonUseCaseKo": "전학생 첫 등장, 짝사랑 상대를 바라보는 장면, 아침 햇살 속 독백 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-02-classroom-board-noon",
+          "titleKo": "정오 수업 중 칠판 정면 와이드",
+          "timeOfDay": "noon",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            0,
+            1.7,
+            6.4
+          ],
+          "cameraTarget": [
+            0,
+            1.55,
+            0
+          ],
+          "keyLightHex": "#F4F7FF",
+          "rimLightHex": "#D6E8FF",
+          "fogDensity": 0.004,
+          "dofFocusM": 5.8,
+          "props": [
+            "대형 칠판",
+            "교탁",
+            "분필과 지우개",
+            "벽시계",
+            "태극기",
+            "급훈 액자",
+            "줄 맞춘 책상들",
+            "형광등"
+          ],
+          "webtoonUseCaseKo": "선생님 수업 장면, 반 전체 분위기 설명, 시험 공지나 중요한 발표 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-03-classroom-afterclass-sunset",
+          "titleKo": "방과 후 빈 교실 노을 역광",
+          "timeOfDay": "sunset",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            -3.1,
+            1.35,
+            3.8
+          ],
+          "cameraTarget": [
+            0.2,
+            1.15,
+            0.4
+          ],
+          "keyLightHex": "#FF9E5C",
+          "rimLightHex": "#6A8CFF",
+          "fogDensity": 0.018,
+          "dofFocusM": 3.4,
+          "props": [
+            "비어 있는 책상들",
+            "창문으로 들어오는 노을",
+            "흩어진 시험지",
+            "열린 사물함",
+            "반쯤 내려간 블라인드",
+            "교실 바닥 긴 그림자"
+          ],
+          "webtoonUseCaseKo": "고백 직전의 정적, 혼자 남은 주인공의 회상, 갈등 후 쓸쓸한 분위기 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-04-corridor-lockers-morning",
+          "titleKo": "등교 시간 복도 로커 원근샷",
+          "timeOfDay": "morning",
+          "lensMm": 28,
+          "fovDeg": 65.5,
+          "cameraPos": [
+            -4.5,
+            1.55,
+            1.2
+          ],
+          "cameraTarget": [
+            2.4,
+            1.45,
+            1.05
+          ],
+          "keyLightHex": "#FFF0C8",
+          "rimLightHex": "#C9E2FF",
+          "fogDensity": 0.01,
+          "dofFocusM": 4.2,
+          "props": [
+            "긴 복도",
+            "개인 사물함",
+            "교실 문",
+            "게시판",
+            "출석부함",
+            "바닥 반사광",
+            "창문 격자 그림자"
+          ],
+          "webtoonUseCaseKo": "등교 중 마주침, 소문이 퍼지는 복도 장면, 빠르게 지나가는 캐릭터 동선 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-05-corridor-rainy-night",
+          "titleKo": "야간 비 오는 복도 형광등 긴장감",
+          "timeOfDay": "night",
+          "lensMm": 40,
+          "fovDeg": 48.5,
+          "cameraPos": [
+            1.1,
+            1.6,
+            5.2
+          ],
+          "cameraTarget": [
+            0.2,
+            1.45,
+            0.6
+          ],
+          "keyLightHex": "#CFE8FF",
+          "rimLightHex": "#7BA4FF",
+          "fogDensity": 0.026,
+          "dofFocusM": 4.6,
+          "props": [
+            "꺼진 교실 문",
+            "깜빡이는 형광등",
+            "젖은 우산꽂이",
+            "비 내리는 창문",
+            "청소도구함",
+            "복도 끝 비상구 표시등"
+          ],
+          "webtoonUseCaseKo": "비밀 대화, 야간 자습 후 사건 발생, 스릴러풍 전환 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-06-stairwell-confession-sunset",
+          "titleKo": "계단참 노을 고백 앵글",
+          "timeOfDay": "sunset",
+          "lensMm": 55,
+          "fovDeg": 36.2,
+          "cameraPos": [
+            -1.6,
+            1.25,
+            2.4
+          ],
+          "cameraTarget": [
+            0.15,
+            1.35,
+            0.2
+          ],
+          "keyLightHex": "#FFB16E",
+          "rimLightHex": "#8FA7FF",
+          "fogDensity": 0.014,
+          "dofFocusM": 2.5,
+          "props": [
+            "계단 난간",
+            "층수 표지판",
+            "창문 노을빛",
+            "벽면 생활지도 포스터",
+            "실내화 자국",
+            "낡은 논슬립 계단"
+          ],
+          "webtoonUseCaseKo": "고백, 사과, 둘만의 비밀 대화처럼 좁고 밀도 높은 감정 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-07-rooftop-fence-noon",
+          "titleKo": "옥상 펜스 청춘 와이드",
+          "timeOfDay": "noon",
+          "lensMm": 21,
+          "fovDeg": 81.2,
+          "cameraPos": [
+            0,
+            1.55,
+            7.2
+          ],
+          "cameraTarget": [
+            0,
+            1.25,
+            0.4
+          ],
+          "keyLightHex": "#FFFFFF",
+          "rimLightHex": "#B7D8FF",
+          "fogDensity": 0.006,
+          "dofFocusM": 6.5,
+          "props": [
+            "옥상 철망 펜스",
+            "급수탱크",
+            "옥상 출입문",
+            "환풍구",
+            "파란 하늘",
+            "바닥 방수 페인트",
+            "멀리 보이는 아파트 단지"
+          ],
+          "webtoonUseCaseKo": "점심시간 옥상 대화, 청춘물 타이틀 컷, 자유로운 분위기의 오프닝 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-08-rooftop-night-city",
+          "titleKo": "밤 옥상 도시 불빛 실루엣",
+          "timeOfDay": "night",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            -2.8,
+            1.45,
+            4.6
+          ],
+          "cameraTarget": [
+            0,
+            1.35,
+            0.1
+          ],
+          "keyLightHex": "#8FB7FF",
+          "rimLightHex": "#FFD39A",
+          "fogDensity": 0.032,
+          "dofFocusM": 4,
+          "props": [
+            "옥상 펜스",
+            "도시 야경",
+            "희미한 출입문 조명",
+            "벤치 대용 콘크리트 블록",
+            "캔커피",
+            "바람에 흔들리는 학교 깃발"
+          ],
+          "webtoonUseCaseKo": "밤의 진심 고백, 갈등 후 화해, 도시 야경을 배경으로 한 실루엣 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-09-playground-sports-noon",
+          "titleKo": "운동장 체육 시간 역동 로우앵글",
+          "timeOfDay": "noon",
+          "lensMm": 18,
+          "fovDeg": 90,
+          "cameraPos": [
+            -3.2,
+            0.55,
+            4.8
+          ],
+          "cameraTarget": [
+            0.8,
+            1.15,
+            0.1
+          ],
+          "keyLightHex": "#FFF7E8",
+          "rimLightHex": "#BFD7FF",
+          "fogDensity": 0.008,
+          "dofFocusM": 4.4,
+          "props": [
+            "축구 골대",
+            "흙 운동장",
+            "트랙 라인",
+            "체육복 바구니",
+            "농구대",
+            "멀리 보이는 교사동",
+            "날리는 먼지"
+          ],
+          "webtoonUseCaseKo": "체육대회, 축구나 달리기 액션, 주인공의 활약을 강조하는 박력 컷에 적합"
+        },
+        {
+          "id": "kr-highschool-10-playground-assembly-morning",
+          "titleKo": "아침 조회 운동장 단체 구도",
+          "timeOfDay": "morning",
+          "lensMm": 30,
+          "fovDeg": 60.7,
+          "cameraPos": [
+            0,
+            4.2,
+            9.5
+          ],
+          "cameraTarget": [
+            0,
+            1.1,
+            0
+          ],
+          "keyLightHex": "#FFE8B5",
+          "rimLightHex": "#D3EAFF",
+          "fogDensity": 0.011,
+          "dofFocusM": 8.2,
+          "props": [
+            "운동장 조회대",
+            "학급별 정렬 라인",
+            "스피커와 마이크",
+            "국기 게양대",
+            "교사동 전경",
+            "현수막",
+            "조회용 의자 더미"
+          ],
+          "webtoonUseCaseKo": "개학식, 체육대회 개회, 전교생이 모인 사건 발표나 군중 장면의 배경 컷에 적합"
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-3",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "로판 귀족 저택·연회장·정원·마차",
+      "presets": [
+        {
+          "id": "rp_mansion_01",
+          "titleKo": "대저택 정문 도착 로우앵글",
+          "timeOfDay": "sunset",
+          "lensMm": 28,
+          "fovDeg": 65,
+          "cameraPos": [
+            -6,
+            2.1,
+            9
+          ],
+          "cameraTarget": [
+            0,
+            3.2,
+            0
+          ],
+          "keyLightHex": "#F6B36A",
+          "rimLightHex": "#FFE6B8",
+          "fogDensity": 0.018,
+          "dofFocusM": 9.5,
+          "props": [
+            "철제 대문",
+            "가문 문장 현판",
+            "자갈 진입로",
+            "분수대",
+            "가스등 기둥",
+            "마차 바퀴 자국",
+            "정원수 울타리"
+          ],
+          "webtoonUseCaseKo": "여주가 처음 공작가에 도착하거나, 압도적인 저택 규모를 보여주는 도입 컷에 적합한 프리셋."
+        },
+        {
+          "id": "rp_mansion_02",
+          "titleKo": "대리석 현관 계단 영접 컷",
+          "timeOfDay": "morning",
+          "lensMm": 35,
+          "fovDeg": 54,
+          "cameraPos": [
+            3.5,
+            1.6,
+            6.5
+          ],
+          "cameraTarget": [
+            0,
+            1.9,
+            1
+          ],
+          "keyLightHex": "#FFF2D0",
+          "rimLightHex": "#DCEBFF",
+          "fogDensity": 0.006,
+          "dofFocusM": 5.8,
+          "props": [
+            "대리석 계단",
+            "황금 난간",
+            "양문형 현관문",
+            "붉은 카펫",
+            "화병 장식",
+            "하인 대기 위치 마커",
+            "문장 깃발"
+          ],
+          "webtoonUseCaseKo": "집사가 손님을 맞이하거나 귀족 남주가 계단 위에서 내려다보는 위계감 있는 등장 컷에 적합."
+        },
+        {
+          "id": "rp_mansion_03",
+          "titleKo": "연회장 샹들리에 와이드 establishing",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 74,
+          "cameraPos": [
+            0,
+            4.2,
+            11
+          ],
+          "cameraTarget": [
+            0,
+            2.6,
+            0
+          ],
+          "keyLightHex": "#FFD89A",
+          "rimLightHex": "#BFD7FF",
+          "fogDensity": 0.012,
+          "dofFocusM": 10,
+          "props": [
+            "대형 샹들리에",
+            "무도회장 바닥",
+            "금장 기둥",
+            "긴 연회 테이블",
+            "촛대",
+            "발코니 난간",
+            "악단석",
+            "벽면 거울"
+          ],
+          "webtoonUseCaseKo": "무도회 시작 전 전체 규모를 보여주거나 화려한 귀족 사회 분위기를 한 컷에 전달할 때 사용."
+        },
+        {
+          "id": "rp_mansion_04",
+          "titleKo": "무도회 댄스 플로어 회전 시점",
+          "timeOfDay": "night",
+          "lensMm": 50,
+          "fovDeg": 40,
+          "cameraPos": [
+            -2.2,
+            1.45,
+            4.2
+          ],
+          "cameraTarget": [
+            0,
+            1.55,
+            0.4
+          ],
+          "keyLightHex": "#FFE0A6",
+          "rimLightHex": "#C9B7FF",
+          "fogDensity": 0.01,
+          "dofFocusM": 3.6,
+          "props": [
+            "원형 댄스 플로어",
+            "촛불 스탠드",
+            "흩날리는 꽃잎",
+            "드레스 실루엣 스탠드인",
+            "턱시도 실루엣 스탠드인",
+            "배경 귀족 군중 카드"
+          ],
+          "webtoonUseCaseKo": "남녀 주인공이 춤추며 가까워지는 장면, 회전감 있는 로맨스 클로즈업 배경에 적합."
+        },
+        {
+          "id": "rp_mansion_05",
+          "titleKo": "연회장 발코니 비밀 대화",
+          "timeOfDay": "night",
+          "lensMm": 70,
+          "fovDeg": 29,
+          "cameraPos": [
+            1.8,
+            1.55,
+            3.2
+          ],
+          "cameraTarget": [
+            0,
+            1.45,
+            0.2
+          ],
+          "keyLightHex": "#DDEBFF",
+          "rimLightHex": "#FFD3A3",
+          "fogDensity": 0.02,
+          "dofFocusM": 2.4,
+          "props": [
+            "석재 발코니",
+            "얇은 커튼",
+            "장미 화분",
+            "난간 그림자",
+            "달빛 고보",
+            "와인잔",
+            "닫힌 유리문"
+          ],
+          "webtoonUseCaseKo": "연회장에서 빠져나온 주인공들이 은밀한 대화를 나누거나 고백 직전의 긴장감을 만들 때 사용."
+        },
+        {
+          "id": "rp_mansion_06",
+          "titleKo": "귀족 저택 서재 계약 장면",
+          "timeOfDay": "noon",
+          "lensMm": 45,
+          "fovDeg": 45,
+          "cameraPos": [
+            2.4,
+            1.35,
+            3.8
+          ],
+          "cameraTarget": [
+            0,
+            1.25,
+            0.4
+          ],
+          "keyLightHex": "#FFF0C2",
+          "rimLightHex": "#8FB3FF",
+          "fogDensity": 0.004,
+          "dofFocusM": 3.2,
+          "props": [
+            "마호가니 책상",
+            "가죽 의자",
+            "봉랍 편지",
+            "계약서",
+            "깃펜과 잉크병",
+            "대형 책장",
+            "벽난로",
+            "가문 초상화"
+          ],
+          "webtoonUseCaseKo": "정략결혼 계약, 유산 상속, 비밀 거래 등 대사 중심의 실내 귀족 정치 장면에 적합."
+        },
+        {
+          "id": "rp_garden_07",
+          "titleKo": "장미 정원 산책 롱샷",
+          "timeOfDay": "morning",
+          "lensMm": 35,
+          "fovDeg": 54,
+          "cameraPos": [
+            -4,
+            1.7,
+            7
+          ],
+          "cameraTarget": [
+            0,
+            1.4,
+            0
+          ],
+          "keyLightHex": "#FFF6D8",
+          "rimLightHex": "#CDEEFF",
+          "fogDensity": 0.014,
+          "dofFocusM": 7,
+          "props": [
+            "장미 아치",
+            "자갈 산책로",
+            "정원 벤치",
+            "새장 장식",
+            "낮은 분수",
+            "나비 파티클",
+            "손질된 생울타리"
+          ],
+          "webtoonUseCaseKo": "약혼자와의 산책, 첫 만남 회상, 평온한 귀족 일상을 보여주는 로맨틱한 롱샷에 적합."
+        },
+        {
+          "id": "rp_garden_08",
+          "titleKo": "정원 분수 앞 감정 폭발 클로즈 배경",
+          "timeOfDay": "sunset",
+          "lensMm": 85,
+          "fovDeg": 24,
+          "cameraPos": [
+            0.9,
+            1.5,
+            2.6
+          ],
+          "cameraTarget": [
+            0,
+            1.45,
+            0.3
+          ],
+          "keyLightHex": "#FFB071",
+          "rimLightHex": "#FFDDE8",
+          "fogDensity": 0.018,
+          "dofFocusM": 2.1,
+          "props": [
+            "대리석 분수",
+            "흩어진 장미꽃",
+            "젖은 돌바닥",
+            "석조 천사상",
+            "노을빛 수면 반사",
+            "실크 손수건",
+            "정원 램프"
+          ],
+          "webtoonUseCaseKo": "이별 통보, 질투, 눈물 고백처럼 인물 감정이 크게 드러나는 정원 클로즈업 배경에 적합."
+        },
+        {
+          "id": "rp_carriage_09",
+          "titleKo": "마차 내부 맞은편 대화 컷",
+          "timeOfDay": "night",
+          "lensMm": 40,
+          "fovDeg": 50,
+          "cameraPos": [
+            0,
+            1.15,
+            1.9
+          ],
+          "cameraTarget": [
+            0,
+            1.1,
+            0
+          ],
+          "keyLightHex": "#F8C982",
+          "rimLightHex": "#6F8EDC",
+          "fogDensity": 0.006,
+          "dofFocusM": 1.8,
+          "props": [
+            "벨벳 마차 좌석",
+            "작은 창문",
+            "흔들리는 커튼",
+            "휴대용 랜턴",
+            "가죽 손잡이",
+            "무릎담요",
+            "문장 장식 쿠션"
+          ],
+          "webtoonUseCaseKo": "마차 안에서 마주 앉은 주인공들의 어색한 침묵, 정치적 대화, 갑작스러운 설렘 장면에 적합."
+        },
+        {
+          "id": "rp_carriage_10",
+          "titleKo": "마차 추격 비스듬한 다이내믹 샷",
+          "timeOfDay": "night",
+          "lensMm": 30,
+          "fovDeg": 62,
+          "cameraPos": [
+            -3,
+            1.2,
+            4.5
+          ],
+          "cameraTarget": [
+            0,
+            1.1,
+            0.2
+          ],
+          "keyLightHex": "#D9E8FF",
+          "rimLightHex": "#FFB45C",
+          "fogDensity": 0.035,
+          "dofFocusM": 4.2,
+          "props": [
+            "검은 귀족 마차",
+            "말 실루엣",
+            "진흙길",
+            "튀는 물방울",
+            "가로등 번짐",
+            "흩날리는 망토",
+            "원근 속도선용 울타리"
+          ],
+          "webtoonUseCaseKo": "암살자 추격, 급히 도망치는 밤길, 납치 마차를 쫓는 액션 컷처럼 속도감이 필요한 장면에 적합."
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-4",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "무협 객잔·대나무숲·절벽·비무대회장",
+      "presets": [
+        {
+          "id": "wuxia_inn_entrance_low_angle_01",
+          "titleKo": "객잔 현판 아래 첫 등장 로우앵글",
+          "timeOfDay": "sunset",
+          "lensMm": 28,
+          "fovDeg": 65,
+          "cameraPos": [
+            -3.2,
+            1.1,
+            5.8
+          ],
+          "cameraTarget": [
+            0,
+            2.4,
+            0.2
+          ],
+          "keyLightHex": "#FFB36A",
+          "rimLightHex": "#6FA8FF",
+          "fogDensity": 0.018,
+          "dofFocusM": 5.2,
+          "props": [
+            "낡은 객잔 현판",
+            "홍등 4개",
+            "대나무 발",
+            "술 항아리",
+            "먼지 입자",
+            "말고삐 말뚝",
+            "나무 계단"
+          ],
+          "webtoonUseCaseKo": "주인공이 객잔 문 앞에 멈춰 서며 강호 사건에 들어서는 첫 등장 컷에 적합합니다."
+        },
+        {
+          "id": "wuxia_inn_table_tension_02",
+          "titleKo": "객잔 내부 탁자 대치 미디엄샷",
+          "timeOfDay": "night",
+          "lensMm": 35,
+          "fovDeg": 54,
+          "cameraPos": [
+            2.6,
+            1.35,
+            3.1
+          ],
+          "cameraTarget": [
+            0,
+            1.25,
+            0
+          ],
+          "keyLightHex": "#F6C06A",
+          "rimLightHex": "#2B5C9E",
+          "fogDensity": 0.025,
+          "dofFocusM": 3.4,
+          "props": [
+            "원형 목제 탁자",
+            "술병과 사발",
+            "젓가락",
+            "촛불 3개",
+            "병풍",
+            "벽걸이 검",
+            "엎어진 의자"
+          ],
+          "webtoonUseCaseKo": "두 무인이 술잔을 사이에 두고 살기를 주고받는 대화·협박 장면에 바로 사용할 수 있습니다."
+        },
+        {
+          "id": "wuxia_inn_fight_overhead_03",
+          "titleKo": "객잔 난투 상부 사선 액션컷",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 74,
+          "cameraPos": [
+            0,
+            5.8,
+            4.2
+          ],
+          "cameraTarget": [
+            0,
+            1.1,
+            0
+          ],
+          "keyLightHex": "#FFCC82",
+          "rimLightHex": "#FF4D3D",
+          "fogDensity": 0.03,
+          "dofFocusM": 5.8,
+          "props": [
+            "부서진 탁자",
+            "흩어진 술잔",
+            "날아가는 젓가락",
+            "뒤집힌 벤치",
+            "홍등 그림자",
+            "나무 기둥",
+            "검격 궤적 이펙트"
+          ],
+          "webtoonUseCaseKo": "객잔 내부에서 여러 인물이 동시에 충돌하는 난투, 장풍, 검격 구도용 상부 컷입니다."
+        },
+        {
+          "id": "bamboo_forest_chase_04",
+          "titleKo": "대나무숲 추격 롱렌즈 압축샷",
+          "timeOfDay": "morning",
+          "lensMm": 70,
+          "fovDeg": 29,
+          "cameraPos": [
+            -1.6,
+            1.7,
+            9.5
+          ],
+          "cameraTarget": [
+            0.4,
+            1.5,
+            0
+          ],
+          "keyLightHex": "#CFF7B2",
+          "rimLightHex": "#E8FFF0",
+          "fogDensity": 0.045,
+          "dofFocusM": 8.5,
+          "props": [
+            "빽빽한 대나무",
+            "젖은 낙엽",
+            "새벽 안개",
+            "잘린 대나무 그루터기",
+            "발자국",
+            "흩날리는 대나무잎"
+          ],
+          "webtoonUseCaseKo": "도망치는 인물과 추격자를 겹겹의 대나무 사이로 압축해 긴장감 있게 보여주는 컷입니다."
+        },
+        {
+          "id": "bamboo_forest_duel_wide_05",
+          "titleKo": "대나무숲 공터 결투 와이드샷",
+          "timeOfDay": "noon",
+          "lensMm": 32,
+          "fovDeg": 58,
+          "cameraPos": [
+            4.8,
+            2,
+            6.2
+          ],
+          "cameraTarget": [
+            0,
+            1.3,
+            0
+          ],
+          "keyLightHex": "#E7FFD1",
+          "rimLightHex": "#8ED6A3",
+          "fogDensity": 0.012,
+          "dofFocusM": 6.8,
+          "props": [
+            "대나무 공터",
+            "원형 흙바닥",
+            "베인 대나무",
+            "흩어진 초록 잎",
+            "검집",
+            "돌무더기",
+            "햇빛 고보 그림자"
+          ],
+          "webtoonUseCaseKo": "정식 결투 전 두 인물이 거리를 두고 마주 선 상황을 넓고 선명하게 잡는 컷입니다."
+        },
+        {
+          "id": "cliff_edge_revelation_06",
+          "titleKo": "절벽 끝 비밀 고백 역광샷",
+          "timeOfDay": "sunset",
+          "lensMm": 50,
+          "fovDeg": 40,
+          "cameraPos": [
+            -2.8,
+            1.6,
+            4.4
+          ],
+          "cameraTarget": [
+            0,
+            1.45,
+            -0.5
+          ],
+          "keyLightHex": "#FF8A45",
+          "rimLightHex": "#FFD7A1",
+          "fogDensity": 0.035,
+          "dofFocusM": 4.2,
+          "props": [
+            "절벽 끝 바위",
+            "낡은 망토",
+            "먼 산 능선",
+            "운해",
+            "부러진 비석",
+            "흩날리는 머리끈"
+          ],
+          "webtoonUseCaseKo": "절벽 끝에서 출생의 비밀, 배신, 사제 관계를 밝히는 감정 클라이맥스 컷에 적합합니다."
+        },
+        {
+          "id": "cliff_jump_downshot_07",
+          "titleKo": "절벽 투신 다이내믹 다운샷",
+          "timeOfDay": "noon",
+          "lensMm": 18,
+          "fovDeg": 90,
+          "cameraPos": [
+            0.8,
+            8.5,
+            1.2
+          ],
+          "cameraTarget": [
+            0,
+            0.2,
+            -3.8
+          ],
+          "keyLightHex": "#DCEEFF",
+          "rimLightHex": "#FFFFFF",
+          "fogDensity": 0.055,
+          "dofFocusM": 9,
+          "props": [
+            "수직 절벽면",
+            "깊은 협곡",
+            "소용돌이 안개",
+            "날카로운 바위",
+            "찢어진 천 조각",
+            "떨어지는 자갈",
+            "독수리 실루엣"
+          ],
+          "webtoonUseCaseKo": "인물이 절벽에서 뛰어내리거나 추락하는 순간을 과장된 원근감으로 보여주는 액션 컷입니다."
+        },
+        {
+          "id": "tournament_arena_establish_08",
+          "titleKo": "비무대회장 개막 전경 와이드",
+          "timeOfDay": "morning",
+          "lensMm": 24,
+          "fovDeg": 74,
+          "cameraPos": [
+            7.5,
+            4.2,
+            8
+          ],
+          "cameraTarget": [
+            0,
+            1.2,
+            0
+          ],
+          "keyLightHex": "#FFF0C2",
+          "rimLightHex": "#A6D8FF",
+          "fogDensity": 0.01,
+          "dofFocusM": 10,
+          "props": [
+            "원형 비무대",
+            "관중석",
+            "문파 깃발",
+            "북과 징",
+            "대진표 목판",
+            "심판석",
+            "입장 아치"
+          ],
+          "webtoonUseCaseKo": "대회 에피소드 시작 시 장소 규모와 관중 열기를 한 번에 설명하는 오프닝 컷입니다."
+        },
+        {
+          "id": "tournament_arena_final_duel_09",
+          "titleKo": "비무대 결승 초근접 검끝 대치",
+          "timeOfDay": "sunset",
+          "lensMm": 85,
+          "fovDeg": 24,
+          "cameraPos": [
+            1.1,
+            1.45,
+            3
+          ],
+          "cameraTarget": [
+            0,
+            1.35,
+            0
+          ],
+          "keyLightHex": "#FFAA5C",
+          "rimLightHex": "#7EA7FF",
+          "fogDensity": 0.02,
+          "dofFocusM": 2.6,
+          "props": [
+            "비무대 석판",
+            "검끝 2개",
+            "찢어진 문파 깃발",
+            "흩날리는 먼지",
+            "관중 실루엣",
+            "피 묻은 소매",
+            "북채"
+          ],
+          "webtoonUseCaseKo": "결승전에서 두 검끝이 맞닿기 직전의 정적과 살기를 강조하는 클로즈업 컷입니다."
+        },
+        {
+          "id": "tournament_night_aftermath_10",
+          "titleKo": "대회장 밤의 패배자 독백샷",
+          "timeOfDay": "night",
+          "lensMm": 45,
+          "fovDeg": 45,
+          "cameraPos": [
+            -3.5,
+            1.4,
+            4.8
+          ],
+          "cameraTarget": [
+            0,
+            1.1,
+            0
+          ],
+          "keyLightHex": "#6FA0FF",
+          "rimLightHex": "#FFD27A",
+          "fogDensity": 0.028,
+          "dofFocusM": 4.9,
+          "props": [
+            "텅 빈 비무대",
+            "꺼져가는 횃불",
+            "부러진 검",
+            "피 묻은 붕대",
+            "찢어진 대진표",
+            "흩어진 깃발",
+            "달빛 웅덩이"
+          ],
+          "webtoonUseCaseKo": "패배 후 홀로 남은 인물이 복수나 재기를 다짐하는 밤 장면, 에피소드 엔딩 컷에 적합합니다."
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-5",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "야간 누아르 항구·폐창고·경찰서·빗속 교차로",
+      "presets": [
+        {
+          "id": "noir_harbor_01",
+          "titleKo": "빗물 고인 부두의 첫 등장 롱샷",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            -8.5,
+            2.1,
+            5.2
+          ],
+          "cameraTarget": [
+            1.2,
+            1.4,
+            0.8
+          ],
+          "keyLightHex": "#2F6BFF",
+          "rimLightHex": "#F5B45A",
+          "fogDensity": 0.045,
+          "dofFocusM": 9.5,
+          "props": [
+            "젖은 콘크리트 부두",
+            "녹슨 계류 말뚝",
+            "검은 바닷물 반사면",
+            "깜빡이는 가로등",
+            "원거리 화물선 실루엣",
+            "바닥 물웅덩이",
+            "낡은 밧줄 더미"
+          ],
+          "webtoonUseCaseKo": "주인공이 항구에 도착하는 첫 컷, 독백이 깔리는 분위기 구축용 와이드 컷"
+        },
+        {
+          "id": "noir_harbor_02",
+          "titleKo": "컨테이너 미로 추적 로우앵글",
+          "timeOfDay": "night",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            -2.4,
+            0.65,
+            6.8
+          ],
+          "cameraTarget": [
+            0.6,
+            1.3,
+            0.2
+          ],
+          "keyLightHex": "#1D4ED8",
+          "rimLightHex": "#FF2E63",
+          "fogDensity": 0.06,
+          "dofFocusM": 5.2,
+          "props": [
+            "높게 쌓인 컨테이너",
+            "젖은 아스팔트",
+            "흩어진 파렛트",
+            "비상 경광등",
+            "흐릿한 인물 그림자",
+            "빗줄기 파티클",
+            "깨진 보안등"
+          ],
+          "webtoonUseCaseKo": "범인을 따라 컨테이너 사이로 뛰어드는 추적 장면, 긴장감 있는 세로 컷"
+        },
+        {
+          "id": "noir_warehouse_03",
+          "titleKo": "폐창고 입구의 역광 실루엣",
+          "timeOfDay": "night",
+          "lensMm": 50,
+          "fovDeg": 39.6,
+          "cameraPos": [
+            0,
+            1.55,
+            8
+          ],
+          "cameraTarget": [
+            0,
+            1.35,
+            0
+          ],
+          "keyLightHex": "#0E1A2B",
+          "rimLightHex": "#B7F3FF",
+          "fogDensity": 0.075,
+          "dofFocusM": 7.8,
+          "props": [
+            "반쯤 열린 철제 셔터",
+            "깨진 유리창",
+            "먼지 낀 바닥",
+            "버려진 드럼통",
+            "역광 헤드라이트",
+            "천장 누수 물방울",
+            "녹슨 철골 기둥"
+          ],
+          "webtoonUseCaseKo": "정체불명의 인물이 창고 문 앞에 서 있는 등장 컷, 얼굴을 숨긴 실루엣 연출용"
+        },
+        {
+          "id": "noir_warehouse_04",
+          "titleKo": "폐창고 내부 거래 테이블 탑뷰",
+          "timeOfDay": "night",
+          "lensMm": 28,
+          "fovDeg": 65.5,
+          "cameraPos": [
+            -1.2,
+            5.6,
+            2.4
+          ],
+          "cameraTarget": [
+            0.3,
+            0.85,
+            0
+          ],
+          "keyLightHex": "#3A4A5E",
+          "rimLightHex": "#E0A64B",
+          "fogDensity": 0.04,
+          "dofFocusM": 4.8,
+          "props": [
+            "낡은 금속 테이블",
+            "서류 봉투",
+            "권총 케이스",
+            "현금 다발",
+            "담배 연기",
+            "흔들리는 작업등",
+            "그림자 진 의자 2개"
+          ],
+          "webtoonUseCaseKo": "불법 거래나 협박 장면을 위에서 내려다보는 컷, 인물 간 거리감과 위험물 배치 강조용"
+        },
+        {
+          "id": "noir_police_05",
+          "titleKo": "경찰서 취조실 정면 압박샷",
+          "timeOfDay": "night",
+          "lensMm": 70,
+          "fovDeg": 28.8,
+          "cameraPos": [
+            0,
+            1.45,
+            3.2
+          ],
+          "cameraTarget": [
+            0,
+            1.32,
+            0
+          ],
+          "keyLightHex": "#DDE7F0",
+          "rimLightHex": "#2A5BFF",
+          "fogDensity": 0.012,
+          "dofFocusM": 3,
+          "props": [
+            "금속 취조 테이블",
+            "녹음기",
+            "종이컵 커피",
+            "형광등 반사",
+            "일방향 거울",
+            "철제 의자",
+            "사건 파일철"
+          ],
+          "webtoonUseCaseKo": "용의자 얼굴을 강하게 압박하는 정면 컷, 심문 대사와 클로즈업에 적합"
+        },
+        {
+          "id": "noir_police_06",
+          "titleKo": "경찰서 복도 심야 대기 컷",
+          "timeOfDay": "night",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            -4,
+            1.5,
+            1.2
+          ],
+          "cameraTarget": [
+            2.5,
+            1.45,
+            1
+          ],
+          "keyLightHex": "#9BB7C9",
+          "rimLightHex": "#FFCC66",
+          "fogDensity": 0.02,
+          "dofFocusM": 6,
+          "props": [
+            "긴 형광등 복도",
+            "게시판 수배 전단",
+            "낡은 벤치",
+            "반쯤 열린 사무실 문",
+            "바닥 왁스 반사",
+            "벽시계",
+            "커피 자판기"
+          ],
+          "webtoonUseCaseKo": "형사가 늦은 밤 보고를 기다리거나 결심하는 장면, 말풍선 여백이 있는 원근 컷"
+        },
+        {
+          "id": "noir_rain_07",
+          "titleKo": "빗속 네온 교차로 와이드샷",
+          "timeOfDay": "night",
+          "lensMm": 18,
+          "fovDeg": 90,
+          "cameraPos": [
+            -6.5,
+            2.2,
+            7
+          ],
+          "cameraTarget": [
+            0.4,
+            1.1,
+            0.2
+          ],
+          "keyLightHex": "#294CFF",
+          "rimLightHex": "#FF3FD1",
+          "fogDensity": 0.055,
+          "dofFocusM": 8.5,
+          "props": [
+            "젖은 횡단보도",
+            "네온 간판",
+            "빨간 신호등",
+            "우산 쓴 행인 실루엣",
+            "택시 헤드라이트",
+            "빗물 튀김 파티클",
+            "도로 반사 재질"
+          ],
+          "webtoonUseCaseKo": "사건 직후 도시의 차가운 분위기를 보여주는 장면 전환 컷, 타이틀 삽입에도 적합"
+        },
+        {
+          "id": "noir_rain_08",
+          "titleKo": "교차로 추격전 차량 본넷 시점",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            0,
+            1.15,
+            2.1
+          ],
+          "cameraTarget": [
+            0.2,
+            1,
+            -5.8
+          ],
+          "keyLightHex": "#FFFFFF",
+          "rimLightHex": "#FF0000",
+          "fogDensity": 0.038,
+          "dofFocusM": 6.5,
+          "props": [
+            "경찰차 경광등",
+            "젖은 차량 본넷",
+            "흐릿한 도주 차량",
+            "차선 반사",
+            "튀는 빗물",
+            "신호등 역광",
+            "브레이크등 잔상"
+          ],
+          "webtoonUseCaseKo": "차량 추격 중 속도감 있는 컷, 컷 가장자리에 모션라인을 더하기 좋은 구도"
+        },
+        {
+          "id": "noir_alley_09",
+          "titleKo": "항구 뒷골목 담배 연기 클로즈샷",
+          "timeOfDay": "night",
+          "lensMm": 85,
+          "fovDeg": 23.9,
+          "cameraPos": [
+            1.4,
+            1.55,
+            2.6
+          ],
+          "cameraTarget": [
+            0.1,
+            1.45,
+            0.2
+          ],
+          "keyLightHex": "#1B263B",
+          "rimLightHex": "#00E5FF",
+          "fogDensity": 0.065,
+          "dofFocusM": 2.4,
+          "props": [
+            "젖은 벽돌 골목",
+            "깜빡이는 파란 네온",
+            "쓰레기봉투",
+            "담배 연기",
+            "철제 비상계단",
+            "낙서 벽",
+            "물방울 맺힌 배관"
+          ],
+          "webtoonUseCaseKo": "정보원이 낮은 목소리로 단서를 건네는 장면, 얼굴 일부만 비추는 누아르 클로즈업용"
+        },
+        {
+          "id": "noir_rooftop_10",
+          "titleKo": "경찰서 옥상 항구 조망 결말 컷",
+          "timeOfDay": "night",
+          "lensMm": 50,
+          "fovDeg": 39.6,
+          "cameraPos": [
+            -3.2,
+            1.8,
+            4.6
+          ],
+          "cameraTarget": [
+            0.8,
+            1.65,
+            0
+          ],
+          "keyLightHex": "#263B5E",
+          "rimLightHex": "#F6D365",
+          "fogDensity": 0.05,
+          "dofFocusM": 5,
+          "props": [
+            "옥상 난간",
+            "멀리 보이는 항구 크레인",
+            "도시 야경 보케",
+            "젖은 콘크리트 바닥",
+            "형사 코트 실루엣",
+            "무전기",
+            "흐린 달빛"
+          ],
+          "webtoonUseCaseKo": "사건의 단서를 정리하거나 다음 에피소드로 여운을 남기는 엔딩 컷"
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-6",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "현대 오피스·회의실·카페·원룸 자취방",
+      "presets": [
+        {
+          "id": "office_openplan_morning_intro",
+          "titleKo": "아침 출근 오픈오피스 와이드",
+          "timeOfDay": "morning",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            6.2,
+            -8.5,
+            2.1
+          ],
+          "cameraTarget": [
+            0.4,
+            0.2,
+            1.35
+          ],
+          "keyLightHex": "#FFF1D0",
+          "rimLightHex": "#BFD8FF",
+          "fogDensity": 0.015,
+          "dofFocusM": 6.8,
+          "props": [
+            "롱 데스크",
+            "모니터 여러 대",
+            "사무용 의자",
+            "파티션",
+            "형광등 패널",
+            "블라인드 창문",
+            "화분",
+            "종이컵",
+            "출입문 카드리더기"
+          ],
+          "webtoonUseCaseKo": "회사 에피소드 도입부, 주인공이 출근해 사무실 분위기를 한 컷에 보여주는 establishing shot"
+        },
+        {
+          "id": "office_desk_noon_overwork",
+          "titleKo": "점심 직전 책상 클로즈업",
+          "timeOfDay": "noon",
+          "lensMm": 50,
+          "fovDeg": 39.6,
+          "cameraPos": [
+            1.4,
+            -2.2,
+            1.35
+          ],
+          "cameraTarget": [
+            0.15,
+            0,
+            1.05
+          ],
+          "keyLightHex": "#FFFFFF",
+          "rimLightHex": "#D6ECFF",
+          "fogDensity": 0.005,
+          "dofFocusM": 2.1,
+          "props": [
+            "노트북",
+            "외장 모니터",
+            "키보드",
+            "마우스",
+            "커피 텀블러",
+            "포스트잇",
+            "서류 더미",
+            "스마트폰",
+            "이어폰"
+          ],
+          "webtoonUseCaseKo": "업무 압박, 야근 복선, 메신저 알림이나 중요한 메일을 강조하는 컷"
+        },
+        {
+          "id": "meeting_room_noon_presentation",
+          "titleKo": "회의실 발표자 시점",
+          "timeOfDay": "noon",
+          "lensMm": 28,
+          "fovDeg": 65.5,
+          "cameraPos": [
+            0,
+            -5.8,
+            1.65
+          ],
+          "cameraTarget": [
+            0,
+            0.4,
+            1.35
+          ],
+          "keyLightHex": "#F8FBFF",
+          "rimLightHex": "#A9C7FF",
+          "fogDensity": 0.008,
+          "dofFocusM": 5.5,
+          "props": [
+            "긴 회의 테이블",
+            "회의용 의자",
+            "벽걸이 스크린",
+            "프로젝터",
+            "화이트보드",
+            "마커",
+            "물병",
+            "노트북",
+            "유리벽"
+          ],
+          "webtoonUseCaseKo": "주인공이 발표하거나 압박 면접처럼 여러 시선이 몰리는 긴장 장면"
+        },
+        {
+          "id": "meeting_room_sunset_confession",
+          "titleKo": "해질녘 회의실 단둘이 대화",
+          "timeOfDay": "sunset",
+          "lensMm": 85,
+          "fovDeg": 23.9,
+          "cameraPos": [
+            -2.4,
+            -3.1,
+            1.55
+          ],
+          "cameraTarget": [
+            -0.35,
+            -0.15,
+            1.32
+          ],
+          "keyLightHex": "#FFB36A",
+          "rimLightHex": "#6AA6FF",
+          "fogDensity": 0.018,
+          "dofFocusM": 3.4,
+          "props": [
+            "유리 회의실 벽",
+            "블라인드 그림자",
+            "회의 테이블",
+            "노트북 한 대",
+            "접힌 서류",
+            "빈 커피컵",
+            "벽시계",
+            "펜"
+          ],
+          "webtoonUseCaseKo": "퇴근 직전 고백, 비밀 협상, 사내 로맨스의 미묘한 분위기를 잡는 미디엄 클로즈업"
+        },
+        {
+          "id": "office_corridor_night_suspense",
+          "titleKo": "야근 복도 서스펜스 로우앵글",
+          "timeOfDay": "night",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            0.8,
+            -6,
+            0.75
+          ],
+          "cameraTarget": [
+            0,
+            -0.4,
+            1.25
+          ],
+          "keyLightHex": "#DDEBFF",
+          "rimLightHex": "#00B7FF",
+          "fogDensity": 0.025,
+          "dofFocusM": 5.6,
+          "props": [
+            "긴 사무실 복도",
+            "비상구 표지판",
+            "자동문",
+            "유리 파티션",
+            "꺼진 회의실",
+            "깜빡이는 형광등",
+            "복합기",
+            "청소 카트"
+          ],
+          "webtoonUseCaseKo": "야근 중 수상한 인기척, 몰래 목격, 스릴러 전환 컷에 적합"
+        },
+        {
+          "id": "cafe_noon_window_table",
+          "titleKo": "낮 카페 창가 테이블 데이트",
+          "timeOfDay": "noon",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            2.8,
+            -3.2,
+            1.45
+          ],
+          "cameraTarget": [
+            0.2,
+            -0.1,
+            1.15
+          ],
+          "keyLightHex": "#FFF6E2",
+          "rimLightHex": "#FFE0B0",
+          "fogDensity": 0.012,
+          "dofFocusM": 3.2,
+          "props": [
+            "원형 카페 테이블",
+            "라탄 의자",
+            "아메리카노 잔",
+            "디저트 접시",
+            "메뉴판",
+            "창가 커튼",
+            "길거리 배경",
+            "작은 화분",
+            "휴대폰"
+          ],
+          "webtoonUseCaseKo": "일상 대화, 소개팅, 친구 상담처럼 밝고 편안한 투샷 컷"
+        },
+        {
+          "id": "cafe_evening_counter_barista",
+          "titleKo": "저녁 카페 카운터 주문 장면",
+          "timeOfDay": "sunset",
+          "lensMm": 40,
+          "fovDeg": 48.5,
+          "cameraPos": [
+            -3.5,
+            -2.6,
+            1.55
+          ],
+          "cameraTarget": [
+            -0.4,
+            0,
+            1.25
+          ],
+          "keyLightHex": "#FFD19A",
+          "rimLightHex": "#FF7B45",
+          "fogDensity": 0.02,
+          "dofFocusM": 3.6,
+          "props": [
+            "카페 카운터",
+            "에스프레소 머신",
+            "원두 그라인더",
+            "디저트 쇼케이스",
+            "메뉴 보드",
+            "카드 단말기",
+            "테이크아웃 컵",
+            "팬던트 조명",
+            "스툴"
+          ],
+          "webtoonUseCaseKo": "아르바이트 장면, 우연한 재회, 주문 중 눈이 마주치는 로맨스 컷"
+        },
+        {
+          "id": "studio_room_morning_wakeup",
+          "titleKo": "원룸 아침 기상 와이드",
+          "timeOfDay": "morning",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            3.8,
+            -4.2,
+            2
+          ],
+          "cameraTarget": [
+            0.2,
+            -0.1,
+            0.9
+          ],
+          "keyLightHex": "#FFECC7",
+          "rimLightHex": "#C7E2FF",
+          "fogDensity": 0.01,
+          "dofFocusM": 4.1,
+          "props": [
+            "싱글 침대",
+            "구겨진 이불",
+            "작은 책상",
+            "노트북",
+            "옷걸이 행거",
+            "미니 냉장고",
+            "전자레인지",
+            "창문",
+            "러그",
+            "택배 상자"
+          ],
+          "webtoonUseCaseKo": "자취방 일상 시작, 늦잠, 독백 내레이션이 들어가는 생활감 있는 도입 컷"
+        },
+        {
+          "id": "studio_room_night_laptop",
+          "titleKo": "원룸 밤 노트북 불빛 클로즈업",
+          "timeOfDay": "night",
+          "lensMm": 55,
+          "fovDeg": 36.2,
+          "cameraPos": [
+            1.2,
+            -1.9,
+            1.25
+          ],
+          "cameraTarget": [
+            0,
+            -0.25,
+            1.05
+          ],
+          "keyLightHex": "#8FCBFF",
+          "rimLightHex": "#FFB06A",
+          "fogDensity": 0.018,
+          "dofFocusM": 1.9,
+          "props": [
+            "노트북",
+            "책상 스탠드",
+            "컵라면",
+            "젓가락",
+            "메모장",
+            "충전 케이블",
+            "무드등",
+            "침대 모서리",
+            "빨래 바구니"
+          ],
+          "webtoonUseCaseKo": "밤샘 과제, 프리랜서 작업, 메시지를 보고 충격받는 표정 강조 컷"
+        },
+        {
+          "id": "studio_room_rainy_night_window",
+          "titleKo": "비 오는 밤 원룸 창가 실루엣",
+          "timeOfDay": "night",
+          "lensMm": 70,
+          "fovDeg": 28.8,
+          "cameraPos": [
+            -2.6,
+            -3.4,
+            1.45
+          ],
+          "cameraTarget": [
+            -0.15,
+            -0.2,
+            1.2
+          ],
+          "keyLightHex": "#6FA8FF",
+          "rimLightHex": "#B8D7FF",
+          "fogDensity": 0.035,
+          "dofFocusM": 3.1,
+          "props": [
+            "빗물 맺힌 창문",
+            "얇은 커튼",
+            "침대",
+            "작은 사이드 테이블",
+            "머그컵",
+            "스마트폰",
+            "무드등",
+            "책 더미",
+            "도시 야경 배경"
+          ],
+          "webtoonUseCaseKo": "이별 후 독백, 우울한 밤, 전화가 오기를 기다리는 감정 컷"
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-7",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "판타지 던전·길드 홀·고대 유적·성벽",
+      "presets": [
+        {
+          "id": "fantasy_dungeon_01_entrance_tilt",
+          "titleKo": "던전 입구를 올려다보는 위압 컷",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            0.2,
+            1.1,
+            -6.5
+          ],
+          "cameraTarget": [
+            0,
+            3,
+            1.2
+          ],
+          "keyLightHex": "#4A8CFF",
+          "rimLightHex": "#FFB15A",
+          "fogDensity": 0.045,
+          "dofFocusM": 6.2,
+          "props": [
+            "거대한 석문",
+            "룬 각인 기둥",
+            "녹슨 쇠사슬",
+            "횃불 브래킷",
+            "바닥 균열",
+            "박쥐 실루엣"
+          ],
+          "webtoonUseCaseKo": "주인공 일행이 던전에 처음 도착하는 장면, 보스 구역 진입 전 긴장감을 크게 잡는 세로 컷에 적합"
+        },
+        {
+          "id": "fantasy_dungeon_02_corridor_chase",
+          "titleKo": "좁은 던전 복도 추격 컷",
+          "timeOfDay": "night",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            -1.2,
+            1.45,
+            -4
+          ],
+          "cameraTarget": [
+            0.1,
+            1.35,
+            3
+          ],
+          "keyLightHex": "#FF7A2F",
+          "rimLightHex": "#38D6FF",
+          "fogDensity": 0.035,
+          "dofFocusM": 4.5,
+          "props": [
+            "석조 복도",
+            "벽면 횃불",
+            "부서진 해골",
+            "흩어진 화살",
+            "철창문",
+            "젖은 바닥 반사"
+          ],
+          "webtoonUseCaseKo": "몬스터에게 쫓기거나 함정이 발동되는 속도감 있는 액션 컷, 인물 뒤쪽으로 긴 원근감을 만들 때 사용"
+        },
+        {
+          "id": "fantasy_dungeon_03_trap_room_top",
+          "titleKo": "함정 방을 내려다보는 전략 컷",
+          "timeOfDay": "night",
+          "lensMm": 28,
+          "fovDeg": 65.5,
+          "cameraPos": [
+            0,
+            6.8,
+            -3.2
+          ],
+          "cameraTarget": [
+            0,
+            0.3,
+            0.4
+          ],
+          "keyLightHex": "#6EFFF1",
+          "rimLightHex": "#B55CFF",
+          "fogDensity": 0.025,
+          "dofFocusM": 7,
+          "props": [
+            "압력판 타일",
+            "가시 함정",
+            "회전 칼날 홈",
+            "마법진 문양",
+            "부서진 석상",
+            "낡은 보물상자"
+          ],
+          "webtoonUseCaseKo": "파티가 함정 구조를 파악하거나 작전 회의를 하는 설명 컷, 던전 내부 지형을 한눈에 보여주는 컷에 적합"
+        },
+        {
+          "id": "guild_hall_01_warm_establishing",
+          "titleKo": "길드 홀 전경 웜 라이트 컷",
+          "timeOfDay": "sunset",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            -4.8,
+            2.2,
+            -6.2
+          ],
+          "cameraTarget": [
+            0,
+            1.7,
+            0.2
+          ],
+          "keyLightHex": "#FFC27A",
+          "rimLightHex": "#7DB8FF",
+          "fogDensity": 0.012,
+          "dofFocusM": 5.8,
+          "props": [
+            "대형 의뢰 게시판",
+            "긴 목재 테이블",
+            "맥주잔",
+            "길드 깃발",
+            "벽난로",
+            "모험가 장비 거치대"
+          ],
+          "webtoonUseCaseKo": "길드에 처음 들어오는 소개 컷, 동료 모집이나 퀘스트 수주 전 분위기를 따뜻하게 잡는 장면에 사용"
+        },
+        {
+          "id": "guild_hall_02_counter_dialogue",
+          "titleKo": "길드 접수대 대화 컷",
+          "timeOfDay": "noon",
+          "lensMm": 50,
+          "fovDeg": 39.6,
+          "cameraPos": [
+            1.8,
+            1.55,
+            -2.6
+          ],
+          "cameraTarget": [
+            0,
+            1.45,
+            0
+          ],
+          "keyLightHex": "#FFE2B0",
+          "rimLightHex": "#9FD7FF",
+          "fogDensity": 0.006,
+          "dofFocusM": 2.8,
+          "props": [
+            "접수 카운터",
+            "퀘스트 서류 더미",
+            "깃펜과 잉크병",
+            "금화 주머니",
+            "랭크 배지",
+            "작은 마법 램프"
+          ],
+          "webtoonUseCaseKo": "접수원과 주인공의 대화, 보상 정산, 의뢰 조건을 듣는 허리샷·바스트샷 배경으로 적합"
+        },
+        {
+          "id": "guild_hall_03_tavern_brawl",
+          "titleKo": "길드 주점 난투 로우앵글 컷",
+          "timeOfDay": "night",
+          "lensMm": 30,
+          "fovDeg": 61.9,
+          "cameraPos": [
+            0.7,
+            0.65,
+            -3.4
+          ],
+          "cameraTarget": [
+            -0.2,
+            1.25,
+            0.8
+          ],
+          "keyLightHex": "#FF9C45",
+          "rimLightHex": "#FF3D6E",
+          "fogDensity": 0.02,
+          "dofFocusM": 3.2,
+          "props": [
+            "뒤집힌 의자",
+            "깨진 술병",
+            "흩어진 카드",
+            "무기 벨트",
+            "흔들리는 샹들리에",
+            "나무 바닥 파편"
+          ],
+          "webtoonUseCaseKo": "길드 내 시비, 술집 난투, 코믹 액션 장면에 사용하기 좋은 낮은 카메라와 강한 대비 조명 프리셋"
+        },
+        {
+          "id": "ancient_ruins_01_sunbeam_reveal",
+          "titleKo": "고대 유적 내부 빛기둥 발견 컷",
+          "timeOfDay": "morning",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            -3.5,
+            1.8,
+            -5
+          ],
+          "cameraTarget": [
+            0.1,
+            2,
+            0.5
+          ],
+          "keyLightHex": "#FFF0B8",
+          "rimLightHex": "#58FFE0",
+          "fogDensity": 0.04,
+          "dofFocusM": 5.4,
+          "props": [
+            "무너진 천장",
+            "빛기둥",
+            "이끼 낀 제단",
+            "고대 문자 벽화",
+            "덩굴 식물",
+            "석재 파편"
+          ],
+          "webtoonUseCaseKo": "숨겨진 유적을 발견하거나 성물이 모습을 드러내는 장엄한 컷, 신비로운 첫 공개 장면에 적합"
+        },
+        {
+          "id": "ancient_ruins_02_relic_closeup",
+          "titleKo": "유물 클로즈업 마법광 컷",
+          "timeOfDay": "night",
+          "lensMm": 85,
+          "fovDeg": 23.9,
+          "cameraPos": [
+            0.8,
+            1.25,
+            -1.8
+          ],
+          "cameraTarget": [
+            0,
+            1.1,
+            0
+          ],
+          "keyLightHex": "#57FFD9",
+          "rimLightHex": "#C46BFF",
+          "fogDensity": 0.018,
+          "dofFocusM": 1.9,
+          "props": [
+            "부유하는 고대 유물",
+            "원형 제단",
+            "룬 파티클",
+            "금속 받침대",
+            "깨진 봉인석",
+            "희미한 마법진"
+          ],
+          "webtoonUseCaseKo": "열쇠 아이템, 성물, 저주받은 유물을 강조하는 클로즈업 컷, 손을 뻗는 연출과 함께 쓰기 좋음"
+        },
+        {
+          "id": "castle_wall_01_siege_wide",
+          "titleKo": "성벽 공성전 와이드 컷",
+          "timeOfDay": "sunset",
+          "lensMm": 20,
+          "fovDeg": 84,
+          "cameraPos": [
+            -6.5,
+            4,
+            -7.5
+          ],
+          "cameraTarget": [
+            0,
+            2.4,
+            0.5
+          ],
+          "keyLightHex": "#FF8A4A",
+          "rimLightHex": "#5D7CFF",
+          "fogDensity": 0.03,
+          "dofFocusM": 9,
+          "props": [
+            "높은 성벽",
+            "깃발",
+            "투석기",
+            "공성 사다리",
+            "연기 기둥",
+            "화살비"
+          ],
+          "webtoonUseCaseKo": "대규모 전투의 시작, 적군이 성벽을 압박하는 장면, 챕터 오프닝용 웅장한 전경 컷에 적합"
+        },
+        {
+          "id": "castle_wall_02_watchtower_night",
+          "titleKo": "성벽 망루 야간 경계 컷",
+          "timeOfDay": "night",
+          "lensMm": 40,
+          "fovDeg": 48.5,
+          "cameraPos": [
+            2.4,
+            3.2,
+            -3.2
+          ],
+          "cameraTarget": [
+            0,
+            2.7,
+            0
+          ],
+          "keyLightHex": "#8DB7FF",
+          "rimLightHex": "#FFC36B",
+          "fogDensity": 0.028,
+          "dofFocusM": 4,
+          "props": [
+            "망루 난간",
+            "횃불",
+            "보초 창",
+            "멀리 보이는 숲",
+            "성벽 보도",
+            "감시용 종"
+          ],
+          "webtoonUseCaseKo": "야간 잠입, 보초 근무, 적의 접근을 처음 발견하는 긴장 컷이나 인물의 고독한 독백 장면에 사용"
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-8",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "조선 한옥·궁궐·저잣거리·서원",
+      "presets": [
+        {
+          "id": "joseon_hanok_001",
+          "titleKo": "새벽 안개 낀 한옥 사랑채 롱샷",
+          "timeOfDay": "morning",
+          "lensMm": 28,
+          "fovDeg": 65,
+          "cameraPos": [
+            -6.5,
+            4.2,
+            2.4
+          ],
+          "cameraTarget": [
+            0,
+            0.2,
+            1.35
+          ],
+          "keyLightHex": "#F2D7A2",
+          "rimLightHex": "#BFD7FF",
+          "fogDensity": 0.045,
+          "dofFocusM": 6.5,
+          "props": [
+            "기와지붕 사랑채",
+            "툇마루",
+            "마당 장독대",
+            "낮은 돌담",
+            "대나무 빗자루",
+            "새벽 안개 파티클",
+            "종이문 창호"
+          ],
+          "webtoonUseCaseKo": "주인공이 양반가에 도착하거나, 조용한 아침에 사건의 실마리를 발견하는 도입 컷에 적합합니다."
+        },
+        {
+          "id": "joseon_palace_002",
+          "titleKo": "경복궁 근정전 정면 웅장 앵글",
+          "timeOfDay": "noon",
+          "lensMm": 24,
+          "fovDeg": 73,
+          "cameraPos": [
+            0,
+            -13,
+            2.2
+          ],
+          "cameraTarget": [
+            0,
+            0,
+            4.1
+          ],
+          "keyLightHex": "#FFF1C7",
+          "rimLightHex": "#DCEBFF",
+          "fogDensity": 0.012,
+          "dofFocusM": 13,
+          "props": [
+            "궁궐 정전 월대",
+            "단청 기둥",
+            "품계석",
+            "박석 마당",
+            "궁궐 난간",
+            "어좌 방향 붉은 문",
+            "의장 깃발"
+          ],
+          "webtoonUseCaseKo": "왕의 권위, 공식 조회, 궁중 재판, 대신들이 모이는 장면의 압도적인 첫 컷으로 쓰기 좋습니다."
+        },
+        {
+          "id": "joseon_market_003",
+          "titleKo": "저잣거리 포장마차 사이 추적 컷",
+          "timeOfDay": "noon",
+          "lensMm": 35,
+          "fovDeg": 54,
+          "cameraPos": [
+            -3.2,
+            -5.5,
+            1.55
+          ],
+          "cameraTarget": [
+            1.2,
+            0.6,
+            1.45
+          ],
+          "keyLightHex": "#FFE2A8",
+          "rimLightHex": "#C7E7FF",
+          "fogDensity": 0.02,
+          "dofFocusM": 5.2,
+          "props": [
+            "초가 상점",
+            "천막 좌판",
+            "짚신 더미",
+            "엽전 꾸러미",
+            "생선 좌판",
+            "도자기 항아리",
+            "지게",
+            "행인 실루엣"
+          ],
+          "webtoonUseCaseKo": "저잣거리에서 도망치는 인물, 소매치기 추격, 몰래 엿듣는 장면 등 동적인 컷에 적합합니다."
+        },
+        {
+          "id": "joseon_seowon_004",
+          "titleKo": "서원 강당의 고요한 오후 대화",
+          "timeOfDay": "noon",
+          "lensMm": 50,
+          "fovDeg": 40,
+          "cameraPos": [
+            -2.8,
+            -4,
+            1.35
+          ],
+          "cameraTarget": [
+            0,
+            0,
+            1.25
+          ],
+          "keyLightHex": "#F8E6BD",
+          "rimLightHex": "#D6E6FF",
+          "fogDensity": 0.01,
+          "dofFocusM": 4.2,
+          "props": [
+            "서원 강당",
+            "마루 좌식 방석",
+            "책상 서안",
+            "죽간과 서책",
+            "먹과 벼루",
+            "마당 은행나무",
+            "흰 창호문"
+          ],
+          "webtoonUseCaseKo": "스승과 제자의 문답, 비밀 서찰 해석, 학문적 논쟁을 차분하게 보여주는 중거리 대화 컷에 좋습니다."
+        },
+        {
+          "id": "joseon_hanok_005",
+          "titleKo": "비 오는 밤 한옥 처마 클로즈업",
+          "timeOfDay": "night",
+          "lensMm": 70,
+          "fovDeg": 29,
+          "cameraPos": [
+            -1.8,
+            -2.4,
+            2.6
+          ],
+          "cameraTarget": [
+            0,
+            0,
+            2.05
+          ],
+          "keyLightHex": "#6FA8FF",
+          "rimLightHex": "#FFD28A",
+          "fogDensity": 0.055,
+          "dofFocusM": 2.8,
+          "props": [
+            "한옥 처마",
+            "기와 끝 물방울",
+            "호롱불",
+            "젖은 마루",
+            "대나무 발",
+            "빗줄기 파티클",
+            "그림자 진 창호"
+          ],
+          "webtoonUseCaseKo": "긴장감 있는 야간 방문, 누군가 숨어 듣는 장면, 감정적으로 가라앉은 독백 컷에 적합합니다."
+        },
+        {
+          "id": "joseon_palace_006",
+          "titleKo": "궁궐 회랑 로우앵글 암투 장면",
+          "timeOfDay": "sunset",
+          "lensMm": 35,
+          "fovDeg": 54,
+          "cameraPos": [
+            -4.5,
+            -3.8,
+            0.85
+          ],
+          "cameraTarget": [
+            0.8,
+            0,
+            1.65
+          ],
+          "keyLightHex": "#FF9F5A",
+          "rimLightHex": "#5F7DFF",
+          "fogDensity": 0.025,
+          "dofFocusM": 5.1,
+          "props": [
+            "궁궐 회랑",
+            "붉은 기둥 행렬",
+            "단청 천장",
+            "긴 그림자",
+            "청사초롱",
+            "비단 휘장",
+            "석재 바닥"
+          ],
+          "webtoonUseCaseKo": "중전, 세자, 대신들이 복도에서 은밀히 마주치는 정치 암투 장면에 긴장감을 더합니다."
+        },
+        {
+          "id": "joseon_market_007",
+          "titleKo": "해질녘 저잣거리 군중 와이드샷",
+          "timeOfDay": "sunset",
+          "lensMm": 30,
+          "fovDeg": 61,
+          "cameraPos": [
+            3.8,
+            -7.2,
+            3
+          ],
+          "cameraTarget": [
+            0,
+            0,
+            1.4
+          ],
+          "keyLightHex": "#FFB16C",
+          "rimLightHex": "#7FA2FF",
+          "fogDensity": 0.035,
+          "dofFocusM": 7.5,
+          "props": [
+            "저잣거리 큰길",
+            "초가 지붕 상점",
+            "포목 좌판",
+            "나무 수레",
+            "주막 간판",
+            "군중 실루엣",
+            "먼지 파티클",
+            "노을 하늘"
+          ],
+          "webtoonUseCaseKo": "장터 전체 분위기 설명, 소문이 퍼지는 장면, 여러 인물이 한 공간에 모이는 전환 컷으로 좋습니다."
+        },
+        {
+          "id": "joseon_seowon_008",
+          "titleKo": "달빛 아래 서원 연못과 정자",
+          "timeOfDay": "night",
+          "lensMm": 45,
+          "fovDeg": 44,
+          "cameraPos": [
+            -5.5,
+            -4.8,
+            1.9
+          ],
+          "cameraTarget": [
+            0.5,
+            0.2,
+            1.45
+          ],
+          "keyLightHex": "#9DBDFF",
+          "rimLightHex": "#E8F0FF",
+          "fogDensity": 0.04,
+          "dofFocusM": 6.2,
+          "props": [
+            "서원 정자",
+            "연못",
+            "돌다리",
+            "버드나무",
+            "반딧불 파티클",
+            "달빛 반사 수면",
+            "등롱"
+          ],
+          "webtoonUseCaseKo": "연인 또는 사제 간의 조용한 고백, 밤중에 비밀 약속을 나누는 서정적인 컷에 적합합니다."
+        },
+        {
+          "id": "joseon_palace_009",
+          "titleKo": "왕좌 뒤편 역광 실루엣 클로즈샷",
+          "timeOfDay": "morning",
+          "lensMm": 85,
+          "fovDeg": 24,
+          "cameraPos": [
+            0.9,
+            -2.6,
+            1.7
+          ],
+          "cameraTarget": [
+            0,
+            0,
+            1.55
+          ],
+          "keyLightHex": "#FFF0B8",
+          "rimLightHex": "#FFD06A",
+          "fogDensity": 0.03,
+          "dofFocusM": 2.7,
+          "props": [
+            "어좌",
+            "일월오봉도",
+            "붉은 비단 장막",
+            "금장 난간",
+            "향로 연기",
+            "옥좌 계단",
+            "왕실 문양 장식"
+          ],
+          "webtoonUseCaseKo": "왕의 등장 직전, 권력자의 얼굴을 숨긴 실루엣, 중대한 명령이 내려지는 컷에 강한 인상을 줍니다."
+        },
+        {
+          "id": "joseon_hanok_010",
+          "titleKo": "한옥 부엌과 뒤뜰 생활감 컷",
+          "timeOfDay": "morning",
+          "lensMm": 40,
+          "fovDeg": 49,
+          "cameraPos": [
+            2.6,
+            -3.4,
+            1.45
+          ],
+          "cameraTarget": [
+            0,
+            0,
+            1.1
+          ],
+          "keyLightHex": "#FFE0A3",
+          "rimLightHex": "#C9E0FF",
+          "fogDensity": 0.018,
+          "dofFocusM": 3.8,
+          "props": [
+            "아궁이",
+            "무쇠솥",
+            "장작더미",
+            "김 오르는 솥",
+            "뒤뜰 장독대",
+            "광주리",
+            "나무 도마",
+            "짚단"
+          ],
+          "webtoonUseCaseKo": "하인들의 일상, 가족의 아침 준비, 평범한 생활 속에서 사건이 시작되는 생활감 있는 컷에 좋습니다."
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-9",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "사이버펑크 네온 시장·지하 연구소·우주선 브릿지",
+      "presets": [
+        {
+          "id": "cyber-market-wide-rain-01",
+          "titleKo": "비 내리는 네온 시장 와이드 진입컷",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 73,
+          "cameraPos": [
+            0,
+            -9.5,
+            2.2
+          ],
+          "cameraTarget": [
+            0.4,
+            0.8,
+            1.7
+          ],
+          "keyLightHex": "#15F4FF",
+          "rimLightHex": "#FF2BD6",
+          "fogDensity": 0.045,
+          "dofFocusM": 7.5,
+          "props": [
+            "젖은 아스팔트 바닥",
+            "한글·중문 혼합 네온 간판",
+            "홀로그램 메뉴판",
+            "노점 천막",
+            "증기 배출구",
+            "전선 다발",
+            "우산 쓴 엑스트라 실루엣",
+            "반사 물웅덩이"
+          ],
+          "webtoonUseCaseKo": "주인공이 거대한 사이버펑크 시장에 처음 들어서는 도입부 풀컷 또는 챕터 오프닝 배경."
+        },
+        {
+          "id": "cyber-market-low-chase-02",
+          "titleKo": "네온 골목 추격 로우앵글",
+          "timeOfDay": "night",
+          "lensMm": 18,
+          "fovDeg": 90,
+          "cameraPos": [
+            -1.8,
+            -4.2,
+            0.55
+          ],
+          "cameraTarget": [
+            0.2,
+            2.5,
+            1.15
+          ],
+          "keyLightHex": "#FF007A",
+          "rimLightHex": "#00E5FF",
+          "fogDensity": 0.055,
+          "dofFocusM": 4.2,
+          "props": [
+            "좁은 시장 골목",
+            "뒤집힌 플라스틱 의자",
+            "날아가는 영수증",
+            "고장 난 서빙 드론",
+            "깜빡이는 네온 튜브",
+            "벽면 그래피티",
+            "쓰레기봉투",
+            "노점 카트"
+          ],
+          "webtoonUseCaseKo": "추격전, 도주, 갑작스러운 습격 장면에 속도감을 주는 사선 구도 액션컷."
+        },
+        {
+          "id": "cyber-market-rooftop-overlook-03",
+          "titleKo": "시장 옥상 감시자 오버룩",
+          "timeOfDay": "sunset",
+          "lensMm": 35,
+          "fovDeg": 54,
+          "cameraPos": [
+            3.5,
+            -6,
+            6.8
+          ],
+          "cameraTarget": [
+            0,
+            0.5,
+            2
+          ],
+          "keyLightHex": "#FF8A3D",
+          "rimLightHex": "#7C4DFF",
+          "fogDensity": 0.035,
+          "dofFocusM": 8,
+          "props": [
+            "옥상 난간",
+            "위성 안테나",
+            "대형 광고 홀로그램",
+            "시장 지붕 패널",
+            "원거리 고층 빌딩",
+            "감시 카메라",
+            "환풍기",
+            "케이블 브리지"
+          ],
+          "webtoonUseCaseKo": "인물이 옥상에서 시장 전체를 내려다보며 표적을 찾거나 독백하는 장면."
+        },
+        {
+          "id": "underground-lab-sterile-corridor-04",
+          "titleKo": "지하 연구소 무균 복도 정중앙 구도",
+          "timeOfDay": "noon",
+          "lensMm": 28,
+          "fovDeg": 65,
+          "cameraPos": [
+            0,
+            -8,
+            1.65
+          ],
+          "cameraTarget": [
+            0,
+            1.5,
+            1.55
+          ],
+          "keyLightHex": "#D9F7FF",
+          "rimLightHex": "#5CE1FF",
+          "fogDensity": 0.012,
+          "dofFocusM": 6.5,
+          "props": [
+            "흰색 무균 복도",
+            "자동 격벽문",
+            "바닥 유도등",
+            "벽면 상태 표시 패널",
+            "천장 LED 라인",
+            "CCTV 돔 카메라",
+            "출입 인증 단말기",
+            "방역 스프레이 노즐"
+          ],
+          "webtoonUseCaseKo": "비밀 시설 진입, 연구소 잠입, 차갑고 통제된 분위기의 긴장감 있는 대화컷."
+        },
+        {
+          "id": "underground-lab-specimen-tank-05",
+          "titleKo": "배양 탱크 역광 클로즈업",
+          "timeOfDay": "night",
+          "lensMm": 50,
+          "fovDeg": 40,
+          "cameraPos": [
+            -2.2,
+            -3.5,
+            1.45
+          ],
+          "cameraTarget": [
+            0,
+            0.4,
+            1.6
+          ],
+          "keyLightHex": "#4CFFB3",
+          "rimLightHex": "#B05CFF",
+          "fogDensity": 0.028,
+          "dofFocusM": 3.2,
+          "props": [
+            "녹색 배양액 탱크",
+            "유리관 속 실험체 실루엣",
+            "기포 파티클",
+            "생체 데이터 모니터",
+            "케이블 묶음",
+            "스테인리스 실험대",
+            "냉각 장치",
+            "위험 경고 스티커"
+          ],
+          "webtoonUseCaseKo": "정체불명의 실험체 발견, 빌런의 연구 공개, 충격적인 반전 컷에 적합."
+        },
+        {
+          "id": "underground-lab-alarm-red-06",
+          "titleKo": "경보 발령 붉은 연구실 액션컷",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 74,
+          "cameraPos": [
+            2.8,
+            -5.2,
+            1.1
+          ],
+          "cameraTarget": [
+            0,
+            0.2,
+            1.35
+          ],
+          "keyLightHex": "#FF1E1E",
+          "rimLightHex": "#00D8FF",
+          "fogDensity": 0.06,
+          "dofFocusM": 4.5,
+          "props": [
+            "깜빡이는 적색 경보등",
+            "파손된 유리벽",
+            "넘어진 실험 의자",
+            "스파크 튀는 배전반",
+            "비상문",
+            "연기 분사구",
+            "흩어진 연구 문서",
+            "깨진 샘플 바이알"
+          ],
+          "webtoonUseCaseKo": "실험체 탈출, 침입자 발각, 전투 직전의 혼란과 위기감을 강조하는 컷."
+        },
+        {
+          "id": "underground-lab-control-room-07",
+          "titleKo": "지하 통제실 모니터 월 하이앵글",
+          "timeOfDay": "night",
+          "lensMm": 32,
+          "fovDeg": 58,
+          "cameraPos": [
+            0,
+            -5.8,
+            3.2
+          ],
+          "cameraTarget": [
+            0,
+            0,
+            1.2
+          ],
+          "keyLightHex": "#1B6CFF",
+          "rimLightHex": "#FF3CC7",
+          "fogDensity": 0.02,
+          "dofFocusM": 5,
+          "props": [
+            "대형 모니터 월",
+            "보안 지도 UI",
+            "콘솔 데스크",
+            "회전 의자",
+            "키보드와 터치패널",
+            "서버 랙",
+            "바닥 케이블",
+            "커피 컵"
+          ],
+          "webtoonUseCaseKo": "해커가 시설을 제어하거나 감시 화면을 통해 적의 위치를 파악하는 정보전 장면."
+        },
+        {
+          "id": "spaceship-bridge-command-wide-08",
+          "titleKo": "우주선 브릿지 함장석 와이드",
+          "timeOfDay": "night",
+          "lensMm": 26,
+          "fovDeg": 69,
+          "cameraPos": [
+            0,
+            -7.2,
+            2.05
+          ],
+          "cameraTarget": [
+            0,
+            1,
+            1.55
+          ],
+          "keyLightHex": "#8FD8FF",
+          "rimLightHex": "#FFB347",
+          "fogDensity": 0.015,
+          "dofFocusM": 6,
+          "props": [
+            "중앙 함장석",
+            "곡면 전면 관측창",
+            "별빛 배경",
+            "항법 콘솔",
+            "홀로그램 전술 지도",
+            "바닥 라이트 스트립",
+            "승무원 좌석",
+            "천장 구조 빔"
+          ],
+          "webtoonUseCaseKo": "우주선 브릿지 첫 공개, 함장이 명령을 내리는 장면, 대규모 작전 브리핑 컷."
+        },
+        {
+          "id": "spaceship-bridge-window-silhouette-09",
+          "titleKo": "관측창 앞 실루엣 독백컷",
+          "timeOfDay": "night",
+          "lensMm": 70,
+          "fovDeg": 29,
+          "cameraPos": [
+            -1.2,
+            -4.5,
+            1.65
+          ],
+          "cameraTarget": [
+            0,
+            0.8,
+            1.7
+          ],
+          "keyLightHex": "#0B1B4D",
+          "rimLightHex": "#E7F6FF",
+          "fogDensity": 0.01,
+          "dofFocusM": 4.8,
+          "props": [
+            "대형 관측창",
+            "행성 반사광",
+            "캐릭터 실루엣용 발판",
+            "금속 난간",
+            "느린 별무리 배경",
+            "희미한 콘솔 불빛",
+            "유리 반사 레이어",
+            "벽면 함선 문양"
+          ],
+          "webtoonUseCaseKo": "주인공 또는 함장이 우주를 바라보며 결심하거나 과거를 회상하는 감정 중심 컷."
+        },
+        {
+          "id": "spaceship-bridge-battle-tilt-10",
+          "titleKo": "전투 경보 브릿지 더치앵글",
+          "timeOfDay": "night",
+          "lensMm": 20,
+          "fovDeg": 82,
+          "cameraPos": [
+            2.5,
+            -5,
+            1
+          ],
+          "cameraTarget": [
+            -0.3,
+            0.6,
+            1.35
+          ],
+          "keyLightHex": "#FF3B30",
+          "rimLightHex": "#31D7FF",
+          "fogDensity": 0.04,
+          "dofFocusM": 4,
+          "props": [
+            "기울어진 카메라용 브릿지 바닥",
+            "적색 전투 경보 UI",
+            "스파크 파티클",
+            "흔들린 콘솔 의자",
+            "균열 난 디스플레이",
+            "비상 산소 마스크",
+            "전술 홀로그램",
+            "폭발광 반사 관측창"
+          ],
+          "webtoonUseCaseKo": "함선 피격, 전투 개시, 캐릭터가 균형을 잃는 긴박한 액션 연출에 적합."
+        }
+      ]
+    },
+    {
+      "customId": "bg3d-presets-10",
+      "model": "gpt-5.5-2026-04-23",
+      "themeKo": "병원·법정·공연장·공항·기차 객실",
+      "presets": [
+        {
+          "id": "hospital_emergency_corridor_chase",
+          "titleKo": "병원 응급실 복도 추격 컷",
+          "timeOfDay": "night",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            -1.8,
+            1.45,
+            6.2
+          ],
+          "cameraTarget": [
+            0.15,
+            1.35,
+            0.2
+          ],
+          "keyLightHex": "#EAF6FF",
+          "rimLightHex": "#7EC8FF",
+          "fogDensity": 0.018,
+          "dofFocusM": 4.2,
+          "props": [
+            "응급실 표지판",
+            "이동식 침대",
+            "수액 걸이",
+            "벽면 산소 밸브",
+            "형광등 패널",
+            "간호 스테이션 일부",
+            "바닥 반사 타일",
+            "의료 카트"
+          ],
+          "webtoonUseCaseKo": "긴박한 추격, 환자 이송, 주인공이 복도 끝에서 누군가를 발견하는 세로 스크롤용 원근 강조 컷"
+        },
+        {
+          "id": "hospital_patient_room_confession",
+          "titleKo": "병실 창가 고백 컷",
+          "timeOfDay": "morning",
+          "lensMm": 50,
+          "fovDeg": 39.6,
+          "cameraPos": [
+            2.6,
+            1.55,
+            3.4
+          ],
+          "cameraTarget": [
+            0.1,
+            1.25,
+            0.2
+          ],
+          "keyLightHex": "#FFF1D6",
+          "rimLightHex": "#D7ECFF",
+          "fogDensity": 0.006,
+          "dofFocusM": 3,
+          "props": [
+            "병원 침대",
+            "흰 커튼",
+            "창문 블라인드",
+            "심전도 모니터",
+            "협탁",
+            "물컵",
+            "꽃병",
+            "환자 팔찌"
+          ],
+          "webtoonUseCaseKo": "차분한 고백, 병문안, 깨어난 인물과 보호자의 감정 교류 장면에 적합한 부드러운 역광 컷"
+        },
+        {
+          "id": "courtroom_judge_low_angle",
+          "titleKo": "법정 판사석 압박 로우앵글 컷",
+          "timeOfDay": "noon",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            0,
+            0.85,
+            4.8
+          ],
+          "cameraTarget": [
+            0,
+            2.25,
+            -1.1
+          ],
+          "keyLightHex": "#F4F1E8",
+          "rimLightHex": "#B9C7D9",
+          "fogDensity": 0.004,
+          "dofFocusM": 5.5,
+          "props": [
+            "판사석",
+            "법봉",
+            "대한민국 국장 느낌의 벽장식",
+            "증인석",
+            "변호인석",
+            "방청석",
+            "목재 난간",
+            "서류 더미"
+          ],
+          "webtoonUseCaseKo": "판결 선고, 판사의 위압감, 피고가 압박받는 순간을 과장하는 로우앵글 연출"
+        },
+        {
+          "id": "courtroom_witness_spotlight",
+          "titleKo": "증인석 진술 스포트라이트 컷",
+          "timeOfDay": "noon",
+          "lensMm": 85,
+          "fovDeg": 23.9,
+          "cameraPos": [
+            -3.2,
+            1.6,
+            2.6
+          ],
+          "cameraTarget": [
+            0.05,
+            1.45,
+            -0.35
+          ],
+          "keyLightHex": "#FFF8EA",
+          "rimLightHex": "#C9D6FF",
+          "fogDensity": 0.007,
+          "dofFocusM": 3.8,
+          "props": [
+            "증인석 마이크",
+            "성경 또는 선서문",
+            "나무 의자",
+            "녹취 장비",
+            "법정 깃발",
+            "서류철",
+            "물잔",
+            "방청객 실루엣"
+          ],
+          "webtoonUseCaseKo": "증인이 결정적 증언을 하는 장면, 거짓말이 들통나는 클로즈업, 긴장감 있는 시선 교차 컷"
+        },
+        {
+          "id": "concert_stage_idol_reveal",
+          "titleKo": "공연장 아이돌 등장 역광 컷",
+          "timeOfDay": "night",
+          "lensMm": 28,
+          "fovDeg": 65.5,
+          "cameraPos": [
+            0,
+            1.2,
+            8.5
+          ],
+          "cameraTarget": [
+            0,
+            1.65,
+            0
+          ],
+          "keyLightHex": "#FF4FD8",
+          "rimLightHex": "#66F7FF",
+          "fogDensity": 0.045,
+          "dofFocusM": 8,
+          "props": [
+            "대형 LED 스크린",
+            "무대 계단",
+            "스모그 머신",
+            "무빙 라이트",
+            "스탠드 마이크",
+            "무대 바닥 반사재",
+            "콘서트 스피커",
+            "팬라이트 군중 실루엣"
+          ],
+          "webtoonUseCaseKo": "무대 위 주인공 첫 등장, 팬들의 함성, 화려한 역광 실루엣으로 임팩트 컷을 만들 때 사용"
+        },
+        {
+          "id": "concert_backstage_before_show",
+          "titleKo": "공연장 백스테이지 출연 직전 컷",
+          "timeOfDay": "night",
+          "lensMm": 40,
+          "fovDeg": 48.5,
+          "cameraPos": [
+            -2.4,
+            1.6,
+            3.1
+          ],
+          "cameraTarget": [
+            0.15,
+            1.45,
+            0.15
+          ],
+          "keyLightHex": "#FFE0B5",
+          "rimLightHex": "#8A7CFF",
+          "fogDensity": 0.016,
+          "dofFocusM": 3.1,
+          "props": [
+            "분장 거울 전구",
+            "의상 행거",
+            "헤드셋 무전기",
+            "케이블 박스",
+            "스태프 패스",
+            "접이식 의자",
+            "메이크업 팔레트",
+            "무대 출입문"
+          ],
+          "webtoonUseCaseKo": "공연 전 긴장, 아이돌과 매니저의 대화, 무대에 나가기 직전의 떨림을 담는 중거리 컷"
+        },
+        {
+          "id": "airport_departure_gate_goodbye",
+          "titleKo": "공항 출국 게이트 이별 컷",
+          "timeOfDay": "sunset",
+          "lensMm": 35,
+          "fovDeg": 54.4,
+          "cameraPos": [
+            -3.8,
+            1.55,
+            4.5
+          ],
+          "cameraTarget": [
+            0,
+            1.35,
+            0.2
+          ],
+          "keyLightHex": "#FFD08A",
+          "rimLightHex": "#A7C7FF",
+          "fogDensity": 0.01,
+          "dofFocusM": 5,
+          "props": [
+            "출국장 게이트",
+            "항공편 전광판",
+            "여행 캐리어",
+            "보안 라인 벨트",
+            "유리 커튼월",
+            "여권과 탑승권",
+            "공항 의자",
+            "멀리 보이는 항공기 꼬리"
+          ],
+          "webtoonUseCaseKo": "공항 이별, 떠나는 인물의 뒷모습, 노을빛 유리 반사로 감정선을 강조하는 롱샷"
+        },
+        {
+          "id": "airport_baggage_claim_mystery",
+          "titleKo": "공항 수하물 벨트 미스터리 컷",
+          "timeOfDay": "night",
+          "lensMm": 30,
+          "fovDeg": 61.9,
+          "cameraPos": [
+            2.8,
+            1.35,
+            5.2
+          ],
+          "cameraTarget": [
+            0.1,
+            1.05,
+            0
+          ],
+          "keyLightHex": "#DDEEFF",
+          "rimLightHex": "#7AA2FF",
+          "fogDensity": 0.012,
+          "dofFocusM": 4.5,
+          "props": [
+            "수하물 컨베이어 벨트",
+            "검은 캐리어",
+            "분실물 안내 표지",
+            "천장 라이트 패널",
+            "공항 카트",
+            "CCTV 카메라",
+            "도착 안내 전광판",
+            "기둥 광고판"
+          ],
+          "webtoonUseCaseKo": "수상한 캐리어 발견, 잠입 수사, 도착장에서 누군가를 기다리는 미스터리 분위기 컷"
+        },
+        {
+          "id": "train_cabin_window_noir",
+          "titleKo": "기차 객실 창가 야간 독백 컷",
+          "timeOfDay": "night",
+          "lensMm": 50,
+          "fovDeg": 39.6,
+          "cameraPos": [
+            1.15,
+            1.25,
+            2.4
+          ],
+          "cameraTarget": [
+            -0.15,
+            1.15,
+            0.05
+          ],
+          "keyLightHex": "#BFD8FF",
+          "rimLightHex": "#FFE6A3",
+          "fogDensity": 0.014,
+          "dofFocusM": 2.2,
+          "props": [
+            "기차 좌석",
+            "창문 빗물 자국",
+            "접이식 테이블",
+            "종이컵",
+            "캐리어 선반",
+            "좌석 번호 표시",
+            "커튼",
+            "흔들리는 외부 불빛 반사"
+          ],
+          "webtoonUseCaseKo": "야간 열차 독백, 과거 회상, 창밖을 보며 결심하는 인물의 감성적인 클로즈업 컷"
+        },
+        {
+          "id": "train_cabin_confrontation_aisle",
+          "titleKo": "기차 객실 통로 대치 컷",
+          "timeOfDay": "noon",
+          "lensMm": 24,
+          "fovDeg": 73.7,
+          "cameraPos": [
+            0,
+            1.35,
+            5.8
+          ],
+          "cameraTarget": [
+            0,
+            1.35,
+            0
+          ],
+          "keyLightHex": "#F8FBFF",
+          "rimLightHex": "#FFD7A8",
+          "fogDensity": 0.008,
+          "dofFocusM": 4.8,
+          "props": [
+            "양쪽 객실 좌석",
+            "중앙 통로",
+            "머리 위 짐칸",
+            "흔들리는 손잡이",
+            "도시락 상자",
+            "신문",
+            "객실 연결문",
+            "바닥 라인 조명"
+          ],
+          "webtoonUseCaseKo": "좁은 객실 통로에서의 대치, 추리물 범인 지목, 도망칠 수 없는 공간감을 살리는 원포인트 투시 컷"
+        }
+      ]
+    }
+  ]
+}

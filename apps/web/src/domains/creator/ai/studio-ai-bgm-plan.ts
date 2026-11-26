@@ -34,12 +34,30 @@ export function buildBgmPlacementPrompt(
   ].join("\n");
 }
 
-/** 모델이 JSON을 코드 펜스로 감싸는 경우를 대비해 펜스를 제거한다. */
+/** 모델이 JSON을 코드 펜스나 짧은 안내 문구로 감싸는 경우를 대비해 본문 JSON만 추출한다. */
 function stripJsonFences(text: string): string {
-  let trimmed = text.trim();
-  if (!trimmed.startsWith("```")) return trimmed;
-  trimmed = trimmed.replace(/^```[a-zA-Z]*\n?/, "");
-  if (trimmed.endsWith("```")) trimmed = trimmed.slice(0, -3).trim();
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      JSON.parse(trimmed);
+      return trimmed;
+    } catch {
+      // 원문 JSON 파싱 실패 시 외부 코드 펜스·중괄호 추출로 폴백한다.
+    }
+  }
+  const openIdx = trimmed.indexOf("```");
+  const firstBrace = trimmed.indexOf("{");
+  if (openIdx >= 0 && (firstBrace < 0 || openIdx < firstBrace)) {
+    const afterOpen = trimmed.slice(openIdx + 3);
+    const langMatch = /^(?:json)?[\t ]*\r?\n?/iu.exec(afterOpen);
+    const contentStart = openIdx + 3 + (langMatch ? langMatch[0].length : 0);
+    const closeIdx = trimmed.lastIndexOf("```");
+    if (closeIdx > contentStart) return trimmed.slice(contentStart, closeIdx).trim();
+  }
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1).trim();
+  }
   return trimmed;
 }
 

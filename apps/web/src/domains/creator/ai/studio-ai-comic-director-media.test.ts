@@ -106,6 +106,49 @@ describe("AI Comic Director media operations", () => {
     });
   });
 
+  it("공식 OpenAI 마스크 편집에서 GPT Image 모델과 별칭에 PNG 출력 형식을 지정한다", async () => {
+    for (const model of ["gpt-image-1.5", "gpt-image-2.6-sunburst", "chatgpt-image-latest"]) {
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const form = init?.body as FormData;
+        expect(form.get("model")).toBe(model);
+        expect(form.get("response_format")).toBeNull();
+        expect(form.get("output_format")).toBe("png");
+        expect(form.get("image")).toBeInstanceOf(Blob);
+        expect(form.get("mask")).toBeInstanceOf(Blob);
+        return new Response(JSON.stringify({ data: [{ b64_json: "cmVwYWlyZWQ=" }] }), { status: 200 });
+      });
+      globalThis.fetch = fetchMock as typeof fetch;
+
+      const result = await repairStudioAiComicImageRegion({
+        settings: { ...SETTINGS, baseUrl: "https://api.openai.com/v1", imageModel: model },
+        sourceImageDataUrl: ONE_PIXEL,
+        maskDataUrl: ONE_PIXEL,
+        prompt: "얼굴 표정만 수정",
+        target: "face",
+        parentCandidateId: "candidate-2",
+      });
+
+      expect(result.ok).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("classifies non-JSON upstream HTTP 502 errors as http_error rather than parse_error", async () => {
+    const fetchMock = vi.fn(async () => new Response("<html>Bad Gateway</html>", { status: 502, statusText: "Bad Gateway" }));
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const result = await repairStudioAiComicImageRegion({
+      settings: { ...SETTINGS, imageModel: "gpt-image-1.5" },
+      sourceImageDataUrl: ONE_PIXEL,
+      maskDataUrl: ONE_PIXEL,
+      prompt: "배경 수정",
+      target: "background",
+      parentCandidateId: "candidate-3",
+    });
+
+    expect(result).toMatchObject({ ok: false, code: "http_error" });
+  });
+
   it("describes an honest non-editable single-layer fallback", () => {
     expect(singleLayerStudioAiComicManifest("candidate-1", ONE_PIXEL)).toMatchObject({
       version: 1,

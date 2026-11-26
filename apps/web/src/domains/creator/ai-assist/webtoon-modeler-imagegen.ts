@@ -345,3 +345,38 @@ export function compileWebtoonModelerToImageGen(
     previewSvg,
   };
 }
+
+export type WebtoonModelerStudioImageSize = "1024x1024" | "1024x1792" | "1792x1024";
+
+/**
+ * 웹툰 컷 모델러 비율을 Studio AI 이미지 규격으로 변환한다.
+ * (`generateBackgroundImage`가 `gpt-image-*` 모델일 때 `1024x1536`·`1536x1024`로 자동 정규화한다.)
+ */
+export function webtoonAspectRatioToStudioAiImageSize(
+  aspectRatio: WebtoonCutAspectRatio,
+): WebtoonModelerStudioImageSize {
+  if (aspectRatio === "16:9") return "1792x1024";
+  if (aspectRatio === "1:1") return "1024x1024";
+  return "1024x1792";
+}
+
+/**
+ * 컴파일된 웹툰 모델러 컷 요청을 OpenAI Images Generations 호환 프롬프트·해상도 쌍으로 변환한다.
+ * OpenAI Images API는 별도 `negative_prompt` 필드가 없으므로 제외 지시를 프롬프트 말미에 통합한다.
+ */
+export function buildWebtoonModelerOpenAiImageRequest(
+  compiled: Pick<CompiledWebtoonImageGenRequest, "positivePrompt" | "negativePrompt" | "width" | "height">,
+): { readonly prompt: string; readonly size: WebtoonModelerStudioImageSize } {
+  const size: WebtoonModelerStudioImageSize =
+    compiled.width > compiled.height
+      ? "1792x1024"
+      : compiled.height > compiled.width
+        ? "1024x1792"
+        : "1024x1024";
+  const positive = compiled.positivePrompt.trim();
+  const negative = compiled.negativePrompt.trim();
+  const prompt = negative
+    ? `${positive}\n\nAvoid: ${negative}. No text, speech bubble, logo, or watermark.`
+    : `${positive}\n\nNo text, speech bubble, logo, or watermark.`;
+  return { prompt, size };
+}

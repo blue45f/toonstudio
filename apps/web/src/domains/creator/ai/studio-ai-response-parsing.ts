@@ -141,8 +141,9 @@ export function buildStudioJsonPostTarget(
       });
     }
   }
+  const rawMaxTokens = raw.max_completion_tokens ?? raw.max_tokens;
   const requestedMaxTokens =
-    typeof raw.max_tokens === "number" && raw.max_tokens > 0 ? Math.round(raw.max_tokens) : 1024;
+    typeof rawMaxTokens === "number" && rawMaxTokens > 0 ? Math.round(rawMaxTokens) : 1024;
   const anthropicBody: Record<string, unknown> = {
     model: rawModel,
     max_tokens: Math.max(2048, requestedMaxTokens + 2048),
@@ -249,7 +250,9 @@ export function extractTextAiProvenance(
   };
 }
 
-export function parseImageSize(size: StudioAiImageSize): { width: number; height: number } {
+export function parseImageSize(
+  size: StudioAiImageSize | "1024x1536" | "1536x1024",
+): { width: number; height: number } {
   const m = /^(\d+)x(\d+)$/.exec(size);
   if (!m) return { width: 1024, height: 1024 };
   return { width: Number(m[1]), height: Number(m[2]) };
