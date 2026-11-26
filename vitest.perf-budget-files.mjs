@@ -32,6 +32,7 @@
 // instruction cost even when scheduler contention is removed by threadCpuUsage().
 export const PERF_BUDGET_TEST_FILES = Object.freeze([
   "apps/brush-lab/src/platform/pointer-replay-budget.test.ts",
+  "apps/web/src/domains/creator/brush-physics-pro/brush-physics-pro.test.tsx",
   "apps/web/src/domains/creator/brush/studio-brush-stamp-engine.test.ts",
   "apps/web/src/domains/creator/brush/studio-croquis-capsule-pen-v1.test.ts",
   "apps/web/src/domains/creator/brush/studio-dry-media-long-stroke-regression.test.ts",
@@ -49,6 +50,7 @@ export const PERF_BUDGET_TEST_FILES = Object.freeze([
   "apps/web/src/domains/creator/studio-impasto-relief-shading-v1.perf.test.ts",
   "apps/web/src/domains/creator/studio-living-ink-provider.test.ts",
   "apps/web/src/domains/creator/studio-living-ink-settled-bake-v1.test.ts",
+  "apps/web/src/domains/creator/webgpu-crowd-director/webgpu-crowd-director.test.ts",
   "apps/web/src/domains/creator/webnn-pigment-director/webnn-lineart-budget.test.ts",
   "scripts/audit-all-brushes-long-stroke-and-mix.test.mjs",
   "scripts/studio-brush-catalogue-perf-matrix.test.ts",

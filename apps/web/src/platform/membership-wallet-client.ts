@@ -230,3 +230,144 @@ export function claimMembershipActivity(
     metadata,
   });
 }
+
+export type CreditPackView = {
+  id: string;
+  credits: number;
+  krwPrice: number;
+};
+
+export type SubscriptionCreditPlanView = {
+  planId: "creator" | "pro" | "team";
+  label: string;
+  monthlyIncludedCredits: number;
+  monthlyPriceKrw: number;
+  targetRoleKo: string;
+};
+
+export type ActivityStudioCreditRewardView = {
+  id: "webtoon" | "illustration" | "workspace" | "post" | "comment";
+  category: "serialization" | "contribution";
+  activityKey: string;
+  labelKo: string;
+  labelEn: string;
+  amountCredits: number;
+  dailyCapPerAccount: number;
+  expiryDays: number;
+};
+
+export type MilestoneStudioCreditRewardView = {
+  id:
+    | "welcome"
+    | "first-public-work"
+    | "beta-feedback-accepted"
+    | "bug-report-accepted"
+    | "referral-invite";
+  labelKo: string;
+  labelEn: string;
+  amountCredits: number;
+  capRuleKo: string;
+  capRuleEn: string;
+  expiryDays: number;
+};
+
+export type MembershipBillingModeView = {
+  paidOperationsEnabled: boolean;
+  mode: "free-activity-beta" | "paid-credit-active";
+  subscriptionsEnabled: boolean;
+  creditPurchasesEnabled: boolean;
+  krwPerCredit: number;
+  activityRewardExpiryDays: number;
+  monthlyActivityCreditPoolCap: number;
+  creditPacks: CreditPackView[];
+  subscriptionPlans: SubscriptionCreditPlanView[];
+  activityCreditRewards: ActivityStudioCreditRewardView[];
+  milestoneCreditRewards?: MilestoneStudioCreditRewardView[];
+};
+
+export function getMembershipBillingMode(): Promise<MembershipBillingModeView> {
+  return api.get<MembershipBillingModeView>("/membership/billing-mode");
+}
+
+export function registerCreditWaitlistIntent(
+  targetType: "plan" | "credit-pack",
+  targetId: string,
+): Promise<{
+  registered: boolean;
+  chargedKrw: 0;
+  targetType: "plan" | "credit-pack";
+  targetId: string;
+  alreadyRegistered: boolean;
+  totalWaitlistCount: number;
+}> {
+  return api.post("/membership/waitlist-intent", { targetType, targetId });
+}
+
+export function claimReferralBonusCredits(inviterCode: string): Promise<{
+  claimed: true;
+  inviteeCredits: number;
+  inviterCredits: number;
+  inviterUserId: string;
+  expiresAt: string;
+}> {
+  return api.post("/membership/referral-claim", { inviterCode });
+}
+
+export type TeamAssistantQuotaView = {
+  allocationId: string;
+  ownerUserId: string;
+  workspaceId: string;
+  assistantUserId: string;
+  assistantNickname: string;
+  roleKo: string;
+  limitCredits: number;
+  usedCredits: number;
+  remainingCredits: number;
+  status: "active" | "revoked";
+  createdAt: string;
+  revokedAt: string | null;
+};
+
+export function listTeamAssistantQuotas(): Promise<{
+  items: TeamAssistantQuotaView[];
+}> {
+  return api.get("/membership/team-quotas");
+}
+
+export function allocateTeamAssistantQuota(payload: {
+  workspaceId: string;
+  assistantUserId: string;
+  assistantNickname: string;
+  roleKo: string;
+  limitCredits: number;
+}): Promise<TeamAssistantQuotaView> {
+  return api.post("/membership/team-quotas/allocate", payload);
+}
+
+export function revokeTeamAssistantQuota(
+  allocationId: string,
+): Promise<TeamAssistantQuotaView & { releasedCredits: number }> {
+  return api.post(
+    `/membership/team-quotas/${encodeURIComponent(allocationId)}/revoke`,
+    {},
+  );
+}
+
+export function purchaseCreditPackWithGate(
+  packId: string,
+  requestId: string,
+  paymentConfirmationId?: string,
+): Promise<{
+  purchaseIntentId: string;
+  packId: string;
+  credits: number;
+  krwPrice: number;
+  granted: true;
+  expiresAt: null;
+}> {
+  return api.post("/membership/credit-packs/purchase", {
+    packId,
+    requestId,
+    paymentConfirmationId,
+  });
+}

@@ -52,7 +52,28 @@ describe("StudioEcosystemService", () => {
 
     const res = service.assignPlazaSlot("party-gate-01", "s-line", "av-1");
     expect(res.assigned).toBe(true);
+    expect(res.brokerageFeeRate).toBe(0);
+    expect(res.handoffReviewPath).toContain("party=party-gate-01");
     expect(() => service.assignPlazaSlot("party-gate-01", "s-line", "av-2")).toThrow(BadRequestException);
+
+    const msg = service.postPlazaMessage({
+      partyId: "party-gate-01",
+      senderName: "선화어시_다온",
+      roleLabel: "선화·펜선",
+      text: "클튜 원본 레이어 규칙 맞춰서 오늘 밤 안으로 10컷 가능해요.",
+    });
+    expect(msg.partyId).toBe("party-gate-01");
+    expect(service.listPlazaMessages("party-gate-01").items[0]?.id).toBe(msg.id);
+
+    const presence = service.upsertPlazaPresence({
+      userId: "u-assist-1",
+      nickname: "선화어시_다온",
+      roleCode: "001.003",
+      availability: "urgent-sub-ready",
+      cutRateKrw: 17000,
+    });
+    expect(presence.availability).toBe("urgent-sub-ready");
+    expect(service.listPlazaPresence().items).toHaveLength(1);
 
     const post = service.createCafePost({
       cafeId: "cafe-studio-chronicle",

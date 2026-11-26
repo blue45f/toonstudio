@@ -10,6 +10,7 @@ import { StudioEcosystemEventsService } from "./studio-ecosystem-events.service"
 import {
   StudioEcosystemService,
   type EcosystemCafePostAttachmentInput,
+  type PlazaPresenceAvailability,
 } from "./studio-ecosystem.service";
 
 @Controller("api/studio-ecosystem")
@@ -102,6 +103,44 @@ export class StudioEcosystemController {
     @Body() body: { avatarId: string },
   ) {
     return this.service.assignPlazaSlot(partyId, slotId, body.avatarId);
+  }
+
+  @Get("plaza/messages")
+  listPlazaMessages(@Query("partyId") partyId?: string) {
+    return this.service.listPlazaMessages(partyId);
+  }
+
+  @Post("plaza/messages")
+  postPlazaMessage(
+    @Body()
+    body: {
+      partyId?: string | null;
+      senderName: string;
+      roleLabel?: string;
+      text: string;
+    },
+  ) {
+    return this.service.postPlazaMessage(body ?? { senderName: "", text: "" });
+  }
+
+  @Get("plaza/presence")
+  listPlazaPresence() {
+    return this.service.listPlazaPresence();
+  }
+
+  @Post("plaza/presence")
+  upsertPlazaPresence(
+    @Body()
+    body: {
+      userId: string;
+      nickname: string;
+      roleCode: string;
+      availability: PlazaPresenceAvailability;
+      tools?: string[];
+      cutRateKrw?: number;
+    },
+  ) {
+    return this.service.upsertPlazaPresence(body);
   }
 
   @Get("cafes/posts")

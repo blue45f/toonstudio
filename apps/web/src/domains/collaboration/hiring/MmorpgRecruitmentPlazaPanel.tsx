@@ -1,9 +1,14 @@
 import { ShieldCheck, Swords, UserPlus, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
+import {
+  studioEcosystemClient,
+  type PlazaTrustBadgeView,
+} from "@/platform/studio-ecosystem-client";
 import { useStudioEcosystemStream } from "@/platform/use-studio-ecosystem-stream";
 
+import { PlazaHandoffToolkitDisclosure } from "./PlazaHandoffToolkitDisclosure";
+import { PlazaLiveCommsBox } from "./PlazaLiveCommsBox";
 import {
   DETAILED_WEBTOON_ROLES,
   assignAvatarToPartySlot,
@@ -84,6 +89,39 @@ const DEFAULT_AVATARS: readonly PlazaAssistantAvatar[] = [
   },
 ];
 
+const DEFAULT_TRUST_BADGES: Readonly<Record<string, PlazaTrustBadgeView>> = {
+  "av-1": {
+    avatarId: "av-1",
+    nickname: "펜선장인_루나",
+    verifiedHandoffCount: 112,
+    onTimeDeliveryRatePct: 98,
+    cleanPassRatePct: 91,
+    medianResponseMinutes: 6,
+    badgeTier: "studio-anchor",
+    badgeLabelKo: "안정 마감 마스터",
+  },
+  "av-2": {
+    avatarId: "av-2",
+    nickname: "아케인VFX_카이",
+    verifiedHandoffCount: 54,
+    onTimeDeliveryRatePct: 93,
+    cleanPassRatePct: 83,
+    medianResponseMinutes: 10,
+    badgeTier: "clean-finisher",
+    badgeLabelKo: "1회 승인 우수",
+  },
+  "av-3": {
+    avatarId: "av-3",
+    nickname: "블렌더건축_하율",
+    verifiedHandoffCount: 140,
+    onTimeDeliveryRatePct: 97,
+    cleanPassRatePct: 90,
+    medianResponseMinutes: 12,
+    badgeTier: "studio-anchor",
+    badgeLabelKo: "안정 마감 마스터",
+  },
+};
+
 const GUILD_LABELS: Readonly<Record<RoleGuildCategory | "all", string>> = {
   all: "전체 직군 (28)",
   "story-directing": "글·콘티·연출",
@@ -107,9 +145,16 @@ export function MmorpgRecruitmentPlazaPanel({
   const [newPartyTitle, setNewPartyTitle] = useState("");
   const [newPartyRole, setNewPartyRole] = useState(DETAILED_WEBTOON_ROLES[2].code);
   const [notice, setNotice] = useState<string | null>(null);
+  const [handoffReviewPath, setHandoffReviewPath] = useState<string | null>(null);
+  const [trustBadges, setTrustBadges] =
+    useState<Readonly<Record<string, PlazaTrustBadgeView>>>(DEFAULT_TRUST_BADGES);
   const stream = useStudioEcosystemStream(true);
   const latestPlazaEventId = useMemo(
     () => stream.events.find((e) => e.type === "plaza.party_created" || e.type === "plaza.slot_assigned")?.id ?? null,
+    [stream.events],
+  );
+  const latestMessageEvent = useMemo(
+    () => stream.events.find((e) => e.type === "plaza.message_posted"),
     [stream.events],
   );
 
@@ -134,6 +179,19 @@ export function MmorpgRecruitmentPlazaPanel({
       })
       .catch(() => {
         // 오프라인/로컬 미리보기 환경에서는 기본 파티 목록을 유지한다.
+      });
+    void studioEcosystemClient
+      .listPlazaTrustBadges()
+      .then((res) => {
+        if (!active || !Array.isArray(res?.items) || res.items.length === 0) return;
+        const map: Record<string, PlazaTrustBadgeView> = {};
+        for (const item of res.items) {
+          map[item.avatarId] = item;
+        }
+        setTrustBadges((prev) => ({ ...prev, ...map }));
+      })
+      .catch(() => {
+        // 오프라인 환경에서는 기본 객관 납품 지표 시드를 유지한다.
       });
     return () => {
       active = false;
@@ -194,6 +252,7 @@ export function MmorpgRecruitmentPlazaPanel({
   };
 
   const handleInvite = (avatarId: string, nickname: string) => {
+    const defaultHandoffPath = `/collaborate/workspace?party=${encodeURIComponent(party.partyId)}&slot=${encodeURIComponent(activeSlot.slotId)}`;
     setParties((prev) =>
       prev.map((item) =>
         item.partyId === party.partyId
@@ -201,11 +260,19 @@ export function MmorpgRecruitmentPlazaPanel({
           : item,
       ),
     );
+    setHandoffReviewPath(defaultHandoffPath);
     onInviteMatchedAvatar?.(party.partyId, activeSlot.slotId, avatarId);
     setNotice(`${nickname} 님을 [${getDetailedWebtoonRole(activeSlot.roleCode).labelKo}] 슬롯에 실시간 매칭했습니다.`);
-    void studioEcosystemClient.assignPlazaSlot(party.partyId, activeSlot.slotId, avatarId).catch(() => {
-      // 오프라인/로컬 미리보기 환경에서는 낙관적 매칭 상태를 유지한다.
-    });
+    void studioEcosystemClient
+      .assignPlazaSlot(party.partyId, activeSlot.slotId, avatarId)
+      .then((res) => {
+        if (res?.handoffReviewPath) {
+          setHandoffReviewPath(res.handoffReviewPath);
+        }
+      })
+      .catch(() => {
+        // 오프라인/로컬 미리보기 환경에서는 낙관적 매칭 상태를 유지한다.
+      });
   };
 
   return (
@@ -331,6 +398,7 @@ export function MmorpgRecruitmentPlazaPanel({
         <ul className="space-y-2">
           {matches.map((match) => {
             const alreadyAssigned = activeSlot.filledAvatarIds.includes(match.avatarId);
+            const trust = trustBadges[match.avatarId];
             return (
               <li
                 key={match.avatarId}
@@ -342,6 +410,15 @@ export function MmorpgRecruitmentPlazaPanel({
                     <span className="rounded-md bg-accent-soft px-2 py-0.5 text-xs font-medium tabular-nums text-accent">
                       적합도 {match.score}점
                     </span>
+                    {trust ? (
+                      <span
+                        data-testid={`objective-trust-badge-${match.avatarId}`}
+                        className="rounded-md border border-good/35 bg-good/10 px-2 py-0.5 text-[11px] font-medium tabular-nums text-good"
+                      >
+                        {trust.badgeLabelKo} · 정시 {trust.onTimeDeliveryRatePct}% · 1회승인{" "}
+                        {trust.cleanPassRatePct}% ({trust.verifiedHandoffCount}회)
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-1 text-xs leading-[1.5] text-fg-3">
                     {match.compatible ? match.highlightsKo.join(" · ") : match.blockersKo.join(" · ")}
@@ -361,6 +438,17 @@ export function MmorpgRecruitmentPlazaPanel({
           })}
         </ul>
       </div>
+
+      <PlazaLiveCommsBox
+        activePartyId={party.partyId}
+        activePartyTitle={party.title}
+        activeRoleCode={activeSlot.roleCode}
+        activeRoleLabel={getDetailedWebtoonRole(activeSlot.roleCode).labelKo}
+        handoffReviewPath={handoffReviewPath}
+        latestMessageEvent={latestMessageEvent}
+      />
+
+      <PlazaHandoffToolkitDisclosure partyId={party.partyId} />
 
       <div className="flex flex-col gap-2.5 border-t border-line pt-3">
         <div className="flex snap-x gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0">

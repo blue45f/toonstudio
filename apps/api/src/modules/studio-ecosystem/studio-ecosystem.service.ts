@@ -53,6 +53,27 @@ export interface EcosystemPlazaPartyRecord {
   }[];
 }
 
+export type PlazaPresenceAvailability = "urgent-sub-ready" | "online-ready" | "busy";
+
+export interface EcosystemPlazaMessageRecord {
+  readonly id: string;
+  readonly partyId: string | null;
+  readonly senderName: string;
+  readonly roleLabel: string;
+  readonly text: string;
+  readonly createdAt: string;
+}
+
+export interface EcosystemPlazaPresenceRecord {
+  readonly userId: string;
+  readonly nickname: string;
+  readonly roleCode: string;
+  readonly availability: PlazaPresenceAvailability;
+  readonly tools: readonly string[];
+  readonly cutRateKrw: number;
+  readonly updatedAt: string;
+}
+
 const ALLOWED_IMAGE_MIMES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 const MAX_CAFE_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_CAFE_IMAGES = 8;
@@ -75,6 +96,8 @@ export class StudioEcosystemService {
         auditLogs?: SecurityAuditEntry[];
         cafePosts?: EcosystemCafePostRecord[];
         plazaParties?: EcosystemPlazaPartyRecord[];
+        plazaMessages?: EcosystemPlazaMessageRecord[];
+        plazaPresence?: EcosystemPlazaPresenceRecord[];
       };
       if (Array.isArray(raw.assignments)) {
         for (const item of raw.assignments) {
@@ -89,6 +112,14 @@ export class StudioEcosystemService {
       }
       if (Array.isArray(raw.plazaParties) && raw.plazaParties.length > 0) {
         this.plazaParties.splice(0, this.plazaParties.length, ...raw.plazaParties.slice(0, 100));
+      }
+      if (Array.isArray(raw.plazaMessages) && raw.plazaMessages.length > 0) {
+        this.plazaMessages.splice(0, this.plazaMessages.length, ...raw.plazaMessages.slice(0, 100));
+      }
+      if (Array.isArray(raw.plazaPresence)) {
+        for (const p of raw.plazaPresence) {
+          if (p?.userId) this.plazaPresence.set(p.userId, p);
+        }
       }
     } catch {
       // 손상된 스냅샷 파일은 무시하고 기본 시드 상태로 기동한다.
@@ -107,6 +138,8 @@ export class StudioEcosystemService {
             auditLogs: this.auditLogs.slice(0, 200),
             cafePosts: this.cafePosts.slice(0, 200),
             plazaParties: this.plazaParties.slice(0, 100),
+            plazaMessages: this.plazaMessages.slice(0, 100),
+            plazaPresence: [...this.plazaPresence.values()],
           },
           null,
           2,
@@ -153,6 +186,25 @@ export class StudioEcosystemService {
 
   private readonly auditLogs: SecurityAuditEntry[] = [];
   private readonly cafePosts: EcosystemCafePostRecord[] = [];
+  private readonly plazaPresence = new Map<string, EcosystemPlazaPresenceRecord>();
+  private readonly plazaMessages: EcosystemPlazaMessageRecord[] = [
+    {
+      id: "plaza-msg-seed-1",
+      partyId: "party-gate-01",
+      senderName: "스튜디오 크로니클 PD",
+      roleLabel: "파티장",
+      text: "오늘 밤 11시까지 48화 액션 12컷 선화 대타 가능한 분 계신가요? .clip 원본 그대로 넘겨드립니다.",
+      createdAt: "2026-11-26T06:00:00.000Z",
+    },
+    {
+      id: "plaza-msg-seed-2",
+      partyId: "party-gate-01",
+      senderName: "펜선장인_루나",
+      roleLabel: "선화·펜선",
+      text: "클튜 EX 작업 중이라 바로 투입 가능합니다! 브러시 가이드만 공유 검수방에 올려주세요.",
+      createdAt: "2026-11-26T06:02:00.000Z",
+    },
+  ];
   private readonly plazaParties: EcosystemPlazaPartyRecord[] = [
     {
       partyId: "party-gate-01",
@@ -269,16 +321,128 @@ export class StudioEcosystemService {
     if (!party) throw new BadRequestException("존재하지 않는 구인 광장 파티입니다.");
     const slot = party.slots.find((s) => s.slotId === slotId);
     if (!slot) throw new BadRequestException("존재하지 않는 파티 슬롯입니다.");
+    const handoffReviewPath = `/collaborate/workspace?party=${encodeURIComponent(partyId)}&slot=${encodeURIComponent(slotId)}`;
     if (slot.filledAvatarIds.includes(avatarId)) {
-      return { party, assigned: true };
+      return {
+        party,
+        assigned: true,
+        brokerageFeeRate: 0 as const,
+        handoffReviewPath,
+      };
     }
     if (slot.filledAvatarIds.length >= slot.requiredCount) {
       throw new BadRequestException("해당 파티 슬롯 정원이 이미 마감되었습니다.");
     }
     slot.filledAvatarIds.push(avatarId);
     this.persistState();
-    this.events?.emit("plaza.slot_assigned", { partyId, slotId, avatarId });
-    return { party, assigned: true };
+    this.events?.emit("plaza.slot_assigned", {
+      partyId,
+      slotId,
+      avatarId,
+      handoffReviewPath,
+    });
+    return {
+      party,
+      assigned: true,
+      brokerageFeeRate: 0 as const,
+      handoffReviewPath,
+    };
+  }
+
+  listPlazaMessages(partyId?: string) {
+    const cleanPartyId = partyId?.trim() || null;
+    const items = cleanPartyId
+      ? this.plazaMessages.filter(
+          (m) => m.partyId === cleanPartyId || m.partyId === null,
+        )
+      : this.plazaMessages;
+    return { items: items.slice(0, 50) };
+  }
+
+  postPlazaMessage(input: {
+    readonly partyId?: string | null;
+    readonly senderName: string;
+    readonly roleLabel?: string;
+    readonly text: string;
+  }): EcosystemPlazaMessageRecord {
+    const cleanText = (input.text ?? "").trim();
+    if (cleanText.length < 2 || cleanText.length > 280) {
+      throw new BadRequestException(
+        "광장 소통 메시지는 2자 이상 280자 이하로 입력해 주세요.",
+      );
+    }
+    const cleanSender = (input.senderName ?? "").trim() || "광장 창작자";
+    const cleanRole = (input.roleLabel ?? "").trim() || "어시스턴트·작가";
+    const cleanPartyId = input.partyId?.trim() || null;
+
+    const record: EcosystemPlazaMessageRecord = {
+      id: `plaza-msg-${this.plazaMessages.length + 1}-${Date.now().toString(36)}`,
+      partyId: cleanPartyId,
+      senderName: cleanSender.slice(0, 40),
+      roleLabel: cleanRole.slice(0, 30),
+      text: cleanText,
+      createdAt: new Date().toISOString(),
+    };
+    this.plazaMessages.unshift(record);
+    if (this.plazaMessages.length > 100) {
+      this.plazaMessages.length = 100;
+    }
+    this.persistState();
+    this.events?.emit("plaza.message_posted", {
+      id: record.id,
+      partyId: record.partyId,
+      senderName: record.senderName,
+      roleLabel: record.roleLabel,
+      text: record.text,
+      createdAt: record.createdAt,
+    });
+    return record;
+  }
+
+  listPlazaPresence() {
+    return { items: [...this.plazaPresence.values()] };
+  }
+
+  upsertPlazaPresence(input: {
+    readonly userId: string;
+    readonly nickname: string;
+    readonly roleCode: string;
+    readonly availability: PlazaPresenceAvailability;
+    readonly tools?: readonly string[];
+    readonly cutRateKrw?: number;
+  }): EcosystemPlazaPresenceRecord {
+    const cleanUserId = (input.userId ?? "").trim();
+    if (!cleanUserId) {
+      throw new BadRequestException("대기 상태를 갱신할 사용자 식별자가 필요합니다.");
+    }
+    const allowed: readonly PlazaPresenceAvailability[] = [
+      "urgent-sub-ready",
+      "online-ready",
+      "busy",
+    ];
+    const availability = allowed.includes(input.availability)
+      ? input.availability
+      : "online-ready";
+    const record: EcosystemPlazaPresenceRecord = {
+      userId: cleanUserId,
+      nickname: (input.nickname ?? "").trim().slice(0, 40) || "익명 어시스턴트",
+      roleCode: (input.roleCode ?? "").trim() || "001.003",
+      availability,
+      tools: Array.isArray(input.tools) && input.tools.length > 0
+        ? input.tools.slice(0, 5)
+        : ["clip-studio-ex"],
+      cutRateKrw: Math.max(5000, Math.round(input.cutRateKrw || 15000)),
+      updatedAt: new Date().toISOString(),
+    };
+    this.plazaPresence.set(cleanUserId, record);
+    this.persistState();
+    this.events?.emit("plaza.presence_updated", {
+      userId: record.userId,
+      nickname: record.nickname,
+      roleCode: record.roleCode,
+      availability: record.availability,
+    });
+    return record;
   }
 
   listCafePosts(scope?: SecurityScopeType) {
