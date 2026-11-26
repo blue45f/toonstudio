@@ -33,13 +33,14 @@ export function useStudioCharacterAssets(h: StudioVrmPoserHost, authoring: Chara
 
   useEffect(() => {
     if (!open) return;
-    const version = ++listVersion.current;
+    let subscribed = true;
+    const version = listVersion.current;
     void readStudioCharacterAssets().then(items => {
-      if (listVersion.current === version) { setEntries(items); setError(null); }
+      if (subscribed && listVersion.current === version) { setEntries(items); setError(null); }
     }, (cause: unknown) => {
-      if (listVersion.current === version) setError(cause instanceof Error ? cause.message : String(cause));
+      if (subscribed && listVersion.current === version) setError(cause instanceof Error ? cause.message : String(cause));
     });
-    return () => { ++listVersion.current; };
+    return () => { subscribed = false; };
   }, [open, retry]);
 
   async function saveAs(name: string) {

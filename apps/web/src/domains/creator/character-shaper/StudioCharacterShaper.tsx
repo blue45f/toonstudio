@@ -147,8 +147,8 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
   const selected = selection?.origin === props.initialScene ? selection?.asset : undefined;
   const setSelected = (asset: StudioCharacterAsset | null) => setSelection({ origin: props.initialScene, asset });
   // 캡처가 PNG 인코딩을 기다리는 동안 같은 모델의 다른 캐릭터나 다른 컷이 열릴 수 있다.
-  const captureScope = useMemo(() => Symbol(), [open, props.initialScene, selected]);
-  const place = useRef<{ scope: symbol; insert: StudioVrmPoserProps["onInsert"] } | null>(null);
+  const captureScope = useMemo(() => ({ open, scene: props.initialScene, selected }), [open, props.initialScene, selected]);
+  const place = useRef<{ scope: typeof captureScope; insert: StudioVrmPoserProps["onInsert"] } | null>(null);
   const onInsert = useCallback<StudioVrmPoserProps["onInsert"]>((result) =>
     place.current?.scope === captureScope ? place.current.insert(result) : false, [captureScope]);
   const h = useStudioVrmPoserController(open ? { ...props, onInsert } : props);
