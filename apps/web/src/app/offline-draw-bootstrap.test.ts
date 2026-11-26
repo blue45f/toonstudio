@@ -103,14 +103,14 @@ describe("늦은 Studio 시작과 긴급 복구 안내", () => {
     expect(document.getElementById("toon-local-recovery")).not.toBeNull();
   });
 
-  it("다른 주소나 빌드에서 실패하면 이전 시도의 기록에 묶이지 않는다", () => {
-    sessionStorage.setItem("toonstudio:entry-boot-reload", JSON.stringify([
-      "/studio/character", "", "/assets/index-buildA.js",
-    ]));
+  it("다른 주소나 빌드는 다시 열 수 있고 전에 실패한 빌드로 돌아와도 재시도 기록을 유지한다", () => {
+    const previousAddress = JSON.stringify(["/studio/character", "", "/assets/index-buildA.js"]);
+    sessionStorage.setItem(`toonstudio:entry-boot-reload:${previousAddress}`, "1");
     history.replaceState(null, "", "/studio/lift3d");
     const reload = start();
     failScript("/assets/index-buildA.js");
     failScript("/assets/index-buildB.js");
+    failScript("/assets/index-buildA.js");
     expect(reload).toHaveBeenCalledTimes(2);
   });
 

@@ -15,11 +15,10 @@
       if (!(script instanceof HTMLScriptElement) || script.type !== 'module') return;
       const entry = script.getAttribute('src');
       if (!entry || !/^\/assets\/index-[\w-]+\.js$/.test(entry)) return;
-      const guard = 'toonstudio:entry-boot-reload';
-      const attempt = JSON.stringify([location.pathname, location.search, entry]);
+      const guard = 'toonstudio:entry-boot-reload:' + JSON.stringify([location.pathname, location.search, entry]);
       try {
-        if (window.sessionStorage.getItem(guard) === attempt) return;
-        window.sessionStorage.setItem(guard, attempt);
+        if (window.sessionStorage.getItem(guard) !== null) return;
+        window.sessionStorage.setItem(guard, '1');
       } catch { return; }
       location.reload();
     }
