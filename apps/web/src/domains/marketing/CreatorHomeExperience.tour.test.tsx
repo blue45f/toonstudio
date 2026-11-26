@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 import { PRODUCT_START_DESTINATIONS } from "@/shared/lib/product-identity";
@@ -16,6 +16,11 @@ vi.mock("@/shared/lib/i18n-runtime-translation", async (importOriginal) => {
 });
 
 const initial = useI18n.getState();
+
+beforeAll(async () => {
+  // 병렬 워커 부하에서 지연 청크의 첫 모듈 그래프 변환이 1초 기본 대기시간을 넘기지 않도록 미리 로드한다.
+  await import("./CreatorStudioIntroduction");
+}, 30_000);
 
 beforeEach(() => {
   useI18n.setState({ lang: "ko", translationBundleRevision: 0 });
@@ -32,7 +37,7 @@ async function renderAt(entry: string) {
   // /about/studio is intentionally lazy-loaded to keep the public homepage's first-load graph small.
   // Wait for the narrative to resolve instead of asserting against Suspense's empty fallback.
   if (entry.toLowerCase().split("#", 1)[0]?.replace(/\/+$/u, "") === "/about/studio") {
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1 }, { timeout: 10_000 });
   }
 }
 
