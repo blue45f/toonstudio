@@ -16,6 +16,8 @@ import {
   type PlazaPreflightResultView,
 } from "@/platform/studio-ecosystem-client";
 
+import { HandoffProofGuestDiffPanel } from "./HandoffProofGuestDiffPanel";
+
 const DEFAULT_STARTER_KIT: PartyStarterKitView = {
   partyId: "party-gate-01",
   workTitle: "헌터 액션 주간연재 · 게이트 브레이커",
@@ -506,6 +508,8 @@ export function PlazaHandoffToolkitDisclosure({
             ) : null}
           </div>
         ) : null}
+
+        <HandoffProofGuestDiffPanel workTitle={kit.workTitle} />
       </div>
     </details>
   );
