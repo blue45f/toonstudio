@@ -1,6 +1,6 @@
-import { applyDecorators, Body, Controller, Get, Header, Headers, HttpCode, Inject, Param, Post, Req, StreamableFile } from "@nestjs/common";
+import { applyDecorators, Body, Controller, Get, Header, Headers, HttpCode, Inject, Param, Post, Query, Req, Res } from "@nestjs/common";
 import { createZodDto } from "nestjs-zod";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { z } from "zod";
 import { reviewDeliveryAcceptSchema, reviewDeliveryActionSchema, reviewDeliveryId, reviewDeliveryPrepareSchema } from "@toonstudio/studio-project-model/review-delivery";
 import { studioWorkSessionId } from "@toonstudio/studio-project-model/work-session";
@@ -20,8 +20,9 @@ class AcceptBody extends createZodDto(reviewDeliveryAcceptSchema) {}
 export class StudioReviewDeliveryController {
   constructor(@Inject(StudioReviewDeliveryService) private readonly service: StudioReviewDeliveryService) {}
   @Get() @privateResponse()
-  list(@Param(new ZodValidationPipe(WorkParams)) p: WorkParams, @Headers("x-user-id") actor?: string) {
-    return this.service.run(() => this.service.list(authenticatedStudioUserId(actor), p.workId));
+  list(@Param(new ZodValidationPipe(WorkParams)) p: WorkParams, @Headers("x-user-id") actor?: string,
+    @Query("editableSource") editableSource?: string) {
+    return this.service.run(() => this.service.list(authenticatedStudioUserId(actor), p.workId, editableSource === "1"));
   }
   @Post() @HttpCode(200) @privateResponse()
   prepare(@Param(new ZodValidationPipe(WorkParams)) p: WorkParams, @Body(new ZodValidationPipe(PrepareBody)) body: PrepareBody, @Headers("x-user-id") actor?: string) {
@@ -41,12 +42,11 @@ export class StudioReviewDeliveryController {
   }
   @Post(":deliveryId/download") @HttpCode(200) @privateResponse()
   async download(@Param(new ZodValidationPipe(DeliveryParams)) p: DeliveryParams, @Body(new ZodValidationPipe(ActionBody)) body: ActionBody,
-    @Headers("x-user-id") actor: string | undefined, @Req() request: Request) {
+    @Headers("x-user-id") actor: string | undefined, @Req() request: Request, @Res() response: Response) {
     const abort = new AbortController(), stop = () => abort.abort(); request.once("aborted", stop);
     try {
       const result = await this.service.run(() => this.service.download(authenticatedStudioUserId(actor), p.workId, p.deliveryId, body, abort.signal));
-      return new StreamableFile(result.bytes, { type: "application/zip", length: result.bytes.length,
-        disposition: `attachment; filename="${result.fileName}"` });
+      response.attachment(result.fileName).type("application/zip").send(result.bytes);
     } finally { request.off("aborted", stop); }
   }
 }

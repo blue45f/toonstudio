@@ -10,6 +10,9 @@ import {
   UnprocessableEntityException,
 } from "@nestjs/common";
 
+import type { ApprovedDialoguePair } from "@toonstudio/contracts/studio-approved-dialogue-review";
+
+import { prepareApprovedDialogueReview } from "./openai-assist/approved-dialogue-review";
 import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
 import {
   DEFAULT_OPENAI_MODEL,
@@ -59,6 +62,21 @@ const MULTI_RECORD_NON_REASONING_MODES: ReadonlySet<StudioOpenAiAssistMode> = ne
 ]);
 const LONG_INPUT_OUTPUT_HEADROOM_CHARS = 800;
 const MAX_ERROR_BODY_BYTES = 8_192;
+
+interface OpenAiRequestOptions {
+  readonly env?: EnvLike;
+  readonly signal?: AbortSignal;
+  readonly fetchImpl?: typeof fetch;
+}
+
+interface StructuredCompletion<T> {
+  readonly systemInstruction: string;
+  readonly schemaSpec: { readonly name: string; readonly schema: Record<string, unknown> };
+  readonly userPrompt: string;
+  readonly piiRedactedCount: number;
+  readonly maxOutputTokens: number;
+  readonly parse: (content: string) => T;
+}
 
 @Injectable()
 export class StudioOpenAiCreativeAssistService {
@@ -229,16 +247,30 @@ export class StudioOpenAiCreativeAssistService {
   async assist(
     actorIdentifier: string,
     input: StudioOpenAiCreativeAssistRequest,
-    options: {
-      readonly env?: EnvLike;
-      readonly signal?: AbortSignal;
-      readonly fetchImpl?: typeof fetch;
-    } = {},
+    options: OpenAiRequestOptions = {},
   ) {
     if (input.allowZeroBillCascade === true) {
       return this.assistWithZeroBillCascade(actorIdentifier, input, options);
     }
 
+    return this.requestStructuredCompletion(actorIdentifier, {
+      ...this.prepareMaskedUserPrompt(input),
+      systemInstruction: buildModeSystemInstruction(input.mode),
+      schemaSpec: MODE_JSON_SCHEMAS[input.mode],
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      parse: (raw) => this.parseModeOutput(input.mode, raw),
+    }, options);
+  }
+
+  reviewApprovedDialogue(actorIdentifier: string, input: ApprovedDialoguePair, options: OpenAiRequestOptions = {}) {
+    return this.requestStructuredCompletion(actorIdentifier, prepareApprovedDialogueReview(input), options);
+  }
+
+  private async requestStructuredCompletion<T>(
+    actorIdentifier: string,
+    completion: StructuredCompletion<T>,
+    options: OpenAiRequestOptions,
+  ) {
     const env = options.env ?? process.env;
     const config = resolveStudioOpenAiCreativeConfig(env);
     if (!config.configured) {
@@ -265,8 +297,7 @@ export class StudioOpenAiCreativeAssistService {
     }
 
     const quota = this.rateLimiter.consume(actorIdentifier, config.limits);
-    const { userPrompt, piiRedactedCount } = this.prepareMaskedUserPrompt(input);
-    const schemaSpec = MODE_JSON_SCHEMAS[input.mode];
+    const { systemInstruction, userPrompt, piiRedactedCount, schemaSpec } = completion;
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${config.apiKey}`,
@@ -298,16 +329,17 @@ export class StudioOpenAiCreativeAssistService {
         (COMPLEX_REASONING_ASSIST_MODES.has(input.mode) ||
           (isLongInput && MULTI_RECORD_NON_REASONING_MODES.has(input.mode)));
       const needsLongNonReasoningOutput = !reasoningModel && isLongInput;
+      const baseMaxTokens = Math.max(MAX_OUTPUT_TOKENS, completion.maxOutputTokens);
       const maxCompletionTokens = reasoningModel
         ? Math.max(
-            MAX_OUTPUT_TOKENS,
+            baseMaxTokens,
             isComplexReasoningMode
               ? REASONING_MODEL_COMPLEX_OUTPUT_TOKENS
               : REASONING_MODEL_MIN_OUTPUT_TOKENS,
           )
         : needsLongNonReasoningOutput
-          ? NON_REASONING_LONG_OUTPUT_TOKENS
-          : MAX_OUTPUT_TOKENS;
+          ? Math.max(baseMaxTokens, NON_REASONING_LONG_OUTPUT_TOKENS)
+          : baseMaxTokens;
       try {
         response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, {
           method: "POST",
@@ -318,7 +350,7 @@ export class StudioOpenAiCreativeAssistService {
             ...(reasoningModel ? { reasoning_effort: "low" } : { temperature: 0.65 }),
             max_completion_tokens: maxCompletionTokens,
             messages: [
-              { role: "system", content: buildModeSystemInstruction(input.mode) },
+              { role: "system", content: systemInstruction },
               { role: "user", content: userPrompt },
             ],
             response_format: {
@@ -414,9 +446,9 @@ export class StudioOpenAiCreativeAssistService {
         });
       }
 
-      let structured: OpenAiAssistStructuredResult;
+      let structured: T;
       try {
-        structured = this.parseModeOutput(input.mode, rawContent);
+        structured = completion.parse(rawContent);
       } catch (error) {
         quota.release();
         throw error;

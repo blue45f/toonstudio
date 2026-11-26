@@ -1,15 +1,26 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import type { ApprovedCutChange } from "@toonstudio/studio-project-model";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { getAuthSessionRevision } from "@/domains/auth/public/session/auth-session-state";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { listStudioVirtualSpaceReviewHistory, type StudioVirtualSpaceReviewChoice,
   type StudioVirtualSpaceReviewChoices } from "./studio-virtual-space-review-invitation";
 import type { StudioVirtualSpaceReviewSubject } from "./studio-virtual-space-review-subject";
+import { StudioApprovedReviewChanges } from "./StudioApprovedReviewChanges";
+import { StudioReviewImage } from "./StudioPinnedReviewPreview";
 import { StudioReviewCompareDisplay } from "./StudioReviewCompareDisplay";
 import { matchReviewSourcePage, sameReviewSourcePage } from "./studio-review-comparison-model";
 import { useStudioPinnedReviewPreviews } from "./use-studio-pinned-review-previews";
+import type { StudioVirtualSpaceReviewPreview } from "./studio-virtual-space-review-preview";
 
 const control = "min-h-11 rounded-lg border border-line bg-card px-3 text-sm";
+
+type PageSelection = { ordinal: number | null; pageId?: string } | null;
+function selectedPreview(pages: readonly StudioVirtualSpaceReviewPreview[], selected: PageSelection) {
+  if (!selected) return pages[0];
+  return pages.find(page => page.ordinal === selected.ordinal && (selected.pageId === undefined
+    || (page.mapping.status === "mapped" && page.mapping.page.id === selected.pageId)));
+}
 
 /** Comparison never moves the editor selection or changes the revision targeted by review notes. */
 export function StudioPinnedReviewComparison({ subject, title, onRevoked }: {
@@ -62,6 +73,7 @@ function ComparisonForActor({ actor, subject, title, onRevoked }: {
     setBusy(false);
     if (revision !== getAuthSessionRevision()) return;
     setChoices(next);
+    if (next.ok) setSelected(next.choices.find(choice => choice.priorApproval) ?? null);
     if (!next.ok && next.reason === "access-denied") onRevoked();
   };
   return <section ref={region} className="mt-5 rounded-xl border border-line p-4" aria-label={bt("검수 버전 비교", "Compare review versions")}>
@@ -78,7 +90,7 @@ function ComparisonForActor({ actor, subject, title, onRevoked }: {
             onChange={(event) => setSelected(choices.choices.find((choice) => choice.subject.reviewId === event.target.value) ?? null)}>
             <option value="">{bt("검수본을 선택하세요", "Choose a snapshot")}</option>
             {choices.choices.map((choice) => <option key={choice.subject.reviewId} value={choice.subject.reviewId}>
-              {choice.title} · {choice.subject.revisionId}
+              {choice.priorApproval ? bt("승인본 · ", "Approved · ") : ""}{choice.title} · {choice.subject.revisionId}
             </option>)}
           </select>
         </label>
@@ -96,23 +108,28 @@ export function StudioPinnedReviewComparisonImages({ base, title, choice, onRevo
   readonly choice: StudioVirtualSpaceReviewChoice; readonly onRevoked: () => void;
 }) {
   const bt = useBilingual("StudioPinnedReviewComparisonImages");
+  const [allPages, setAllPages] = useState(false);
   const left = useStudioPinnedReviewPreviews(base, onRevoked);
   const right = useStudioPinnedReviewPreviews(choice.subject, onRevoked);
-  const [leftOrdinal, setLeftOrdinal] = useState<number | null>(null);
-  const [rightOrdinal, setRightOrdinal] = useState<number | null>(null);
+  const [leftSelection, setLeftSelection] = useState<PageSelection>(null);
+  const [rightSelection, setRightSelection] = useState<PageSelection>(null);
+  const selectChange = useCallback((change: ApprovedCutChange) => {
+    setLeftSelection({ ordinal: change.afterIndex, pageId: change.pageId });
+    setRightSelection({ ordinal: change.beforeIndex, pageId: change.pageId });
+  }, []);
   const [linked, setLinked] = useState(false);
   const [matchNotice, setMatchNotice] = useState("");
-  const leftPage = left.result?.ok ? left.result.previews.find((page) => page.ordinal === leftOrdinal) ?? left.result.previews[0] : null;
-  const rightPage = right.result?.ok ? right.result.previews.find((page) => page.ordinal === rightOrdinal) ?? right.result.previews[0] : null;
+  const leftPage = left.result?.ok ? selectedPreview(left.result.previews, leftSelection) : null;
+  const rightPage = right.result?.ok ? selectedPreview(right.result.previews, rightSelection) : null;
   const selectPage = (side: "left" | "right", ordinal: number | null, shouldLink = linked) => {
     const source = side === "left" ? left : right, target = side === "left" ? right : left;
-    (side === "left" ? setLeftOrdinal : setRightOrdinal)(ordinal);
+    (side === "left" ? setLeftSelection : setRightSelection)(ordinal === null ? null : { ordinal });
     setMatchNotice("");
     if (!shouldLink || ordinal === null || !source.result?.ok || !target.result?.ok) return;
     const page = source.result.previews.find((item) => item.ordinal === ordinal);
     if (!page) return;
     const match = matchReviewSourcePage(page, target.result.previews);
-    if (match.kind === "matched") (side === "left" ? setRightOrdinal : setLeftOrdinal)(match.page.ordinal);
+    if (match.kind === "matched") (side === "left" ? setRightSelection : setLeftSelection)({ ordinal: match.page.ordinal });
     else setMatchNotice(bt("불러온 목록에서 같은 원본 페이지를 확인하지 못했어요. 다른 페이지로 바꾸지 않았어요.", "No unique matching source page is loaded. The other selection has not changed."));
   };
   const sides = [{ state: left, page: leftPage, title, subject: base, setOrdinal: (ordinal: number | null) => selectPage("left", ordinal),
@@ -127,6 +144,13 @@ export function StudioPinnedReviewComparisonImages({ base, title, choice, onRevo
     <p className="rounded-lg border border-accent/35 bg-panel px-3 py-2 text-xs font-medium text-fg-2" data-testid="review-compare-target-version">
       {bt(`현재 의견·결정 대상 버전: ${title} · ${base.revisionId}`, `Active note & decision target version: ${title} · ${base.revisionId}`)}
     </p>
+    {choice.priorApproval ? <div role="group" aria-label={bt("검수 범위", "Review scope")} className="flex flex-wrap gap-2">
+      <button type="button" className={control} aria-pressed={!allPages} onClick={() => setAllPages(false)}>{bt("변경만 검수", "Review changes")}</button>
+      <button type="button" className={control} aria-pressed={allPages} onClick={() => setAllPages(true)}>{bt("전체 페이지 보기", "Browse all pages")}</button>
+    </div> : null}
+    {choice.priorApproval && !allPages ? <StudioApprovedReviewChanges
+      approved={choice.subject} current={base} approval={choice.priorApproval}
+      before={right} after={left} onSelectChange={selectChange} /> : <>
     <div className="grid gap-3 sm:grid-cols-2">
       {sides.map((side) => <div key={side.label} className="min-w-0 rounded-lg bg-panel p-3">
         <h3 className="font-semibold">{side.label} · {side.title}</h3>
@@ -135,6 +159,7 @@ export function StudioPinnedReviewComparisonImages({ base, title, choice, onRevo
           <label className="mt-2 block text-sm">{bt(`${side.label} 페이지`, `${side.label} page`)}
             <select className={`${control} mt-1 w-full`} value={side.page?.ordinal ?? ""}
               onChange={(event) => side.setOrdinal(Number(event.target.value))}>
+              {!side.page ? <option value="" disabled>{bt("대응하는 페이지 없음", "No matching page")}</option> : null}
               {side.state.result.previews.map((page) => <option key={page.ordinal} value={page.ordinal}>
                 {bt(`${page.ordinal + 1}페이지`, `Page ${page.ordinal + 1}`)}
               </option>)}
@@ -157,6 +182,8 @@ export function StudioPinnedReviewComparisonImages({ base, title, choice, onRevo
       : bt("페이지가 서로 달라 스크롤은 독립적으로 움직여요. 다음 페이지 목록도 확인할 수 있어요.", "Different pages scroll independently. Check additional page lists when needed.")}</p> : null}
     {leftPage && rightPage ? <StudioReviewCompareDisplay left={leftPage} right={rightPage} linked={linked}
       leftAllPages={leftAllPages} rightAllPages={rightAllPages}
-      leftAllLoaded={leftAllLoaded} rightAllLoaded={rightAllLoaded} /> : null}
+      leftAllLoaded={leftAllLoaded} rightAllLoaded={rightAllLoaded} /> : left.result?.ok && right.result?.ok ? sides.map(side =>
+        side.page ? <StudioReviewImage key={side.page.sha256} preview={side.page} label={side.label} /> : null) : null}
+    </>}
   </div>;
 }

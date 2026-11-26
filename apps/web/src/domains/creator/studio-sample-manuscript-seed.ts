@@ -204,9 +204,11 @@ export function ensureSampleManuscriptSeeded(
 /** 이미 만들어 둔 연습 사본(활성 상태)이 있으면 모드와 함께 돌려준다. */
 export function findSampleManuscriptPracticeCopy(
   storage: StudioSampleManuscriptStorage,
+  requestedMode?: SamplePracticeMode,
 ): SamplePracticeCopyRef | null {
   const library = readStudioProjectLibrary(storage);
   for (const mode of Object.keys(SAMPLE_PRACTICE_TEMPLATE_IDS) as SamplePracticeMode[]) {
+    if (requestedMode && mode !== requestedMode) continue;
     const project = library.projects.find(
       (entry) => entry.templateId === SAMPLE_PRACTICE_TEMPLATE_IDS[mode] && entry.status === "active",
     );
@@ -350,8 +352,8 @@ export function createSampleManuscriptPracticeCopy(
   if (seeded.status === "trashed") return { status: "sample-trashed" };
   if (seeded.status === "full") return { status: "full" };
 
-  const existing = findSampleManuscriptPracticeCopy(storage);
-  if (existing && existing.mode === mode) {
+  const existing = findSampleManuscriptPracticeCopy(storage, mode);
+  if (existing) {
     return {
       status: "already-created",
       ...existing,

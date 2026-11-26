@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { api } from "@/platform/api";
 import { persistSession } from "@/domains/auth/public/session/auth-session-state";
 
 import { StudioPinnedReviewComparison } from "./StudioPinnedReviewComparison";
@@ -12,7 +13,9 @@ import type { StudioVirtualSpaceReviewSubject } from "./studio-virtual-space-rev
 
 const f = vi.hoisted(() => ({ history: vi.fn(), read: vi.fn(), actor: "actor-a" as string | null }));
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: () => ({ data: f.actor ? { user: { id: f.actor } } : null }) }));
-vi.mock("./studio-virtual-space-review-invitation", () => ({ listStudioVirtualSpaceReviewHistory: f.history }));
+vi.mock("./studio-virtual-space-review-invitation", async (load) => ({
+  ...await load<typeof import("./studio-virtual-space-review-invitation")>(), listStudioVirtualSpaceReviewHistory: f.history,
+}));
 vi.mock("./studio-virtual-space-review-preview", () => ({ getStudioVirtualSpaceReviewPreview: f.read }));
 const base: StudioVirtualSpaceReviewSubject = { schemaVersion: 1, workId: "work", projectId: "graph", artifactId: "artifact",
   reviewId: "current-review", revisionId: "current-revision", rootGraphHash: "a".repeat(64) };
@@ -48,6 +51,77 @@ function mount(onRevoked = vi.fn()) {
 }
 
 describe("immutable review comparison", () => {
+  function approvedHistory() {
+    const choice = { subject: prior, title: "최초 승인", artifactTitle: "원고", createdAt: "2026-11-25T09:00:00Z",
+      priorApproval: { decidedAt: "2026-11-25T10:00:00Z", beforeRefs: [], afterRefs: [] } };
+    f.history.mockResolvedValue({ ok: true, truncated: false, choices: [choice] });
+    f.read.mockImplementation(async (subject: StudioVirtualSpaceReviewSubject) => ready(subject,
+      Array.from({ length: 8 }, (_, ordinal) => preview(subject, ordinal))));
+    return { approved: prior, current: base, decidedAt: choice.priorApproval.decidedAt, changes: [
+      { pageId: "page-3", frameId: null, beforeIndex: 3, afterIndex: 3, kinds: ["dialogue"],
+        dialogue: [{ elementId: "line", before: "오늘 보내지 마.", after: "내일까지 보내." }] },
+    ] };
+  }
+
+  it("이전 승인을 열면 여덟 페이지 중 바뀐 한 곳과 두 원문을 먼저 보여 준다", async () => {
+    const response = approvedHistory();
+    f.read.mockImplementation(async (subject: StudioVirtualSpaceReviewSubject) => ready(subject,
+      Array.from({ length: 8 }, (_, ordinal) => {
+        const page = preview(subject, ordinal);
+        if (subject === prior && page.mapping.status === "mapped") {
+          if (ordinal === 5) page.mapping.page.id = "page-3";
+          if (ordinal === 3) page.mapping.page.id = "page-5";
+        }
+        return page;
+      })));
+    response.changes[0]!.beforeIndex = 5;
+    const compare = vi.spyOn(api, "post").mockResolvedValue(response);
+    mount(); await openComparison();
+    expect(compare).toHaveBeenCalledExactlyOnceWith("/studio-project-graph/approved-cut-changes",
+      { approved: prior, current: base }, { signal: expect.any(AbortSignal) });
+    const changes = screen.getByRole("combobox", { name: "다시 볼 변경 항목 1개" });
+    expect(within(changes).getAllByRole("option")).toHaveLength(1);
+    expect(within(changes).getByRole("option").textContent).toContain("4페이지");
+    expect(screen.getByRole("img", { name: "승인본 변경 위치" }).getAttribute("src")).toContain("previous-review/5");
+    expect(screen.getByRole("img", { name: "수정본 변경 위치" }).getAttribute("src")).toContain("current-review/3");
+    expect(screen.getByText("내일까지 보내.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "다음 변경" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "변경 이미지 겹쳐 보기" }));
+    expect(screen.getByRole("slider", { name: "수정본 불투명도" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "전체 페이지 보기" }));
+    expect(within(screen.getByRole("combobox", { name: "기준 검수본 페이지" })).getAllByRole("option")).toHaveLength(8);
+    expect(screen.getByRole("combobox", { name: "기준 검수본 페이지" })).toHaveProperty("value", "3");
+    expect(screen.getByRole("combobox", { name: "비교 검수본 페이지" })).toHaveProperty("value", "5");
+    fireEvent.click(screen.getByRole("button", { name: "겹쳐 보기" }));
+    expect(screen.getByRole("img", { name: "기준 검수본 페이지" }).getAttribute("src")).toContain("current-review/3");
+    expect(screen.getByRole("img", { name: "비교 검수본 페이지" }).getAttribute("src")).toContain("previous-review/5");
+  });
+
+  it("삭제된 페이지에서 전체 보기로 전환해도 같은 순번의 다른 현재 페이지는 표시하지 않는다", async () => {
+    const response = approvedHistory();
+    vi.spyOn(api, "post").mockResolvedValue({ ...response,
+      changes: [{ pageId: "page-3", frameId: null, beforeIndex: 3, afterIndex: null, kinds: ["page"], dialogue: [] }] });
+    f.read.mockImplementation(async (subject: StudioVirtualSpaceReviewSubject) => ready(subject, subject === prior
+      ? [preview(subject), preview(subject, 3)] : [preview(subject)]));
+    mount(); await openComparison();
+    fireEvent.click(screen.getByRole("button", { name: "전체 페이지 보기" }));
+    expect(screen.getByRole("combobox", { name: "기준 검수본 페이지" })).toHaveProperty("value", "");
+    expect(screen.getByRole("img").getAttribute("src")).toContain("previous-review/3");
+    expect(screen.queryByRole("button", { name: "겹쳐 보기" })).toBeNull();
+  });
+
+  it("다른 버전 응답은 가리고 같은 두 버전의 재시도만 표시한다", async () => {
+    const response = approvedHistory();
+    const compare = vi.spyOn(api, "post").mockResolvedValueOnce({ ...response, current: prior })
+      .mockResolvedValueOnce({ ...response, changes: [] });
+    mount(); await openComparison();
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.queryByText("내일까지 보내.")).toBeNull();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "비교 다시 시도" })); });
+    expect(screen.getByText("승인 이후 바뀐 컷이 없어요.")).toBeTruthy();
+    expect(compare).toHaveBeenCalledTimes(2);
+  });
+
   it("waits for explicit discovery and selection, then reads only the two pinned subjects", async () => {
     mount();
     expect(f.history).not.toHaveBeenCalled(); expect(f.read).not.toHaveBeenCalled();

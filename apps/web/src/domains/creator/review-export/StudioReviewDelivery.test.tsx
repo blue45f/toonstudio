@@ -53,6 +53,28 @@ describe("official approved review delivery", () => {
       profile: DEFAULT_REVIEW_DELIVERY_PROFILE, rights: { mode: "free", confirmed: true } });
     await act(async () => resolve(job())); expect(f.list).toHaveBeenCalledTimes(2);
   });
+  it("편집 원본은 수신 권한·명시적인 선택에 묶고 수신자 변경 뒤에는 다시 확인한다", async () => {
+    const other = { userId: "other", displayName: "검수 팀원" };
+    f.list.mockResolvedValue({ ...list(), recipients: [{ ...recipient, canReceiveSource: true }, other] });
+    render(<StudioReviewDelivery verified={approved()} />);
+    const selector = await screen.findByRole("combobox", { name: "수신 팀원" });
+    fireEvent.change(screen.getByRole("textbox", { name: "권리·사용 조건 확인 근거" }), { target: { value: "이 원고를 팀에 제공합니다." } });
+    const toggle = screen.getByRole("checkbox", { name: /편집 담당자에게 승인 원고/ });
+    const submit = screen.getByRole("button", { name: "전달 준비" }) as HTMLButtonElement;
+    fireEvent.click(screen.getByRole("checkbox", { name: /운영 모드/ }));
+    fireEvent.click(toggle);
+    expect(submit.disabled).toBe(true);
+    fireEvent.change(selector, { target: { value: other.userId } });
+    expect(screen.queryByRole("checkbox", { name: /편집 담당자에게 승인 원고/ })).toBeNull();
+    fireEvent.change(selector, { target: { value: recipient.userId } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /편집 담당자에게 승인 원고/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /운영 모드/ }));
+    f.prepare.mockResolvedValue(job());
+    fireEvent.click(submit);
+    await waitFor(() => expect(f.prepare.mock.calls[0]?.[1]).toMatchObject({ recipientUserId: recipient.userId,
+      profile: { includeEditableSource: true }, rights: { confirmed: true } }));
+  });
+
   it("issues using the exact manifest digest and expected version", async () => {
     const prepared = job(); f.list.mockResolvedValue(list([prepared])); f.issue.mockResolvedValue(job("issued"));
     render(<StudioReviewDelivery verified={approved()} />); const issue = await screen.findByRole("button", { name: "전달 발행" }); fireEvent.click(issue);
@@ -75,6 +97,7 @@ describe("official approved review delivery", () => {
     expect(f.accept.mock.calls[0]![2]).toMatchObject({ confirmed: true, expectedVersion: delivered.version, manifestDigest: delivered.manifestDigest });
   });
   it("shows a changed binding without download or acceptance controls", async () => {
+    persistSession({ user: { id: recipient.userId }, token: null });
     f.list.mockResolvedValue(list([job("delivered", { currentRecipientBinding: false, canDownload: false, canAccept: false, canCancel: false })], false));
     render(<StudioReviewDelivery verified={approved()} />); await screen.findByRole("alert");
     expect(screen.queryByRole("button", { name: "검증 ZIP 저장" })).toBeNull(); expect(screen.queryByRole("button", { name: "수신 완료 확인" })).toBeNull();

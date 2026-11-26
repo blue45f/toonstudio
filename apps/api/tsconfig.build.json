@@ -7,6 +7,7 @@
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/modules/creator/studio-role-pipeline-canvas-test-harness.ts",
+    "src/modules/studio-project-graph/studio-approved-cut-delivery-test-cases.ts",
     "src/modules/studio-project-graph/studio-review-preview-producer-test-cases.ts"
   ]
 }

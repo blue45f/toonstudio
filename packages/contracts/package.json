@@ -227,6 +227,11 @@
       "import": "./src/studio-ink-input-contract.ts",
       "default": "./src/studio-ink-input-contract.ts"
     },
+    "./studio-approved-dialogue-review": {
+      "types": "./src/studio-approved-dialogue-review.ts",
+      "import": "./src/studio-approved-dialogue-review.ts",
+      "default": "./src/studio-approved-dialogue-review.ts"
+    },
     "./studio-openai-assist-result": {
       "types": "./src/studio-openai-assist-result.ts",
       "import": "./src/studio-openai-assist-result.ts",

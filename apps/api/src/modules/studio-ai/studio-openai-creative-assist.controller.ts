@@ -13,7 +13,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 
-import { StudioOpenAiCreativeAssistDto } from "./studio-openai-creative-assist.dto";
+import { StudioApprovedDialogueReviewDto, StudioOpenAiCreativeAssistDto } from "./studio-openai-creative-assist.dto";
 import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assist.service";
 
 import type { Request, Response } from "express";
@@ -87,6 +87,21 @@ export class StudioOpenAiCreativeAssistController {
   @Header("Cache-Control", "no-store, max-age=0")
   freeQuotaStatus() {
     return this.assistService.freeQuotaStatus();
+  }
+
+  @Post("approved-dialogue-review")
+  @HttpCode(HttpStatus.OK)
+  @Header("Cache-Control", "no-store, max-age=0")
+  reviewApprovedDialogue(
+    @Headers("x-user-id") userId: string | undefined,
+    @Body() body: StudioApprovedDialogueReviewDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const actor = resolveOpenAiAssistActorKey(userId, request);
+    return withRequestAbort(request, response, (signal) =>
+      this.assistService.reviewApprovedDialogue(actor, body, { signal }),
+    );
   }
 
   @Post()

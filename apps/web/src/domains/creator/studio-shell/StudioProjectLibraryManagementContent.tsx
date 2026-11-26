@@ -16,6 +16,7 @@ import { studioCanvasHref } from "../studio-workspace-route";
 import { StudioProjectLibraryResumeCard } from "./StudioProjectLibraryResumeCard";
 import { StudioProjectLibraryFastStartStrip } from "./StudioProjectLibraryFastStartStrip";
 import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryDateLabel, studioProjectLibraryManagementViewHref } from "./studio-project-library-management-model";
+import { StudioDialogueSampleStart } from "../workspace/StudioDialogueSampleStart";
 import { StudioExampleProjectBanner } from "../workspace/StudioExampleProjectBanner";
 import { StudioSampleManuscriptCard } from "../workspace/StudioSampleManuscriptCard";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
@@ -181,6 +182,7 @@ export function StudioProjectLibraryManagementContent({
             {bi("세로 웹툰 · 4컷 · 3D · 가져오기", "Webtoon · 4-panel · 3D · Import")}
           </span>
         </div>
+        <StudioDialogueSampleStart />
         <StudioProjectLibraryFastStartStrip className="flex-1" columns={hasPersonalResume ? 2 : 4} />
       </section>
     </div>
