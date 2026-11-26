@@ -88,39 +88,61 @@ export class InMemoryCasBlobStore implements CasBlobStore {
 export class OpfsDirectoryCasBlobStore implements CasBlobStore {
   private readonly dir: OpfsDirectoryHandleLike;
   private readonly knownSizes = new Map<string, number>();
+  private readonly inFlightPuts = new Map<string, Promise<boolean>>();
   private totalBytes = 0;
-
   constructor(dir: OpfsDirectoryHandleLike) { this.dir = dir; }
 
   async has(hash: string): Promise<boolean> {
+    await this.inFlightPuts.get(hash);
     if (this.knownSizes.has(hash)) return true;
-    try {
-      const handle = await this.dir.getFileHandle(`${hash}.tile`, { create: false });
-      const buf = await (await handle.getFile()).arrayBuffer();
-      this.knownSizes.set(hash, buf.byteLength);
-      this.totalBytes += buf.byteLength;
-      return true;
-    } catch { return false; }
+    return (await this.readVerified(hash)) !== null;
   }
 
   async put(hash: string, bytes: Uint8Array): Promise<boolean> {
-    if (await this.has(hash)) return false;
-    const handle = await this.dir.getFileHandle(`${hash}.tile`, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(bytes);
-    await writable.close();
-    this.knownSizes.set(hash, bytes.byteLength);
-    this.totalBytes += bytes.byteLength;
-    return true;
+    const snapshot = bytes.slice();
+    if (fnv1a64Hex(snapshot) !== hash) throw new Error("CAS 타일 내용과 해시가 일치하지 않습니다.");
+    const existing = this.inFlightPuts.get(hash);
+    if (existing) { await existing; return false; }
+    const write = async (): Promise<boolean> => {
+      if (this.knownSizes.has(hash) || await this.readVerified(hash)) return false;
+      const handle = await this.dir.getFileHandle(`${hash}.tile`, { create: true });
+      const writable = await handle.createWritable();
+      try { await writable.write(snapshot); await writable.close(); }
+      catch (error) {
+        // 네이티브 스트림은 실패한 임시 쓰기를 폐기한다. 정리 실패가 원래 저장 오류를 가리지 않는다.
+        if ("abort" in writable && typeof writable.abort === "function") {
+          try { await writable.abort(); } catch { /* 이미 닫히거나 오류 상태인 스트림 */ }
+        }
+        throw error;
+      }
+      this.rememberSize(hash, snapshot.byteLength);
+      return true;
+    };
+    // 파일이 생성되어도 close가 끝나기 전에는 같은 해시를 재사용하지 않는다.
+    const pending = write();
+    this.inFlightPuts.set(hash, pending);
+    try { return await pending; }
+    finally { if (this.inFlightPuts.get(hash) === pending) this.inFlightPuts.delete(hash); }
   }
 
   async get(hash: string): Promise<Uint8Array | null> {
+    await this.inFlightPuts.get(hash);
+    return this.readVerified(hash);
+  }
+  private rememberSize(hash: string, size: number): void {
+    this.totalBytes += size - (this.knownSizes.get(hash) ?? 0);
+    this.knownSizes.set(hash, size);
+  }
+  private async readVerified(hash: string): Promise<Uint8Array | null> {
     try {
       const handle = await this.dir.getFileHandle(`${hash}.tile`, { create: false });
-      return new Uint8Array(await (await handle.getFile()).arrayBuffer());
+      const bytes = new Uint8Array(await (await handle.getFile()).arrayBuffer());
+      // 실패한 저장이 남긴 빈 파일·부분 파일은 새 어댑터에서도 정상 블롭으로 인정하지 않는다.
+      if (fnv1a64Hex(bytes) !== hash) return null;
+      this.rememberSize(hash, bytes.byteLength);
+      return bytes;
     } catch { return null; }
   }
-
   async listHashes(): Promise<readonly string[]> { return Array.from(this.knownSizes.keys()); }
   getStoredByteLength(): number { return this.totalBytes; }
   getBlobCount(): number { return this.knownSizes.size; }
@@ -191,6 +213,7 @@ export class OpfsCasBranchTimeline {
   private readonly quadNodes = new Map<string, QuadtreeNode>();
   private readonly commits = new Map<string, CasCommitRecord>();
   private readonly branches = new Map<string, CasBranchRef>();
+  private readonly branchCommitQueues = new Map<string, Promise<CasCommitRecord>>();
   private readonly emptySubtreeHashes = new Map<number, string>();
   private activeBranchName: string;
   private commitSeq = 0;
@@ -248,6 +271,9 @@ export class OpfsCasBranchTimeline {
 
   /** 타일 바이트 복제 없이 지정 커밋의 쿼드트리 루트를 즉시 복원하는 커밋을 생성한다. */
   restoreToCommit(targetCommitId: string, message?: string): CasCommitRecord {
+    if (this.branchCommitQueues.has(this.activeBranchName)) {
+      throw new Error("저장 중인 브랜치는 저장 완료 후 복원할 수 있습니다.");
+    }
     const target = this.commits.get(targetCommitId);
     if (!target) throw new Error(`복원 대상 커밋을 찾을 수 없습니다: ${targetCommitId}`);
     const head = this.getHeadCommit();
@@ -269,7 +295,26 @@ export class OpfsCasBranchTimeline {
   }
 
   async commitTiles(updates: readonly TileWriteInput[], message: string): Promise<CasCommitRecord> {
-    const head = this.getHeadCommit();
+    // 호출 시점의 브랜치와 픽셀을 고정하고, 같은 브랜치의 최신 HEAD 위에 순서대로 저장한다.
+    const branchName = this.activeBranchName;
+    const captured = updates.map((update) => {
+      this.assertTileCoord(update.x, update.y);
+      return { x: update.x, y: update.y, bytes: update.bytes?.slice() ?? null };
+    });
+    const previous = this.branchCommitQueues.get(branchName);
+    const run = () => this.commitTilesToBranch(branchName, captured, message);
+    // 앞선 저장의 실패는 해당 호출자에게 전달하되 다음 저장까지 막지 않는다.
+    const pending = previous ? previous.then(run, run) : Promise.resolve().then(run);
+    this.branchCommitQueues.set(branchName, pending);
+    try {
+      return await pending;
+    } finally {
+      if (this.branchCommitQueues.get(branchName) === pending) this.branchCommitQueues.delete(branchName);
+    }
+  }
+
+  private async commitTilesToBranch(branchName: string, updates: readonly TileWriteInput[], message: string): Promise<CasCommitRecord> {
+    const head = this.getHeadCommit(branchName);
     let nextRootHash = head.rootNodeHash;
     let writtenNewBlobs = 0, reusedExistingBlobs = 0;
 
@@ -290,14 +335,14 @@ export class OpfsCasBranchTimeline {
     const ts = this.now();
     const commitId = fnv1a64StringHex(`COMMIT|${head.commitId}|${nextRootHash}|${message}|${this.commitSeq}`);
     const record: CasCommitRecord = {
-      commitId, parentCommitId: head.commitId, branchName: this.activeBranchName,
+      commitId, parentCommitId: head.commitId, branchName,
       rootNodeHash: nextRootHash, message, timestampMs: ts,
       writtenNewBlobs, reusedExistingBlobs, nonEmptyTileCount: rootNode ? rootNode.nonEmptyCount : 0,
     };
     this.commits.set(commitId, record);
-    this.branches.set(this.activeBranchName, {
-      name: this.activeBranchName, headCommitId: commitId,
-      createdAtMs: this.branches.get(this.activeBranchName)?.createdAtMs ?? ts,
+    this.branches.set(branchName, {
+      name: branchName, headCommitId: commitId,
+      createdAtMs: this.branches.get(branchName)?.createdAtMs ?? ts,
     });
     return record;
   }
