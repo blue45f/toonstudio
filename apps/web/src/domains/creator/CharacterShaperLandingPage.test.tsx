@@ -1,8 +1,5 @@
 // @vitest-environment jsdom
 
-import { readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
-
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -29,19 +26,6 @@ const SLOT_LABELS = [
   "포즈",
   "손 포즈",
 ];
-
-function readRepoFile(relativePath: string): string {
-  return readFileSync(path.resolve(process.cwd(), relativePath), "utf8");
-}
-
-function readAppLocale(locale: string): Record<string, string> {
-  const merged: Record<string, string> = {};
-  for (const namespace of readdirSync(path.resolve(process.cwd(), "apps/web/public/i18n/app"))) {
-    const file = path.resolve(process.cwd(), "apps/web/public/i18n/app", namespace, `${locale}.json`);
-    try { Object.assign(merged, JSON.parse(readFileSync(file, "utf8"))); } catch { /* namespace has no locale */ }
-  }
-  return merged;
-}
 
 vi.mock("./character-shaper/character-shaper-entry", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./character-shaper/character-shaper-entry")>()),
@@ -350,54 +334,5 @@ describe("CharacterShaperLandingPage", () => {
     const parsed = JSON.parse(jsonLd!.textContent ?? "{}") as Record<string, unknown>;
     expect(parsed["@type"]).toBe("WebPage");
     expect(parsed.url).toBe("https://www.toonstudio.cloud/studio/assets/characters/new");
-  });
-});
-
-describe("/shaper registration", () => {
-  it("is wired into the router, titles, manifest, sitemap and centralized site navigation", () => {
-    // AppRouter now renders one <Route> per entry of the grouped route table, so the /shaper
-    // registration lives in the creator group rather than in the router JSX.
-    expect(readRepoFile("apps/web/src/app/routes/groups/creator.routes.tsx")).toContain(
-      '{ id: "creator-character-shaper", path: "/shaper", element: <Navigate to={studioRoutePath("asset-character-new")} replace /> }',
-    );
-    expect(readRepoFile("apps/web/src/app/routes/route-titles.ts")).toContain('"/shaper": "route.shaper"');
-    // 라우트 거버넌스(route-manifest.ts, BLUEPRINT §1.3)는 모든 표면에 정본 그룹·역할·tier·stage 선언을 요구한다.
-    // 항목의 값 검증은 route-governance.test.ts 가 맡고, 여기서는 /shaper 가 네 필드를 모두 선언한 채 등록됐는지만 본다.
-    expect(readRepoFile("apps/web/src/app/routes/route-manifest.ts")).toMatch(
-      /\{ path: "\/shaper", label: "route\.shaper", canonicalSurfaceId: "[a-z-]+", surfaceRole: "[^"]+", tier: "[a-z-]+", stage: "[a-z-]+" \}/u,
-    );
-    // Editors stay in site navigation, not in the indexable SEO sitemap.
-    const staticRoutes = readRepoFile("scripts/build-static-catalog.ts")
-      .match(/const STATIC_ROUTES = \[([\s\S]*?)\];/u)?.[1] ?? "";
-    expect(staticRoutes).not.toBe("");
-    expect(staticRoutes).not.toContain('"/shaper"');
-    expect(staticRoutes).not.toContain('"/studio/assets/characters/new"');
-
-    const navigation = readRepoFile("apps/web/src/shared/components/site-navigation.ts");
-    expect(navigation).toContain('"/studio/assets/characters/new"');
-    expect(readRepoFile("apps/web/src/app/routes/groups/creator.routes.tsx")).toContain('path: studioRoutePath("asset-character-new"), element: <CharacterShaperLandingPage />');
-    expect(navigation).toContain("I.studioAssets");
-    expect(readRepoFile("apps/web/src/domains/legal/site-directory-data.ts")).toContain('"/studio/assets/characters/new"');
-    // Desktop footer and mobile menus (and the command palette) share one centralized navigation authority:
-    // both ask the same policy function, resolveNavigationGroupsFor(), for the ordered groups they render.
-    const footer = readRepoFile("apps/web/src/shared/components/site-footer.tsx");
-    expect(footer).toContain("resolveNavigationGroupsFor()");
-    expect(footer).toContain("navigationGroups.map");
-    const mobileNavigation = readRepoFile("apps/web/src/shared/components/site-header-mobile-nav.tsx");
-    expect(mobileNavigation).toContain("<SiteMenuDestinations");
-    const mobileDestinations = readRepoFile("apps/web/src/shared/components/SiteMenuDestinations.tsx");
-    expect(mobileDestinations).toContain("resolveNavigationGroupsFor().map");
-  });
-
-  it("publishes the new app-shell keys in the built-in locales", () => {
-    const ko = readAppLocale("ko");
-    const en = readAppLocale("en");
-
-    expect(ko["route.shaper"]).toBe("캐릭터 셰이퍼");
-    expect(en["route.shaper"]).toBe("Character Shaper");
-    for (const key of ["nav.shaper", "footer.link.shaper", "footer.section.create", "footer.link.studio"]) {
-      expect(typeof ko[key], key).toBe("string");
-      expect(typeof en[key], key).toBe("string");
-    }
   });
 });

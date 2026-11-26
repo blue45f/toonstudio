@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { createPortal } from "react-dom";
 import { STUDIO_Z } from "../studio-z-index";
 import { readStudioMainMenuViewport } from "../studio-main-menu-viewport";
@@ -18,6 +19,7 @@ import {
   Pencil,
   Plus,
   Redo2,
+  RefreshCw,
   Shapes,
   Sparkles,
   Trash2,
@@ -40,6 +42,7 @@ export interface StudioCanvasContextMenuProps {
   hasElement: boolean;
   locked: boolean;
   onEditVrm?: () => void;
+  onRefreshLinkedCuts?: () => void;
   onEditBackground3d?: () => void;
   onPreloadBackground3d: () => void;
   onSaveAsEmeres: () => void;
@@ -72,6 +75,7 @@ export function StudioCanvasContextMenu({
   hasElement,
   locked,
   onEditVrm,
+  onRefreshLinkedCuts,
   onEditBackground3d,
   onPreloadBackground3d,
   onSaveAsEmeres,
@@ -91,6 +95,7 @@ export function StudioCanvasContextMenu({
   onZoomReset,
   onClose,
 }: StudioCanvasContextMenuProps) {
+  const bt = useBilingual("StudioCanvasContextMenu");
   const menuRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -241,6 +246,14 @@ export function StudioCanvasContextMenu({
               </button>
               <div className="my-1 h-px bg-line" />
             </>
+          )}
+          {onRefreshLinkedCuts && (
+            <button type="button" role="menuitem" tabIndex={-1}
+              onClick={() => runAndClose(onRefreshLinkedCuts, onClose)}
+              className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs font-semibold text-fg hover:bg-raised">
+              <RefreshCw size={STUDIO_ICON_SIZE.contextMenu} strokeWidth={STUDIO_ICON_STROKE} aria-hidden />
+              {bt("이 페이지의 같은 캐릭터 컷 갱신", "Refresh this character’s cuts on this page")}
+            </button>
           )}
           {onEditBackground3d && (
             <>

@@ -40,6 +40,14 @@ try {
   await page.goto(`http://127.0.0.1:${address.port}/__vrm_capture__`);
   await page.waitForFunction(() => Boolean(window.__vrmCaptureResult), undefined, { timeout: 180_000 });
   const result = await page.evaluate(() => window.__vrmCaptureResult);
+  for (const [index, shot] of (result.linkedCutPixels ?? []).entries()) {
+    for (const [state, key] of [["before", "beforePng"], ["after", "afterPng"]]) {
+      const name = `linked-cut-${index + 1}-${state}.png`;
+      writeFileSync(join(output, name), Buffer.from(shot[key].slice("data:image/png;base64,".length), "base64"));
+      delete shot[key];
+      shot[state] = name;
+    }
+  }
   const rendererName = String(result.gpu?.renderer ?? "");
   const software = /swiftshader|llvmpipe|software/iu.test(rendererName);
   const gpuLaneMatches = rendererName.length > 0 && software === (lane === "swiftshader")

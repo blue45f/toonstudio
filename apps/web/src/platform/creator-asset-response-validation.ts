@@ -62,7 +62,7 @@ function ascii(bytes: Uint8Array, start: number, end: number): string {
   return value;
 }
 
-function readPngDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+export function readPngDimensions(bytes: Uint8Array): { width: number; height: number } | null {
   const signature = [137, 80, 78, 71, 13, 10, 26, 10];
   if (
     bytes.length < 24 ||

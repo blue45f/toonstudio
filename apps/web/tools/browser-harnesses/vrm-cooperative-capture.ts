@@ -2,7 +2,9 @@ import { VRMLoaderPlugin, VRMUtils, type MToonMaterial, type VRM } from "@pixiv/
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-import { captureStudioVrmRgba, captureStudioVrmRgbaCooperatively } from "../../src/domains/creator/vrm/studio-vrm-raster-capture";
+import { cameraForLinkedCut, readLinkedCutPngSize } from "../../src/domains/creator/vrm/studio-vrm-linked-cut-frame";
+import { createDefaultStudioVrmSceneDocument } from "../../src/domains/creator/vrm/studio-vrm-scene-document";
+import { captureStudioVrmRgba, captureStudioVrmRgbaCooperatively, encodeStudioVrmCapturePngDataUrl } from "../../src/domains/creator/vrm/studio-vrm-raster-capture";
 
 function invariant(value: boolean, message: string): void {
   if (!value) throw new Error(message);
@@ -38,6 +40,53 @@ function compare(a: Uint8ClampedArray, b: Uint8ClampedArray, width: number) {
   return { pixels, foreground, meanAlpha: alphaSum / pixels, maxAlpha,
     meanComposite: compositeSum / (pixels * 3), maxComposite,
     overFourShare: overFour / (pixels * 3), seamMean: seamSum / seamChannels };
+}
+
+async function verifyLinkedCutPixels(renderer: THREE.WebGLRenderer, scene: THREE.Scene, center: THREE.Vector3, height: number) {
+  const colors = new Map<MToonMaterial, THREE.Color>();
+  scene.traverse(object => {
+    const material = (object as THREE.Mesh).material;
+    for (const item of Array.isArray(material) ? material : material ? [material] : []) {
+      const toon = item as MToonMaterial;
+      if (toon.isMToonMaterial && !toon.isOutline && !colors.has(toon)) colors.set(toon, toon.color.clone());
+    }
+  });
+  invariant(colors.size > 0, "Linked-cut test needs real character materials");
+  const source = createDefaultStudioVrmSceneDocument();
+  const shots = [];
+  for (const [width, outputHeight, angle] of [[160, 240, 0], [288, 144, Math.PI / 3]] as const) {
+    const pixels = { width, height: outputHeight };
+    const camera = new THREE.PerspectiveCamera(35, width / outputHeight, .01, 100);
+    camera.position.copy(center).add(new THREE.Vector3(Math.sin(angle) * height * 2, 0, Math.cos(angle) * height * 2));
+    camera.lookAt(center);
+    camera.updateMatrixWorld(true);
+    const expected = captureStudioVrmRgba(renderer, scene, camera, pixels);
+    // A different workstation opens the same saved cut in a wide viewport.
+    camera.aspect = 16 / 9;
+    camera.updateProjectionMatrix();
+    const restored = cameraForLinkedCut(camera, { pixels, source: { ...source, render: { ...source.render, ...pixels } } });
+    const before = captureStudioVrmRgba(renderer, scene, restored, pixels);
+    const cameraError = compare(expected, before, width);
+    invariant(cameraError.foreground > 50 && cameraError.meanComposite < .01 && cameraError.meanAlpha < .01, "Saved shot framing changed");
+    shots.push({ pixels, restored, before });
+  }
+  const receipts = [];
+  try {
+    for (const material of colors.keys()) material.color.set(0x3693d0);
+    for (const { pixels, restored, before } of shots) {
+      const rgba = captureStudioVrmRgba(renderer, scene, restored, pixels);
+      const change = compare(before, rgba, pixels.width);
+      invariant(change.foreground > 50 && change.overFourShare > .005, "Character appearance did not change the cut pixels");
+      const png = await encodeStudioVrmCapturePngDataUrl(rgba, pixels);
+      const size = readLinkedCutPngSize(png);
+      invariant(size?.width === pixels.width && size.height === pixels.height, "Saved PNG dimensions changed");
+      const beforePng = await encodeStudioVrmCapturePngDataUrl(before, pixels);
+      receipts.push({ pixels, foreground: change.foreground, changedChannelShare: change.overFourShare, beforePng, afterPng: png });
+    }
+  } finally {
+    for (const [material, color] of colors) material.color.copy(color);
+  }
+  return receipts;
 }
 
 async function verify() {
@@ -138,6 +187,7 @@ async function verify() {
     const controller = new AbortController();
     let completed = 0;
     let cancelled = false;
+    const linkedCutPixels = await verifyLinkedCutPixels(renderer, scene, center, size.y);
     const before = renderer.info.memory.textures;
     try {
       await captureStudioVrmRgbaCooperatively(renderer, scene, perspective, { width: 4096, height: 4096 }, {}, {
@@ -155,7 +205,7 @@ async function verify() {
     invariant(!gl.isContextLost() && gl.getError() === gl.NO_ERROR, "GPU error after capture");
     renderer.setSize(768, 512);
     renderer.render(scene, perspective);
-    return { status: "passed", gpu, model: "/vrm/sample.vrm", results,
+    return { status: "passed", gpu, model: "/vrm/sample.vrm", results, linkedCutPixels,
       cancellation: { completedTiles: completed, cancelled, texturesBefore: before, texturesAfter: renderer.info.memory.textures, retry: true } };
   } finally {
     for (const [material, original] of outlineMaterials) {
