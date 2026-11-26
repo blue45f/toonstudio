@@ -346,10 +346,11 @@ export function buildModeSystemInstruction(mode: StudioOpenAiAssistMode): string
       );
     case "scroll-pacing-auditor":
       return (
-        `${BASE_SYSTEM_PROMPT} 모바일 세로 스크롤 웹툰의 컷 호흡, 권장 컷 간격(px), 시선 이탈 구간, ` +
-        "회차 엔딩 클리프행어 점수(0~100)와 개선 팁을 분석하세요. " +
-        "averageGapPx와 recommendedGapPx는 실제 모바일 세로 스크롤 기준 16~480px 범위(긴박한 연속 컷 16~60px, 기본 80~180px, 호흡·전환 여백 240~480px)의 정수 px로 제시하고, " +
+        `${BASE_SYSTEM_PROMPT} 모바일 세로 스크롤 웹툰의 컷 호흡을 평가하세요. rhythmVerdict에 총평을 1~320자로 쓰세요. ` +
+        "beatPacing을 2~8개 구간으로 나누고, 각 구간의 이름(section)은 1~100자, 독자 시선 유지와 이탈 대처법(readerRetentionNote)은 1~280자로 쓰세요. " +
+        "averageGapPx와 recommendedGapPx는 실제 모바일 세로 스크롤 기준 16~480px 권장 범위(긴박한 연속 컷 16~60px, 기본 80~180px, 호흡·전환 여백 240~480px, 허용 16~1600px)의 정수로 제시하고, " +
         "averageGapPx는 beatPacing 구간 recommendedGapPx의 정확한 산술평균(반올림 정수)으로 맞추세요. " +
+        "cliffhangerScore는 회차 엔딩이 다음 화를 보고 싶게 만드는 정도를 0~100점 정수로 평가하고 cliffhangerTip에는 개선 팁을 1~320자로 쓰세요. " +
         "여러 회차(1화→2화)가 함께 들어온 경우 회차 경계를 같은 화 안의 연속 여백으로 혼동하지 말고 각 화의 엔딩과 도입 호흡을 구분해 설명하세요."
       );
     case "thumbnail-hook-optimizer":

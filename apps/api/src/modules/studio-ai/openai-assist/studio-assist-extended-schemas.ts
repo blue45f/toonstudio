@@ -1,5 +1,7 @@
 import type { ExtendedAssistMode } from "@toonstudio/contracts/studio-openai-assist-result";
 
+const SCROLL_GAP_PX_BOUNDS = { type: "integer", minimum: 16, maximum: 1600 } as const;
+
 export const EXTENDED_MODE_JSON_SCHEMAS: Readonly<
   Record<ExtendedAssistMode, { readonly name: string; readonly schema: Record<string, unknown> }>
 > = Object.freeze({
@@ -234,13 +236,20 @@ export const EXTENDED_MODE_JSON_SCHEMAS: Readonly<
       properties: {
         rhythmVerdict: { type: "string", description: "세로 스크롤 호흡 종합 진단(최대 320자)" },
         averageGapPx: {
-          type: "integer",
+          ...SCROLL_GAP_PX_BOUNDS,
           description: "beatPacing 구간들의 recommendedGapPx 산술평균에 맞춘 평균 권장 컷 간격(16~480px 권장, 16~1600 정수)",
         },
-        cliffhangerScore: { type: "integer", description: "회차 엔딩 클리프행어 점수(0~100 정수)" },
+        cliffhangerScore: {
+          type: "integer",
+          minimum: 0,
+          maximum: 100,
+          description: "회차 엔딩 클리프행어 점수(0~100 정수)",
+        },
         cliffhangerTip: { type: "string", description: "엔딩 여운·다음 화 클릭 유도 개선 팁(최대 320자)" },
         beatPacing: {
           type: "array",
+          minItems: 2,
+          maxItems: 8,
           description: "구간별 스크롤 호흡 분석(2~8개 구간)",
           items: {
             type: "object",
@@ -250,7 +259,7 @@ export const EXTENDED_MODE_JSON_SCHEMAS: Readonly<
               section: { type: "string", description: "구간 이름(최대 100자)" },
               pacing: { type: "string", enum: ["tight", "steady", "breath", "drop"] },
               recommendedGapPx: {
-                type: "integer",
+                ...SCROLL_GAP_PX_BOUNDS,
                 description: "구간 권장 컷 간격(16~480px 권장, 16~1600 정수)",
               },
               readerRetentionNote: { type: "string", description: "독자 시선 유지 메모(최대 280자)" },

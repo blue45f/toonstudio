@@ -613,4 +613,65 @@ describe("managed cloud AI transport", () => {
       expect(sentForm.get("response_format")).toBeNull();
     }
   });
+
+  it("strips reasoning_effort when failing over from a GPT-5 reasoning model to a non-reasoning GPT-4.1 model", async () => {
+    setUserAiConfiguration({
+      version: 1,
+      connections: [
+        {
+          ...managedConnection,
+          id: "openai-gpt5",
+          label: "OpenAI GPT-5",
+          baseUrl: "https://api.openai.com/v1",
+          apiKey: "gpt5-key",
+          textModel: "gpt-5.4-mini",
+          imageModel: "",
+          costPolicy: "user-funded-byok",
+          paidAutoUse: true,
+          priority: 1,
+        },
+        {
+          ...managedConnection,
+          id: "openai-gpt41",
+          label: "OpenAI GPT-4.1",
+          baseUrl: "https://api.openai.com/v1",
+          apiKey: "gpt41-key",
+          textModel: "gpt-4.1-mini",
+          imageModel: "",
+          costPolicy: "user-funded-byok",
+          paidAutoUse: true,
+          priority: 2,
+        },
+      ],
+      assignments: { text: "openai-gpt5", image: null, inference: null, "three-d": null },
+      routing: { mode: "automatic", allowPaidFallback: true, preferPaidKeys: true, managedPoolPriority: 50, serverProviderOrder: [] },
+    });
+
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: "rate limit" } }), {
+        status: 429,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ message: { content: "fallback-ok" } }],
+      }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await userAiLegacyJson("text", {
+      model: "gpt-5.4-mini",
+      messages: [{ role: "user", content: "ping" }],
+      max_completion_tokens: 4_000,
+      reasoning_effort: "low",
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const primaryBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as Record<string, unknown>;
+    const fallbackBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)) as Record<string, unknown>;
+    expect(primaryBody.model).toBe("gpt-5.4-mini");
+    expect(primaryBody.reasoning_effort).toBe("low");
+    expect(fallbackBody.model).toBe("gpt-4.1-mini");
+    expect(fallbackBody.reasoning_effort).toBeUndefined();
+    expect(fallbackBody.max_tokens).toBe(4_000);
+    expect(fallbackBody.max_completion_tokens).toBeUndefined();
+  });
 });

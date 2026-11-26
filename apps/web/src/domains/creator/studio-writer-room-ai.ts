@@ -105,9 +105,23 @@ function safeJson(value: unknown): string {
 
 function stripMarkdownFence(value: string): string {
   const trimmed = value.trim();
-  const fenced = /```(?:json)?\s*([\s\S]*?)\s*```/iu.exec(trimmed);
-  if (fenced?.[1]) return fenced[1].trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      JSON.parse(trimmed);
+      return trimmed;
+    } catch {
+      // 원문 JSON 파싱 실패 시 외부 코드 펜스·중괄호 추출로 폴백한다.
+    }
+  }
+  const openIdx = trimmed.indexOf("```");
   const firstBrace = trimmed.indexOf("{");
+  if (openIdx >= 0 && (firstBrace < 0 || openIdx < firstBrace)) {
+    const afterOpen = trimmed.slice(openIdx + 3);
+    const langMatch = /^(?:json)?[\t ]*\r?\n?/iu.exec(afterOpen);
+    const contentStart = openIdx + 3 + (langMatch ? langMatch[0].length : 0);
+    const closeIdx = trimmed.lastIndexOf("```");
+    if (closeIdx > contentStart) return trimmed.slice(contentStart, closeIdx).trim();
+  }
   const lastBrace = trimmed.lastIndexOf("}");
   if (firstBrace >= 0 && lastBrace > firstBrace) {
     return trimmed.slice(firstBrace, lastBrace + 1).trim();

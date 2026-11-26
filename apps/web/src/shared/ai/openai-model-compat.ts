@@ -94,6 +94,7 @@ export function normalizeOpenAiLegacyChatBody(
     return next;
   }
 
+  delete next.reasoning_effort;
   if (!("max_tokens" in next)) {
     const existingCompletion = positiveInt(next.max_completion_tokens);
     if (existingCompletion !== null) {

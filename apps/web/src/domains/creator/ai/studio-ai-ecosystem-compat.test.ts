@@ -173,6 +173,49 @@ describe("Writer Room & LLM JSON parsers (live OpenAI resilience)", () => {
     const dialogue = parseDialogueSuggestions('후보:\n```json\n{"lines":["괜찮아?","어디 가?","잠깐만!"]}\n```');
     expect(dialogue).toEqual(["괜찮아?", "어디 가?", "잠깐만!"]);
   });
+
+  it("preserves literal triple-backtick snippets inside JSON string values across raw and fenced responses", () => {
+    const rawDialogue = JSON.stringify({ lines: ["모니터에 ```print(1)``` 코드가 뜬다", "도망쳐!"] });
+    expect(parseDialogueSuggestions(rawDialogue)).toEqual(["모니터에 ```print(1)``` 코드가 뜬다", "도망쳐!"]);
+
+    const fencedWriter =
+      '초안입니다:\n```json\n{"stage":"dialogue-sfx","rationale":"코드 블록 보존","draft":{"dialogue":[{"id":"dlg-1","order":0,"panelId":"panel-1","characterId":null,"text":"화면에 ```print(1)``` 출력"}],"sfx":[]}}\n```';
+    const parsedWriter = parseStudioWriterRoomAiDraft(fencedWriter, "dialogue-sfx");
+    expect(parsedWriter.ok).toBe(true);
+    if (parsedWriter.ok) {
+      expect(parsedWriter.data.draft.dialogue[0]?.text).toBe("화면에 ```print(1)``` 출력");
+    }
+
+    const proseRawReview =
+      '검수 결과:\n{"items":[{"targetCut":"cut-2","area":"대사","task":"```print(1)``` 문구를 자연스럽게 다듬기"}]}';
+    expect(parseReviewInterpretation(proseRawReview)).toEqual([
+      { targetCut: "cut-2", area: "대사", task: "```print(1)``` 문구를 자연스럽게 다듬기" },
+    ]);
+
+    const fencedN7 =
+      '분할안:\n```json\n{"cuts":[{"id":"cut-1","summary":"```print(1)``` 화면 클로즈업"}]}\n```';
+    expect(parseN7SplitResult(fencedN7)).toEqual([{ id: "cut-1", summary: "```print(1)``` 화면 클로즈업" }]);
+
+    const rawBgm = JSON.stringify({
+      placements: [{ cutId: "cut-1", bgmMood: "tension", sfxCues: ["```beep```"] }],
+    });
+    expect(parseBgmPlacement(rawBgm)).toEqual([
+      { cutId: "cut-1", bgmMood: "tension", sfxCues: ["```beep```"] },
+    ]);
+
+    const fencedStoryboard =
+      '콘티:\n```json\n{"cuts":[{"id":"cut-1","summary":"코드 ```print(1)``` 확인","camera":"클로즈업","dialogues":["```ok```"]}]}\n```';
+    expect(parseStoryboardPlan(fencedStoryboard)).toEqual([
+      { id: "cut-1", summary: "코드 ```print(1)``` 확인", camera: "클로즈업", dialogues: ["```ok```"] },
+    ]);
+
+    const rawDirection = JSON.stringify({
+      plans: [{ cutId: "cut-1", cameraMove: "pan-left", transition: "cut", bgmMood: "daily", sfxCues: ["```whoosh```"] }],
+    });
+    expect(parseDirectionPlan(rawDirection)).toEqual([
+      { cutId: "cut-1", cameraMove: "pan-left", transition: "cut", bgmMood: "daily", sfxCues: ["```whoosh```"] },
+    ]);
+  });
 });
 
 describe("webtoon-modeler-imagegen OpenAI request adapter", () => {
