@@ -37,7 +37,7 @@ import "../studio-shell/studio-visual-identity.css";
 import "../studio-shell/studio-visual-identity-v2.css";
 
 const StudioCuttoonEditorContextMenu = lazy(() => import("./StudioCuttoonEditorContextMenu").then(module => ({ default: module.StudioCuttoonEditorContextMenu })));
-const StudioCharacterCutRefreshRunner = lazy(() => import("../character-shaper/StudioCharacterCutRefreshRunner"));
+const StudioCharacterCutRefreshRunner = lazyRetry(() => import("../character-shaper/StudioCharacterCutRefreshRunner"), "StudioCharacterCutRefreshRunner");
 const StudioDraftSaveCenter = lazy(() => import("../StudioDraftSaveCenter").then((module) => ({ default: module.StudioDraftSaveCenter })));
 const StudioSaveStatusChromeMount = lazy(() => import("../StudioSaveStatusChromeMount").then((module) => ({ default: module.StudioSaveStatusChromeMount })));
 const StudioDrawingAppBar = lazyRetry(

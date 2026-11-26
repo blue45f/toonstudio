@@ -1,15 +1,17 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { getCharacterDocumentV3Repository } from "../character-platform/document/character-document-v3-repository";
-import { StudioCharacterShaper } from "./StudioCharacterShaper";
+import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
 import { applyStudioCharacterCutRefresh, planStudioCharacterCutRefresh } from "./studio-character-linked-cut-refresh";
 
 import type { StudioVrmPoserInsertResult } from "../scene-3d/studio-3d-insert-contract";
 import type { StudioCuttoonEditorViewSession } from "../studio-cuttoon-editor/StudioCuttoonEditorViewSession";
 import type { StudioEditorMutationTicket } from "../studio-editor-scope";
 import type { PageState } from "../studio-page-state";
+
+const StudioCharacterShaper = lazy(() => import("./StudioCharacterShaper").then(module => ({ default: module.StudioCharacterShaper })));
 
 export interface StudioLinkedCutRefreshRequest {
   readonly documentId: string;
@@ -144,9 +146,14 @@ export default function StudioCharacterCutRefreshRunner({ request, session, onCl
     onClose();
   };
   return <>
-    {job && <StudioCharacterShaper key={job.target.elementId} open initialScene={job.target.scene}
-      initialDataUrl={job.target.src} linkedCutCapture={{ documentId: request.documentId, revision: job.revision, onFailure: job.onFailure }}
-      onInsert={job.onInsert} onClose={job.onClose} />}
+    {job && <StudioSurfaceErrorBoundary key={job.target.elementId} resetKey={job.target.elementId}
+      surfaceLabel={bt("캐릭터 컷 렌더", "Character cut render")} onError={error => job.onFailure(error.message)} onExit={job.onClose}>
+      <Suspense fallback={null}>
+        <StudioCharacterShaper open recoverFromRenderFailure={false} initialScene={job.target.scene}
+          initialDataUrl={job.target.src} linkedCutCapture={{ documentId: request.documentId, revision: job.revision, onFailure: job.onFailure }}
+          onInsert={job.onInsert} onClose={job.onClose} />
+      </Suspense>
+    </StudioSurfaceErrorBoundary>}
     {createPortal(<dialog ref={dialog} aria-label={bt("캐릭터 컷 갱신", "Refresh character cuts")}
       onCancel={event => { event.preventDefault(); close(); }}
       className="m-auto max-h-[80dvh] max-w-[min(32rem,94vw)] overflow-auto rounded-xl border border-line bg-panel p-5 text-fg shadow-lg backdrop:bg-black/45">
