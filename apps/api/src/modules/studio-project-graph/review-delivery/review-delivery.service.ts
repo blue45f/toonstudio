@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { ConflictException, ForbiddenException, HttpException, Inject, Injectable, NotFoundException, Optional, ServiceUnavailableException } from "@nestjs/common";
 import { canonicalJson } from "@toonstudio/studio-project-model";
-import { reviewDeliveryManifestSchema, reviewDeliveryPagePath, type ReviewDeliveryAction, type ReviewDeliveryAccept, type ReviewDeliveryPrepare } from "@toonstudio/studio-project-model/review-delivery";
+import { REVIEW_DELIVERY_MAX_SOURCE_BYTES, reviewDeliveryManifestSchema, reviewDeliveryPagePath, type ReviewDeliveryAction, type ReviewDeliveryAccept, type ReviewDeliveryPrepare } from "@toonstudio/studio-project-model/review-delivery";
 
 import { PrivateSignedReadUrlSchema, type LocatedPrivateObjectReference } from "../../../platform/adapters/private-object-storage/private-object-storage.contract";
 import { PRIVATE_OBJECT_STORAGE_PORT, type PrivateObjectStoragePort } from "../../../platform/adapters/private-object-storage/private-object-storage.port";
@@ -10,7 +10,6 @@ import { StudioReviewDeliveryRepository } from "./review-delivery.repository";
 import { buildReviewDeliveryZip } from "./review-delivery-zip";
 
 export const REVIEW_DELIVERY_FETCH = Symbol("REVIEW_DELIVERY_FETCH");
-const TOTAL_BYTES = 128 * 1024 * 1024;
 function unavailable(): never { throw new ServiceUnavailableException({ code: "studio_review_delivery_unavailable" }); }
 async function readObject(storage: PrivateObjectStoragePort, fetcher: typeof fetch, object: LocatedPrivateObjectReference,
   expected: { readonly sha256: string; readonly byteLength: number; readonly mediaType: string }, signal?: AbortSignal): Promise<Buffer> {
@@ -30,7 +29,7 @@ async function readObject(storage: PrivateObjectStoragePort, fetcher: typeof fet
     while (true) {
       const next = await reader.read(); if (next.done) break;
       received += next.value.byteLength;
-      if (received > expected.byteLength || received > TOTAL_BYTES) return unavailable();
+      if (received > expected.byteLength || received > REVIEW_DELIVERY_MAX_SOURCE_BYTES) return unavailable();
       chunks.push(next.value);
     }
   } finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
@@ -58,7 +57,7 @@ export class StudioReviewDeliveryService {
       throw new ServiceUnavailableException({ code: "studio_review_delivery_unavailable" });
     }
   }
-  list(actor: string, workId: string) { return this.repository.list(actor, workId); }
+  list(actor: string, workId: string, editableSource = false) { return this.repository.list(actor, workId, editableSource); }
   prepare(actor: string, workId: string, input: ReviewDeliveryPrepare) { return this.repository.prepare(actor, workId, input); }
   issue(actor: string, workId: string, id: string, input: ReviewDeliveryAction) { return this.repository.issue(actor, workId, id, input); }
   cancel(actor: string, workId: string, id: string, input: ReviewDeliveryAction) { return this.repository.cancel(actor, workId, id, input); }
@@ -75,11 +74,18 @@ export class StudioReviewDeliveryService {
     for (let index = 0; index < source.pages.length; index += 1) {
       signal?.throwIfAborted(); const page = source.pages[index]!, object = source.objects[index]!;
       const bytes = await readObject(this.storage, this.fetcher, object, page, signal); total += bytes.length;
-      if (total > TOTAL_BYTES) return unavailable(); pageBytes.push(bytes);
+      if (total > REVIEW_DELIVERY_MAX_SOURCE_BYTES) return unavailable(); pageBytes.push(bytes);
     }
+    const editableSource = manifest.editableSource && source.editableSource !== undefined
+      ? Buffer.from(canonicalJson(source.editableSource), "utf8") : null;
+    if (manifest.editableSource && (!editableSource || createHash("sha256").update(editableSource).digest("hex") !== manifest.editableSource.sha256
+      || total + editableSource.length > REVIEW_DELIVERY_MAX_SOURCE_BYTES)) return unavailable();
     const entries = [
       { path: "manifest.json", bytes: Buffer.from(`${canonicalJson(manifest)}\n`, "utf8") },
-      { path: "README.txt", bytes: Buffer.from("ToonStudio approved review delivery\nOriginal approved review image bytes with SHA-256 checksums.\nThis receipt is not publication, editable source, DRM, or legal certification.\n", "utf8") },
+      ...(editableSource && manifest.editableSource ? [{ path: manifest.editableSource.path, bytes: editableSource }] : []),
+      { path: "README.txt", bytes: Buffer.from(editableSource
+        ? "승인 당시의 서버 원고를 source/manuscript.toonstudio-work.json에 담았습니다. 외부 소재는 원본 작품에서 참조합니다. 원고와 PNG의 SHA-256은 manifest.json에서 확인할 수 있습니다.\n"
+        : "ToonStudio approved review delivery\nOriginal approved review image bytes with SHA-256 checksums.\nThis receipt is not publication, editable source, DRM, or legal certification.\n", "utf8") },
       ...source.pages.map((page, index) => ({ path: manifest.pages[index].path as string, bytes: pageBytes[index]! })),
     ];
     const archive = buildReviewDeliveryZip(entries);

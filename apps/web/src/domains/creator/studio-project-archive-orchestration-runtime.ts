@@ -546,7 +546,7 @@ export function createStudioProjectArchiveOrchestration({
         import("./studio-linked-3d-pass-project-archive"),
       ]);
       if (!canApplyStudioMutation(mutationTicket)) return;
-      const loaded = await parseStudioProjectDocument(text);
+      const loaded = await parseStudioProjectDocument(text, file.name);
       if (!canApplyStudioMutation(mutationTicket)) return;
       if (hasStudioLinked3dPassProjectArchiveReferences(loaded.project)) {
         throw new Error(

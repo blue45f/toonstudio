@@ -1,3 +1,4 @@
+import { studioReviewPreviewDigest } from "../studio-review-preview-producer.contract";
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { ConflictException } from "@nestjs/common";
@@ -128,13 +129,30 @@ function checkPage(page: unknown, materials: MaterialReferences) {
   }
 }
 
+/** 단독 JSON으로 열 수 없는 3D 패스는 보관 파일에 외부 PNG까지 묶어야 한다. */
+function assertEditableDeliveryPage(page: unknown) {
+  const source = record(page);
+  const links = record(source?.linked3dRender)?.links;
+  if (!source || !Array.isArray(source.elements) || source.bg3dLtBundles !== undefined
+    || source.linked3dRender !== undefined && (!Array.isArray(links) || links.length > 0)
+    || source.elements.some((item) => {
+      const element = record(item);
+      return element?.bg3dLtBundleReference !== undefined || typeof element?.src === "string" && element.src.startsWith("bg3d-lt-artifact:");
+    })) {
+    throw new ConflictException({ code: "studio_review_delivery_archive_required" });
+  }
+}
+
 /** 검수에 고정한 원고의 소재 기록이 전달자의 권리 확인 진술과 충돌하면 출고를 막는다. */
-export function assertReviewDeliveryMaterialRights(snapshot: unknown): MaterialReferences {
+export function assertReviewDeliveryMaterialRights(snapshot: unknown, includeEditableSource = false): MaterialReferences {
   const doc = record(snapshot);
   if (!doc || !Array.isArray(doc.pagesList)) return blocked();
   const references: MaterialReferences = { models: new Set(), cuts: [], images: new Map() };
-  for (const page of doc.pagesList) checkPage(page, references);
-  if (doc.master && doc.pagesList.some((page) => record(page)?.hideMaster !== true)) checkPage(doc.master, references);
+  for (const page of doc.pagesList) {
+    if (includeEditableSource) assertEditableDeliveryPage(page);
+    checkPage(page, references);
+  }
+  if (doc.master && (includeEditableSource || doc.pagesList.some((page) => record(page)?.hideMaster !== true))) checkPage(doc.master, references);
   return references;
 }
 
@@ -197,10 +215,19 @@ export async function verifyReviewDeliveryMaterialReferences(client: PoolClient,
   }
 }
 
-export async function captureWithDeliveryRights(client: PoolClient, subject: Parameters<typeof pinnedShareCapture>[1]) {
+export async function captureWithDeliveryRights(client: PoolClient, subject: Parameters<typeof pinnedShareCapture>[1], includeEditableSource = false) {
   let references: MaterialReferences | undefined;
-  const capture = await pinnedShareCapture(client, subject, (snapshot) => { references = assertReviewDeliveryMaterialRights(snapshot); });
+  let sourceSnapshot: unknown;
+  const capture = await pinnedShareCapture(client, subject, (snapshot) => {
+    references = assertReviewDeliveryMaterialRights(snapshot, includeEditableSource);
+    sourceSnapshot = snapshot;
+  });
   if (!references) return blocked();
+  // 작성자의 저장 트랜잭션과 같은 행을 잠가 캡처 뒤 바뀐 원고를 공식 전달하지 않는다.
+  const work = await client.query<{ revision: number; doc: unknown }>('SELECT revision,doc FROM creator_work WHERE id=$1 FOR SHARE', [subject.workId]);
+  if (work.rows[0]?.revision !== capture.sourceServerRevision || studioReviewPreviewDigest(work.rows[0].doc) !== subject.rootGraphHash) {
+    throw new ConflictException({ code: "studio_review_delivery_source_changed" });
+  }
   await verifyReviewDeliveryMaterialReferences(client, subject.workId, references);
-  return capture;
+  return { ...capture, sourceSnapshot };
 }
