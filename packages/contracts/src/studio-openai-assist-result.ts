@@ -17,56 +17,56 @@ export type ExtendedAssistMode = (typeof EXTENDED_ASSIST_MODES)[number];
 
 export const CharacterBibleForgeOutputSchema = z
   .object({
-    characterName: z.string().min(1).max(80),
-    archetypeKo: z.string().min(1).max(100),
-    speechTone: z.string().min(1).max(240),
-    appearancePalette: z.string().min(1).max(240),
-    coreMotivation: z.string().min(1).max(280),
-    forbiddenLines: z.array(z.string().min(1).max(140)).min(2).max(5),
+    characterName: z.string().min(1).max(100),
+    archetypeKo: z.string().min(1).max(140),
+    speechTone: z.string().min(1).max(360),
+    appearancePalette: z.string().min(1).max(360),
+    coreMotivation: z.string().min(1).max(400),
+    forbiddenLines: z.array(z.string().min(1).max(220)).min(0).max(8),
     relationshipHooks: z
       .array(
         z
           .object({
-            target: z.string().min(1).max(60),
-            dynamic: z.string().min(1).max(220),
+            target: z.string().min(1).max(80),
+            dynamic: z.string().min(1).max(340),
           })
           .strict(),
       )
-      .min(1)
-      .max(5),
-    visualConsistencyCue: z.string().min(1).max(240),
+      .min(0)
+      .max(8),
+    visualConsistencyCue: z.string().min(1).max(360),
   })
   .strict();
 
 export const ContinuityPlotAuditOutputSchema = z
   .object({
     overallConsistencyScore: z.number().int().min(0).max(100),
-    summary: z.string().min(1).max(320),
+    summary: z.string().min(1).max(480),
     issues: z
       .array(
         z
           .object({
             severity: z.enum(["critical", "warn", "tip"]),
-            category: z.string().min(1).max(60),
-            locationHint: z.string().min(1).max(120),
-            conflictDetail: z.string().min(1).max(280),
-            fixSuggestion: z.string().min(1).max(280),
+            category: z.string().min(1).max(100),
+            locationHint: z.string().min(1).max(180),
+            conflictDetail: z.string().min(1).max(420),
+            fixSuggestion: z.string().min(1).max(420),
           })
           .strict(),
       )
       .min(1)
-      .max(8),
+      .max(12),
   })
   .strict();
 
 export const Bg3dCameraBlockingOutputSchema = z
   .object({
-    sceneSummary: z.string().min(1).max(280),
+    sceneSummary: z.string().min(1).max(420),
     camera: z
       .object({
         lensMm: z.number().min(12).max(200),
         fovDeg: z.number().min(10).max(120),
-        angleLabel: z.string().min(1).max(80),
+        angleLabel: z.string().min(1).max(120),
         position: z.tuple([z.number(), z.number(), z.number()]),
         target: z.tuple([z.number(), z.number(), z.number()]),
         rollDeg: z.number().min(-45).max(45),
@@ -74,77 +74,77 @@ export const Bg3dCameraBlockingOutputSchema = z
       .strict(),
     lighting: z
       .object({
-        timeOfDay: z.string().min(1).max(60),
-        keyLightColor: z.string().min(1).max(60),
-        rimLightNote: z.string().min(1).max(180),
+        timeOfDay: z.string().min(1).max(80),
+        keyLightColor: z.string().min(1).max(120),
+        rimLightNote: z.string().min(1).max(320),
         ambientRatio: z.number().min(0).max(1),
       })
       .strict(),
-    propsToPlace: z.array(z.string().min(1).max(120)).min(2).max(8),
-    blockingNotes: z.array(z.string().min(1).max(220)).min(2).max(6),
+    propsToPlace: z.array(z.string().min(1).max(180)).min(2).max(12),
+    blockingNotes: z.array(z.string().min(1).max(320)).min(2).max(10),
   })
   .strict();
 
 export const ColorMoodDirectorOutputSchema = z
   .object({
-    emotionLabel: z.string().min(1).max(80),
-    moodSummary: z.string().min(1).max(280),
+    emotionLabel: z.string().min(1).max(120),
+    moodSummary: z.string().min(1).max(420),
     palette: z
       .array(
         z
           .object({
-            role: z.string().min(1).max(40),
-            nameKo: z.string().min(1).max(60),
-            oklch: z.string().min(1).max(60),
-            usageTip: z.string().min(1).max(200),
+            role: z.string().min(1).max(60),
+            nameKo: z.string().min(1).max(80),
+            oklch: z.string().min(1).max(80),
+            usageTip: z.string().min(1).max(320),
           })
           .strict(),
       )
       .min(3)
-      .max(6),
-    lightingGuide: z.string().min(1).max(280),
-    contrastWarning: z.string().min(1).max(220),
+      .max(8),
+    lightingGuide: z.string().min(1).max(420),
+    contrastWarning: z.string().min(1).max(420),
   })
   .strict();
 
 export const SfxOnomatopoeiaLabOutputSchema = z
   .object({
-    sceneEnergy: z.string().min(1).max(120),
+    sceneEnergy: z.string().min(1).max(240),
     suggestions: z
       .array(
         z
           .object({
-            ko: z.string().min(1).max(40),
-            ja: z.string().min(1).max(40),
-            en: z.string().min(1).max(40),
-            intent: z.string().min(1).max(160),
-            typographyTip: z.string().min(1).max(180),
-            placementHint: z.string().min(1).max(160),
+            ko: z.string().min(1).max(60),
+            ja: z.string().min(1).max(60),
+            en: z.string().min(1).max(60),
+            intent: z.string().min(1).max(260),
+            typographyTip: z.string().min(1).max(320),
+            placementHint: z.string().min(1).max(280),
           })
           .strict(),
       )
       .min(2)
-      .max(6),
+      .max(10),
   })
   .strict();
 
 export const PhotoshopFxRecipeOutputSchema = z
   .object({
-    lookNameKo: z.string().min(1).max(100),
-    summary: z.string().min(1).max(280),
+    lookNameKo: z.string().min(1).max(140),
+    summary: z.string().min(1).max(420),
     layerStyles: z
       .array(
         z
           .object({
-            effect: z.string().min(1).max(60),
-            blendMode: z.string().min(1).max(40),
+            effect: z.string().min(1).max(100),
+            blendMode: z.string().min(1).max(60),
             opacityPct: z.number().int().min(0).max(100),
-            paramsSummary: z.string().min(1).max(200),
+            paramsSummary: z.string().min(1).max(340),
           })
           .strict(),
       )
       .min(2)
-      .max(6),
+      .max(10),
     cameraRaw: z
       .object({
         exposure: z.number().min(-4).max(4),
@@ -155,54 +155,54 @@ export const PhotoshopFxRecipeOutputSchema = z
         grainPct: z.number().int().min(0).max(100),
       })
       .strict(),
-    nonDestructiveTip: z.string().min(1).max(240),
+    nonDestructiveTip: z.string().min(1).max(360),
   })
   .strict();
 
 export const ScrollPacingAuditorOutputSchema = z
   .object({
-    rhythmVerdict: z.string().min(1).max(260),
-    averageGapPx: z.number().int().min(40).max(1_600),
+    rhythmVerdict: z.string().min(1).max(320),
+    averageGapPx: z.number().int().min(16).max(1_600),
     cliffhangerScore: z.number().int().min(0).max(100),
-    cliffhangerTip: z.string().min(1).max(240),
+    cliffhangerTip: z.string().min(1).max(320),
     beatPacing: z
       .array(
         z
           .object({
-            section: z.string().min(1).max(80),
+            section: z.string().min(1).max(100),
             pacing: z.enum(["tight", "steady", "breath", "drop"]),
-            recommendedGapPx: z.number().int().min(40).max(1_600),
-            readerRetentionNote: z.string().min(1).max(220),
+            recommendedGapPx: z.number().int().min(16).max(1_600),
+            readerRetentionNote: z.string().min(1).max(280),
           })
           .strict(),
       )
       .min(2)
-      .max(6),
+      .max(8),
   })
   .strict();
 
 export const ThumbnailHookOptimizerOutputSchema = z
   .object({
-    hookDiagnosis: z.string().min(1).max(260),
+    hookDiagnosis: z.string().min(1).max(420),
     titleVariants: z
       .array(
         z
           .object({
-            variantLabel: z.string().min(1).max(40),
-            title: z.string().min(1).max(100),
-            subCopy: z.string().min(1).max(140),
-            hookReason: z.string().min(1).max(200),
+            variantLabel: z.string().min(1).max(80),
+            title: z.string().min(1).max(160),
+            subCopy: z.string().min(1).max(240),
+            hookReason: z.string().min(1).max(360),
           })
           .strict(),
       )
       .min(2)
-      .max(4),
+      .max(6),
     thumbnailSpec: z
       .object({
-        focalSubject: z.string().min(1).max(160),
-        contrastNote: z.string().min(1).max(180),
-        textOverlayMaxChars: z.number().int().min(0).max(24),
-        cropSafetyTip: z.string().min(1).max(180),
+        focalSubject: z.string().min(1).max(280),
+        contrastNote: z.string().min(1).max(320),
+        textOverlayMaxChars: z.number().int().min(0).max(40),
+        cropSafetyTip: z.string().min(1).max(320),
       })
       .strict(),
   })
@@ -215,48 +215,48 @@ export const LocalizationGlossaryCheckOutputSchema = z
       .array(
         z
           .object({
-            termKo: z.string().min(1).max(80),
-            en: z.string().min(1).max(100),
-            ja: z.string().min(1).max(100),
-            ruleNote: z.string().min(1).max(200),
+            termKo: z.string().min(1).max(120),
+            en: z.string().min(1).max(180),
+            ja: z.string().min(1).max(180),
+            ruleNote: z.string().min(1).max(320),
           })
           .strict(),
       )
       .min(2)
-      .max(8),
+      .max(16),
     culturalNotes: z
       .array(
         z
           .object({
             severity: z.enum(["info", "warn"]),
-            topic: z.string().min(1).max(80),
-            adaptationTip: z.string().min(1).max(240),
+            topic: z.string().min(1).max(120),
+            adaptationTip: z.string().min(1).max(360),
           })
           .strict(),
       )
       .min(1)
-      .max(5),
+      .max(8),
   })
   .strict();
 
 export const McpWorkflowMacroOutputSchema = z
   .object({
-    macroTitle: z.string().min(1).max(120),
-    summary: z.string().min(1).max(280),
+    macroTitle: z.string().min(1).max(180),
+    summary: z.string().min(1).max(420),
     zeroCostSafe: z.boolean(),
     steps: z
       .array(
         z
           .object({
             stepOrder: z.number().int().min(1).max(16),
-            toolName: z.string().min(1).max(80),
-            reasonKo: z.string().min(1).max(200),
-            argumentsJson: z.string().min(2).max(600),
+            toolName: z.string().min(1).max(100),
+            reasonKo: z.string().min(1).max(320),
+            argumentsJson: z.string().min(2).max(1_600),
           })
           .strict(),
       )
       .min(2)
-      .max(10),
+      .max(16),
   })
   .strict();
 
@@ -274,7 +274,7 @@ export type StudioOpenAiAssistMode = z.infer<typeof StudioOpenAiAssistModeSchema
 
 export const OpenAiIdeaRemixOutputSchema = z
   .object({
-    summary: z.string().min(1).max(400),
+    summary: z.string().min(1).max(520),
     angles: z
       .array(
         z
@@ -286,10 +286,10 @@ export const OpenAiIdeaRemixOutputSchema = z
               "four-cut-playbook",
               "missed-angle",
             ]),
-            lensLabelKo: z.string().min(1).max(60),
-            headline: z.string().min(1).max(140),
-            pitch: z.string().min(1).max(500),
-            firstCutHint: z.string().min(1).max(240),
+            lensLabelKo: z.string().min(1).max(80),
+            headline: z.string().min(1).max(200),
+            pitch: z.string().min(1).max(700),
+            firstCutHint: z.string().min(1).max(360),
           })
           .strict(),
       )
@@ -300,8 +300,8 @@ export const OpenAiIdeaRemixOutputSchema = z
 
 export const OpenAiScriptToCutsOutputSchema = z
   .object({
-    episodeGoal: z.string().min(1).max(300),
-    pacingTip: z.string().min(1).max(300),
+    episodeGoal: z.string().min(1).max(420),
+    pacingTip: z.string().min(1).max(420),
     cuts: z
       .array(
         z
@@ -315,10 +315,29 @@ export const OpenAiScriptToCutsOutputSchema = z
               "reveal",
               "transition",
             ]),
-            shotType: z.string().min(1).max(80),
-            visualAction: z.string().min(1).max(320),
-            dialogue: z.string().max(220),
-            scrollGapHint: z.string().min(1).max(120),
+            shotType: z.string().min(1).max(120),
+            visualAction: z.string().min(1).max(480),
+            dialogue: z.string().max(320),
+            scrollGapHint: z.string().min(1).max(200),
+          })
+          .strict(),
+      )
+      .min(2)
+      .max(16),
+  })
+  .strict();
+
+export const OpenAiDialoguePolishOutputSchema = z
+  .object({
+    readabilityNote: z.string().min(1).max(440),
+    balloons: z
+      .array(
+        z
+          .object({
+            toneLabel: z.string().min(1).max(100),
+            line: z.string().min(1).max(300),
+            subBubble: z.string().max(240),
+            reason: z.string().min(1).max(360),
           })
           .strict(),
       )
@@ -327,41 +346,22 @@ export const OpenAiScriptToCutsOutputSchema = z
   })
   .strict();
 
-export const OpenAiDialoguePolishOutputSchema = z
-  .object({
-    readabilityNote: z.string().min(1).max(320),
-    balloons: z
-      .array(
-        z
-          .object({
-            toneLabel: z.string().min(1).max(60),
-            line: z.string().min(1).max(200),
-            subBubble: z.string().max(160),
-            reason: z.string().min(1).max(240),
-          })
-          .strict(),
-      )
-      .min(2)
-      .max(4),
-  })
-  .strict();
-
 export const OpenAiExportCoachOutputSchema = z
   .object({
-    readinessSummary: z.string().min(1).max(320),
-    episodeBlurbSuggestion: z.string().min(1).max(240),
+    readinessSummary: z.string().trim().max(480),
+    episodeBlurbSuggestion: z.string().trim().max(360),
     checks: z
       .array(
         z
           .object({
-            category: z.string().min(1).max(60),
+            category: z.string().min(1).max(100),
             severity: z.enum(["pass", "tip", "fix"]),
-            detail: z.string().min(1).max(280),
+            detail: z.string().min(1).max(420),
           })
           .strict(),
       )
       .min(2)
-      .max(6),
+      .max(10),
   })
   .strict();
 

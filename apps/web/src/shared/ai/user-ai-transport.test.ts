@@ -5,7 +5,13 @@ import {
   resetFreeAiRuntimeBudget,
 } from "./free-ai-runtime-budget";
 import { lockUserAi, setUserAiConfiguration } from "./user-ai-store";
-import { completeUserAiTextDetailed, UserAiEmptyTruncatedError, userAiFetch } from "./user-ai-transport";
+import {
+  completeUserAiTextDetailed,
+  UserAiEmptyTruncatedError,
+  userAiFetch,
+  userAiLegacyForm,
+  userAiLegacyJson,
+} from "./user-ai-transport";
 import type { UserAiConnection } from "./user-ai-types";
 
 const managedConnection: UserAiConnection = {
@@ -510,5 +516,101 @@ describe("managed cloud AI transport", () => {
     // 두 번째 요청은 인증 대기 중이라 제공자에 보내지 않고 같은 인증 오류로 끝난다(다음 경로로 넘길 수 있다).
     await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "authentication" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("normalizes max_completion_tokens and strips temperature for OpenAI GPT-5/GPT-6/o3 reasoning models", async () => {
+    for (const reasoningModel of ["gpt-5-mini", "gpt-5.5", "gpt-6.2-astra", "o3"]) {
+      const connectionId = `openai-${reasoningModel.replaceAll(".", "-")}`;
+      setUserAiConfiguration({
+        version: 1,
+        connections: [{
+          ...managedConnection,
+          id: connectionId,
+          label: "OpenAI",
+          baseUrl: "https://api.openai.com/v1",
+          apiKey: "paid-openai-key",
+          textModel: reasoningModel,
+          imageModel: "",
+          costPolicy: "user-funded-byok",
+          paidAutoUse: true,
+        }],
+        assignments: { text: connectionId, image: null, inference: null, "three-d": null },
+        routing: { mode: "automatic", allowPaidFallback: true, preferPaidKeys: true, managedPoolPriority: 50, serverProviderOrder: [] },
+      });
+
+      const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+        choices: [{ message: { content: `ok:${reasoningModel}` }, finish_reason: "stop" }],
+      }), { status: 200, headers: { "content-type": "application/json" } }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const detailed = await completeUserAiTextDetailed("sys", "usr");
+      expect(detailed.content).toBe(`ok:${reasoningModel}`);
+      const detailedBody = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)) as Record<string, unknown>;
+      expect(detailedBody.max_tokens).toBeUndefined();
+      expect(detailedBody.temperature).toBeUndefined();
+      expect(detailedBody.max_completion_tokens).toBe(4096);
+
+      await userAiLegacyJson("text", {
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "ping" }],
+        temperature: 0.7,
+        max_tokens: 400,
+      });
+      const legacyBody = JSON.parse(String((fetchMock.mock.calls[1]?.[1] as RequestInit).body)) as Record<string, unknown>;
+      expect(legacyBody.model).toBe(reasoningModel);
+      expect(legacyBody.max_tokens).toBeUndefined();
+      expect(legacyBody.temperature).toBeUndefined();
+      expect(legacyBody.max_completion_tokens).toBeGreaterThanOrEqual(2048);
+    }
+  });
+
+  it("strips response_format and normalizes 1024x1792 / 1792x1024 for gpt-image-* and chatgpt-image-* across legacy JSON and FormData", async () => {
+    for (const imageModel of ["gpt-image-1.5", "gpt-image-2.6-sunburst", "chatgpt-image-latest"]) {
+      const connectionId = `openai-img-${imageModel.replaceAll(".", "-")}`;
+      setUserAiConfiguration({
+        version: 1,
+        connections: [{
+          ...managedConnection,
+          id: connectionId,
+          label: "OpenAI Image",
+          baseUrl: "https://api.openai.com/v1",
+          apiKey: "paid-openai-key",
+          textModel: "",
+          imageModel,
+          costPolicy: "user-funded-byok",
+          paidAutoUse: true,
+        }],
+        assignments: { text: null, image: connectionId, inference: null, "three-d": null },
+        routing: { mode: "automatic", allowPaidFallback: true, preferPaidKeys: true, managedPoolPriority: 50, serverProviderOrder: [] },
+      });
+
+      const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+        data: [{ b64_json: "AA==" }],
+      }), { status: 200, headers: { "content-type": "application/json" } }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await userAiLegacyJson("image", {
+        model: "dall-e-3",
+        prompt: "빗속 서울 골목",
+        n: 1,
+        size: "1024x1792",
+        response_format: "b64_json",
+      });
+      const jsonBody = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)) as Record<string, unknown>;
+      expect(jsonBody.model).toBe(imageModel);
+      expect(jsonBody.size).toBe("1024x1536");
+      expect(jsonBody.response_format).toBeUndefined();
+
+      const form = new FormData();
+      form.append("image", new Blob(["png"], { type: "image/png" }), "src.png");
+      form.append("prompt", "채색");
+      form.append("size", "1792x1024");
+      form.append("response_format", "b64_json");
+      await userAiLegacyForm(form);
+      const sentForm = (fetchMock.mock.calls[1]?.[1] as RequestInit).body as FormData;
+      expect(sentForm.get("model")).toBe(imageModel);
+      expect(sentForm.get("size")).toBe("1536x1024");
+      expect(sentForm.get("response_format")).toBeNull();
+    }
   });
 });

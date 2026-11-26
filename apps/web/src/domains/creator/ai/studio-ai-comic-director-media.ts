@@ -5,6 +5,7 @@ import {
   type StudioAiSettings,
 } from "./studio-ai-client";
 import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
+import { isGptImageModel } from "./studio-ai-model-compat";
 
 import type {
   ScenarioImageLayerManifest,
@@ -152,7 +153,9 @@ export async function repairStudioAiComicImageRegion(input: {
   form.append("image", source, "comic-director-source.png");
   form.append("mask", mask, "comic-director-mask.png");
   form.append("prompt", prompt);
-  form.append("response_format", "b64_json");
+  if (!isGptImageModel(input.settings.imageModel)) {
+    form.append("response_format", "b64_json");
+  }
 
   let response: Response;
   try {
@@ -178,11 +181,19 @@ export async function repairStudioAiComicImageRegion(input: {
     };
   }
 
-  let body: unknown;
+  let rawText: string;
   try {
-    body = JSON.parse(await response.text());
+    rawText = await response.text();
   } catch {
     return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.media.repairResultUnparseable", "수리 결과를 해석하지 못했습니다.") };
+  }
+  let body: unknown = null;
+  let parsedJson = false;
+  try {
+    body = rawText ? JSON.parse(rawText) : null;
+    parsedJson = true;
+  } catch {
+    // Non-JSON response body (e.g. HTML 502 error page) keeps body=null and parsedJson=false.
   }
   if (!response.ok) {
     return {
@@ -190,6 +201,9 @@ export async function repairStudioAiComicImageRegion(input: {
       code: "http_error",
       error: aiErrorText("studio.aiError.media.repairRequestFailedWithStatus", { status: response.status, message: responseError(body) ?? response.statusText }, "수리 요청이 실패했습니다 (HTTP {status}): {message}"),
     };
+  }
+  if (!parsedJson) {
+    return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.media.repairResultUnparseable", "수리 결과를 해석하지 못했습니다.") };
   }
   const imageDataUrl = imageFromResponse(body);
   if (!imageDataUrl) {

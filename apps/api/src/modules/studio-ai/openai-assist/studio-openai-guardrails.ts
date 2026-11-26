@@ -12,15 +12,30 @@ export const OPENAI_FREE_DATA_SHARE_MODELS = new Set([
   "gpt-4.1-mini",
   "gpt-4o",
 ]);
+export const OPENAI_FLAGSHIP_ALLOWED_MODELS = new Set([
+  "gpt-4.1",
+  "gpt-5.4-mini",
+  "gpt-5.5",
+  "gpt-6.2-astra",
+  "gpt-6.2-sol",
+]);
 export const GEMINI_FREE_TIER_MODELS = new Set([
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
 ]);
-const ALLOWED_OPENAI_MODELS = OPENAI_FREE_DATA_SHARE_MODELS;
+const ALLOWED_OPENAI_MODELS = new Set([
+  ...OPENAI_FREE_DATA_SHARE_MODELS,
+  ...OPENAI_FLAGSHIP_ALLOWED_MODELS,
+]);
 const RETIRED_OPENAI_MODELS = new Set(["gpt-4.1-nano", "gpt-4.1-nano-2025-04-14"]);
+const OPENAI_REASONING_MODEL_PATTERN = /^(?:gpt-5|gpt-6|o3|o4)/iu;
 
 export function isOpenAiFreeShareModel(model: string): boolean {
   return OPENAI_FREE_DATA_SHARE_MODELS.has(model.trim().toLowerCase());
+}
+
+export function isOpenAiReasoningModel(model: string): boolean {
+  return OPENAI_REASONING_MODEL_PATTERN.test(model.trim());
 }
 
 export function isOpenAiRetiredModel(model: string): boolean {
@@ -50,6 +65,9 @@ const CARD_NUMBER_PATTERN =
 const EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu;
 const PHONE_PATTERN =
   /(?:(?<!\w)\+82[-\s.]?0?1[016789]|\b(?:01[016789]|02|0[3-6][1-5]|070))[-\s.]?\d{3,4}[-\s.]?\d{4}\b/gu;
+// 한국 도로명·지번 주소(시·도 + 시·군·구 + 도로명/동·가·리 + 건물/지번 번호 + 선택 동·호·층)만 정밀 마스킹한다.
+const KOREAN_ADDRESS_PATTERN =
+  /(?<![가-힣A-Za-z0-9])(?:세종(?:특별자치시|시)?(?:\s+[가-힣]{1,8}(?:읍|면))?|(?:서울|부산|대구|인천|광주|대전|울산|경기|강원|충청북|충청남|충북|충남|전라북|전라남|전북|전남|경상북|경상남|경북|경남|제주)(?:특별자치도|특별시|광역시|도|시)?(?:\s+[가-힣]{1,8}(?:시|군|구)){1,2}(?:\s+[가-힣]{1,8}(?:읍|면))?)\s+(?:[가-힣]{1,12}(?:\s*\d{1,2}(?:·\d{1,2})?)?(?:동|가|리)|[가-힣]{1,12}(?:(?<!으)로|대로)(?:\s*\d{1,3}[가-힣]?길)?|[가-힣]{1,12}\d{1,3}[가-힣]?길|[가-힣]{1,12}길)\s*\d{1,5}(?:-\d{1,5})?(?:번지)?(?!(?:\d|분|초|시|일|월|년|살|세|명|개|번(?!지)|회|차|원|호선|역|출구|길|(?<=[^0-9][1-9])가|[A-Za-z]))(?:(?:,\s*|\s+)(?:(?:지하\s*)?\d{1,3}층|[A-Za-z가-힣0-9-]{1,6}동(?:\s*\d{1,5}(?:-\d{1,4})?호)?|(?:지하\s*|[A-Za-z])?\d{1,5}(?:-\d{1,4})?호)){0,3}/gu;
 
 export interface StudioOpenAiCreativeConfig {
   readonly configured: boolean;
@@ -139,8 +157,8 @@ export interface RedactedCreatorText {
 }
 
 /**
- * 외부 AI 전송 전 원고·메모에 섞여 들어간 개인정보(이메일, 전화번호, 주민·외국인등록번호, 카드번호)와
- * 실수로 붙여 넣은 API 키·토큰 문자열을 마스킹한다.
+ * 외부 AI 전송 전 원고·메모에 섞여 들어간 개인정보(이메일, 전화번호, 주민·외국인등록번호, 카드번호,
+ * 한국 도로명·지번 주소)와 실수로 붙여 넣은 API 키·토큰 문자열을 마스킹한다.
  */
 export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
   let redactedCount = 0;
@@ -156,6 +174,7 @@ export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
   current = replaceCounted(current, CARD_NUMBER_PATTERN, "[카드번호 비공개]");
   current = replaceCounted(current, EMAIL_PATTERN, "[이메일 비공개]");
   current = replaceCounted(current, PHONE_PATTERN, "[연락처 비공개]");
+  current = replaceCounted(current, KOREAN_ADDRESS_PATTERN, "[주소 비공개]");
 
   return {
     sanitizedText: current,

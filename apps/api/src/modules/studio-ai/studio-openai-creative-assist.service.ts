@@ -13,6 +13,7 @@ import {
 import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
 import {
   DEFAULT_OPENAI_MODEL,
+  isOpenAiReasoningModel,
   redactCreatorSensitiveText,
   resolveStudioOpenAiCreativeConfig,
   StudioOpenAiRateLimiter,
@@ -45,6 +46,11 @@ export {
 
 const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
 const MAX_OUTPUT_TOKENS = 1_400;
+const REASONING_MODEL_MIN_OUTPUT_TOKENS = 4_000;
+const REASONING_MODEL_COMPLEX_OUTPUT_TOKENS = 6_000;
+const COMPLEX_REASONING_ASSIST_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
+  "mcp-workflow-macro",
+]);
 const MAX_ERROR_BODY_BYTES = 8_192;
 
 @Injectable()
@@ -278,6 +284,17 @@ export class StudioOpenAiCreativeAssistService {
     try {
       let response: Response;
       let responseText: string;
+      const reasoningModel = isOpenAiReasoningModel(config.model);
+      const isComplexReasoningMode =
+        reasoningModel && COMPLEX_REASONING_ASSIST_MODES.has(input.mode);
+      const maxCompletionTokens = reasoningModel
+        ? Math.max(
+            MAX_OUTPUT_TOKENS,
+            isComplexReasoningMode
+              ? REASONING_MODEL_COMPLEX_OUTPUT_TOKENS
+              : REASONING_MODEL_MIN_OUTPUT_TOKENS,
+          )
+        : MAX_OUTPUT_TOKENS;
       try {
         response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, {
           method: "POST",
@@ -285,8 +302,8 @@ export class StudioOpenAiCreativeAssistService {
           body: JSON.stringify({
             model: config.model,
             store: false,
-            temperature: 0.65,
-            max_completion_tokens: MAX_OUTPUT_TOKENS,
+            ...(reasoningModel ? { reasoning_effort: "low" } : { temperature: 0.65 }),
+            max_completion_tokens: maxCompletionTokens,
             messages: [
               { role: "system", content: buildModeSystemInstruction(input.mode) },
               { role: "user", content: userPrompt },

@@ -71,9 +71,21 @@ export function buildN7ColoringPrompt(
   ].join("\n");
 }
 
+function stripJsonFences(text: string): string {
+  const trimmed = text.trim();
+  const fenced = /```(?:json)?\s*([\s\S]*?)\s*```/iu.exec(trimmed);
+  if (fenced?.[1]) return fenced[1].trim();
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1).trim();
+  }
+  return trimmed;
+}
+
 function parseJsonObject(text: string): Record<string, unknown> | null {
   try {
-    const parsed: unknown = JSON.parse(text.trim());
+    const parsed: unknown = JSON.parse(stripJsonFences(text));
     if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
       return parsed as Record<string, unknown>;
     }

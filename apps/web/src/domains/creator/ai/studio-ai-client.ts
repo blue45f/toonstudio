@@ -79,6 +79,13 @@ import { isStudioAiConfigured, type StudioAiSettings } from "./studio-ai-setting
 import { aiErrorText } from "./studio-ai-error-i18n";
 
 import {
+  appendOpenAiImageEditCommonFields,
+  buildOpenAiConnectionTestBody,
+  buildOpenAiImageGenerationBody,
+  buildOpenAiTextCompletionBody,
+  normalizeOpenAiImageSize,
+} from "./studio-ai-model-compat";
+import {
   buildStudioJsonPostTarget, extractFirstB64Json,
   extractFirstChatContent,
   extractGeneratedModel,
@@ -400,7 +407,7 @@ async function postTextCompletion(
     user: string;
     temperature: number;
     maxTokens: number;
-    responseFormat: "text" | "json";
+    responseFormat: "text" | "json" | "json-array";
   },
   transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT
 ): Promise<StudioAiResult<unknown>> {
@@ -430,15 +437,14 @@ async function postTextCompletion(
       },
     };
   }
-  const body = {
+  const body = buildOpenAiTextCompletionBody({
     model: settings.textModel,
-    messages: [
-      { role: "system", content: request.system },
-      { role: "user", content: request.user },
-    ],
+    system: request.system,
+    user: request.user,
     temperature: request.temperature,
-    max_tokens: request.maxTokens,
-  };
+    maxTokens: request.maxTokens,
+    responseFormat: request.responseFormat,
+  });
   if (usesUnifiedCloudRouting(settings)) {
     try {
       return { ok: true, data: await userAiLegacyJson("text", body, transport.signal) };
@@ -483,26 +489,14 @@ export async function generateBackgroundImage(
     return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   const size = opts.size ?? DEFAULT_STUDIO_AI_IMAGE_SIZE;
-  const result = await postImageJson(settings, {
-    model: settings.imageModel,
-    prompt: trimmed,
-    n: 1,
-    size,
-    response_format: "b64_json",
-  }, opts.signal);
+  const { body } = buildOpenAiImageGenerationBody(settings.imageModel, trimmed, size);
+  const result = await postImageJson(settings, body, opts.signal);
   if (!result.ok) return result;
   const b64 = extractFirstB64Json(result.data);
   if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
-  const { width, height } = parseImageSize(size);
-  return {
-    ok: true,
-    data: {
-      dataUrl: `data:image/png;base64,${b64}`,
-      width,
-      height,
-      model: extractGeneratedModel(result.data, settings.imageModel),
-    },
-  };
+  const model = extractGeneratedModel(result.data, settings.imageModel);
+  const { width, height } = parseImageSize(normalizeOpenAiImageSize(model, size));
+  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}`, width, height, model } };
 }
 
 /**
@@ -532,10 +526,7 @@ export async function colorizeLineArt(
   }
   const form = new FormData();
   form.set("image", blob, "lineart.png");
-  form.set("prompt", trimmed);
-  form.set("model", settings.imageModel);
-  form.set("n", "1");
-  form.set("response_format", "b64_json");
+  appendOpenAiImageEditCommonFields(form, settings.imageModel, trimmed);
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
@@ -592,10 +583,7 @@ export async function convertImageToAnimeStyle(
   }
   const form = new FormData();
   form.set("image", blob, "source.png");
-  form.set("prompt", buildAnimeStyleEditPrompt(extraDirection, purpose));
-  form.set("model", settings.imageModel);
-  form.set("n", "1");
-  form.set("response_format", "b64_json");
+  appendOpenAiImageEditCommonFields(form, settings.imageModel, buildAnimeStyleEditPrompt(extraDirection, purpose));
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
@@ -656,10 +644,7 @@ export async function generateConsistentCharacterImage(
   }
   const form = new FormData();
   form.set("image", blob, "character-reference.png");
-  form.set("prompt", buildCharacterConsistencyPrompt(trimmed));
-  form.set("model", settings.imageModel);
-  form.set("n", "1");
-  form.set("response_format", "b64_json");
+  appendOpenAiImageEditCommonFields(form, settings.imageModel, buildCharacterConsistencyPrompt(trimmed));
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
@@ -884,10 +869,7 @@ export async function generateImageWithRoleReferences(
   for (const image of admitted) {
     form.append("image[]", image.blob, image.filename);
   }
-  form.set("prompt", providerPrompt);
-  form.set("model", settings.imageModel);
-  form.set("n", "1");
-  form.set("response_format", "b64_json");
+  appendOpenAiImageEditCommonFields(form, settings.imageModel, providerPrompt);
   return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
@@ -1076,7 +1058,7 @@ export async function translateDialogueBatch(
     user,
     temperature: 0.3, // 창작적 변주보다 일관된 번역이 목적 — 장면 구성 제안(0.7)보다 낮춘다.
     maxTokens: Math.max(400, items.length * 120),
-    responseFormat: "json",
+    responseFormat: "json-array",
   }, transport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
@@ -1127,7 +1109,7 @@ export async function suggestDialogueLines(
     user,
     temperature: opts.answerTuning ? answerTuningTemperature(0.8, opts.answerTuning) : 0.8, // 서로 다른 후보 여러 개가 목적 — 장면 구성 제안(0.7)보다 살짝 높여 다양성을 늘린다.
     maxTokens: opts.answerTuning ? answerTuningMaxTokens(500, opts.answerTuning) : 500,
-    responseFormat: "json",
+    responseFormat: "json-array",
   }, effectiveTransport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
@@ -1213,11 +1195,7 @@ export async function testAiConnection(
     return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   const startedAt = Date.now();
-  const body = {
-    model: settings.textModel,
-    messages: [{ role: "user", content: "ping" }],
-    max_tokens: 1,
-  };
+  const body = buildOpenAiConnectionTestBody(settings.textModel);
   const result = usesUnifiedCloudRouting(settings)
     ? await (async (): Promise<StudioAiResult<unknown>> => {
         try {

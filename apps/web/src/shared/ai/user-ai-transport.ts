@@ -1,5 +1,11 @@
 import { userAiWireProtocol } from "./assist/assist-protocol";
 import { assertFreeAiConnection } from "./free-ai-policy";
+import {
+  buildUserAiTextCompletionBody,
+  normalizeOpenAiLegacyChatBody,
+  normalizeOpenAiLegacyImageBody,
+  normalizeOpenAiLegacyImageForm,
+} from "./openai-model-compat";
 import { readBoundedResponseBytes } from "./user-ai-bounded-read";
 import {
   FreeAiRuntimeBudgetError,
@@ -262,14 +268,7 @@ export async function completeUserAiTextDetailed(
       }>(
         "text",
         connection.chatCompletionsPath,
-        {
-          model: connection.textModel,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-          max_tokens: 4096,
-        },
+        buildUserAiTextCompletionBody(connection.textModel, system, user, 4096),
         {
           signal,
           maxBytes: 2 * 1024 * 1024,
@@ -373,12 +372,12 @@ export async function userAiLegacyJson(
   for (const connection of candidates) {
     const model = capability === "text" ? connection.textModel : connection.imageModel;
     if (!model) continue;
-    const values: Record<string, unknown> = body && typeof body === "object"
+    const rawValues: Record<string, unknown> = body && typeof body === "object"
       ? { ...body, model } as Record<string, unknown>
       : { model };
-    if (capability === "image" && model.startsWith("gpt-image")) {
-      delete values.response_format;
-    }
+    const values = capability === "text"
+      ? normalizeOpenAiLegacyChatBody(model, rawValues)
+      : normalizeOpenAiLegacyImageBody(model, rawValues);
     try {
       return await userAiJson(
         capability,
@@ -420,10 +419,7 @@ export async function userAiLegacyForm(
   for (const connection of candidates) {
     if (!connection.imageModel) continue;
     const requestForm = cloneFormData(form);
-    requestForm.set("model", connection.imageModel);
-    if (connection.imageModel.startsWith("gpt-image")) {
-      requestForm.delete("response_format");
-    }
+    normalizeOpenAiLegacyImageForm(connection.imageModel, requestForm);
     try {
       return await userAiJson(
         "image",

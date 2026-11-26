@@ -28,7 +28,7 @@ export const STUDIO_AI_BYOK_PROVIDER_PRESETS: readonly StudioAiByokProviderPrese
       id: "openai",
       label: "OpenAI 호환",
       baseUrl: "https://api.openai.com/v1",
-      note: "기본값과 같다. 이미지 모델명은 직접 입력한다.",
+      note: "기본값과 같다. OpenAI 이미지 모델은 gpt-image-1.5 등 현역 모델을 입력한다.",
     }),
     Object.freeze({
       id: "custom",

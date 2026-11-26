@@ -35,12 +35,16 @@ export function buildStoryboardPlanPrompt(input: {
   ].join("\n");
 }
 
-/** 모델이 JSON을 코드 펜스로 감싸는 경우를 대비해 펜스를 제거한다. */
+/** 모델이 JSON을 코드 펜스나 짧은 안내 문구로 감싸는 경우를 대비해 본문 JSON만 추출한다. */
 function stripJsonFences(text: string): string {
-  let trimmed = text.trim();
-  if (!trimmed.startsWith("```")) return trimmed;
-  trimmed = trimmed.replace(/^```[a-zA-Z]*\n?/, "");
-  if (trimmed.endsWith("```")) trimmed = trimmed.slice(0, -3).trim();
+  const trimmed = text.trim();
+  const fenced = /```(?:json)?\s*([\s\S]*?)\s*```/iu.exec(trimmed);
+  if (fenced?.[1]) return fenced[1].trim();
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1).trim();
+  }
   return trimmed;
 }
 

@@ -31,7 +31,7 @@ export interface StudioAiSettings {
 export const STUDIO_AI_DEFAULT_SETTINGS: StudioAiSettings = {
   baseUrl: "https://api.openai.com/v1",
   apiKey: "",
-  imageModel: "dall-e-3",
+  imageModel: "gpt-image-1.5",
   textModel: "gpt-4o-mini",
   imageGenerationPath: "/images/generations",
   imageEditPath: "/images/edits",

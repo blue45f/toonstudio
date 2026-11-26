@@ -42,13 +42,13 @@ const STAGE_GUIDANCE: Record<StudioWriterRoomStage, string> = {
   "episode-outline":
     "이번 화의 제목과 독자가 다음 화를 누르게 만드는 에피소드 요약을 만드세요. draft는 {title, summary, characterIds}입니다.",
   beats:
-    "감정과 정보가 실제로 변하는 비트 목록을 순서대로 만드세요. draft는 {items:[{id,order,title,summary,characterIds}]}입니다.",
+    "감정과 정보가 실제로 변하는 비트 목록을 순서대로 만드세요. draft는 {items:[{id,order,title,summary,characterIds}]}이며 order는 0부터 시작하는 정수입니다.",
   scenes:
-    "비트를 촬영 가능한 장소·시간 단위 장면으로 나누세요. draft는 {items:[{id,order,beatIds,heading,summary,location,time,characterIds}]}입니다.",
+    "비트를 촬영 가능한 장소·시간 단위 장면으로 나누세요. draft는 {items:[{id,order,beatIds,heading,summary,location,time,characterIds}]}이며 order는 0부터 시작하는 정수입니다.",
   "panel-plan":
-    "세로 스크롤 리듬, 숏 크기, 시선 흐름을 고려해 패널 계획을 만드세요. draft는 {items:[{id,order,sceneId,shot,action,characterIds}]}입니다.",
+    "세로 스크롤 리듬, 숏 크기, 시선 흐름을 고려해 패널 계획을 만드세요. draft는 {items:[{id,order,sceneId,shot,action,characterIds}]}이며 order는 0부터 시작하는 정수입니다.",
   "dialogue-sfx":
-    "설명 과잉을 줄이고 캐릭터 말투를 구분하며, 필요한 효과음만 배치하세요. draft는 {dialogue:[{id,order,panelId,characterId,text}],sfx:[{id,order,panelId,presetId,customText,style:{emphasis,scale}}]}입니다.",
+    '설명 과잉을 줄이고 캐릭터 말투를 구분하며, 필요한 효과음만 배치하세요. draft는 {dialogue:[{id,order,panelId,characterId,text}],sfx:[{id,order,panelId,presetId,customText,style:{emphasis,scale}}]}입니다. order는 0 이상 정수, characterId는 제공된 캐릭터 ID 문자열 또는 null(빈 문자열 금지), presetId는 문자열 또는 null, style.emphasis는 반드시 "quiet"|"normal"|"strong" 중 하나, style.scale은 반드시 "small"|"medium"|"large" 중 하나여야 합니다.',
 };
 
 const WriterRoomAiEnvelopeSchema = z
@@ -104,8 +104,14 @@ function safeJson(value: unknown): string {
 
 function stripMarkdownFence(value: string): string {
   const trimmed = value.trim();
-  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/iu.exec(trimmed);
-  return (fenced?.[1] ?? trimmed).trim();
+  const fenced = /```(?:json)?\s*([\s\S]*?)\s*```/iu.exec(trimmed);
+  if (fenced?.[1]) return fenced[1].trim();
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1).trim();
+  }
+  return trimmed;
 }
 
 function stageReferences(document: StudioWriterRoomDocument, stage: StudioWriterRoomStage): unknown {
