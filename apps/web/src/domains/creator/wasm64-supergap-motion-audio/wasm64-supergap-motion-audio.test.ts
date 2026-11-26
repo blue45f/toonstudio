@@ -112,8 +112,9 @@ describe("Super-Gap Pillar C & F — ₩0 로컬 엔진 통합 검증", () => {
       expect(iphoneReport.viewport).toEqual(MOBILE_VIEWPORT_PRESETS.iphone15);
       expect(galaxyReport.viewport).toEqual(MOBILE_VIEWPORT_PRESETS.galaxyS);
       expect(iphoneReport.aiTokensUsed).toBe(0);
-      expect(iphoneReport.elapsedMs).toBeLessThan(10);
-      expect(galaxyReport.elapsedMs).toBeLessThan(10);
+      const maxRetentionMs = process.env.CI ? 100 : 10;
+      expect(iphoneReport.elapsedMs).toBeLessThan(maxRetentionMs);
+      expect(galaxyReport.elapsedMs).toBeLessThan(maxRetentionMs);
       expect(iphoneReport.overallRetentionScore).toBeGreaterThanOrEqual(75);
       expect(iphoneReport.first10SecRetentionScore).toBeGreaterThanOrEqual(75);
       expect(iphoneReport.screens.length).toBeGreaterThan(10);

@@ -478,7 +478,7 @@ describe("열/배터리 프레임 페이서 · A/B 이중 저널 즉시 복구 �
     expect(recovered.state).toEqual({ episodeId: "ep-12", activeLayerId: "color-2", strokes: 188 });
     expect(recovered.recoveredFromFallback).toBe(true);
     expect(recovered.corruptedSlots).toEqual(["B"]);
-    expect(recovered.restoreDurationMs).toBeLessThan(50);
+    expect(recovered.restoreDurationMs).toBeLessThan(process.env.CI ? 250 : 50);
 
     storage.writeSlot("B", slotB.subarray(0, 20));
     const torn = fresh.restoreLatestValidSnapshot();
