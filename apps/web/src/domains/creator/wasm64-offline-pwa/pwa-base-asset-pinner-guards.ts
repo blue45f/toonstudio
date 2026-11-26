@@ -165,10 +165,32 @@ export function computeBaseAssetVersionHash(assets: readonly PwaBaseAssetDescrip
   return hash.toString(16).padStart(8, "0");
 }
 
+const BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+function encodeBase64Pure(bytes: Uint8Array): string {
+  let out = "";
+  for (let i = 0; i < bytes.byteLength; i += 3) {
+    const b0 = bytes[i] ?? 0;
+    const has1 = i + 1 < bytes.byteLength;
+    const has2 = i + 2 < bytes.byteLength;
+    const b1 = has1 ? (bytes[i + 1] ?? 0) : 0;
+    const b2 = has2 ? (bytes[i + 2] ?? 0) : 0;
+    const triplet = (b0 << 16) | (b1 << 8) | b2;
+    out += BASE64_ALPHABET[(triplet >>> 18) & 0x3f];
+    out += BASE64_ALPHABET[(triplet >>> 12) & 0x3f];
+    out += has1 ? BASE64_ALPHABET[(triplet >>> 6) & 0x3f] : "=";
+    out += has2 ? BASE64_ALPHABET[triplet & 0x3f] : "=";
+  }
+  return out;
+}
+
 function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i += 1) binary += String.fromCharCode(bytes[i] ?? 0);
-  return typeof globalThis.btoa === "function" ? globalThis.btoa(binary) : Buffer.from(bytes).toString("base64");
+  if (typeof globalThis.btoa === "function") {
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i += 1) binary += String.fromCharCode(bytes[i] ?? 0);
+    return globalThis.btoa(binary);
+  }
+  return encodeBase64Pure(bytes);
 }
 
 function bytesToHex(bytes: Uint8Array): string {

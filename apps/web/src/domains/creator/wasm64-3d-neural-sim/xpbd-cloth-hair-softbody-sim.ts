@@ -121,7 +121,7 @@ export class XpbdClothHairSolver {
   private readonly dihedralLambdas: Float32Array;
   private readonly isoLambdas: Float32Array;
   private readonly substepHz: number;
-  private readonly maxSubstepsPerStep: number;
+  private maxSubstepsPerStep: number;
   private readonly constraintIterations: number;
   private readonly gravity: Vec3;
   private readonly airDamping: number;
@@ -184,6 +184,15 @@ export class XpbdClothHairSolver {
 
   setWindField(wind: XpbdWindField): void {
     this.wind = wind;
+  }
+
+  setMaxSubstepsPerStep(limit: number): void {
+    if (!Number.isFinite(limit)) return;
+    this.maxSubstepsPerStep = Math.max(1, Math.min(32, Math.floor(limit)));
+  }
+
+  getMaxSubstepsPerStep(): number {
+    return this.maxSubstepsPerStep;
   }
 
   setColliders(spheres: readonly XpbdSphereCollider[], capsules: readonly XpbdCapsuleCollider[]): void {
@@ -422,9 +431,13 @@ export class XpbdClothHairSolver {
   }
 
   /** 주어진 프레임 시간 `frameDtSec`를 120Hz 이상 서브스텝으로 분할 적분하고 안정성 지표를 반환한다. */
-  step(frameDtSec: number): XpbdStepMetrics {
+  step(frameDtSec: number, maxSubstepsOverride?: number): XpbdStepMetrics {
     const safeDt = clamp(frameDtSec, 1 / 480, 0.1);
-    const substeps = Math.min(this.maxSubstepsPerStep, Math.max(1, Math.ceil(safeDt * this.substepHz)));
+    const substepCap =
+      maxSubstepsOverride !== undefined && Number.isFinite(maxSubstepsOverride)
+        ? Math.max(1, Math.min(32, Math.floor(maxSubstepsOverride)))
+        : this.maxSubstepsPerStep;
+    const substeps = Math.min(substepCap, Math.max(1, Math.ceil(safeDt * this.substepHz)));
     const subDt = safeDt / substeps;
     const invDt2 = 1 / (subDt * subDt);
     const invSubDt = 1 / subDt;

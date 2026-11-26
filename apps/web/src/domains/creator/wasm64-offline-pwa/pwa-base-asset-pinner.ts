@@ -418,7 +418,7 @@ export class PwaBaseAssetPinner {
 
   private async discoverExistingPinnedVersion(): Promise<string | null> {
     const names = (await this.cacheStorage.keys()).filter((n) => n.startsWith(this.cachePrefix) && n !== this.cacheName);
-    const last = names.at(-1);
+    const last = names.length > 0 ? names[names.length - 1] : undefined;
     return last ? last.slice(this.cachePrefix.length) : null;
   }
 
