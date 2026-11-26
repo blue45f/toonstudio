@@ -464,7 +464,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
 
         <StudioCinematicCanvasWelcome
           pageKey={activePage.id}
-          initiallyCollapsed={Boolean(clarity?.active) || !studioUiDensityAllows(uiDensityMode, "workflow-guide")}
+          initiallyCollapsed={Boolean(clarity?.active && props.isMobile) || !studioUiDensityAllows(uiDensityMode, "workflow-guide")}
           onOpenTutorial={() => openFeatureTutorial(null)}
           onDrawNow={() => { dismissQuickStart(); stableHandlers.activateCanvasTool("draw", "pen"); wrapRef.current?.focus({ preventScroll: true }); }}
           visible={shouldShowStudioCinematicCanvasWelcome({
