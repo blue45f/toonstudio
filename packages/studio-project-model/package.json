@@ -84,6 +84,11 @@
       "import": "./src/shaper-slots/shaper-15-slot-contract.ts",
       "default": "./src/shaper-slots/shaper-15-slot-contract.ts"
     },
+    "./character-art-style": {
+      "types": "./src/character-style/index.ts",
+      "import": "./src/character-style/index.ts",
+      "default": "./src/character-style/index.ts"
+    },
     "./digest": {
       "types": "./src/ir/digest.ts",
       "import": "./src/ir/digest.ts",
@@ -154,7 +159,9 @@
       "path": ["src/ir/path.ts"],
       "path-transform": ["src/ir/path-transform.ts"],
       "brush": ["src/ir/brush.ts"],
-      "review-source-map": ["src/graph/review-source-map.ts"]
+      "review-source-map": ["src/graph/review-source-map.ts"],
+      "shaper-slots": ["src/shaper-slots/shaper-15-slot-contract.ts"],
+      "character-art-style": ["src/character-style/index.ts"]
     }
   }
 }

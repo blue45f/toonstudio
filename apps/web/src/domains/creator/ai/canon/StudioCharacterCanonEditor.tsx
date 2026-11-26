@@ -2,7 +2,7 @@
 // 이름·외모·의상·특징 태그를 입력받고, 레퍼런스 이미지는 세 가지 경로로 받는다.
 //  1) 파일 업로드 — 캔버스에서 512px로 줄인 data URL로 저장한다.
 //  2) 기본 아바타 — repo에 번들로 들어 있는 샘플 캐릭터 썸네일에서 고른다.
-//  3) 3D 셰이퍼 — character-lab/SHAPER 계열의 캐릭터 제작 화면으로 연결하고,
+//  3) 3D 셰이퍼 — 스튜디오 내 3D 캐릭터 셰이퍼 화면으로 연결하고,
 //     스냅샷 URL을 붙여넣을 수 있다(앱 경계가 달라 직접 import하지 않는다).
 import { useRef, useState } from "react";
 import { ImagePlus, Link2, Shapes, Sparkles, Trash2, UserRound } from "lucide-react";
@@ -332,8 +332,8 @@ export function StudioCharacterCanonEditor({
           <div className="mt-2 rounded-lg border border-line bg-card p-3 text-xs leading-relaxed text-fg-2">
             <p>
               {bt(
-                "3D 캐릭터 셰이퍼(character-lab/SHAPER)에서 만든 캐릭터의 스냅샷을 레퍼런스로 쓸 수 있어요. 셰이퍼에서 스냅샷을 저장한 뒤 아래에 붙여넣거나 파일로 올리세요.",
-                "Use a snapshot from the 3D character Shaper (character-lab/SHAPER) as reference. Save a snapshot in the Shaper, then paste it below or upload the file.",
+                "3D 캐릭터 셰이퍼에서 만든 캐릭터의 스냅샷을 레퍼런스로 쓸 수 있어요. 셰이퍼에서 스냅샷을 저장한 뒤 아래에 붙여넣거나 파일로 올리세요.",
+                "Use a snapshot from the 3D Character Shaper as reference. Save a snapshot in the Shaper, then paste it below or upload the file.",
               )}
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
