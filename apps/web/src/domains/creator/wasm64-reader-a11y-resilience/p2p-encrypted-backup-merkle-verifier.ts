@@ -458,7 +458,14 @@ export class P2pEncryptedBackupVault {
     let healthyShardCount = 0;
 
     for (const assignment of manifest.shards) {
-      const fetched = await this.network.getShard(assignment.peerId, assignment.shardKey);
+      let fetched: Uint8Array | null;
+      try {
+        fetched = await this.network.getShard(assignment.peerId, assignment.shardKey);
+      } catch {
+        // 피어의 전송 실패도 유실 샤드로 기록하고 나머지 피어와 패리티로 복구를 시도한다.
+        lostOrCorruptedPeerIds.push(assignment.peerId);
+        continue;
+      }
       if (!fetched || fetched.byteLength !== assignment.byteLength) {
         lostOrCorruptedPeerIds.push(assignment.peerId);
         continue;

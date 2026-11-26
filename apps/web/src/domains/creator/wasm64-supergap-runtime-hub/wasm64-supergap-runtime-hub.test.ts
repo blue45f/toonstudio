@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { unzipSync, unzlibSync } from "fflate";
 import { describe, expect, it } from "vitest";
+import { parsePngChunks } from "../studio-apng-encoder";
 import {
   computeSha256Sri,
   InMemoryCacheStorage,
@@ -172,7 +174,7 @@ function buildDrawToPublishFixture(
         ],
       },
     ],
-    publishTargets: ["print-book-cmyk-pdfx4", "epub3-fixed-layout", "naver-webtoon-800"],
+    publishTargets: ["print-book-cmyk-pdfx4", "epub3-fixed-layout", "cbz-comic-archive", "naver-webtoon-800"],
     printPaperProfile: "coated-fogra39",
     publishRightsBom: {
       workId: "work-yeonhwa-chronicles",
@@ -318,6 +320,29 @@ describe("wasm64-supergap-runtime-hub: 통합 엔드투엔드 런타임 허브",
     if (epubPkg?.artifact?.kind === "epub3-fixed-layout") {
       expect(epubPkg.artifact.archiveBytes[0]).toBe(0x50);
       expect(epubPkg.artifact.archiveBytes[1]).toBe(0x4b);
+    }
+    // 최종 ZIP을 풀어 CRC 검증된 PNG의 실제 픽셀이 봉인한 원고와 같은지 확인한다.
+    for (const target of ["epub3-fixed-layout", "cbz-comic-archive"] as const) {
+      const artifact = result.stage5.publishResults[target]?.artifact;
+      expect(artifact?.kind).toBe(target);
+      if (!artifact || !("archiveBytes" in artifact)) throw new Error("출판 아카이브 누락");
+      const archive = unzipSync(artifact.archiveBytes);
+      const png = Object.entries(archive).find(([name]) => name.endsWith(".png"))?.[1];
+      if (!png) throw new Error("출판 페이지 PNG 누락");
+      const chunks = parsePngChunks(png);
+      const header = chunks[0].data;
+      const size = new DataView(header.buffer, header.byteOffset, header.byteLength);
+      expect([size.getUint32(0), size.getUint32(4)]).toEqual([fixture.canvasWidth, fixture.canvasHeight]);
+      const compressed = chunks.find((chunk) => chunk.type === "IDAT")?.data;
+      if (!compressed) throw new Error("PNG 이미지 데이터 누락");
+      const rows = unzlibSync(compressed);
+      const stride = fixture.canvasWidth * 4;
+      const pixels = result.stage4.watermarkImprint.watermarkedRgba;
+      for (let y = 0; y < fixture.canvasHeight; y += 1) {
+        expect(rows[y * (stride + 1)]).toBe(0);
+        expect(Array.from(rows.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1))))
+          .toEqual(Array.from(pixels.subarray(y * stride, (y + 1) * stride)));
+      }
     }
 
     expect(result.stage5.ipDerivativeBundle.ok).toBe(true);

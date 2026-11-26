@@ -460,6 +460,7 @@ export class ImmutableProvenanceLedger {
   private readonly subtle?: SubtleCrypto;
   private readonly blocks: SignedLedgerBlock[] = [];
   private readonly seenEventIds = new Set<string>();
+  private appendTail: Promise<void> = Promise.resolve();
 
   private constructor(
     ledgerId: string, workId: string, creatorId: string,
@@ -499,9 +500,22 @@ export class ImmutableProvenanceLedger {
   getBlocks(): readonly SignedLedgerBlock[] { return [...this.blocks]; }
   getLatestBlock(): SignedLedgerBlock { return this.blocks[this.blocks.length - 1]; }
 
-  async appendBlock(
+  appendBlock(
     events: readonly ProvenanceAuditEvent[],
     options: AppendBlockOptions = {},
+  ): Promise<SignedLedgerBlock> {
+    const queuedEvents = [...events];
+    const queuedOptions = { ...options };
+    // 중복 검사부터 서명·커밋까지 직렬화하여 같은 인덱스나 이전 해시를 재사용하지 않는다.
+    const append = this.appendTail.then(() => this.appendBlockInSequence(queuedEvents, queuedOptions));
+    // 실패는 원래 호출자에게 전달하되 다음 요청의 실행을 막지 않는다.
+    this.appendTail = append.then(() => undefined, () => undefined);
+    return append;
+  }
+
+  private async appendBlockInSequence(
+    events: readonly ProvenanceAuditEvent[],
+    options: AppendBlockOptions,
   ): Promise<SignedLedgerBlock> {
     if (events.length === 0) throw new Error("최소 1개 이상의 감사 이벤트가 필요합니다.");
     const batchIds = new Set<string>();

@@ -165,6 +165,16 @@ export class PwaBaseAssetPinner {
       return { activated: false, reason: "unsaved-canvas-edits", activeVersionHash: this.activeVersionHash, pendingActivationVersion: this.pendingActivationVersion, prunedCacheNames: [] };
     }
     if (!(await this.cacheStorage.has(this.stagingCacheName))) {
+      // 다른 세션이 이미 완성한 세대는 별도 스테이징이 없어도 대기할 수 있다.
+      // 활성화 직전에 다시 무결성을 확인하고 기존 세대는 그때까지 보존한다.
+      if (await this.checkAlreadyPinned(undefined, true)) {
+        const previousVersion = this.activeVersionHash ?? await this.discoverExistingPinnedVersion();
+        this.setActiveVersion(this.versionHash);
+        this.pendingActivationVersion = null;
+        const prunedCacheNames = await this.pruneStaleCaches();
+        if (previousVersion !== this.versionHash) await this.invokeOnActivate(previousVersion);
+        return { activated: true, reason: "activated", activeVersionHash: this.activeVersionHash, pendingActivationVersion: null, prunedCacheNames };
+      }
       this.pendingActivationVersion = null;
       return { activated: false, reason: "staging-missing", activeVersionHash: this.activeVersionHash, pendingActivationVersion: null, prunedCacheNames: [] };
     }
@@ -277,8 +287,16 @@ export class PwaBaseAssetPinner {
     if (!forceRepin) {
       const existing = await this.checkAlreadyPinned(signal);
       if (existing) {
+        this.activeVersionHash ??= await this.discoverExistingPinnedVersion();
+        if (!this.isActivationAllowed()) {
+          this.pendingActivationVersion = this.versionHash;
+          return this.finishPin(true, "staged-pending-activation", existing.records, [], [], 0, existing.records.length, existing.totalBytes, startedAt, true, false);
+        }
+        const previousVersion = this.activeVersionHash;
         this.setActiveVersion(this.versionHash);
+        this.pendingActivationVersion = null;
         const pruned = await this.pruneStaleCaches();
+        if (previousVersion !== this.versionHash) await this.invokeOnActivate(previousVersion);
         return this.finishPin(true, "already-pinned", existing.records, [], pruned, 0, existing.records.length, existing.totalBytes, startedAt, false, false);
       }
     }
@@ -465,7 +483,7 @@ export class PwaBaseAssetPinner {
     return result;
   }
 
-  private async checkAlreadyPinned(signal?: AbortSignal): Promise<{ records: PinnedAssetRecord[]; totalBytes: number } | null> {
+  private async checkAlreadyPinned(signal?: AbortSignal, verifyIntegrity = this.verifyCachedIntegrityOnRecheck): Promise<{ records: PinnedAssetRecord[]; totalBytes: number } | null> {
     if (signal?.aborted || !(await this.cacheStorage.has(this.cacheName))) return null;
     const cache = await this.cacheStorage.open(this.cacheName);
     const records: PinnedAssetRecord[] = [];
@@ -475,7 +493,7 @@ export class PwaBaseAssetPinner {
       const hit = await cache.match(asset.url);
       if (!hit) return null;
       const bytes = new Uint8Array(await hit.arrayBuffer());
-      if (this.verifyCachedIntegrityOnRecheck && (await validatePwaAssetPayload(asset, bytes, hit))) return null;
+      if (verifyIntegrity && (await validatePwaAssetPayload(asset, bytes, hit))) return null;
       records.push({ url: asset.url, kind: asset.kind, byteLength: bytes.byteLength, source: "cache" });
       totalBytes += bytes.byteLength;
     }

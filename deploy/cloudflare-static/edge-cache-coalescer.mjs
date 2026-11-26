@@ -32,10 +32,14 @@ const STALE_UNTIL_HEADER = "x-toonstudio-cache-stale-until";
 const INTERNAL_HEADERS = Object.freeze([STORED_AT_HEADER, FRESH_UNTIL_HEADER, STALE_UNTIL_HEADER]);
 const INTERNAL_ACCEPT_VARIANT_PARAM = "__ts_edge_accept_variant";
 const ACCEPT_NEGOTIATED_PATHS = Object.freeze(new Set(["/api/cover"]));
+const ORIGIN_CONDITION_HEADERS = Object.freeze([
+  "if-match", "if-none-match", "if-modified-since", "if-unmodified-since", "if-range", "range",
+]);
 
 const keyOf = (keyRequest) => (typeof keyRequest === "string" ? keyRequest : keyRequest.url);
 const isWebSocketUpgradeRequest = (request) =>
   request?.headers?.get("upgrade")?.toLowerCase() === "websocket";
+const isNullBodyStatus = (status) => status === 204 || status === 205 || status === 304;
 
 function stripTrailingSlashes(pathname) {
   let end = pathname.length;
@@ -112,7 +116,7 @@ function stripInternalHeaders(headers) {
 }
 
 function cloneSnapshot(meta) {
-  return new Response(meta.bodyBytes.slice(0), {
+  return new Response(isNullBodyStatus(meta.status) ? null : meta.bodyBytes.slice(0), {
     status: meta.status,
     statusText: meta.statusText,
     headers: new Headers(meta.headers),
@@ -217,7 +221,7 @@ function buildStoredCacheEntry(snapshot, classification, storedAtMs) {
   headers.set(STORED_AT_HEADER, String(storedAtMs));
   headers.set(FRESH_UNTIL_HEADER, String(freshUntilMs));
   headers.set(STALE_UNTIL_HEADER, String(staleUntilMs));
-  return new Response(snapshot.bodyBytes.slice(0), {
+  return new Response(isNullBodyStatus(snapshot.status) ? null : snapshot.bodyBytes.slice(0), {
     status: snapshot.status,
     statusText: snapshot.statusText,
     headers,
@@ -231,7 +235,7 @@ function buildClientResponse(source, { method, lane, cacheStatus, clientCacheCon
   if (ageSeconds !== undefined) headers.set("age", String(Math.max(0, ageSeconds)));
   headers.set(API_LANE_HEADER, lane);
   headers.set(EDGE_CACHE_HEADER, cacheStatus);
-  const body = method === "HEAD"
+  const body = method === "HEAD" || isNullBodyStatus(source.status)
     ? null
     : source.bodyBytes !== undefined ? source.bodyBytes.slice(0) : source.body;
   if (method === "HEAD" && source.body) void cancelBodySafely(source);
@@ -327,6 +331,12 @@ export function createEdgeApiCacheCoalescer(options = {}) {
       const originResponse = await originFetch(request);
       if (isWebSocketUpgradeRequest(request) || originResponse.status === 101) return originResponse;
       return buildBypassResponse(originResponse, classification, true);
+    }
+
+    // 조건·범위 헤더는 URL 캐시 키에 포함되지 않는다. 원점에 그대로 전달해
+    // 304/412/206을 일반 GET의 캐시 적중이나 진행 중 요청과 섞지 않는다.
+    if (ORIGIN_CONDITION_HEADERS.some((name) => request.headers.has(name))) {
+      return buildBypassResponse(await originFetch(request), classification, false);
     }
 
     const { flightKey, cacheKeyUrl, keyedByAccept } = buildShieldCacheKey(request);

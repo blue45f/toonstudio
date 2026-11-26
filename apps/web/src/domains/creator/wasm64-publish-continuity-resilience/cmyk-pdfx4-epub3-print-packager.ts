@@ -6,6 +6,9 @@
  *   EPUB3 고정 레이아웃, CBZ(ComicInfo.xml), Rights BOM/로열티 스플릿 JSON을 로컬 생성한다.
  */
 
+import { buildPublishCmykPdfBytes } from "./publish-cmyk-pdf-writer";
+import { isValidPublishRaster } from "./publish-raster-validation";
+
 import {
   auditAndSoftProofRgbaBuffer,
   cmykToSoftProofRgb,
@@ -50,6 +53,7 @@ export {
 
 export type PreflightIssueCode =
   | "empty-manuscript"
+  | "missing-raster-pixels"
   | "width-mismatch"
   | "slice-height-exceeded"
   | "slice-bytes-exceeded"
@@ -250,6 +254,13 @@ export function runPublishPreflightGate(input: PackagePublishInput): PublishPref
   for (let i = 0; i < input.slices.length; i += 1) {
     const slice = input.slices[i];
     totalBytes += slice.byteLength;
+    const validRaster = isValidPublishRaster(slice.rgba, slice.widthPx, slice.heightPx);
+    if (spec.category === "print-pdfx4" && !validRaster) {
+      blockingIssues.push({
+        code: "missing-raster-pixels", severity: "error", sliceId: slice.sliceId,
+        messageKo: `${slice.fileName} 인쇄 원고에 크기가 일치하는 RGBA 픽셀이 필요합니다.`,
+      });
+    }
 
     if (!spec.allowedFormats.includes(slice.format)) {
       blockingIssues.push({
@@ -315,7 +326,7 @@ export function runPublishPreflightGate(input: PackagePublishInput): PublishPref
     }
     if (spec.maxTacPercent !== null) {
       let sliceTac = slice.reportedMaxTacPercent ?? null;
-      if (slice.rgba) {
+      if (validRaster && slice.rgba) {
         sliceTac = auditAndSoftProofRgbaBuffer(slice.rgba, slice.widthPx, slice.heightPx, {
           maxTacPercent: spec.maxTacPercent,
           paperProfile: input.paperProfile ?? "coated-fogra39",
@@ -467,30 +478,16 @@ export function computePdfX4PageGeometry(
 
 /** CMYK PDF/X-4:2010 구조 바이트스트림 및 출력 의도 · 재단 마크 패키지를 로컬 생성한다. */
 export function buildPdfX4PrintPackage(input: PackagePublishInput): PdfX4PrintPackage {
+  for (const slice of input.slices) {
+    if (!isValidPublishRaster(slice.rgba, slice.widthPx, slice.heightPx)) {
+      throw new RangeError(`인쇄 원고 ${slice.sliceId}에 크기가 일치하는 RGBA 픽셀이 필요합니다.`);
+    }
+  }
   const paperProfile = input.paperProfile ?? "coated-fogra39";
   const iccProfileName = PRINT_PAPER_PROFILES[paperProfile].iccName;
   const pages = input.slices.map((slice, idx) =>
     computePdfX4PageGeometry(slice, idx + 1, { paperProfile, gcrStrength: input.gcrStrength }),
   );
-  const pageKids = pages.map((_, idx) => `${5 + idx} 0 R`).join(" ");
-  const xmp =
-    `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">` +
-    `<rdf:Description xmlns:pdfxid="http://www.npes.org/pdfx/ns/id/" pdfxid:GTS_PDFXVersion="PDF/X-4"/>` +
-    `</rdf:RDF></x:xmpmeta>`;
-
-  const objects: string[] = [
-    `1 0 obj\n<< /Type /Catalog /Pages 2 0 R /Metadata 3 0 R /OutputIntents [4 0 R] >>\nendobj`,
-    `2 0 obj\n<< /Type /Pages /Count ${pages.length} /Kids [ ${pageKids} ] >>\nendobj`,
-    `3 0 obj\n<< /Type /Metadata /Subtype /XML /Length ${UTF8_ENCODER.encode(xmp).byteLength} >>\nstream\n${xmp}\nendstream\nendobj`,
-    `4 0 obj\n<< /Type /OutputIntent /S /GTS_PDFX /OutputConditionIdentifier (${iccProfileName}) /RegistryName (http://www.color.org) >>\nendobj`,
-  ];
-
-  for (let i = 0; i < pages.length; i += 1) {
-    const { mediaBoxPt: mb, bleedBoxPt: bb, trimBoxPt: tb } = pages[i];
-    objects.push(
-      `${5 + i} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${mb.width} ${mb.height}] /BleedBox [${bb.x} ${bb.y} ${round3(bb.x + bb.width)} ${round3(bb.y + bb.height)}] /TrimBox [${tb.x} ${tb.y} ${round3(tb.x + tb.width)} ${round3(tb.y + tb.height)}] >>\nendobj`,
-    );
-  }
 
   return {
     kind: "print-book-cmyk-pdfx4",
@@ -498,7 +495,7 @@ export function buildPdfX4PrintPackage(input: PackagePublishInput): PdfX4PrintPa
     outputIntentProfile: paperProfile,
     iccProfileName,
     pages,
-    pdfBytes: UTF8_ENCODER.encode(`%PDF-1.6\n%ToonStudio-Local-PDFX4\n${objects.join("\n")}\n%%EOF\n`),
+    pdfBytes: buildPublishCmykPdfBytes(input, pages, iccProfileName),
     rightsBomJson: buildRightsBomJson(input.rightsBom, "print-book-cmyk-pdfx4"),
     serverCostKrw: 0,
   };
