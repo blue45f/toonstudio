@@ -236,6 +236,20 @@ export function generateKajiyaMarschnerHairHighlight(
   const secondaryLobeIntensity = new Float32Array(cellCount);
   const microShadowFactor = new Float32Array(cellCount);
 
+  // 가닥의 단면과 큐티클 위상은 가이드 곡선의 어느 행에서나 같다.
+  const lateralPosition = new Float64Array(width);
+  const domeProfile = new Float64Array(width);
+  const strandRidge = new Float64Array(width);
+  const secondaryShift = new Float64Array(width);
+  for (let x = 0; x < width; x += 1) {
+    const v = (x / (width - 1)) * 2 - 1;
+    const phase = v * Math.PI * strandCount;
+    lateralPosition[x] = v;
+    domeProfile[x] = Math.sqrt(Math.max(0.15, 1 - 0.25 * v * v));
+    strandRidge[x] = 0.5 + 0.5 * Math.cos(phase);
+    secondaryShift[x] = shiftSecondaryBase + 0.045 * Math.sin(phase);
+  }
+
   const bestRowPerCol = new Int32Array(width);
   const bestValPerCol = new Float32Array(width).fill(-1);
   let rowSumPrimary = 0;
@@ -257,22 +271,25 @@ export function generateKajiyaMarschnerHairHighlight(
     const t0y = ty2 * cosDome;
     const t0z = -sinDome;
 
+    const normalBaseX = -tx2 * sinDome;
+    const normalBaseY = -ty2 * sinDome;
+    const normalSlopeX = bx2 * 0.32;
+    const normalSlopeY = by2 * 0.32;
     const lateralGrazing = Math.abs(L.x * bx2 + L.y * by2);
 
     for (let x = 0; x < width; x += 1) {
-      const vNorm = (x / Math.max(1, width - 1)) * 2 - 1;
+      const vNorm = lateralPosition[x]!;
       const idx = y * width + x;
 
-      const nsRawX = -tx2 * sinDome + bx2 * 0.32 * vNorm;
-      const nsRawY = -ty2 * sinDome + by2 * 0.32 * vNorm;
-      const nsRawZ = cosDome * Math.sqrt(Math.max(0.15, 1 - 0.25 * vNorm * vNorm));
+      const nsRawX = normalBaseX + normalSlopeX * vNorm;
+      const nsRawY = normalBaseY + normalSlopeY * vNorm;
+      const nsRawZ = cosDome * domeProfile[x]!;
       const invNs = 1 / Math.max(1e-6, Math.sqrt(nsRawX * nsRawX + nsRawY * nsRawY + nsRawZ * nsRawZ));
       const nx = nsRawX * invNs;
       const ny = nsRawY * invNs;
       const nz = nsRawZ * invNs;
 
-      const strandPhase = vNorm * Math.PI * strandCount;
-      const ridge = 0.5 + 0.5 * Math.cos(strandPhase);
+      const ridge = strandRidge[x]!;
       const microShadow = clamp(1 - lateralGrazing * (1 - ridge) * 0.72, 0.18, 1);
       microShadowFactor[idx] = microShadow;
 
@@ -285,7 +302,7 @@ export function generateKajiyaMarschnerHairHighlight(
       const sinTH1 = Math.sqrt(Math.max(0, 1 - dotTH1 * dotTH1));
 
       // 2차 TRT 로브: 반대 방향(-1.5α) 이동 및 가닥별 미세 어긋남 변조
-      const shiftSec = shiftSecondaryBase + 0.045 * Math.sin(strandPhase);
+      const shiftSec = secondaryShift[x]!;
       const t2RawX = t0x + shiftSec * nx;
       const t2RawY = t0y + shiftSec * ny;
       const t2RawZ = t0z + shiftSec * nz;
@@ -340,7 +357,7 @@ export function generateKajiyaMarschnerHairHighlight(
 
   const angelRingRibbon: Point2D[] = [];
   for (let x = 0; x < width; x += 1) {
-    const vNorm = (x / Math.max(1, width - 1)) * 2 - 1;
+    const vNorm = lateralPosition[x]!;
     const py = bestRowPerCol[x]!;
     const bx2 = -tanY[py]!;
     const by2 = tanX[py]!;
