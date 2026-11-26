@@ -90,7 +90,7 @@ try {
   const probeUrl = '/tools/browser-harnesses/studio-mixed-viewport.js';
   await expect.poll(async () => canvas.evaluate(async (c, url) => {
     const { readMixedScene } = await import(/* @vite-ignore */ url);
-    const s = readMixedScene(c);
+    const s = await readMixedScene(c);
     return s.skinnedMeshes > 0 && s.staticMeshes > 0 && s.modelCount === 1;
   }, probeUrl), { timeout: 160000, intervals: [500,1000] }).toBe(true);
   for (const file of [vrm, glb]) {

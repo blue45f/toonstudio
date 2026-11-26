@@ -1,14 +1,7 @@
 // QA-only observer, imported on demand by the browser benchmark in the real Studio Vite app.
 import { _roots } from '@react-three/fiber';
 
-function sceneFor(canvas) {
-  const state = _roots.get(canvas)?.store.getState();
-  if (!state || !state.gl || !state.camera) throw new Error('No active R3F Studio viewport');
-  return state;
-}
-
-export function readMixedScene(canvas) {
-  const { scene } = sceneFor(canvas);
+function countObjects(scene) {
   let skinnedMeshes = 0;
   let staticMeshes = 0;
   let staticVertices = 0;
@@ -21,22 +14,48 @@ export function readMixedScene(canvas) {
     root.traverseVisible((object) => {
       if (!object.isMesh || object.isSkinnedMesh) return;
       const count = object.geometry?.attributes?.position?.count;
-      if (count > 0) {
-        staticMeshes++;
-        staticVertices += count;
-      }
+      if (count > 0) { staticMeshes++; staticVertices += count; }
     });
   }
   return { skinnedMeshes, staticMeshes, staticVertices, modelCount: modelRoots.size };
 }
 
+// The normal background editor renders its main view in an R3F portal. Observe the actual
+// renderer invocation once during setup; the outer Canvas scene can legitimately be empty.
+async function mixedView(canvas) {
+  const state = _roots.get(canvas)?.store.getState();
+  if (!state) return null;
+  const renderer = state.gl;
+  const render = renderer.render;
+  let match = null;
+  try {
+    renderer.render = function(scene, camera, ...args) {
+      if (!match && scene?.isScene) {
+        const counts = countObjects(scene);
+        if (counts.skinnedMeshes && counts.staticMeshes && counts.modelCount === 1) {
+          const controls = scene.__r3f?.root?.getState().controls ?? state.controls;
+          match = { scene, camera, controls: controls?.object === camera ? controls : null, invalidate: state.invalidate, counts };
+        }
+      }
+      return render.call(this, scene, camera, ...args);
+    };
+    state.invalidate();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return match;
+  } finally {
+    renderer.render = render;
+  }
+}
+
+export async function readMixedScene(canvas) {
+  return (await mixedView(canvas))?.counts ?? { skinnedMeshes: 0, staticMeshes: 0, staticVertices: 0, modelCount: 0 };
+}
+
 /** Deltas between completed application render calls while its actual camera orbits. */
 export async function measureMixedViewport(canvas) {
-  const { scene, camera, controls, invalidate } = sceneFor(canvas);
-  const counts = readMixedScene(canvas);
-  if (!counts.skinnedMeshes || !counts.staticMeshes || counts.modelCount !== 1) {
-    throw new Error('Expected one committed GLB and live skinned VRM in the same scene');
-  }
+  const renderedView = await mixedView(canvas);
+  if (!renderedView) throw new Error('Expected one committed GLB and live skinned VRM in the same rendered portal');
+  const { scene, camera, controls, invalidate, counts } = renderedView;
   const gl = canvas.getContext('webgl2');
   if (!gl) throw new Error('Active Studio surface is not WebGL2');
   const info = gl.getExtension('WEBGL_debug_renderer_info');
@@ -46,7 +65,7 @@ export async function measureMixedViewport(canvas) {
   const offset = position.clone().sub(target);
   const axis = position.clone().set(0, 1, 0);
   const view = [canvas.clientWidth, canvas.clientHeight];
-  const buffer = [gl.drawingBufferWidth, gl.drawingBufferHeight];
+  let buffer;
   // Capture actual submissions once, after which no per-mesh observers remain in timed frames.
   const restores = [];
   let drewSkin = false;
@@ -72,7 +91,7 @@ export async function measureMixedViewport(canvas) {
   const timestamps = [];
   let step = 0;
   let drawnStep = -1;
-  let frame = 0;
+  let lastPaintTick = null;
   let timer;
   try {
     await new Promise((resolve, reject) => {
@@ -87,22 +106,33 @@ export async function measureMixedViewport(canvas) {
       };
       scene.onAfterRender = function(renderer, renderedScene, renderedCamera, ...rest) {
         previous.call(this, renderer, renderedScene, renderedCamera, ...rest);
-        if (renderedCamera !== camera || drawnStep === step) return;
+        const tick = document.timeline.currentTime;
+        if (renderedCamera !== camera || drawnStep === step || (tick !== null && tick === lastPaintTick)) return;
         drawnStep = step;
+        lastPaintTick = tick;
         if (step === warmup - 1) {
           restoreMeshes();
           if (!drewSkin || !drewModel) { reject(new Error('Both the VRM and GLB must have drawn for the main camera')); return; }
         }
-        if (step >= warmup) timestamps.push(performance.now());
+        if (step >= warmup) {
+          const current = [gl.drawingBufferWidth, gl.drawingBufferHeight];
+          if (!buffer) buffer = current;
+          if (current[0] !== buffer[0] || current[1] !== buffer[1]) {
+            reject(new Error('Adaptive resolution changed during the measured orbit: ' + buffer + ' → ' + current));
+            return;
+          }
+          timestamps.push(performance.now());
+        }
         if (timestamps.length >= sampleCount + 1) { resolve(); return; }
-        frame = requestAnimationFrame(() => { step++; move(); });
+        // invalidate() during R3F's frame requests exactly the next app frame.
+        step++;
+        move();
       };
       timer = setTimeout(() => reject(new Error('Timed out waiting for actual application draws: ' + step)), 150000);
       move();
     });
   } finally {
     restoreMeshes();
-    cancelAnimationFrame(frame);
     clearTimeout(timer);
     scene.onAfterRender = previous;
     camera.position.copy(position);
