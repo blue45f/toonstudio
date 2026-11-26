@@ -102,4 +102,42 @@ export const GLOSSARY_MORE_BUILD: readonly GlossaryTerm[] = [
     chapters: ["delivery", "performance"],
     atlasIds: ["hashed-assets-cache-contract"],
   },
+  {
+    id: "wasm-slab-pool-sab-pll-ridge-prewarmer",
+    category: "web",
+    term: t("2^k 슬랩 워커 풀 · SAB 오디오-GPU PLL · Ridge 예열기", "2^k slab worker pool, SAB audio-GPU PLL & Ridge prewarmer"),
+    definition: t(
+      "64B~64KiB O(1) 슬랩 아레나·Work-Stealing 워커 풀, 48kHz↔120Hz 공유 메모리 위상 고정 루프(PLL), 온디바이스 Ridge 회귀 WGSL 선행 컴파일을 결합한 런타임입니다.",
+      "Unites a 64 B–64 KiB O(1) slab work-stealing WASM pool, a 48 kHz↔120 Hz Seqlock SAB PLL and an on-device Ridge-regression WGSL prewarmer.",
+    ),
+    analogy: t(
+      "규격 상자를 번호표로만 넘기는 컨베이어, 고장 난 작업대를 바로 교체하는 반장, 메트로놈에 바늘을 맞추는 영사기, 막이 오르기 전 조명을 미리 데우는 스태프의 협업입니다.",
+      "Like numbered crates on a belt, instant station replacement, a projector locked to a metronome and stage lights warmed during idle moments.",
+    ),
+    inToonstudio: t(
+      "wasm-worker-slab-pool.ts(장애 워커 재생성·배압), webgpu-webaudio-sab-sync.ts(PLL 위상 보정·유휴 예산 예열), scheduleHeterogeneousComputeDag 를 단위 검증했습니다.",
+      "Unit-verified across wasm-worker-slab-pool.ts (recycle & backpressure), webgpu-webaudio-sab-sync.ts (PLL & idle prewarm) and scheduleHeterogeneousComputeDag.",
+    ),
+    chapters: ["worker-architecture", "performance", "sound-generation"],
+    atlasIds: ["wasm-worker-slab-sab-pll-shader-prewarmer"],
+  },
+  {
+    id: "smart-ci-dep-filter-lpt-sharding",
+    category: "craft",
+    term: t("스마트 CI 역방향 의존성 필터 & LPT 샤드 분산", "Smart CI reverse-dep filter & LPT shard balancing"),
+    definition: t(
+      "변경 파일의 역방향 패키지 영향만 골라 무관한 중량 워크플로를 건너뛰되 필수 게이트(core·verify)는 항상 유지하고, 최장 작업 우선(LPT) 배치로 샤드 편차를 줄이는 스케줄러입니다.",
+      "Skips unaffected heavy workflows via reverse package dependencies while pinning mandatory core+verify gates and balancing runner shards via LPT.",
+    ),
+    analogy: t(
+      "모든 승객이 필수 보안 검색대(core·verify)는 통과하되 국내선 승객은 세관을 생략하고, 큰 짐부터 가장 줄이 짧은 계산대에 배정해 마감 시간을 맞추는 운영입니다.",
+      "Like keeping mandatory airport security active for everyone while skipping customs on domestic trips and assigning big bags to the shortest lane first.",
+    ),
+    inToonstudio: t(
+      "ci-smart-shard-scheduler.ts 가 문서·단일 도메인 변경에서도 core·verify 100% 보존, 미분류 루트 변경 fail-closed, 샤드 불균형비 ≤1.25 를 단위 테스트로 검증했습니다.",
+      "ci-smart-shard-scheduler.ts verified 100% core+verify preservation, fail-closed root handling and <=1.25 shard imbalance across unit tests.",
+    ),
+    chapters: ["quality", "delivery"],
+    atlasIds: ["smart-ci-dep-graph-lpt-shard-scheduler"],
+  },
 ];

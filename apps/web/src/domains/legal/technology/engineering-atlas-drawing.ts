@@ -8,6 +8,7 @@ import { ENGINEERING_ATLAS_DRAWING_PAINT } from "./engineering-atlas-drawing-pai
 import { ENGINEERING_ATLAS_DRAWING_SUPERGAP_V2 } from "./engineering-atlas-drawing-supergap-v2";
 import { ENGINEERING_ATLAS_DRAWING_WASM64 } from "./engineering-atlas-drawing-wasm64";
 import { ENGINEERING_ATLAS_DRAWING_WAVE3 } from "./engineering-atlas-drawing-wave3";
+import { ENGINEERING_ATLAS_DRAWING_WAVE4_SUBPIXEL_INK } from "./engineering-atlas-drawing-wave4-subpixel-ink";
 
 /** 기술 도감 · drawing 카테고리 카드. 계약과 작성 규칙은 engineering-atlas-types.ts 를 따른다. */
 export const ENGINEERING_ATLAS_DRAWING: readonly EngineeringAtlasEntry[] = [
@@ -17,6 +18,7 @@ export const ENGINEERING_ATLAS_DRAWING: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_DRAWING_WASM64,
   ...ENGINEERING_ATLAS_DRAWING_WAVE3,
   ...ENGINEERING_ATLAS_DRAWING_SUPERGAP_V2,
+  ...ENGINEERING_ATLAS_DRAWING_WAVE4_SUBPIXEL_INK,
   ...ENGINEERING_ATLAS_DRAWING_PAINT,
   ...ENGINEERING_ATLAS_DRAWING_DOCUMENT,
   ...ENGINEERING_ATLAS_DRAWING_OUTPUT,

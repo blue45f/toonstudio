@@ -8,6 +8,7 @@ import { ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME } from "./engineering-atlas-web-
 import { ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE } from "./engineering-atlas-web-platform-surface";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_WASM } from "./engineering-atlas-web-platform-wasm";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_WASM64_IPC } from "./engineering-atlas-web-platform-wasm64-ipc";
+import { ENGINEERING_ATLAS_WEB_PLATFORM_WAVE4_HYPERCORE } from "./engineering-atlas-web-platform-wave4-hypercore";
 
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
@@ -19,6 +20,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM: readonly EngineeringAtlasEntry[] = 
   ...ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_WASM,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_WASM64_IPC,
+  ...ENGINEERING_ATLAS_WEB_PLATFORM_WAVE4_HYPERCORE,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_GPU_MEDIA,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_MOTION_AUDIO_TELEMETRY,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME,

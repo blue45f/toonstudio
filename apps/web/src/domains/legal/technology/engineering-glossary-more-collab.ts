@@ -383,4 +383,42 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     chapters: ["webrtc-media-authority", "browser-local-compute"],
     atlasIds: ["zero-lag-companion-pairing-ephemeral-redline-hw"],
   },
+  {
+    id: "p2p-bft-quorum-merkle-audit-log",
+    category: "collab",
+    term: t("3f+1 BFT 정족수 · AEAD 스트림 · ₩0 머클 시점 원장", "3f+1 BFT quorum, AEAD stream & ₩0 Merkle timestamp log"),
+    definition: t(
+      "비잔틴 이중 투표 피어와 오염된 스트리밍 청크를 저장 전에 격리하고, 가스비 ₩0 WebCrypto 전자서명 해시체인·머클 에포크로 창작 시점을 영구 증명하는 보안 계층입니다.",
+      "A serverless security layer quarantining 3f+1 Byzantine equivocation and poisoned AEAD chunks pre-storage while sealing ₩0 WebCrypto Merkle timestamp proofs.",
+    ),
+    analogy: t(
+      "말을 바꾸는 참석자의 투표권은 즉시 회수하고, 봉인 스티커(AES-GCM)가 뜯긴 상자는 창고 입구에서 돌려보내며, 확정된 원고는 공증 수수료 없이 작가 인감 사슬로 묶는 검수소입니다.",
+      "Like revoking double-voters, turning away parcels with broken tamper seals before warehousing, and chaining signed pages without notary fees.",
+    ),
+    inToonstudio: t(
+      "p2p-bft-timestamp-audit.ts(Ed25519/ECDSA 자동 폴백·오프라인 영수증 검증)와 ChunkAuthenticatedAssetStreamVerifier(오염 청크 0B 기록)를 단위 테스트로 검증했습니다.",
+      "Verified in p2p-bft-timestamp-audit.ts (Ed25519/ECDSA fallback, offline receipts) and ChunkAuthenticatedAssetStreamVerifier (0 B written on mid-stream tamper).",
+    ),
+    chapters: ["collaborative-crdt-boundary", "webrtc-media-authority"],
+    atlasIds: ["p2p-bft-quorum-merkle-timestamp-audit"],
+  },
+  {
+    id: "fiat-shamir-schnorr-zk-ownership",
+    category: "collab",
+    term: t("Fiat-Shamir Schnorr 영지식 원고 소유권 증명", "Fiat-Shamir Schnorr zero-knowledge ownership proof"),
+    definition: t(
+      "작가의 비밀 마스터 시드를 외부 서버나 검증자에게 드러내지 않고도, 공개 커밋먼트와 일회용 챌린지 논스에 대한 수학적 응답만으로 원고 소유권을 입증하는 암호 기법입니다.",
+      "A cryptographic protocol proving authorship of a manuscript digest against a public commitment and verifier nonce without revealing the secret seed.",
+    ),
+    analogy: t(
+      "금고 비밀번호 숫자를 한 자도 입 밖에 내지 않으면서, 검증자가 매번 새로 내는 난수 문제를 금고 주인만 풀 수 있는 방식으로 통과하는 증명입니다.",
+      "Like proving you know a vault combination by answering fresh random challenges that only the holder can compute, without speaking a single digit.",
+    ),
+    inToonstudio: t(
+      "webrtc-delta-and-zk-ownership.ts 가 ES2017 호환 BigInt 안전 소수군 위에서 시드 무노출 증명·위조 시드 거절·리플레이 차단을 서버 비용 ₩0 으로 검증했습니다.",
+      "webrtc-delta-and-zk-ownership.ts verified zero-seed-leakage proofs, impostor rejection and replay blocking over an ES2017-compatible BigInt prime subgroup at ₩0.",
+    ),
+    chapters: ["webrtc-media-authority", "licenses"],
+    atlasIds: ["webrtc-sctp-vector-clock-zk-ownership"],
+  },
 ];
