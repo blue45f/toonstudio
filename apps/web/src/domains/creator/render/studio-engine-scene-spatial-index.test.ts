@@ -262,4 +262,30 @@ describe("StudioEngineSceneSpatialIndex", () => {
       reason: "disposed",
     });
   });
+
+  it("handles large rebuilds that grow internal node arrays without corrupting right-child indices", () => {
+    const index = createStudioEngineSceneSpatialIndex();
+    const items = Array.from({ length: 1_200 }, (_, i) => {
+      const col = i % 40;
+      const row = Math.floor(i / 40);
+      return entry(`node-${i}`, i, {
+        minX: col * 20,
+        minY: row * 20,
+        maxX: col * 20 + 12,
+        maxY: row * 20 + 12,
+      });
+    });
+
+    expect(index.rebuild(items)).toEqual({ ok: true, entryCount: 1_200, size: 1_200 });
+    expect(requireHit(index.hitTestPoint({ x: 5, y: 5 }))?.id).toBe("node-0");
+    expect(requireHit(index.hitTestPoint({ x: 39 * 20 + 5, y: 29 * 20 + 5 }))?.id).toBe("node-1199");
+    expect(requireHit(index.hitTestPoint({ x: -100, y: -100 }))).toBeNull();
+    const rightSlice = requireEntries(index.search({
+      minX: 38 * 20,
+      minY: 28 * 20,
+      maxX: 40 * 20,
+      maxY: 30 * 20,
+    }));
+    expect(rightSlice.map(({ id }) => id)).toContain("node-1199");
+  });
 });

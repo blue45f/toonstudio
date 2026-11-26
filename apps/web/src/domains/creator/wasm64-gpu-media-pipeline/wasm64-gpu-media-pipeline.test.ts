@@ -69,6 +69,7 @@ function createMockWebCodecsAdapter(options: {
   readonly aacSupported?: boolean;
   readonly opusSupported?: boolean;
   readonly simulateBackpressureLimit?: number;
+  readonly drainViaMacrotask?: boolean;
 }): {
   readonly adapter: AudioToonWebCodecsAdapter;
   readonly stats: {
@@ -152,7 +153,10 @@ function createMockWebCodecsAdapter(options: {
           const ts = frame.timestamp;
           const dur = frame.duration ?? 16_667;
           if (bpTrigger > 0) {
-            queueMicrotask(() => {
+            const scheduleDrain = options.drainViaMacrotask
+              ? (fn: () => void) => { setTimeout(fn, 0); }
+              : queueMicrotask;
+            scheduleDrain(() => {
               init.output(makeChunk(body, isKey ? "key" : "delta", ts, dur));
               drainOne();
             });
@@ -163,7 +167,7 @@ function createMockWebCodecsAdapter(options: {
         },
         flush: async () => {
           while (queueSize > 0) {
-            await new Promise<void>((resolve) => queueMicrotask(resolve));
+            await new Promise<void>((resolve) => setTimeout(resolve, 0));
           }
         },
         close: () => {
@@ -759,5 +763,23 @@ describe("3. WebCodecs Local AudioToon Exporter (₩0 Local Short-Form + Wave-3 
     expect(fallbackExport.serverCostKrw).toBe(0);
     expect(fallbackExport.muxPackage).toBeNull();
     expect(fallbackExport.fallbackReasonKo).toContain("VideoEncoder");
+  });
+
+  it("기본 queueDrainPollMs=0에서도 매크로태스크(setTimeout) 기반 인코더 큐 배출을 굶기지 않고 완료한다", async () => {
+    const { adapter } = createMockWebCodecsAdapter({
+      h264Hw: true,
+      aacSupported: true,
+      simulateBackpressureLimit: 1,
+      drainViaMacrotask: true,
+    });
+    const report = await exportLocalAudioToon({
+      presetId: "reels-9x16-1080p60",
+      cuts: [{ cutId: "macrotask-cut", durationMs: 100 }],
+      adapter,
+      maxVideoEncodeQueueSize: 1,
+    });
+    expect(report.status).toBe("completed");
+    expect(report.encodedVideoFrames).toBe(6);
+    expect(report.backpressure.videoBackpressurePauses).toBeGreaterThan(0);
   });
 });

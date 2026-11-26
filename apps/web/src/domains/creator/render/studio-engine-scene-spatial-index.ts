@@ -199,7 +199,8 @@ class FlatMortonBvh2D {
     }
     const mid = (start + end) >>> 1;
     this.build(start, mid);
-    this.meta[o2] = this.build(mid, end);
+    const rightIdx = this.build(mid, end);
+    this.meta[o2] = rightIdx;
     this.meta[o2 + 1] = 0;
     return idx;
   }

@@ -336,4 +336,3 @@ export async function fetchAndInstantiateWasmUrl(
     binaryBytes: new Uint8Array(buffer),
   };
 }
-

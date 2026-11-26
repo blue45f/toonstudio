@@ -341,8 +341,15 @@ async function waitForQueueDrain(
     if (signal?.aborted) return waited;
     waited = true;
     await new Promise<void>((resolve) => {
-      if (pollMs <= 0) queueMicrotask(resolve);
-      else setTimeout(resolve, pollMs);
+      const onAbort = (): void => {
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, Math.max(0, pollMs));
+      signal?.addEventListener("abort", onAbort, { once: true });
     });
   }
   return waited;

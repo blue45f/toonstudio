@@ -14,6 +14,7 @@ import {
   hasPrivateOrAuthResponseHeaders,
   isEdgeCacheablePublicRead,
 } from "./edge-api-lane-router.mjs";
+import { negotiateImageFormat } from "./edge-image-negotiator.mjs";
 
 export const EDGE_CACHE_STATUS = Object.freeze({
   HIT: "HIT",
@@ -29,10 +30,61 @@ const STORED_AT_HEADER = "x-toonstudio-cache-stored-at";
 const FRESH_UNTIL_HEADER = "x-toonstudio-cache-fresh-until";
 const STALE_UNTIL_HEADER = "x-toonstudio-cache-stale-until";
 const INTERNAL_HEADERS = Object.freeze([STORED_AT_HEADER, FRESH_UNTIL_HEADER, STALE_UNTIL_HEADER]);
+const INTERNAL_ACCEPT_VARIANT_PARAM = "__ts_edge_accept_variant";
+const ACCEPT_NEGOTIATED_PATHS = Object.freeze(new Set(["/api/cover"]));
 
 const keyOf = (keyRequest) => (typeof keyRequest === "string" ? keyRequest : keyRequest.url);
 const isWebSocketUpgradeRequest = (request) =>
   request?.headers?.get("upgrade")?.toLowerCase() === "websocket";
+
+function stripTrailingSlashes(pathname) {
+  let end = pathname.length;
+  while (end > 1 && pathname.charCodeAt(end - 1) === 47) end -= 1;
+  return end === pathname.length ? pathname : pathname.slice(0, end);
+}
+
+function buildShieldCacheKey(request) {
+  const canonicalUrl = buildCanonicalEdgeCacheKey(request);
+  const parsed = new URL(canonicalUrl);
+  const pathname = stripTrailingSlashes(parsed.pathname);
+  if (!ACCEPT_NEGOTIATED_PATHS.has(pathname)) {
+    return { flightKey: canonicalUrl, cacheKeyUrl: canonicalUrl, keyedByAccept: false };
+  }
+  const acceptVariant = negotiateImageFormat(request?.headers?.get("accept") ?? "");
+  parsed.searchParams.set(INTERNAL_ACCEPT_VARIANT_PARAM, acceptVariant);
+  const variantUrl = parsed.toString();
+  return { flightKey: `${canonicalUrl}\0accept=${acceptVariant}`, cacheKeyUrl: variantUrl, keyedByAccept: true };
+}
+
+function hasNoStoreDirective(headers) {
+  const raw = headers?.get("cache-control");
+  if (!raw) return false;
+  for (const part of raw.split(",")) {
+    const token = part.split("=", 1)[0]?.trim().toLowerCase();
+    if (token === "no-store") return true;
+  }
+  return false;
+}
+
+function hasUncoveredVaryHeader(headers, keyedByAccept) {
+  const varyRaw = headers?.get("vary");
+  if (!varyRaw) return false;
+  for (const part of varyRaw.split(",")) {
+    const token = part.trim().toLowerCase();
+    if (!token || token === "accept-encoding") continue;
+    if (token === "accept" && keyedByAccept) continue;
+    return true;
+  }
+  return false;
+}
+
+function isUnshareableOriginResponse(response, keyedByAccept) {
+  return (
+    hasPrivateOrAuthResponseHeaders(response)
+    || hasNoStoreDirective(response?.headers)
+    || hasUncoveredVaryHeader(response?.headers, keyedByAccept)
+  );
+}
 
 async function cancelBodySafely(response) {
   try {
@@ -203,10 +255,10 @@ export function createEdgeApiCacheCoalescer(options = {}) {
   const inFlightMisses = new Map();
   const inFlightRevalidations = new Map();
 
-  async function executeOriginFlight(request, classification, canonicalUrl, cacheKeyRequest, cacheStore, originFetch) {
+  async function executeOriginFlight(request, classification, flightKey, cacheKeyRequest, keyedByAccept, cacheStore, originFetch) {
     try {
       const originResponse = await originFetch(request);
-      if (hasPrivateOrAuthResponseHeaders(originResponse)) {
+      if (isUnshareableOriginResponse(originResponse, keyedByAccept)) {
         return { kind: "private-unshareable", leaderResponse: originResponse };
       }
       const cacheable = isEdgeCacheablePublicRead(request, originResponse);
@@ -219,12 +271,12 @@ export function createEdgeApiCacheCoalescer(options = {}) {
       }
       return { kind: "shared-cacheable", snapshot };
     } finally {
-      inFlightMisses.delete(canonicalUrl);
+      inFlightMisses.delete(flightKey);
     }
   }
 
-  function triggerBackgroundRevalidate(request, classification, canonicalUrl, cacheKeyRequest, cacheStore, originFetch, ctx) {
-    if (inFlightRevalidations.has(canonicalUrl)) return;
+  function triggerBackgroundRevalidate(request, classification, flightKey, cacheKeyRequest, keyedByAccept, cacheStore, originFetch, ctx) {
+    if (inFlightRevalidations.has(flightKey)) return;
     const refreshRequest = request.method.toUpperCase() === "GET"
       ? request
       : new Request(request.url, { method: "GET", headers: request.headers });
@@ -232,7 +284,7 @@ export function createEdgeApiCacheCoalescer(options = {}) {
     const refreshPromise = (async () => {
       try {
         const refreshed = await originFetch(refreshRequest);
-        if (!isEdgeCacheablePublicRead(refreshRequest, refreshed)) {
+        if (isUnshareableOriginResponse(refreshed, keyedByAccept) || !isEdgeCacheablePublicRead(refreshRequest, refreshed)) {
           await cancelBodySafely(refreshed);
           return;
         }
@@ -242,11 +294,11 @@ export function createEdgeApiCacheCoalescer(options = {}) {
       } catch {
         // 백그라운드 재검증 실패는 이미 반환된 STALE 응답을 깨뜨리지 않는다.
       } finally {
-        inFlightRevalidations.delete(canonicalUrl);
+        inFlightRevalidations.delete(flightKey);
       }
     })();
 
-    inFlightRevalidations.set(canonicalUrl, refreshPromise);
+    inFlightRevalidations.set(flightKey, refreshPromise);
     if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(refreshPromise);
   }
 
@@ -264,7 +316,7 @@ export function createEdgeApiCacheCoalescer(options = {}) {
       });
     }
     if (isLeader) return buildBypassResponse(outcome.leaderResponse, classification, false);
-    // 원점이 Set-Cookie/private를 반환했다면 다른 대기자에게 절대 공유하지 않는다(fail-closed).
+    // 원점이 Set-Cookie/private/no-store 또는 키 미반영 Vary를 반환했다면 다른 대기자에게 절대 공유하지 않는다(fail-closed).
     return buildBypassResponse(await originFetch(request), classification, false);
   }
 
@@ -277,12 +329,12 @@ export function createEdgeApiCacheCoalescer(options = {}) {
       return buildBypassResponse(originResponse, classification, true);
     }
 
-    const canonicalUrl = buildCanonicalEdgeCacheKey(request);
-    const cacheKeyRequest = new Request(canonicalUrl, { method: "GET" });
+    const { flightKey, cacheKeyUrl, keyedByAccept } = buildShieldCacheKey(request);
+    const cacheKeyRequest = new Request(cacheKeyUrl, { method: "GET" });
     const cacheStore = resolveEdgeCacheStore(cacheOption);
 
     if (method === "GET") {
-      const activeBeforeLookup = inFlightMisses.get(canonicalUrl);
+      const activeBeforeLookup = inFlightMisses.get(flightKey);
       if (activeBeforeLookup) {
         return renderOutcome(await activeBeforeLookup, { isLeader: false, request, classification, method, originFetch });
       }
@@ -305,7 +357,7 @@ export function createEdgeApiCacheCoalescer(options = {}) {
         });
       }
       if (currentTime < staleUntil) {
-        triggerBackgroundRevalidate(request, classification, canonicalUrl, cacheKeyRequest, cacheStore, originFetch, ctx);
+        triggerBackgroundRevalidate(request, classification, flightKey, cacheKeyRequest, keyedByAccept, cacheStore, originFetch, ctx);
         return buildClientResponse(cached, {
           method, lane: classification.lane, cacheStatus: EDGE_CACHE_STATUS.STALE,
           clientCacheControl: classification.cacheControl, ageSeconds,
@@ -316,7 +368,7 @@ export function createEdgeApiCacheCoalescer(options = {}) {
 
     if (method === "HEAD") {
       const originResponse = await originFetch(request);
-      return isEdgeCacheablePublicRead(request, originResponse)
+      return !isUnshareableOriginResponse(originResponse, keyedByAccept) && isEdgeCacheablePublicRead(request, originResponse)
         ? buildClientResponse(originResponse, {
           method: "HEAD", lane: classification.lane, cacheStatus: EDGE_CACHE_STATUS.MISS,
           clientCacheControl: classification.cacheControl,
@@ -325,13 +377,13 @@ export function createEdgeApiCacheCoalescer(options = {}) {
     }
 
     // await 이후 동기 구간에서 즉시 inFlightMisses를 확인·등록해 N건 동시 미스를 정확히 1건으로 병합한다.
-    const existingFlight = inFlightMisses.get(canonicalUrl);
+    const existingFlight = inFlightMisses.get(flightKey);
     if (existingFlight) {
       return renderOutcome(await existingFlight, { isLeader: false, request, classification, method, originFetch });
     }
 
-    const flightPromise = executeOriginFlight(request, classification, canonicalUrl, cacheKeyRequest, cacheStore, originFetch);
-    inFlightMisses.set(canonicalUrl, flightPromise);
+    const flightPromise = executeOriginFlight(request, classification, flightKey, cacheKeyRequest, keyedByAccept, cacheStore, originFetch);
+    inFlightMisses.set(flightKey, flightPromise);
     return renderOutcome(await flightPromise, { isLeader: true, request, classification, method, originFetch });
   }
 

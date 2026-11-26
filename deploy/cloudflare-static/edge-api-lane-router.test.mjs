@@ -611,4 +611,87 @@ describe("createEdgeApiCacheCoalescer — Singleflight·SWR·보안 격리 증�
       });
     }
   });
+
+  it("/api/cover는 Accept 협상 변형별로 캐시·Singleflight를 분리하고 no-store 및 미반영 Vary 응답은 동시 공유하지 않는다", async () => {
+    const cache = createMemoryEdgeCache();
+    const coalescer = createEdgeApiCacheCoalescer({ cache });
+    const coverUrl = `${BASE}/api/cover?url=https%3A%2F%2Fcdn.example.com%2Fa.jpg`;
+
+    // 1. AVIF와 JPEG 동시 요청이 서로 다른 Singleflight/캐시 버킷으로 분리된다.
+    let coverCalls = 0;
+    const gate = createDeferred();
+    const coverOrigin = async (req) => {
+      coverCalls += 1;
+      const accept = req.headers.get("accept") ?? "";
+      const isAvif = accept.includes("image/avif");
+      await gate.promise;
+      return new Response(isAvif ? "AVIF-BYTES" : "JPEG-BYTES", {
+        status: 200,
+        headers: { "content-type": isAvif ? "image/avif" : "image/jpeg", vary: "Accept" },
+      });
+    };
+
+    const avif1 = coalescer.handle(new Request(coverUrl, { headers: { Accept: "image/avif,image/webp,*/*" } }), coverOrigin);
+    const avif2 = coalescer.handle(new Request(coverUrl, { headers: { Accept: "image/avif,*/*" } }), coverOrigin);
+    const jpeg1 = coalescer.handle(new Request(coverUrl, { headers: { Accept: "image/jpeg,*/*" } }), coverOrigin);
+    await Promise.resolve();
+    gate.resolve();
+    const [rAvif1, rAvif2, rJpeg1] = await Promise.all([avif1, avif2, jpeg1]);
+    assert.equal(coverCalls, 2);
+    assert.equal(await rAvif1.text(), "AVIF-BYTES");
+    assert.equal(await rAvif2.text(), "AVIF-BYTES");
+    assert.equal(rAvif2.headers.get(EDGE_CACHE_HEADER), EDGE_CACHE_STATUS.COALESCED);
+    assert.equal(await rJpeg1.text(), "JPEG-BYTES");
+    assert.equal(rJpeg1.headers.get("content-type"), "image/jpeg");
+
+    // 캐시 HIT에서도 AVIF와 JPEG가 섞이지 않는다.
+    const jpegHit = await coalescer.handle(
+      new Request(coverUrl, { headers: { Accept: "image/jpeg" } }),
+      async () => { throw new Error("JPEG cache should hit without origin"); },
+    );
+    assert.equal(jpegHit.headers.get(EDGE_CACHE_HEADER), EDGE_CACHE_STATUS.HIT);
+    assert.equal(await jpegHit.text(), "JPEG-BYTES");
+
+    // 2. 원점이 Cache-Control: no-store를 반환하면 동시 대기자에게 절대 공유하지 않는다.
+    let noStoreCalls = 0;
+    const noStoreGate = createDeferred();
+    const noStoreUrl = `${BASE}/api/rankings/live-no-store`;
+    const noStoreOrigin = async () => {
+      noStoreCalls += 1;
+      const n = noStoreCalls;
+      if (n === 1) await noStoreGate.promise;
+      return new Response(JSON.stringify({ n }), { status: 200, headers: { "Cache-Control": "no-store" } });
+    };
+    const nsPending = [
+      coalescer.handle(new Request(noStoreUrl), noStoreOrigin),
+      coalescer.handle(new Request(noStoreUrl), noStoreOrigin),
+    ];
+    await Promise.resolve();
+    noStoreGate.resolve();
+    const nsResults = await Promise.all(nsPending);
+    assert.equal(noStoreCalls, 2);
+    assert.deepEqual(new Set(await Promise.all(nsResults.map(async (r) => (await r.json()).n))), new Set([1, 2]));
+    assert.equal(await cache.match(new Request(noStoreUrl)), undefined);
+
+    // 3. /api/cover 외 경로가 Vary: Accept를 반환하면 캐시·공유하지 않고 fail-closed 우회한다.
+    let varyCalls = 0;
+    const varyGate = createDeferred();
+    const varyUrl = `${BASE}/api/public/format-negotiated`;
+    const varyOrigin = async (req) => {
+      varyCalls += 1;
+      if (varyCalls === 1) await varyGate.promise;
+      return new Response(req.headers.get("accept") ?? "none", { status: 200, headers: { Vary: "Accept" } });
+    };
+    const vPending = [
+      coalescer.handle(new Request(varyUrl, { headers: { Accept: "application/json" } }), varyOrigin),
+      coalescer.handle(new Request(varyUrl, { headers: { Accept: "text/plain" } }), varyOrigin),
+    ];
+    await Promise.resolve();
+    varyGate.resolve();
+    const [v1, v2] = await Promise.all(vPending);
+    assert.equal(varyCalls, 2);
+    assert.equal(await v1.text(), "application/json");
+    assert.equal(await v2.text(), "text/plain");
+    assert.equal(await cache.match(new Request(varyUrl)), undefined);
+  });
 });
