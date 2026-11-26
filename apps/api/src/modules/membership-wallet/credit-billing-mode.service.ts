@@ -51,6 +51,7 @@ import {
 import { CREDIT_PACK_CATALOG, findCreditPack, type CreditPack } from "./credit-pack-catalog";
 import { KRW_PER_CREDIT } from "./credit-pricing";
 import {
+  CREDIT_PURCHASES_ENABLED,
   CreditPurchaseError,
   requestCreditPurchase,
   type CreditPurchaseIntentInput,
@@ -345,7 +346,7 @@ export class CreditBillingModeService {
       paidOperationsEnabled: enabled,
       mode: enabled ? "paid-credit-active" : "free-activity-beta",
       subscriptionsEnabled: enabled,
-      creditPurchasesEnabled: enabled,
+      creditPurchasesEnabled: enabled && CREDIT_PURCHASES_ENABLED,
       krwPerCredit: KRW_PER_CREDIT,
       activityRewardExpiryDays: CREDIT_ACTIVITY_REWARD_EXPIRY_DAYS,
       monthlyActivityCreditPoolCap: MONTHLY_ACTIVITY_CREDIT_POOL_CAP,
@@ -444,13 +445,12 @@ export class CreditBillingModeService {
     userIdValue: string | undefined,
     body: CreditPurchaseIntentInput,
   ) {
-    const enabled = await resolvePaidOperationsEnabled(this.paidStore);
     try {
       return await requestCreditPurchase(
         this.purchaseWallet,
         userIdValue,
         body,
-        enabled,
+        CREDIT_PURCHASES_ENABLED,
         this.paidStore,
       );
     } catch (error) {

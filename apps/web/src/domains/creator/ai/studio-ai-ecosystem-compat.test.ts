@@ -46,7 +46,7 @@ describe("OpenAI flagship compatibility helpers (shared/ai/openai-model-compat)"
     for (const model of ["gpt-4o-mini", "gpt-4.1", "openrouter/free", "openai/gpt-oss-120b", "claude-sonnet-5-5", "o365-custom"]) {
       expect(isOpenAiReasoningChatModel(model)).toBe(false);
     }
-    for (const model of ["gpt-image-1.5", "gpt-image-2.6-sunburst", "chatgpt-image-latest", "openai/gpt-image-1.5"]) {
+    for (const model of ["gpt-image-1.5", "gpt-image-2.6-flare", "gpt-image-2.6-sunburst", "chatgpt-image-latest", "openai/gpt-image-1.5"]) {
       expect(isOpenAiGptImageModel(model)).toBe(true);
       expect(normalizeOpenAiImageSizeValue(model, "1024x1792")).toBe("1024x1536");
       expect(normalizeOpenAiImageSizeValue(model, "1792x1024")).toBe("1536x1024");
@@ -54,7 +54,8 @@ describe("OpenAI flagship compatibility helpers (shared/ai/openai-model-compat)"
     }
     expect(isRetiredOpenAiImageModel("dall-e-3")).toBe(true);
     expect(isRetiredOpenAiImageModel("gpt-image-1.5")).toBe(false);
-    expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe(DEFAULT_OPENAI_IMAGE_MODEL);
+    expect(DEFAULT_OPENAI_IMAGE_MODEL).toBe("gpt-image-1.5");
+    expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe("gpt-image-2.6-flare");
   });
 
   it("normalizes chat & image payloads bidirectionally across reasoning and legacy models", () => {

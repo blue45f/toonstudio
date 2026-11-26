@@ -341,6 +341,7 @@
     "verify:ai-provider-status-canary": "tsx scripts/verify-ai-provider-status-canary.mts",
     "test:local-test-stack": "node --test scripts/local-test-stack.test.mjs",
     "test:lint-strict-budget": "node --test scripts/lint-strict-warning-budget.test.mjs",
+    "test:two-cut-server-egress": "node --test scripts/two-cut-server-egress.test.mjs",
     "test:creator-bundle-deploy-plan": "node --test scripts/plan-creator-bundle-deploy.test.mjs",
     "test:creator-bundle-release-r2": "node --test scripts/creator-bundle-release-r2.test.mjs scripts/lib/creator-bundle-r2-rest.test.mjs scripts/lib/creator-bundle-r2-release-gates.test.mjs",
     "audit:repo-hygiene": "node scripts/audit-repo-hygiene.mjs",

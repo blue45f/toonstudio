@@ -216,16 +216,17 @@ export function PageRoleAndJourneyNavigator({
           </ul>
         </nav>
       </div>
-      {paletteOpen ? (
-        <Suspense fallback={null}>
-          <GlobalAssetSearchPalette open={paletteOpen} onClose={closePalette} />
-        </Suspense>
-      ) : null}
     </>
   );
 
+  const palette = paletteOpen ? (
+    <Suspense fallback={null}>
+      <GlobalAssetSearchPalette open={paletteOpen} onClose={closePalette} />
+    </Suspense>
+  ) : null;
+
   if (defaultCollapsed) {
-    return (
+    const guide = (
       <details
         data-role-journey-bar="true"
         data-journey-stage={entry.stageNumber}
@@ -261,6 +262,7 @@ export function PageRoleAndJourneyNavigator({
         <div className="border-t border-line/80 p-3 sm:p-3.5">{body}</div>
       </details>
     );
+    return <>{guide}{palette}</>;
   }
 
   return (
@@ -275,6 +277,7 @@ export function PageRoleAndJourneyNavigator({
       )}
     >
       {body}
+      {palette}
     </section>
   );
 }

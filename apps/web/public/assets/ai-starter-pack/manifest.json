@@ -19,7 +19,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 3037922,
+      "bytes": 381766,
       "ms": 15165,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-ropan-palace-sunset.webp"
     },
@@ -32,7 +32,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2302696,
+      "bytes": 214198,
       "ms": 15585,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-school-rooftop-sunset.webp"
     },
@@ -45,7 +45,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 3144445,
+      "bytes": 478106,
       "ms": 16687,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-ropan-ballroom-night.webp"
     },
@@ -58,7 +58,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2475395,
+      "bytes": 248006,
       "ms": 16866,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-school-classroom-noon.webp"
     },
@@ -71,7 +71,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2885469,
+      "bytes": 361260,
       "ms": 15604,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-noir-subway-rain.webp"
     },
@@ -84,7 +84,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2909558,
+      "bytes": 328310,
       "ms": 17180,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-noir-alley-night.webp"
     },
@@ -97,7 +97,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2388164,
+      "bytes": 324710,
       "ms": 16451,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-murim-inn-night.webp"
     },
@@ -110,7 +110,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 3351544,
+      "bytes": 466504,
       "ms": 17663,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-murim-bamboo-mist.webp"
     },
@@ -123,7 +123,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2361808,
+      "bytes": 321022,
       "ms": 16494,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-action-dungeon-gate.webp"
     },
@@ -136,7 +136,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 3474744,
+      "bytes": 511962,
       "ms": 16473,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-action-city-ruin.webp"
     },
@@ -149,7 +149,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1967823,
+      "bytes": 152218,
       "ms": 15318,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-office-night-overtime.webp"
     },
@@ -162,7 +162,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2298868,
+      "bytes": 184918,
       "ms": 17032,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-cafe-warm-morning.webp"
     },
@@ -175,7 +175,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 3607196,
+      "bytes": 552486,
       "ms": 16118,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-horror-corridor-night.webp"
     },
@@ -188,7 +188,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2928191,
+      "bytes": 332354,
       "ms": 17228,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-fantasy-castle-dawn.webp"
     },
@@ -201,7 +201,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 3724219,
+      "bytes": 535984,
       "ms": 19691,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-sageuk-hanok-spring.webp"
     },
@@ -214,7 +214,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 3021545,
+      "bytes": 452316,
       "ms": 17859,
       "publicPath": "/assets/ai-starter-pack/backgrounds/bg-sf-cyberpunk-street.webp"
     },
@@ -227,7 +227,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1745493,
+      "bytes": 154284,
       "ms": 8774,
       "publicPath": "/assets/ai-starter-pack/textures/tex-watercolor-coldpress.webp"
     },
@@ -240,7 +240,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1199553,
+      "bytes": 218746,
       "ms": 9007,
       "publicPath": "/assets/ai-starter-pack/textures/tex-screentone-halftone.webp"
     },
@@ -253,7 +253,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1983600,
+      "bytes": 215976,
       "ms": 9991,
       "publicPath": "/assets/ai-starter-pack/textures/tex-hanji-warm.webp"
     },
@@ -266,7 +266,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1672116,
+      "bytes": 185350,
       "ms": 11372,
       "publicPath": "/assets/ai-starter-pack/textures/tex-screentone-sparkle.webp"
     },
@@ -279,7 +279,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1042145,
+      "bytes": 196028,
       "ms": 13040,
       "publicPath": "/assets/ai-starter-pack/textures/tex-speedlines-radial.webp"
     },
@@ -292,7 +292,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2518254,
+      "bytes": 342696,
       "ms": 10449,
       "publicPath": "/assets/ai-starter-pack/textures/tex-linen-canvas-grain.webp"
     },
@@ -305,7 +305,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1960730,
+      "bytes": 192008,
       "ms": 12880,
       "publicPath": "/assets/ai-starter-pack/textures/tex-ink-wash-paper.webp"
     },
@@ -318,7 +318,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 2110812,
+      "bytes": 393256,
       "ms": 13444,
       "publicPath": "/assets/ai-starter-pack/textures/tex-rain-streaks-dark.webp"
     },
@@ -331,7 +331,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 601674,
+      "bytes": 86824,
       "ms": 10457,
       "publicPath": "/assets/ai-starter-pack/references/ref-expressions-6emotions.webp"
     },
@@ -344,7 +344,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 404673,
+      "bytes": 65240,
       "ms": 11690,
       "publicPath": "/assets/ai-starter-pack/references/ref-hands-gestures-grid.webp"
     },
@@ -357,7 +357,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 1273079,
+      "bytes": 83672,
       "ms": 11801,
       "publicPath": "/assets/ai-starter-pack/references/ref-lighting-face-6angles.webp"
     },
@@ -370,7 +370,7 @@
       "model": "gpt-image-1.5",
       "quality": "medium",
       "status": "generated",
-      "bytes": 534884,
+      "bytes": 86258,
       "ms": 13801,
       "publicPath": "/assets/ai-starter-pack/references/ref-action-silhouettes.webp"
     }

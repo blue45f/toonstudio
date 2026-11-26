@@ -251,7 +251,7 @@ describe("studio-ai-starter-pack-catalog (영구 ₩0 오프라인 카탈로그 
     expect(visuals.filter((v) => v.tier === "pro-v2")).toHaveLength(12);
     for (const v of visuals) {
       expect(v.publicPath.startsWith("/assets/ai-starter-pack/")).toBe(true);
-      expect(fs.existsSync(path.join(PUBLIC_ROOT, v.publicPath.replace(/^\/+/u, "")))).toBe(true);
+      expect(fs.statSync(path.join(PUBLIC_ROOT, v.publicPath.replace(/^\/+/u, ""))).size).toBe(v.bytes);
     }
 
     expect(audioClips).toHaveLength(20);
@@ -259,7 +259,7 @@ describe("studio-ai-starter-pack-catalog (영구 ₩0 오프라인 카탈로그 
     expect(audioClips.filter((a) => a.tier === "v2-dub")).toHaveLength(12);
     for (const clip of audioClips) {
       expect(clip.publicPath.startsWith("/assets/ai-starter-pack/audiotoon/")).toBe(true);
-      expect(fs.existsSync(path.join(PUBLIC_ROOT, clip.publicPath.replace(/^\/+/u, "")))).toBe(true);
+      expect(fs.statSync(path.join(PUBLIC_ROOT, clip.publicPath.replace(/^\/+/u, ""))).size).toBe(clip.bytes);
     }
 
     expect(sfx).toHaveLength(200);

@@ -4,8 +4,8 @@ import {
   type StudioAiResult,
   type StudioAiSettings,
 } from "./studio-ai-client";
+import { studioImageFormatField } from "./studio-ai-image-format";
 import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
-import { isGptImageModel } from "./studio-ai-model-compat";
 
 import type {
   ScenarioImageLayerManifest,
@@ -153,9 +153,7 @@ export async function repairStudioAiComicImageRegion(input: {
   form.append("image", source, "comic-director-source.png");
   form.append("mask", mask, "comic-director-mask.png");
   form.append("prompt", prompt);
-  if (!isGptImageModel(input.settings.imageModel)) {
-    form.append("response_format", "b64_json");
-  }
+  form.set(...studioImageFormatField(input.settings));
 
   let response: Response;
   try {
