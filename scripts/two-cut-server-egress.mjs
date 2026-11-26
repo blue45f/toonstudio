@@ -180,4 +180,5 @@ async function guardedFetch(input, init = {}) {
     return await sendOnce(gate, body, headers, init.signal);
   } catch { throw failure(); }
 }
-Object.defineProperty(globalThis, "fetch", { value: guardedFetch, writable: false, configurable: false });
+// 현재 QA 프로세스만 잠그고 다른 TypeScript 소스의 전역 fetch 타입은 바꾸지 않는다.
+check(Reflect.defineProperty(globalThis, "fetch", { value: guardedFetch, writable: false, configurable: false }));

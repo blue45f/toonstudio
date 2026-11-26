@@ -83,6 +83,12 @@ test("소유자 전용 일반 파일만 읽고 같은 단계의 예약은 재시
   assert.deepEqual(JSON.parse(readFileSync(log, "utf8")), { status: "reserved", model, reserveMicroUsd: plan.reserveMicroUsd });
 });
 
+test("현재 QA 프로세스에서 송신 경계를 교체하거나 해제할 수 없다", () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "fetch");
+  assert.equal(descriptor?.writable, false);
+  assert.equal(descriptor?.configurable, false);
+});
+
 test("승인 없는 원격 송신과 loopback 프록시 경유를 전송 전에 차단한다", async () => {
   for (const url of [endpoint + "?x", "https://provider.invalid/v1", "http://127.0.0.1:11434/api/chat",
     "http://127.0.0.1:4101/api/health/live", "http://localhost:4101/proxy"]) {
