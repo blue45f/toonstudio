@@ -638,18 +638,22 @@ export class WebGpuVramKvPager {
 
     const orderedLogical = [...neededLogical].sort((a, b) => a - b);
     const protectedSet = new Set<string>();
+    let requiredSlots = this.pinnedCount;
     for (let layer = 0; layer < this.numLayers; layer += 1) {
-      protectedSet.clear();
-      for (const lp of orderedLogical) {
-        protectedSet.add(this.makeKey(sequenceId, layer, lp));
-      }
       for (const lp of orderedLogical) {
         const key = this.makeKey(sequenceId, layer, lp);
-        if (this.pageTable.has(key)) {
-          this.faultInPage(key, protectedSet);
-        }
+        const page = this.pageTable.get(key);
+        if (!page) throw new Error(`존재하지 않는 KV 페이지 키입니다: ${key}`);
+        protectedSet.add(key);
+        if (!page.pinnedSink) requiredSlots += 1;
       }
     }
+    // 다른 시퀀스의 싱크 페이지도 축출할 수 없으므로 스왑을 시작하기 전에 함께 센다.
+    if (requiredSlots > this.maxPhysicalPages) {
+      this.oomEvents += 1;
+      throw new RangeError("어텐션 단계에 필요한 페이지가 KV-Cache 물리 슬롯 한도를 초과합니다.");
+    }
+    for (const key of protectedSet) this.faultInPage(key, protectedSet);
     return orderedLogical;
   }
 
