@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyCharacterRecipe } from "../../character-shaper/character-shaper-recipe";
 import { createCharacterDocumentV2, projectCharacterRecipeV1 } from "../document/character-document-v2";
-import { migrateCharacterDocumentV2ToV3, serializeCharacterDocumentV3 } from "../document/character-document-v3";
+import { migrateCharacterDocumentV2ToV3, parseCharacterDocumentV3, serializeCharacterDocumentV3 } from "../document/character-document-v3";
 import { CharacterDocumentV3Repository } from "../document/character-document-v3-repository";
 import { createCharacterPlacementSession } from "../document/character-placement-session";
 import { useCharacterAuthoringAuthority } from "./use-character-authoring-authority";
@@ -58,7 +58,7 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("캐릭터 저작 문서 저장 수명주기", () => {
-  it("한 캐릭터의 두 컷이 새 외형을 읽되 각자의 포즈·표정·카메라를 보존한다", async () => {
+  it("같은 VRM을 쓰는 두 캐릭터의 8컷에서 외형은 6컷에만, 오른손 편집은 한 컷에만 반영한다", async () => {
     const { repository } = fixture();
     const base = document();
     const part = (entryId: string) => ({ entryId, entryVersion: "1", providerId: "studio", catalogRevision: "v1" });
@@ -67,10 +67,10 @@ describe("캐릭터 저작 문서 저장 수명주기", () => {
       recipe: { ...base.recipe, slots: { hair: part("hair:bob") }, accessories: [part("accessory:glasses")] },
     };
     await repository.save(character);
-    const other = { ...base, documentId: "character:another" };
+    const other = { ...character, documentId: "character:another" };
     await repository.save(other);
-    const makeCut = (x: number): CharacterDocumentV3 => ({
-      ...base,
+    const makeCut = (x: number, characterId: string): CharacterDocumentV3 => ({
+      ...base, documentId: characterId,
       pose: { ...base.pose, root: { ...base.pose.root, position: [x, 0, 0] } },
       expression: { ...base.expression, weights: { happy: x / 10 } },
       recipe: { ...base.recipe, slots: { pose: part("pose:seated") }, handPose: { left: part("hand-pose:wave") } },
@@ -81,7 +81,11 @@ describe("캐릭터 저작 문서 저장 수명주기", () => {
     const open = (cut: CharacterDocumentV3) => renderHook(() => useCharacterAuthoringAuthority(cut, "fp:cut", {
       repository, autosave: false, synchronizeProjection: false, placementScene: { characterDocumentId: cut.documentId },
     }));
-    const cutA = makeCut(2);
+    const cuts = [character, character, character, other, character, character, other, character]
+      .map((owner, index) => makeCut(index + 1, owner.documentId));
+    const original = cuts.slice();
+    const editedIndex = 2;
+    const cutA = cuts[editedIndex];
     const first = open(cutA);
     await flush();
     expect(first.result.current.snapshot.document.recipe.slots).toEqual({ hair: part("hair:bob"), pose: part("pose:seated") });
@@ -90,13 +94,19 @@ describe("캐릭터 저작 문서 저장 수명주기", () => {
     expect(presented.expression).toEqual(cutA.expression);
     expect(presented.camera).toEqual(cutA.camera);
     expect(presented.recipe.handPose).toEqual(cutA.recipe.handPose);
-    const edited = {
+    const fingerCurl = [Math.sin(0.25), 0, 0, Math.cos(0.25)] as const;
+    const edited: CharacterDocumentV3 = {
       ...presented,
-      recipe: { ...presented.recipe, slots: { ...presented.recipe.slots, hair: part("hair:long") }, accessories: [] },
+      pose: { ...presented.pose, bones: { ...presented.pose.bones, rightIndexProximal: fingerCurl } },
+      recipe: {
+        ...presented.recipe, slots: { ...presented.recipe.slots, hair: part("hair:ponytail") },
+        accessories: [part("accessory:sunglasses")], handPose: { ...presented.recipe.handPose, right: part("hand-pose:fist") },
+      },
     };
     await act(async () => {
       expect(await first.result.current.importJson(serializeCharacterDocumentV3(edited))).toBe(true);
     });
+    cuts[editedIndex] = parseCharacterDocumentV3(JSON.parse(serializeCharacterDocumentV3(first.result.current.snapshot.document)));
     first.unmount();
     const saved = await repository.load(base.documentId);
     expect(saved?.pose).toEqual(base.pose);
@@ -106,15 +116,21 @@ describe("캐릭터 저작 문서 저장 수명주기", () => {
     expect(saved?.recipe.slots.pose).toBeUndefined();
     expect((await repository.load(other.documentId))?.recipe).toEqual(other.recipe);
 
-    const cutB = makeCut(5);
-    const second = open(cutB);
-    await flush();
-    const reopened = second.result.current.snapshot.document;
-    expect(reopened.recipe.slots.hair).toEqual(part("hair:long"));
-    expect(reopened.recipe.accessories).toEqual([]);
-    expect(reopened.pose).toEqual(cutB.pose);
-    expect(reopened.expression).toEqual(cutB.expression);
-    expect(reopened.camera).toEqual(cutB.camera);
+    for (const [index, cut] of cuts.entries()) {
+      const hook = open(cut);
+      await flush();
+      const reopened = hook.result.current.snapshot.document;
+      const target = original[index].documentId === character.documentId;
+      expect(reopened.documentId).toBe(original[index].documentId);
+      expect(reopened.model.assetId).toBe(character.model.assetId);
+      expect(reopened.recipe.slots.hair).toEqual(part(target ? "hair:ponytail" : "hair:bob"));
+      expect(reopened.recipe.accessories).toEqual([part(target ? "accessory:sunglasses" : "accessory:glasses")]);
+      expect(reopened.recipe.handPose).toEqual(index === editedIndex ? edited.recipe.handPose : original[index].recipe.handPose);
+      expect(reopened.pose).toEqual(index === editedIndex ? edited.pose : original[index].pose);
+      expect(reopened.expression).toEqual(original[index].expression);
+      expect(reopened.camera).toEqual(original[index].camera);
+      hook.unmount();
+    }
   });
 
   it("같은 모델이라도 다른 캐릭터 연결이나 다른 편집 세션의 변경을 덮어쓰지 않는다", async () => {
