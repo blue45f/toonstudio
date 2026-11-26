@@ -408,7 +408,7 @@ describe("studio-opencv-selection", () => {
   });
 
   describe("Mat lifetime hygiene", () => {
-    function wasmHeapBytes(runtime: CV): number {
+    function wasmHeapBytes(runtime: StudioNativeSelectionRuntime): number {
       const probe = new runtime.Mat(1, 1, runtime.CV_8UC1);
       try {
         return probe.data.buffer.byteLength;
