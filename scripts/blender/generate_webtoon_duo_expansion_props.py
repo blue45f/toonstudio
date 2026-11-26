@@ -1,9 +1,9 @@
 """
 Blender 5.3 Procedural Generator for Wave 8 Webtoon Duo & Stage Expansion Props (CC0-1.0):
-1) 2 New Hand Props appended into `apps/character-lab/public/assets/props/webtoon-hand-props-v1/`:
+1) 2 New Hand Props appended into `data/character-studio-assets/props/webtoon-hand-props-v1/`:
    - `imperial-scroll.glb` (`TS_Prop_imperial-scroll`): Royal crimson-ivory decree scroll with gilded end-caps & wax seal.
    - `jade-folding-fan.glb` (`TS_Prop_jade-folding-fan`): Celadon-jade & gold-ribbed martial folding fan.
-2) 1 New Stage Prop appended into `apps/character-lab/public/assets/props/webtoon-stage-props-v1/`:
+2) 1 New Stage Prop appended into `data/character-studio-assets/props/webtoon-stage-props-v1/`:
    - `rooftop-safety-railing.glb` (`TS_StageProp_rooftop-safety-railing`): Campus/Thriller rooftop steel parapet railing & wood bench.
 
 Preserves all existing GLB files and SHA-256 entries in `index.json` untouched.
@@ -34,8 +34,8 @@ from generate_webtoon_head_and_stage_props import (  # noqa: E402
 from shaper_webtoon_head_and_textures import _hex_to_rgb01, make_textured_pbr_material  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-HAND_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-hand-props-v1"
-STAGE_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-stage-props-v1"
+HAND_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-hand-props-v1"
+STAGE_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-stage-props-v1"
 
 
 def _upsert_manifest_entry(index_path: Path, entry: dict[str, Any]) -> None:

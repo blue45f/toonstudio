@@ -3,7 +3,7 @@
  *
  * 실행: pnpm exec tsx scripts/verify-character-kit.mjs [--root <키트 폴더>] [--base female|male|all] [--json <out.json>] [--strict] [--only V1,V6,…]
  *
- * `tsx`가 `apps/character-lab/src/contracts/*`(순수 TS + zod)를 직접 읽으므로 본 이름·morph 어휘·예산 상수를 이 파일에 복제하지 않는다.
+ * `tsx`가 `packages/studio-project-model/src/character-kit/contracts/*`(순수 TS + zod)를 직접 읽으므로 본 이름·morph 어휘·예산 상수를 이 파일에 복제하지 않는다.
  * GLB 파싱은 루트 의존성 `@gltf-transform/core`를 쓴다. 순수 함수(`verifyKitManifest`, `verifyGlb`, `verifyUvOverlap`, `verifyMorphFollow` …)를
  * export하고 CLI는 얇게 둔다. 단위 테스트는 `scripts/verify-character-kit.test.mjs`가 합성 GLB로 통과/실패 케이스를 돌린다.
  *
@@ -55,10 +55,10 @@ import {
   kitManifestV2ObjectSchema,
   kitManifestV2Schema,
   parseExtendedMorphName,
-} from "../apps/character-lab/src/contracts/index.ts";
-import { deriveKitCapabilities } from "../apps/character-lab/src/domains/authored/kit-capability.ts";
-import { classifyBoneNames } from "../apps/character-lab/src/domains/authored/bone-name-mapping.ts";
-import { stableStringify } from "../apps/character-lab/src/shared/stable-json.ts";
+} from "../packages/studio-project-model/src/character-kit/contracts/index.ts";
+import { deriveKitCapabilities } from "../packages/studio-project-model/src/character-kit/authored/kit-capability.ts";
+import { classifyBoneNames } from "../packages/studio-project-model/src/character-kit/authored/bone-name-mapping.ts";
+import { stableStringify } from "../packages/studio-project-model/src/character-kit/shared/stable-json.ts";
 
 import { checkContainerJson, loadGlbModel, parseGlbContainer, PointGrid, primsOf, targetNamesOf, triangleCountOf, trianglesOf, viewOf } from "./lib/character-kit-glb-model.mjs";
 import { decodeImageInfo } from "./lib/character-kit-image-decode.mjs";
@@ -70,7 +70,7 @@ export { checkContainerJson, decodeImageInfo, loadGlbModel, parseGlbContainer };
 export const { V2_CHECKS, V2_LIMITS } = v2;
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const DEFAULT_KIT_ROOT = path.join(REPO_ROOT, "apps/character-lab/public/assets/characters/toonstudio-kit-v1");
+export const DEFAULT_KIT_ROOT = path.join(REPO_ROOT, "data/character-studio-assets/characters/toonstudio-kit-v1");
 
 // ---------------------------------------------------------------- 검사 목록·임계값
 
@@ -1776,7 +1776,7 @@ export const HELP_TEXT = `캐릭터 키트 검증기 (docs/authored-kit-spec.md 
   pnpm exec tsx scripts/verify-character-kit.mjs [옵션]
 
 옵션:
-  --root <폴더>        키트 폴더(기본: apps/character-lab/public/assets/characters/toonstudio-kit-v1)
+  --root <폴더>        키트 폴더(기본: data/character-studio-assets/characters/toonstudio-kit-v1)
   --base <id>          검사할 베이스: female | male | all (기본 all)
   --json <파일>        항목별 결과·수치를 JSON으로 기록
   --strict             경고도 오류로 센다

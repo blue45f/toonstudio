@@ -21,7 +21,7 @@ export const SUPPORTED_DEPLOY_TARGETS = Object.freeze([
     supportsOffline: true,
     estimatedBootSec: 4,
     commandPreview:
-      "pnpm --parallel --filter @toonstudio/web --filter @toonstudio/character-lab --filter @toonstudio/brush-lab preview",
+      "pnpm --parallel --filter @toonstudio/web --filter @toonstudio/brush-lab preview",
   },
   {
     id: "local-docker-compose",
@@ -87,21 +87,11 @@ export const DEPLOYABLE_WORKSPACES = Object.freeze([
   {
     id: "web",
     packageName: "@toonstudio/web",
-    labelKo: "ToonStudio 메인 웹 스튜디오 (3D Labs 포함)",
+    labelKo: "ToonStudio 메인 웹 스튜디오 (3D Labs · Character Shaper 포함)",
     buildCommand: "pnpm run build",
     verifyCommand: "pnpm exec tsx scripts/verify-blender-fresh-ideas-ai-gate.mts",
     artifactDir: "apps/web/dist",
     defaultPort: 4173,
-  },
-  {
-    id: "character-lab",
-    packageName: "@toonstudio/character-lab",
-    labelKo: "캐릭터 랩스 (Character Labs · 턴어라운드/툰/VRM)",
-    buildCommand: "pnpm --filter @toonstudio/character-lab run build",
-    verifyCommand:
-      "./node_modules/.bin/vitest run apps/character-lab/src/render/style/character-verify-ai-fresh-ideas.test.ts apps/character-lab/src/architecture.test.ts",
-    artifactDir: "apps/character-lab/dist",
-    defaultPort: 4174,
   },
   {
     id: "brush-lab",

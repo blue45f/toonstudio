@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       workspaces:
-        description: "쉼표로 구분된 빌드·검증 대상 (예: web,character-lab,brush-lab,api)"
+        description: "쉼표로 구분된 빌드·검증 대상 (예: web,brush-lab,api)"
         required: false
-        default: "web,character-lab,brush-lab,api"
+        default: "web,brush-lab,api"
         type: string
       targets:
         description: "쉼표로 구분된 배포 계획 프리뷰 타겟 환경 (실제 원격 배포는 수행하지 않음)"
@@ -49,7 +49,7 @@ jobs:
       - name: Compute Dynamic Workspace & Multi-Cloud Matrix
         id: matrix
         env:
-          INPUT_WORKSPACES: ${{ inputs.workspaces || 'web,character-lab,brush-lab,api' }}
+          INPUT_WORKSPACES: ${{ inputs.workspaces || 'web,brush-lab,api' }}
           INPUT_TARGETS: ${{ inputs.targets || 'local-docker-compose,cloudflare-edge-static,onpod-container-cloud,aws-ecs-cloudfront,gcp-cloud-run,self-hosted-k8s' }}
         run: |
           MATRIX_JSON=$(node scripts/multi-env-dynamic-deploy.mjs \
@@ -77,7 +77,9 @@ jobs:
             apps/web/src/domains/creator/bg3d/studio-bg3d-multipass-rights-remediation.test.ts \
             apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync.test.ts \
             apps/web/src/domains/creator/bg3d/studio-cross-labs-production-bridge.test.ts \
-            apps/character-lab/src/render/style/character-verify-ai-fresh-ideas.test.ts \
+            packages/studio-project-model/src/character-kit/quality-gate/character-verify-ai-fresh-ideas.test.ts \
+            packages/studio-project-model/src/character-style/character-art-style.test.ts \
+            apps/web/src/domains/creator/character-shaper/character-shaper-art-style-bridge.test.ts \
             apps/brush-lab/src/bench/metrics/webtoon-brush-verify-ai-remix.test.ts \
             scripts/multi-env-dynamic-deploy.test.mjs
 

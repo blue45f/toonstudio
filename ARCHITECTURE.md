@@ -29,8 +29,8 @@ apps/
   api/                    NestJS API 애플리케이션
   mobile/                 Capacitor 기반 Android/iOS 래퍼
   desktop-sync/           로컬 폴더·클라우드 양방향 동기화 애플리케이션
-  character-lab/          캐릭터 파이프라인 실험 앱(독립 workspace, 배포 대상 아님)
   brush-lab/              브러시 엔진 실험 앱(독립 workspace, 배포 대상 아님)
+                          (구 `character-lab/`은 2026-11-27 `/studio/character` 및 `@toonstudio/studio-project-model`로 흡수·퇴역)
 
 services/
   creator-inference/      별도 배포하는 선택형 GPU 추론 서비스
@@ -156,11 +156,10 @@ apps/desktop-sync/src/
 
 ### 3.6 실험 앱(labs)
 
-상태: 현재. `apps/character-lab`(`@toonstudio/character-lab`)과 `apps/brush-lab`(`@toonstudio/brush-lab`)은
-각각 자체 Vite·TypeScript·Vitest 설정과 `dist/` 출력을 소유하는 독립 pnpm workspace 실험 앱이다.
+상태: 현재 (`2026-11-27` 갱신). `apps/brush-lab`(`@toonstudio/brush-lab`)은 자체 Vite·TypeScript·Vitest 설정과 `dist/` 출력을 소유하는 독립 pnpm workspace 실험 앱이다.
+구 `apps/character-lab`(`@toonstudio/character-lab`)은 화풍 팩 8종·27채널 OKLab 색 조화(`@toonstudio/studio-project-model/character-style`), 모듈형 키트·품질 게이트 계약(`@toonstudio/studio-project-model/character-kit`), Blender 제작 원본(`data/character-studio-assets/`)을 승격·이관하고 스튜디오 3D 캐릭터 셰이퍼(`/studio/character`)에 흡수한 뒤 `2026-11-27` 퇴역했다(보관 기록: `docs/archive/character-lab/README.md`).
 
 ```text
-apps/character-lab/     캐릭터 파이프라인 실험(Babylon.js, PSD, MediaPipe, Rapier, WebGPU), dev 4176 / preview 4177
 apps/brush-lab/         브러시 엔진 실험(studio-brush-platform, studio-engine-registry, studio-project-model), dev 4178 / preview 4179
 ```
 
@@ -183,7 +182,6 @@ apps/brush-lab/         브러시 엔진 실험(studio-brush-platform, studio-en
 apps/web           ─┐
 apps/admin-web     ─┼──> packages/*
 apps/api           ─┤
-apps/character-lab ─┤  (실험 앱)
 apps/brush-lab     ─┘  (실험 앱)
 ```
 
@@ -249,7 +247,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | --- | --- |
 | Web Vite | `apps/web/vite.config.ts` |
 | Admin Vite/TS/Playwright | `apps/admin-web/` |
-| Labs Vite/TS/Vitest | `apps/character-lab/`, `apps/brush-lab/` |
+| Labs Vite/TS/Vitest | `apps/brush-lab/` |
 | API Drizzle | `apps/api/drizzle.config.ts` |
 | Mobile Capacitor/native | `apps/mobile/` |
 | 저장소 공통 TypeScript/ESLint/Vitest/Playwright | 루트 |

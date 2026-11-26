@@ -21,9 +21,9 @@ const AUDIT_SCOPE = Object.freeze({
 const EXT_3D = new Set([".glb", ".gltf", ".vrm"]);
 const EXT_2D = new Set([".webp", ".png", ".jpg", ".jpeg", ".svg"]);
 const TEXT_SRC_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".json", ".css", ".html"]);
-const PUBLIC_ROOTS = [{ app: "web", relDir: "apps/web/public" }, { app: "character-lab", relDir: "apps/character-lab/public" }];
-const SRC_ROOTS = ["apps/web/src", "apps/character-lab/src"];
-const EXTRA_REF_FILES = ["apps/web/index.html", "apps/character-lab/index.html", "apps/web/public/manifest.webmanifest"];
+const PUBLIC_ROOTS = [{ app: "web", relDir: "apps/web/public" }];
+const SRC_ROOTS = ["apps/web/src"];
+const EXTRA_REF_FILES = ["apps/web/index.html", "apps/web/public/manifest.webmanifest"];
 
 export const THRESHOLDS = Object.freeze({
   heavy3dBytes: 5 * 1024 * 1024, lowCraft3dBytes: 10 * 1024, lowPolyTriangles: 100,

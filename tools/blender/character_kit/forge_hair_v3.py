@@ -18,7 +18,7 @@ v2(`forge_hair_v2.py`) 대비 핵심 시각·조형 혁신:
 실행:
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/forge_hair_v3.py -- \
-        --out-dir apps/character-lab/public/assets/characters/toonstudio-kit-v2/parts/hair \
+        --out-dir data/character-studio-assets/characters/toonstudio-kit-v2/parts/hair \
         --preview-sheet loop-stack/v2-previews/char/hair-12-sheet-v3.png
 """
 
@@ -493,8 +493,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         argv = argv[argv.index("--") + 1 :]
     parser = argparse.ArgumentParser(description="ToonStudio Character Kit v3 12종 웹툰 헤어 포지")
     parser.add_argument("--style", default="all", choices=("all", *[m.style_id for m in HAIR_STYLES_12]))
-    parser.add_argument("--bases-dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases"))
-    parser.add_argument("--out-dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/parts/hair"))
+    parser.add_argument("--bases-dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases"))
+    parser.add_argument("--out-dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/parts/hair"))
     parser.add_argument("--preview-sheet", type=Path, default=Path("loop-stack/v2-previews/char/hair-12-sheet-v3.png"))
     parser.add_argument("--skip-render", action="store_true")
     return parser.parse_args(argv)

@@ -1,6 +1,6 @@
 """`kit.json` 작성기 — 키트 폴더의 GLB를 읽어 manifest를 만든다 (bpy 불필요, 표준 라이브러리만).
 
-만드는 것은 계약 `apps/character-lab/src/contracts/character-kit.ts`의 `kitManifestSchema`를 통과하고 검증기
+만드는 것은 계약 `packages/studio-project-model/src/character-kit/contracts/character-kit.ts`의 `kitManifestSchema`를 통과하고 검증기
 (`scripts/verify-character-kit.mjs`)가 읽는 `kit.json`이다. 상수(joint 68개, 프리셋 어휘, 예산, 기본값, 역할별 틴트)는
 파이썬에 복제하지 않고 `contract.json`(`scripts/blender/dump-kit-contract.mjs` 덤프)을 읽는다.
 슬롯 능력(`slotCapabilities`)은 규칙 함수 `deriveKitCapabilities`(TS)를 node로 그대로 불러 계산한다 — 검증기 V17이 같은 함수의
@@ -26,7 +26,7 @@ Hyper3D 파생 파츠의 출처
 (`build_kit_json.py --hyper3d-sources`)이고 형식은 아래와 같다(`load_hyper3d_sources`가 검사한다)::
 
     { "schema": "toonstudio.hyper3d-sources/1",
-      "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md",      # 약관 반입 기록(저장소에 있어야 한다)
+      "recordDoc": "docs/archive/character-lab/hyper3d-terms-record.md",      # 약관 반입 기록(저장소에 있어야 한다)
       "sources": { "top/tee": { "generationId": "<uuid>", "displayUrl": "https://...", "tier": "Gen-2.5-Medium",
                                 "rawSha256": "<64hex>", "changesKo": "..." }, ... } }       # 키 = 프리셋 id
 
@@ -455,7 +455,7 @@ def derive_capabilities(manifest: dict[str, Any], repo_root: Path) -> dict[str, 
     node = shutil.which("node")
     if node is None:
         raise ManifestError("node를 찾지 못해 deriveKitCapabilities를 호출할 수 없습니다.")
-    capability_module = (repo_root / "apps/character-lab/src/domains/authored/kit-capability.ts").as_posix()
+    capability_module = (repo_root / "packages/studio-project-model/src/character-kit/authored/kit-capability.ts").as_posix()
     script = (
         'import { readFileSync } from "node:fs";'
         f'const {{ deriveKitCapabilities }} = await import({json.dumps(capability_module)});'

@@ -18,7 +18,7 @@
 실행:
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/forge_garments_v3.py -- \
-        --out-dir apps/character-lab/public/assets/characters/toonstudio-kit-v2/parts/garments \
+        --out-dir data/character-studio-assets/characters/toonstudio-kit-v2/parts/garments \
         --preview-dir loop-stack/v2-previews/char
 """
 
@@ -569,8 +569,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     if "--" in argv:
         argv = argv[argv.index("--") + 1 :]
     parser = argparse.ArgumentParser(description="ToonStudio Character Kit v3 6대 장르 34종 의상 포지")
-    parser.add_argument("--bases-dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases"))
-    parser.add_argument("--out-dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/parts/garments"))
+    parser.add_argument("--bases-dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases"))
+    parser.add_argument("--out-dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/parts/garments"))
     parser.add_argument("--preview-dir", type=Path, default=Path("loop-stack/v2-previews/char"))
     parser.add_argument("--genre", default="all", help="all 또는 장르 slug")
     parser.add_argument("--part", default="all", help="all 또는 단일 파츠 slug")

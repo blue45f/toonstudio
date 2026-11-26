@@ -19,7 +19,7 @@
   "원천 3 … 제외" 역사 절·"제외한 …" 줄을 새 파일로 옮긴다. `--no-preserve`면 생성기 기본 문장만 쓴다.
 - `--meta-from-kit`: 베이스 메타(높이·경계·영역 범위·관절 오프셋)를 사이드카 대신 보존 원본 `kit.json`에서 읽는다(베이스 GLB를 바꾸지 않았을 때).
 - `--schema 2`: 키트 v2(`toonstudio.character-kit/2`) manifest를 `--out`(기본 `<키트>/kit.json`)에 쓴다(`kit_manifest_v2`). 공개 키트
-  (`apps/character-lab/public/` 아래)에는 쓰지 않는다 — 앱 로더가 v2를 읽기 전(R-3b)이라 앱이 깨진다.
+  (`data/character-studio-assets/` 아래)에는 쓰지 않는다 — 앱 로더가 v2를 읽기 전(R-3b)이라 앱이 깨진다.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from character_kit.garment_presets import HELD_PRESETS_KO  # noqa: E402
 
 CACHE = Path.home() / ".cache" / "toonstudio-kit"
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PUBLIC_ASSETS = REPO_ROOT / "apps" / "character-lab" / "public"
+PUBLIC_ASSETS = REPO_ROOT / "data" / "character-studio-assets"
 
 
 def base_metas_from_kit(kit: dict) -> list[dict]:

@@ -17,18 +17,6 @@ services:
     environment:
       - NODE_ENV=production
 
-  character-lab:
-    image: node:24-alpine
-    working_dir: /workspace
-    volumes:
-      - ../../:/workspace
-    command: >
-      sh -c "corepack enable && pnpm --filter @toonstudio/character-lab preview --host 0.0.0.0 --port 4174"
-    ports:
-      - "4174:4174"
-    environment:
-      - NODE_ENV=production
-
   brush-lab:
     image: node:24-alpine
     working_dir: /workspace

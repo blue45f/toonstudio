@@ -31,16 +31,18 @@ function it(name, body) {
 async function importTs(relative) {
   if (process.env.VITEST) {
     if (relative === "./verify-character-kit.mjs") return import("./verify-character-kit.mjs");
-    if (relative === "../apps/character-lab/src/contracts/index.ts") return import("../apps/character-lab/src/contracts/index.ts");
-    return import("../apps/character-lab/src/domains/authored/kit-capability.ts");
+    if (relative === "../packages/studio-project-model/src/character-kit/contracts/index.ts") {
+      return import("../packages/studio-project-model/src/character-kit/contracts/index.ts");
+    }
+    return import("../packages/studio-project-model/src/character-kit/authored/kit-capability.ts");
   }
   const { tsImport } = await import("tsx/esm/api");
   return tsImport(relative, import.meta.url);
 }
 
 const verifier = await importTs("./verify-character-kit.mjs");
-const contracts = await importTs("../apps/character-lab/src/contracts/index.ts");
-const { deriveKitCapabilities } = await importTs("../apps/character-lab/src/domains/authored/kit-capability.ts");
+const contracts = await importTs("../packages/studio-project-model/src/character-kit/contracts/index.ts");
+const { deriveKitCapabilities } = await importTs("../packages/studio-project-model/src/character-kit/authored/kit-capability.ts");
 
 const {
   ALL_AVAILABLE_CAPABILITIES,
@@ -934,7 +936,7 @@ it("--only는 선택한 검사만 돌리고 GLB 검사를 고르면 V5도 함께
   assert.equal(result.ok, true);
 });
 
-it("출하 키트(apps/character-lab/public/assets/characters/toonstudio-kit-v1)는 V1~V20을 오류 없이 통과한다", async () => {
+it("출하 키트(data/character-studio-assets/characters/toonstudio-kit-v1)는 V1~V20을 오류 없이 통과한다", async () => {
   // 합성 키트만 검증하면 출하 kit.json을 손으로 고칠 때(예: 라이선스 정리로 파츠를 뺄 때) 생기는 어긋남을 못 잡는다.
   // 2026-10-15: slotCapabilities를 손으로 쓴 문구가 규칙 계산(deriveKitCapabilities)과 달라 V17이 실패했지만 어떤 테스트도 몰랐다.
   assert.ok(existsSync(path.join(DEFAULT_KIT_ROOT, "kit.json")), `출하 키트가 없습니다: ${DEFAULT_KIT_ROOT}`);
@@ -1045,7 +1047,7 @@ it("V4: Hyper3D 산출물은 generationId·반입 기록 문서(저장소에 실
     derivative: true,
     changesKo: "마네킹 조각 제거, 베이스에 맞춰 리타깃, 텍스처 재베이크.",
     generationId: "82698064-e736-4b1e-ac56-67f6569bd364",
-    evidenceDoc: "apps/character-lab/docs/hyper3d-terms-record.md",
+    evidenceDoc: "docs/archive/character-lab/hyper3d-terms-record.md",
     ...overrides,
   });
   const ok = await newKit();
@@ -1067,7 +1069,7 @@ it("V4: Hyper3D 산출물은 generationId·반입 기록 문서(저장소에 실
 
   // 형식은 맞지만 기록 문서가 저장소에 없으면 V4가 잡는다.
   const missingDoc = await newKit();
-  missingDoc.manifest.provenance.sources.push(hyper3d({ id: "no-doc", evidenceDoc: "apps/character-lab/docs/does-not-exist.md" }));
+  missingDoc.manifest.provenance.sources.push(hyper3d({ id: "no-doc", evidenceDoc: "docs/archive/character-lab/does-not-exist.md" }));
   const result = await runVerify(missingDoc, { only: ["V4"] });
   assertError(result, "V4", "저장소에 없습니다");
 });

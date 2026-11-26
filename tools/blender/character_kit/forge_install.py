@@ -8,7 +8,7 @@
     python3 -I tools/blender/character_kit/forge_install.py                         # dry-run: out5/{hair,garments,shoes} → 작업 키트 → 검증
     python3 -I tools/blender/character_kit/forge_install.py --source ~/.cache/toonstudio-kit/out5/shoes --only shoes/
     python3 -I tools/blender/character_kit/forge_install.py --profile ext             # 확장(키트 v2) 제안: 역할·채널·형태·앵커 메타 + v2 파츠 미리보기
-    python3 -I tools/blender/character_kit/forge_install.py --apply --target apps/character-lab/public/assets/characters/toonstudio-kit-v1
+    python3 -I tools/blender/character_kit/forge_install.py --apply --target data/character-studio-assets/characters/toonstudio-kit-v1
     python3 -I tools/blender/character_kit/forge_install.py --restore <백업 폴더> --target <키트 폴더>
 
 포지 산출물 폴더 규약(`--source`, 여러 번)
@@ -24,7 +24,7 @@
 검사(프로필별, 통과 못 한 GLB는 복사하지 않고 사유를 남긴다)
 - 공통: GLB 컨테이너, `skin.joints` = 계약 68 joint(같은 순서), 스킨 결합, 슬롯 삼각형 예산, 파츠 GLB 크기 한도, license.
 - v1(현재 계약): 프리셋 id가 계약 어휘 안, 메시 이름 `<접두>_<이름>`, 메시마다 재질 하나, morph 이름이 계약 어휘 안(형태 키 금지).
-- ext(키트 v2 `toonstudio.character-kit/2` 규칙의 사본 — `apps/character-lab/src/contracts`): 메시 역할은 슬롯 허용 역할(`V2_SLOT_ROLES`: 신발 shoes,
+- ext(키트 v2 `toonstudio.character-kit/2` 규칙의 사본 — `packages/studio-project-model/src/character-kit/contracts`): 메시 역할은 슬롯 허용 역할(`V2_SLOT_ROLES`: 신발 shoes,
   액세서리 accessory·hair-accessory), 재질 채널은 역할 허용 채널(`V2_ROLE_CHANNELS`: shoes-sole·shoes-lace·accessory-accent 등), (파일, 역할, 채널)당
   재질 하나, 노드 이름 `<접두>_<이름>`(+ 채널 접미 `_Accent` 등, 헤어 부속은 `TS_HairAccessory`), 역할별 필수 morph, 형태 `shape:<이름>:±`(이름 규칙·변형당
   8개·선언 = GLB), 앵커는 계약 14종(`ACCESSORY_ANCHORS`) 안이고 액세서리만, `conflicts` 대상 실재(없으면 경고 — 의상·헤어 부속 포지는 따로 들어온다).
@@ -59,7 +59,7 @@ from character_kit import kit_manifest as km  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CACHE = Path.home() / ".cache" / "toonstudio-kit"
-DEFAULT_KIT = REPO_ROOT / "apps" / "character-lab" / "public" / "assets" / "characters" / "toonstudio-kit-v1"
+DEFAULT_KIT = REPO_ROOT / "data" / "character-studio-assets" / "characters" / "toonstudio-kit-v1"
 DEFAULT_SOURCES = [CACHE / "out5" / name for name in ("hair", "garments", "shoes")]
 WORK_ROOT = CACHE / "forge-install"
 BASES = ("female", "male")
@@ -68,7 +68,7 @@ PRESET_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 #: 프로필 → `<source>` 아래에서 찾을 하위 폴더(앞이 우선). ext와 v2는 같은 확장 프로필이다(헤어 포지는 v2/로 쓴다)
 PROFILE_DIRS = {"v1": ("v1",), "ext": ("ext", "v2"), "v2": ("v2", "ext")}
 
-# ---------------------------------------------------------------- 키트 v2 계약 사본(apps/character-lab/src/contracts — 시험이 TS 원본과 대조)
+# ---------------------------------------------------------------- 키트 v2 계약 사본(packages/studio-project-model/src/character-kit/contracts — 시험이 TS 원본과 대조)
 
 #: 슬롯별 허용 메시 역할(`KIT_V2_PART_SLOT_ROLES`)
 V2_SLOT_ROLES: dict[str, tuple[str, ...]] = {
@@ -105,7 +105,7 @@ V2_ROLE_CHANNELS: dict[str, tuple[str, ...]] = {
 V2_SCHEMA_ID = "toonstudio.character-kit/2"
 #: 키트 v2 검사용 매니페스트의 베이스 머리 높이 자리값(m) — 베이스를 다시 굽기 전에는 kit.json v1에 없는 값이라 파츠 검사에만 쓴다
 V2_CHECK_HEAD_HEIGHT_M = 0.22
-V2_CONTRACT_MODULE = Path("apps") / "character-lab" / "src" / "contracts" / "character-kit-v2.ts"
+V2_CONTRACT_MODULE = Path("packages") / "studio-project-model" / "src" / "character-kit" / "contracts" / "character-kit-v2.ts"
 V2_CHECK_SCRIPT = """import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 

@@ -1,8 +1,8 @@
 """
 Blender 5.3 Procedural Generator for Wave 10 Phantom Heist & Butler Archetype Props (CC0-1.0):
-1) 1 New Hand Prop appended into `apps/character-lab/public/assets/props/webtoon-hand-props-v1/` (6 -> 7):
+1) 1 New Hand Prop appended into `data/character-studio-assets/props/webtoon-hand-props-v1/` (6 -> 7):
    - `calling-card-rose.glb` (`TS_Prop_calling-card-rose`): Ivory phantom-thief calling card with crimson wax seal & stem rose.
-2) 1 New Stage Prop appended into `apps/character-lab/public/assets/props/webtoon-stage-props-v1/` (6 -> 7):
+2) 1 New Stage Prop appended into `data/character-studio-assets/props/webtoon-stage-props-v1/` (6 -> 7):
    - `velvet-display-pedestal.glb` (`TS_StageProp_velvet-display-pedestal`): Museum marble-and-brass velvet jewel pedestal with security laser beams.
 
 Preserves all existing 24 GLB files and SHA-256 entries in `index.json` untouched (reaching 26 total 3D assets).
@@ -36,8 +36,8 @@ from generate_webtoon_head_and_stage_props import (  # noqa: E402
 from shaper_webtoon_head_and_textures import _hex_to_rgb01, make_textured_pbr_material  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-HAND_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-hand-props-v1"
-STAGE_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-stage-props-v1"
+HAND_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-hand-props-v1"
+STAGE_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-stage-props-v1"
 
 
 def _inspect_glb_binary_header(glb_path: Path) -> dict[str, Any]:

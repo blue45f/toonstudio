@@ -27,7 +27,7 @@ KIT_NOTICE_FILE = "NOTICE.md"
 #: 계약 `KIT_ALLOWED_LICENSES`·`KIT_HYPER3D_EVIDENCE_PREFIX`(`src/contracts/kit-provenance.ts`)의 사본이다(`contract.json` 덤프에는 들어 있지 않다).
 #: 어긋나면 `tests/test_kit_manifest.py`가 TS 원본을 읽어 잡아낸다.
 HYPER3D_LICENSE = "hyper3d-rodin-output"
-HYPER3D_EVIDENCE_PREFIX = "apps/character-lab/docs/"
+HYPER3D_EVIDENCE_PREFIX = "docs/archive/character-lab/"
 HYPER3D_SOURCES_SCHEMA = "toonstudio.hyper3d-sources/1"
 HYPER3D_SOURCE_NAME = "Hyper3D(Rodin Gen-2.5) 생성물"
 HYPER3D_SOURCES_FILE = Path(__file__).resolve().parent / "hyper3d_sources.json"

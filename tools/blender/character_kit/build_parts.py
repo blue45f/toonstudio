@@ -193,7 +193,7 @@ def main() -> int:
         # 두 베이스를 동시에 빌드해도 서로의 갱신을 덮지 않게 잠금 아래에서 읽고 쓴다.
         with (CACHE / "hyper3d_sources.lock").open("w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
-            existing = json.loads(SOURCES.read_text(encoding="utf-8")) if SOURCES.exists() else {"schema": "toonstudio.hyper3d-sources/1", "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md", "summaryKo": "", "common": {}, "sources": {}}
+            existing = json.loads(SOURCES.read_text(encoding="utf-8")) if SOURCES.exists() else {"schema": "toonstudio.hyper3d-sources/1", "recordDoc": "docs/archive/character-lab/hyper3d-terms-record.md", "summaryKo": "", "common": {}, "sources": {}}
             failed_keys = {provenance_key(preset_id, args.base) for preset_id in failures}
             existing["sources"] = {key: value for key, value in existing.get("sources", {}).items() if key not in failed_keys}
             for preset_id, report in results.items():

@@ -1,6 +1,6 @@
 """
 Blender 5.3 Procedural Generator for 4 Korean Webtoon 3D Onomatopoeia / SFX Relief Stamps
-(`apps/character-lab/public/assets/props/webtoon-sfx-stamps-v1/`):
+(`data/character-studio-assets/props/webtoon-sfx-stamps-v1/`):
 - `sfx-seureung.glb` (`TS_SfxStamp_seureung` — 스릉): Sharp azure-silver crescent blade slash + kinetic glyph bars.
 - `sfx-dugeun.glb` (`TS_SfxStamp_dugeun` — 두근): Warm rose-gold twin heartbeat pulse emblem + floating sparkle prisms.
 - `sfx-kugugung.glb` (`TS_SfxStamp_kugugung` — 쿠구궁): Heavy obsidian-crimson tectonic shockwave shards + impact bars.
@@ -37,7 +37,7 @@ from generate_webtoon_head_and_stage_props import (  # noqa: E402
 from shaper_webtoon_head_and_textures import _hex_to_rgb01, make_textured_pbr_material  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-SFX_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-sfx-stamps-v1"
+SFX_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-sfx-stamps-v1"
 
 
 def build_all_sfx_stamps(scratch_dir: Path) -> dict[str, Any]:

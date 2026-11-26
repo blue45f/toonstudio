@@ -1,5 +1,4 @@
 /** 앱의 실제 CSP에서 원래 SDK·모델·추론을 실행한다. 모델과 추론을 모의 구현으로 바꾸지 않는다. */
-import { createMediaPipeLoaders } from "../apps/character-lab/src/domains/vision/mediapipe-loader.browser";
 import {
   disposeStudioMannequinHandLandmarker,
   initStudioMannequinHandLandmarker,
@@ -196,35 +195,4 @@ export async function runStudioMediaPipeWorkerProbe() {
   return { scope: "Studio SIMD module Worker", providerVersion: "1.2.3", receipt,
     historicalCatalogueVersion: envelope.authority.packages.mediaPipeTasksVision,
     ...await observation.finish(false) };
-}
-
-/** Character Lab의 기존 3개 명시적 SIMD factory와 CPU 기본값을 검증한다. */
-export async function runCharacterLabMediaPipeProbe() {
-  const observation = observeFailures();
-  const { pixels } = raster();
-  const loaders = createMediaPipeLoaders();
-  const checks: Array<{ key: string; pinned: boolean; bytes: number; sha256: string; closed: boolean }> = [];
-  const embedder = await loaders.imageEmbedder();
-  try {
-    const embedding = await embedder.port.embed(pixels);
-    check(embedding.length === 1024 && embedding.every(Number.isFinite), "Character Lab 실제 임베딩 계약 불일치");
-    check(embedder.pinned && embedder.delegate === "CPU", "Character Lab 모델 고정·CPU 기본값이 바뀌었습니다.");
-  } finally { embedder.dispose(); }
-  checks.push({ key: embedder.key, pinned: embedder.pinned, bytes: embedder.bytes, sha256: embedder.observedSha256, closed: true });
-  const pose = await loaders.poseLandmarker();
-  try {
-    const result = await pose.port.detect(pixels);
-    check(result === null || result.landmarks.length === 33, "Character Lab 실제 포즈 결과 불일치");
-    check(pose.pinned && pose.delegate === "CPU", "Character Lab 포즈 모델 고정·delegate 불일치");
-  } finally { pose.dispose(); }
-  checks.push({ key: pose.key, pinned: pose.pinned, bytes: pose.bytes, sha256: pose.observedSha256, closed: true });
-  const hand = await loaders.handLandmarker();
-  try {
-    const result = await hand.port.detect(pixels);
-    check(result.length <= 2 && result.every((entry) => entry.landmarks.length === 21), "Character Lab 실제 손 결과 불일치");
-    check(hand.pinned && hand.delegate === "CPU", "Character Lab 손 모델 고정·delegate 불일치");
-  } finally { hand.dispose(); }
-  checks.push({ key: hand.key, pinned: hand.pinned, bytes: hand.bytes, sha256: hand.observedSha256, closed: true });
-  return { scope: "Character Lab production factories", providerVersion: "1.2.3", checks,
-    ...await observation.finish(true) };
 }

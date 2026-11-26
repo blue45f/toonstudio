@@ -1,8 +1,8 @@
 # 캐릭터 키트 빌더 (character_kit)
 
 상태: **작업 중 (2026-10-11) — 웹툰풍 미소녀·미소년 두 베이스, 홍채 5종, 의상·헤어·신발·소품 파츠(베이스마다 27종 + 홍채 5종 = 32종, 계약 어휘 32개 전부 제공)와 `kit.json` 작성기를 만들고, 검증기 V1~V20이 오류 0건으로 통과한다(경고 7건은 눈썹 델타 0·속눈썹 변위 차·머리 UV 늘어짐으로 의도된 것). 후디(후드는 이 저장소가 직접 만든다)와 초커(절차 생성)까지 넣어 `garment_presets.HELD_PRESETS_KO`는 비었다.** 구현된 단계와 남은 단계는 아래 표가 기준이다.
-계약 정본은 `apps/character-lab/docs/authored-kit-spec.md`, 검증기는 `scripts/verify-character-kit.mjs`다.
-Hyper3D 진행 상황과 대기 중인 생성 요청은 `apps/character-lab/docs/hyper3d-intake-review.md` 10절에 있다.
+계약 정본은 `docs/archive/character-lab/authored-kit-spec.md`, 검증기는 `scripts/verify-character-kit.mjs`다.
+Hyper3D 진행 상황과 대기 중인 생성 요청은 `docs/archive/character-lab/hyper3d-intake-review.md` 10절에 있다.
 
 기존 `tools/blender/toonstudio_blender_kit`(헤어·얼굴 shape key·품질 보고서용 Blender 확장)과는 별개이며, 이 패키지는
 **모듈식 키트 에셋**(베이스 바디 GLB + 파츠 GLB + `kit.json`)을 만든다.
@@ -43,7 +43,7 @@ pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>   # �
 | `surface` | mathutils BVH 최근접 표면점·무게중심 보간(파츠가 몸을 따라가게) | 완료 |
 | `debug_render`, `contract` | 확인용 정사영 렌더러, 계약 JSON 래퍼 | 완료 |
 | `base_assembly`, `eyes_mouth`, `base_textures`, `build_base` | 여성 베이스 조립: 몸·머리 분할·영역·`_REGION`, 속옷, 눈, 입 내부(치아·혀), 속눈썹, 눈썹, 텍스처, morph 전부(체형 18·얼굴 30·FACS 16), GLB(`KHR_mesh_quantization` + sparse, 12 MiB 안팎), 리타깃 npz | 완료(`bases/female.glb`, `base_model_female.npz`) |
-| `webtoon_style` | 웹툰풍 얼굴·몸 스타일(`LookStyle`: 눈·입 높이 구성 워프, 눈 배율, 코·입·턱·뺨, 눈썹 얇게, 아이라인 속눈썹, 미소 굽기, 몸 체형 굽기, 얼굴 법선 소프트닝, 눈썹 재부착, **목 들어 올리기** `neck_lift` — 사실 비례 베이스는 턱이 목 앞을 덮고 목이 어깨 판에 바로 이어져 목 기둥이 없었다). `webtoon-girl`·`webtoon-boy`. 설명: `apps/character-lab/docs/webtoon-style-guide.md` | 완료, 단위 시험 |
+| `webtoon_style` | 웹툰풍 얼굴·몸 스타일(`LookStyle`: 눈·입 높이 구성 워프, 눈 배율, 코·입·턱·뺨, 눈썹 얇게, 아이라인 속눈썹, 미소 굽기, 몸 체형 굽기, 얼굴 법선 소프트닝, 눈썹 재부착, **목 들어 올리기** `neck_lift` — 사실 비례 베이스는 턱이 목 앞을 덮고 목이 어깨 판에 바로 이어져 목 기둥이 없었다). `webtoon-girl`·`webtoon-boy`. 설명: `docs/archive/character-lab/webtoon-style-guide.md` | 완료, 단위 시험 |
 | `face_register` | 애니풍 얼굴 흉상(Hyper3D)의 모양으로 머리를 옮기는 변위 평활화 ICP | **실험**(미완성, 기본 스타일은 쓰지 않는다 — 실패 원인은 모듈 docstring) |
 | `irises/*` (`build_irises`, `base_textures.iris_texture`, `eyes_mouth.highlight_star`) | 홍채 프리셋 5종 `round-large`·`round-small`·`cat`(세로 동공)·`star-highlight`(별 하이라이트)·`soft-gradient`(눈 아래 밝은 그라데이션). 스타일을 따라 크기·위치가 같이 바뀐다 | 완료(두 베이스, 단위 시험) |
 | `garment_presets`, `build_parts`, `clean_rodin_garment`, `decimate_garment`, `retarget_garment`, `garment_fit`, `garment_texture` | Hyper3D 생성물 → 파츠 GLB: 정리·축소·정렬(`icp`·`frame`·`anchor`·`head_ref`·`hair`·`shoes`·`head_prop`)·충돌 해소·스킨/morph 결합·상대색 텍스처(헤어는 정점 합침 + 원통 UV + 가닥 줄무늬 + 두피 덮개), 헤어·상의·하의는 법선을 가까운 몸 표면 법선 쪽으로 옮겨 툰 음영 얼룩을 줄인다(`transferred_normals`). 프리셋 27종(Hyper3D 24 + 절차 소품 3), 베이스마다 빌드(`--base female|male`), 남성 전용 생성물은 `base_overrides`(출처 키 `슬롯/이름@male`). 의상·신발·소품은 리타깃 입구에서 삼각형 30개 미만 성분을 지운다(`drop_stray_components`. 헤어는 가닥 시트라 제외). **`decimate_garment`는 줄이기 전에 UV 이음매로 쪼개진 정점을 위치로 합친다** — Blender 가져오기는 이음매마다 정점을 쪼개 두고, 그대로 줄이면 이음매 양쪽이 따로 줄어 닫혀 있던 의상에 가는 틈이 수십 개(상의 하나가 열린 가장자리 루프 0개 → 60~100개) 생겨 가슴·배에 흰 줄로 비쳤다 | 완료 |
@@ -78,12 +78,12 @@ pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>   # �
 - `bmesh`도 `import bpy` 뒤에만 가져올 수 있다(`decimate_garment`).
 - Hyper3D가 의상을 닫힌 껍데기(밑단·목이 막힌 덩어리)로 주는 경우가 많아 열린 루프로 밑단을 찾을 수 없다. 밑단·소매 끝은 몸통 둘레 각도 구간별 최저 높이·관절 평면으로 찾는다(`garment_extras`).
 - 라이선스: 계약이 허용하는 출처 값은 `CC0-1.0`, `original`, `hyper3d-rodin-output`(2026-10-11)이다. 마지막 값은 **법적 허용을 뜻하지 않으며** 반입 기록
-  (`apps/character-lab/docs/hyper3d-terms-record.md`)과 생성 id가 있어야 한다. 파츠별 출처는 `hyper3d_sources.json`에 두고 `build_kit_json.py`가 키트에 **등록된**
+  (`docs/archive/character-lab/hyper3d-terms-record.md`)과 생성 id가 있어야 한다. 파츠별 출처는 `hyper3d_sources.json`에 두고 `build_kit_json.py`가 키트에 **등록된**
   파츠만 `provenance.sources`·`summaryKo`·`NOTICE.md`에 적는다(원본 GLB는 저장소에 없다). HBM 번들의 License 텍스트 불일치(Rain Rig CC-BY 4.0 문구)는 `NOTICE.md`에 그대로 적는다.
 
 ## 알려진 한계
 
-- **얼굴**: 베이스 머리가 사실 해부학(HBM)이라 눈썹뼈·콧방울·입술 윤곽이 남아 인형 같은 얼굴이다. 입 색 역할이 계약에 없고 중립 입은 선 하나로 읽힌다. 자세한 원인·수치는 `apps/character-lab/docs/webtoon-style-guide.md` 4절.
+- **얼굴**: 베이스 머리가 사실 해부학(HBM)이라 눈썹뼈·콧방울·입술 윤곽이 남아 인형 같은 얼굴이다. 입 색 역할이 계약에 없고 중립 입은 선 하나로 읽힌다. 자세한 원인·수치는 `docs/archive/character-lab/webtoon-style-guide.md` 4절.
 - **헤어**: 저폴리(`quality_override` 3,000~5,000) 흉상 생성물에서 BANG으로 헤어만 분리한 청크형이다(30,000에서는 가닥 시트가 나왔다). 남성 울프·롱은 BANG 크레딧이 모자라거나 조각이 여섯 개로 쪼개져 원본 생성물에서 색으로 헤어를 분리한 것이라 두피 쪽 가장자리가 조금 거칠다. 트윈테일은 두개골 폭에 맞춘 배율이 꼬리를 머리에 붙이므로 `tails`로 꼬리를 늘렸다.
 - **상의**: 칼라·라펠·세일러 깃은 프록시의 입체 패치를 Rodin이 형태로 읽은 것이다(세일러 네이비 깃은 어두운 영역(휘도)으로 칠해진다). 밑단 V자는 `hem_cut`, 손등을 덮은 남성 세일러 소매는 `sleeve_cut`으로 잘랐다. 상의 텍스처에 남는 얼룩은 `texture.strength`로 줄였다(셔츠 0.14).
 - **후디의 후드는 Hyper3D 생성물이 아니다**: 프록시 참조 이미지로도 후드 볼륨이 나오지 않았고(칼라로 읽히거나 BANG이 머리 파츠에 붙였다) `garment_extras.hood_down`이 맞춘 셸 위에 직접 만든다. 형상은 단순한 토러스·돔이라 사실적인 천 주름은 없다.

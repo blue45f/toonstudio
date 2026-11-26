@@ -1,4 +1,4 @@
-/** Studio 두 variant와 Character Lab의 실제 SDK·모델·CSP를 실패 시 차단 방식으로 검증한다. */
+/** Studio 두 variant(SIMD·NoSIMD)와 Worker 경로의 실제 SDK·모델·CSP를 실패 시 차단 방식으로 검증한다. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -64,18 +64,16 @@ export async function verifyStudioMediaPipeBrowser() {
   const require = createRequire(import.meta.url);
   const studioHeaders = await readFile(resolve(root, "apps/web/public/_headers"), "utf8");
   const studioPolicy = studioHeaders.match(/^\s*Content-Security-Policy:\s*(.+)$/mu)?.[1];
-  const characterHtml = await readFile(resolve(root, "apps/character-lab/index.html"), "utf8");
-  const characterPolicy = characterHtml.match(/<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"\s*\/?>/u)?.[1];
-  assert(studioPolicy && characterPolicy, "두 앱의 실제 CSP가 필요합니다. 정책을 생략해 검사를 실행할 수 없습니다.");
-  for (const [application, policy] of [["Studio", studioPolicy], ["Character Lab", characterPolicy]]) {
-    const connect = policy.split(";").map((part) => part.trim()).find((part) => part.startsWith("connect-src "));
-    assert(connect, application + " connect-src 정책이 없습니다.");
+  assert(studioPolicy, "Studio 실제 CSP가 필요합니다. 정책을 생략해 검사를 실행할 수 없습니다.");
+  {
+    const connect = studioPolicy.split(";").map((part) => part.trim()).find((part) => part.startsWith("connect-src "));
+    assert(connect, "Studio connect-src 정책이 없습니다.");
     assert(!connect.split(/\s+/u).some(isForbiddenMediaPipeConnectSource),
-      application + " 사용량 전송 origin이 허용되어 있습니다.");
+      "Studio 사용량 전송 origin이 허용되어 있습니다.");
   }
   const report = {
     scope: "real production factories, selected SDK/WASM, actual models, inference, disposal and CSP egress",
-    policies: { studio: studioPolicy, characterLab: characterPolicy },
+    policies: { studio: studioPolicy },
     packages: [], scenarios: [], errors: [],
   };
   for (const [specifier, version, assets] of [
@@ -104,12 +102,6 @@ export async function verifyStudioMediaPipeBrowser() {
       name: "mediapipe-csp-probe",
       configureServer(vite) {
         vite.middlewares.use((request, response, next) => {
-          if (request.url === "/__mediapipe_character__") {
-            response.setHeader("Content-Type", "text/html");
-            response.end('<!doctype html><html lang="ko"><head><meta http-equiv="Content-Security-Policy" content="'
-              + characterPolicy + '"></head><body></body></html>');
-            return;
-          }
           response.setHeader("Content-Security-Policy", studioPolicy);
           if (request.url === "/__mediapipe_studio__") {
             response.setHeader("Content-Type", "text/html");
@@ -137,7 +129,6 @@ export async function verifyStudioMediaPipeBrowser() {
       ["studio-simd", "studio", "runStudioMediaPipeProbe", "simd"],
       ["studio-nosimd", "studio", "runStudioMediaPipeProbe", "nosimd"],
       ["studio-module-worker", "studio", "runStudioMediaPipeWorkerProbe", null],
-      ["character-lab-simd", "character", "runCharacterLabMediaPipeProbe", null],
     ]) {
       const remainingMs = Math.min(300_000, deadline - Date.now());
       assert(remainingMs > 0, "전체 MediaPipe 검사가 10분 제한을 넘었습니다.");
@@ -230,7 +221,7 @@ export async function verifyStudioMediaPipeBrowser() {
       Object.assign(scenario, result, { status: "passed" });
       console.info("[mediapipe-browser]", JSON.stringify({ name, status: "passed", ...result }));
     }
-    assert.equal(report.scenarios.length, 4, "필수 MediaPipe 실행 경로가 누락됐습니다.");
+    assert.equal(report.scenarios.length, 3, "필수 MediaPipe 실행 경로가 누락됐습니다.");
     assert(report.scenarios.every(({ status }) => status === "passed"), "완료되지 않은 MediaPipe 실행 경로가 있습니다.");
   } catch (error) {
     report.errors.push(error instanceof Error ? error.message : String(error));

@@ -36,7 +36,7 @@ PD와 작가는 별도 브라우저 세션으로 로컬 Nest와 PostgreSQL에 �
 
 ## 셰이퍼의 기본 인물과 대표 모델
 
-2026-11-19 조형 보고서에서 다룬 기본 자세·얼굴 그림자·목 실루엣을 기준으로 삼았다. 파츠·표정·포즈·표면 드로잉·출력의 기존 구현은 셰이퍼 체크리스트와 대조했다. [이전 조형 보고서](../shaper-model-comparison-2026-11-19.md) · [캐릭터 랩 셰이퍼 체크리스트](../../../apps/character-lab/docs/shaper-parity-checklist.md)
+2026-11-19 조형 보고서에서 다룬 기본 자세·얼굴 그림자·목 실루엣을 기준으로 삼았다. 파츠·표정·포즈·표면 드로잉·출력의 기존 구현은 셰이퍼 체크리스트와 대조했다. [이전 조형 보고서](../shaper-model-comparison-2026-11-19.md) · [캐릭터 랩 셰이퍼 체크리스트](../../archive/character-lab/shaper-parity-checklist.md)
 
 캐릭터 랩에서 처음 열리는 자체 인물 키트와 제작 패키지의 ‘아틀리에 주인공’을 같은 조명·카메라·해상도로 촬영했다. 아래 각 시트의 첫 줄이 수정 전, 둘째 줄이 수정 후다. 전신의 정면·측면 90°·반측면 35°, 얼굴 윙크, 팔을 굽힌 인사 포즈를 나란히 놓았다. 인사 포즈는 두 판본 모두 920×720에서 전신 버튼을 누르고 휠을 한 번 돌려 손끝 여백을 맞췄다. 확대 시트에서 기본 인물 손끝 위로 24px, 아틀리에 주인공은 41px가 남았다. [인사 포즈의 손·팔 확대](hands-wave.webp)
 
@@ -78,7 +78,7 @@ CLIP STUDIO PAINT EX에는 선·톤 변환, Procreate에는 필압·테이퍼 �
 | 휴대폰 메모 → 편집 | [검수 댓글을 편집 대상으로 변환](../../../apps/web/src/domains/creator/review-handoff/studio-review-editor-handoff.ts), [도착한 지점 표시](../../../apps/web/src/domains/creator/review-handoff/use-studio-comment-editor-focus.ts) |
 | 3D 배경과 손선 | [현재 원고에 적용하는 코드](../../../apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-bg3d-insert.ts), [6패스 삽입 중 손선 보존 검사](../../../apps/web/src/domains/creator/bg3d/studio-bg3d-six-pass-insert.test.ts) |
 | 승인본 납품 | [승인 원본의 권리 검사](../../../apps/api/src/modules/studio-project-graph/review-delivery/review-delivery-material-rights.ts), [승인 이미지·순서 대조와 발행](../../../apps/api/src/modules/studio-project-graph/review-delivery/review-delivery.service.ts), [검수·납품 PostgreSQL 통합 테스트](../../../apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts) |
-| 캐릭터 편집 | [원고 셰이퍼의 표면 브러시](../../../apps/web/src/domains/creator/vrm/useStudioVrmSurfacePaintTool.ts), [텍스처 페인트 출력](../../../apps/web/src/domains/creator/vrm/studio-vrm-texture-paint-projection.ts), [자체 헤어 재생성](../../../tools/blender/character_kit/build_swept_hair_edition.py), [키트 판 무결성](../../../scripts/lib/character-kit-directory-files.mjs), [툰 윤곽 정책](../../../apps/character-lab/src/render/outline-policy.ts) |
+| 캐릭터 편집 | [원고 셰이퍼의 표면 브러시](../../../apps/web/src/domains/creator/vrm/useStudioVrmSurfacePaintTool.ts), [텍스처 페인트 출력](../../../apps/web/src/domains/creator/vrm/studio-vrm-texture-paint-projection.ts), [자체 헤어 재생성](../../../tools/blender/character_kit/build_swept_hair_edition.py), [키트 판 무결성](../../../scripts/lib/character-kit-directory-files.mjs), [툰 윤곽 정책](../../../packages/studio-project-model/src/character-kit/quality-gate/outline-policy.ts) |
 
 캐릭터 랩 전체 295개 파일의 2,706개 테스트, 랩 타입 검사·빌드, 키트 출하 검사, 생성물 재현성 검사를 실행했다. 키트 출하 검사에서 오류는 0개였고 기존 베이스의 모프 6건과 UV 1건에 경고가 있었다. Blender에서 아틀리에 주인공을 다시 열어 메시 16개, 열린 테두리 0개, 밑창 높이 0.0000001m, 좌우 눈 검사 8건을 확인했다. 보행 176자세에서 몸과 치마의 교차는 0건이었다. 손가락·얼굴·의상의 모든 조합은 확인하지 못했다.
 

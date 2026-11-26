@@ -16,7 +16,7 @@
 실행:
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/qa_character_gate.py -- \
-        --dir apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases
+        --dir data/character-studio-assets/characters/toonstudio-kit-v2/bases
 """
 
 from __future__ import annotations
@@ -794,7 +794,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     if "--" in argv:
         argv = argv[argv.index("--") + 1 :]
     parser = argparse.ArgumentParser(description="ToonStudio Character Kit v2 종합 QA 게이트")
-    parser.add_argument("--dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases"))
+    parser.add_argument("--dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases"))
     parser.add_argument("--glb", type=Path, default=None, help="단일 GLB만 검증할 때 지정")
     parser.add_argument("--res", type=int, default=512, help="6뷰 개별 렌더 해상도(기본 512)")
     parser.add_argument("--skip-render", action="store_true")

@@ -2,16 +2,16 @@
 Blender 5.3 Procedural Generator for Wave 14-15 Complete 12-Genre Studio Closure Props (CC0-1.0):
 Completes 40 Total Webtoon 3D Assets (13 Hand · 8 Head · 13 Stage · 6 SFX) for 100% 1-to-1 coverage of all 12 Flagship Archetypes:
 
-1) 3 New Hand Props appended into `apps/character-lab/public/assets/props/webtoon-hand-props-v1/` (10 -> 13):
+1) 3 New Hand Props appended into `data/character-studio-assets/props/webtoon-hand-props-v1/` (10 -> 13):
    - `tactical-medkit-radio.glb` (`TS_Prop_tactical-medkit-radio`): Apocalypse field transceiver radio with whip antenna, status LED, and survival med-pouch clip.
    - `artisan-drip-kettle.glb` (`TS_Prop_artisan-drip-kettle`): Healing cafe gooseneck copper pour-over drip kettle with walnut handle and lid knob.
    - `sacred-chalice-wand.glb` (`TS_Prop_sacred-chalice-wand`): Sanctuary saintess gilded divine scepter-chalice with radiant sapphire crystal orb and wing fins.
 
-2) 2 New Head Props appended into `apps/character-lab/public/assets/props/webtoon-head-props-v1/` (6 -> 8):
+2) 2 New Head Props appended into `data/character-studio-assets/props/webtoon-head-props-v1/` (6 -> 8):
    - `tactical-visor-goggles.glb` (`TS_HeadProp_tactical-visor-goggles`): Apocalypse dust-proof forehead tactical goggles with amber-cyan anti-glare lenses and strap.
    - `saintess-halo-crown.glb` (`TS_HeadProp_saintess-halo-crown`): Floating golden starburst saintess halo & pearl-ivory temple coronet.
 
-3) 3 New Stage Props appended into `apps/character-lab/public/assets/props/webtoon-stage-props-v1/` (10 -> 13):
+3) 3 New Stage Props appended into `data/character-studio-assets/props/webtoon-stage-props-v1/` (10 -> 13):
    - `apocalypse-supply-barricade.glb` (`TS_StageProp_apocalypse-supply-barricade`): Weathered steel hazard barricade, olive supply crate, andamber beacon lamp.
    - `atelier-drip-counter.glb` (`TS_StageProp_atelier-drip-counter`): Warm oak pour-over coffee & art atelier bar counter with glass dripper stand.
    - `sanctuary-altar-pedestal.glb` (`TS_StageProp_sanctuary-altar-pedestal`): White marble sanctuary oracle font pedestal with golden halo ring and crystal basin.
@@ -46,9 +46,9 @@ from generate_webtoon_idol_sports_props import _add_uv_sphere  # noqa: E402
 from shaper_webtoon_head_and_textures import _hex_to_rgb01, make_textured_pbr_material  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-HAND_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-hand-props-v1"
-HEAD_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-head-props-v1"
-STAGE_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-stage-props-v1"
+HAND_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-hand-props-v1"
+HEAD_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-head-props-v1"
+STAGE_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-stage-props-v1"
 
 
 def _inspect_glb(glb_path: Path) -> dict[str, Any]:

@@ -14,9 +14,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { FACE_PARAM_KEYS, FACS_UNITS } from "../../../../apps/character-lab/src/contracts/index.ts";
-import { FACE_PARAM_FIELDS, FACS_FIELDS, jawMaskLocal } from "../../../../apps/character-lab/src/domains/humanoid/morph/face-fields.ts";
-import { HEAD_LANDMARKS } from "../../../../apps/character-lab/src/domains/humanoid/proportions.ts";
+import { FACE_PARAM_KEYS, FACS_UNITS } from "../../../../packages/studio-project-model/src/character-kit/contracts/index.ts";
+import { FACE_PARAM_FIELDS, FACS_FIELDS, jawMaskLocal } from "../../../../packages/studio-project-model/src/character-kit/humanoid/face-fields.ts";
+import { HEAD_LANDMARKS } from "../../../../packages/studio-project-model/src/character-kit/humanoid/proportions.ts";
 
 
 /** 스코프 코드(인덱스) → TS 스코프 문자열 */

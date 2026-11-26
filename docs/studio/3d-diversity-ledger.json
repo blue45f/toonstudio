@@ -1,7 +1,7 @@
 {
   "schema": "toonstudio.3d-diversity-ledger/1",
   "sections": {
-    "characterLab.vocabulary": {
+    "characterKit.vocabulary": {
       "metrics": {
         "face-shape": 6,
         "eyes": 6,
@@ -20,18 +20,14 @@
         "hand-pose": 8
       }
     },
-    "characterLab.presets": {
+    "characterKit.params": {
       "metrics": {
-        "appearancePresets": 64,
-        "performancePresets": 30,
-        "posePresets": 10,
-        "expressionPresets": 12,
-        "handPosePresets": 8,
         "bodyParams": 9,
-        "faceParams": 15
+        "faceParams": 15,
+        "facsUnits": 16
       }
     },
-    "characterLab.kit": {
+    "characterKit.kit": {
       "metrics": {
         "parts": 32,
         "female.hair": 7,
@@ -50,44 +46,10 @@
         "male.provided": 32
       }
     },
-    "characterLab.artStyles": {
+    "characterStyle.artStyles": {
       "metrics": {
-        "artStylePacks": 8
-      }
-    },
-    "characterLab.customization": {
-      "metrics": {
-        "contract.colorRegions": 27,
-        "contract.shapeSlidersMaxPerPart": 8,
-        "contract.shapeSlidersTotal": 152,
-        "contract.wornLayers": 7,
-        "contract.accessorySlots": 12,
-        "contract.simultaneousWear": 19,
-        "contract.surfaceChannels": 18,
-        "contract.surfaceMaterials": 7,
-        "contract.patternKinds": 6,
-        "contract.lookContinuous": 41,
-        "contract.lookDiscrete": 14,
-        "contract.styleParams": 81,
-        "contract.discreteLog10": 67.26,
-        "contract.continuousAxes": 454,
-        "noCustom.colorRegions": 8,
-        "noCustom.shapeSlidersMaxPerPart": 0,
-        "noCustom.shapeSlidersTotal": 0,
-        "noCustom.wornLayers": 4,
-        "noCustom.accessorySlots": 1,
-        "noCustom.simultaneousWear": 5,
-        "noCustom.surfaceChannels": 4,
-        "noCustom.surfaceMaterials": 7,
-        "noCustom.patternKinds": 0,
-        "noCustom.lookContinuous": 0,
-        "noCustom.lookDiscrete": 0,
-        "noCustom.styleParams": 20,
-        "noCustom.discreteLog10": 13.83,
-        "noCustom.continuousAxes": 64,
-        "lookSets": 24,
-        "lookSetGenres": 6,
-        "styleFaceBindings": 15,
+        "artStylePacks": 8,
+        "colorChannels": 0,
         "lookScopes": 5,
         "mixerLockGroups": 6
       }
@@ -147,22 +109,23 @@
     },
     "studio.bg3d": {
       "metrics": {
-        "environments": 31,
+        "environments": 41,
         "starterAssets": 41,
         "cinematicBlueprints": 24,
         "webtoonBackgrounds": 3,
         "roomPresets": 6,
         "roomFurnitureKinds": 13,
-        "environmentTheme.home": 3,
-        "environmentTheme.hospitality": 1,
-        "environmentTheme.urban": 7,
-        "environmentTheme.education": 7,
-        "environmentTheme.fantasy": 2,
+        "environmentTheme.home": 4,
+        "environmentTheme.hospitality": 2,
+        "environmentTheme.education": 9,
+        "environmentTheme.urban": 8,
+        "environmentTheme.fantasy": 3,
         "environmentTheme.science-fiction": 1,
         "environmentTheme.healthcare": 1,
         "environmentTheme.heritage": 2,
         "environmentTheme.retail": 5,
-        "environmentTheme.transit": 2
+        "environmentTheme.transit": 2,
+        "environmentTheme.nature": 4
       }
     }
   }

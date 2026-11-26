@@ -1,7 +1,7 @@
 """
 Blender 5.3 Procedural Generator for 4 High-Craft Korean Webtoon Hand Props (v1.0, CC0-1.0).
 
-Outputs under `apps/character-lab/public/assets/props/webtoon-hand-props-v1/`:
+Outputs under `data/character-studio-assets/props/webtoon-hand-props-v1/`:
 - `smartphone.glb` (`TS_Prop_smartphone`): Bezel-less smartphone with Korean webtoon chat UI screen & dual camera lenses.
 - `coffee-cup.glb` (`TS_Prop_coffee-cup`): Cafe takeout cup with embossed kraft sleeve, sipper lid & emblem texture.
 - `case-folder.glb` (`TS_Prop_case-folder`): Leatherette dossier/council clipboard folder with document stack & brass clip.
@@ -36,7 +36,7 @@ from shaper_webtoon_head_and_textures import (  # noqa: E402
 )
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-hand-props-v1"
+PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-hand-props-v1"
 
 
 def _bake_smartphone_texture(path: str, size: int = 256) -> str:

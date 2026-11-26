@@ -181,7 +181,7 @@ const CACHE_KEY_ROOT_FILES = new Set([
   "postcss.config.mjs",
 ]);
 const CACHE_KEY_EXCLUDED_TREES = /^(?:\.github|apps\/api|artifacts|dist|worktrees|\.worktrees|\.claude\/worktrees)\//u;
-const CACHE_KEY_NON_WEB_TREES = /^(?:docs|apps\/admin-web|apps\/mobile|apps\/desktop-sync|apps\/brush-lab|apps\/character-lab)\//u;
+const CACHE_KEY_NON_WEB_TREES = /^(?:docs|apps\/admin-web|apps\/mobile|apps\/desktop-sync|apps\/brush-lab)\//u;
 const CACHE_KEY_SOURCE_EXTENSION = /\.(?:[cm]?[jt]sx?|jsonc?)$/u;
 
 /** 루트 tsconfig.json 프로그램 입력에 영향을 줄 수 있는 Git 추적 경로를 판별한다. */

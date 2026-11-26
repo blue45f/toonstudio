@@ -93,7 +93,7 @@ wasm(morph 블렌딩·IK·PSD 합성) 레인만 후보다(이 세션에서 빌�
 1. **Blender 제작 레인**: `tools/blender/toonstudio_blender_kit` 파이프라인이 만든 패키지를 `apps/character-lab/public/assets/characters/`에
    둔다. 2026-10-01 현재 CC0 `avatar-orion-authored`(GLB 4,045,664 B, 스켈레톤 67 joint, 의미 기반 얼굴 shape key 24개, 툰 헤어 LOD 3단)와
    CC0 `reference-character`가 커밋돼 있다. 로드 계약(메시·shape key·본 이름·SHA-256·품질 게이트)은
-   [제작 에셋 파이프라인 문서](../../apps/character-lab/docs/authored-asset-pipeline.md)와
+   [제작 에셋 파이프라인 문서](../archive/character-lab/authored-asset-pipeline.md)와
    [Blender 캐릭터 파이프라인](../studio/blender-character-pipeline.md)이 기준이다.
 2. **절차 휴머노이드 레인**: VRM 55본 스켈레톤을 코드로 배치하고 본별 단면 프로파일을 로프트한 고정 토폴로지 메시. 체형 파라미터 ±1 결과를
    morph target으로 베이크하므로 외부 에셋 0으로 15슬롯 전부를 채울 수 있다.

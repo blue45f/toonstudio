@@ -15,7 +15,7 @@ from shaper_skirt_pose_clearance import rig_space_surface, set_step_pose  # noqa
 def main():
     parser = argparse.ArgumentParser()
     default_model = SCRIPT_DIR.parents[1] / (
-        "apps/character-lab/public/assets/characters/shaper-atelier-protagonist/shaper-atelier-protagonist.glb"
+        "data/character-studio-assets/characters/shaper-atelier-protagonist/shaper-atelier-protagonist.glb"
     )
     parser.add_argument("--asset", type=Path, default=default_model)
     parser.add_argument("--report", type=Path)

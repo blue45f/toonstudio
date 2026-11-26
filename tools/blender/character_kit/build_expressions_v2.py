@@ -10,7 +10,7 @@ male-action / youth-academy / sd-chibi)에 맞춰 계산하고, 다음 불변 �
 단독 실행(Blender 5.3 헤드리스 또는 Python 3):
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/build_expressions_v2.py -- \
-        --out apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases/expressions_v2.json \
+        --out data/character-studio-assets/characters/toonstudio-kit-v2/bases/expressions_v2.json \
         [--verify-glb <base.glb>]
 """
 
@@ -38,7 +38,7 @@ from character_kit import glbwriter  # noqa: E402
 from character_kit.surface import vertex_normals  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# 계약 상수 (apps/character-lab/src/contracts/* 단일 정본과 1:1 일치)
+# 계약 상수 (packages/studio-project-model/src/character-kit/contracts/* 단일 정본과 1:1 일치)
 # ---------------------------------------------------------------------------
 
 BODY_PARAM_KEYS: tuple[str, ...] = (
@@ -987,7 +987,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--out",
         type=Path,
-        default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases/expressions_v2.json"),
+        default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases/expressions_v2.json"),
     )
     parser.add_argument("--verify-glb", type=Path, default=None)
     return parser.parse_args(argv)

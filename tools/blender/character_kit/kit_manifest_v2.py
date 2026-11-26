@@ -1,8 +1,8 @@
 """키트 v2(`toonstudio.character-kit/2`) manifest 작성기 — `build_kit_json.py --schema 2`가 부른다(2026-10-23, WP B-1).
 
-계약은 `apps/character-lab/src/contracts/character-kit-v2.ts`(CORE-1)다. v2 상수(역할 채널 표·층·앵커·예산)는 파이썬에 복제하지 않고
+계약은 `packages/studio-project-model/src/character-kit/contracts/character-kit-v2.ts`(CORE-1)다. v2 상수(역할 채널 표·층·앵커·예산)는 파이썬에 복제하지 않고
 node+tsx로 계약 모듈을 불러 읽고(`load_v2_contract`), 만든 manifest도 같은 방법으로 `parseKitManifestV2`에 넣어 **통과해야만** 돌려준다
-(`validate_v2`). v1 manifest 작성기(`kit_manifest.build_manifest`)는 그대로이고, 공개 키트(`apps/character-lab/public/`)에는 v2를 쓰지 않는다.
+(`validate_v2`). v1 manifest 작성기(`kit_manifest.build_manifest`)는 그대로이고, 공개 키트(`data/character-studio-assets/`)에는 v2를 쓰지 않는다.
 
 키트 폴더 규약(v1 규약 + 층 폴더)::
 
@@ -77,7 +77,7 @@ def _tsx(repo_root: Path) -> str:
 
 
 def _run_contract_script(repo_root: Path, body: str, payload: Any = None) -> Any:
-    contracts = (Path(repo_root).resolve() / "apps/character-lab/src/contracts/index.ts").as_posix()
+    contracts = (Path(repo_root).resolve() / "packages/studio-project-model/src/character-kit/contracts/index.ts").as_posix()
     script = f'import {{ readFileSync }} from "node:fs";\nconst C = await import({json.dumps(contracts)});\nconst input = JSON.parse(readFileSync(process.argv[2], "utf8"));\n{body}\n'
     with tempfile.TemporaryDirectory() as temp:
         script_path = Path(temp) / "contract-v2.mts"
