@@ -242,8 +242,8 @@ describe("Wave-3 Pure-Safe Rust WASM64 확장 스위트 지연 래퍼 & 0-diff �
   });
 
   it("Webtoon Smart Slicer(말풍선 회피) & 64비트 FNV-1a 타일 중복 제거·분류기 0-diff 파리티를 검증한다", async () => {
-    expect(jsFnv1a64(new Uint8Array(0))).toBe(0xcbf29ce484222325n);
-    expect(jsFnv1a64(new TextEncoder().encode("foobar"))).toBe(0x85944171f73967e8n);
+    expect(jsFnv1a64(new Uint8Array(0))).toBe(BigInt("0xcbf29ce484222325"));
+    expect(jsFnv1a64(new TextEncoder().encode("foobar"))).toBe(BigInt("0x85944171f73967e8"));
 
     const rt = await createStudioWave3RuntimeFromBytes(readExtendedSuiteBytes());
     try {

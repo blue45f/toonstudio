@@ -778,7 +778,9 @@ describe("Studio ONNX WebNN(NPU) -> WebGPU -> WASM cascade, SIMD/thread env & ze
         mask: new FakeTensor("float32", new Float32Array([0.3, 0.7]), [1, 2]),
       });
       const envWasm: { simd?: boolean | "fixed" | "relaxed"; numThreads?: number } = {};
-      const createSpy = vi.fn(async () => session);
+      const createSpy = vi.fn(
+        async (_model: Uint8Array, _options?: Record<string, unknown>) => session,
+      );
       const runtime = {
         InferenceSession: { create: createSpy },
         Tensor: FakeTensor,

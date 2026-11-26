@@ -67,7 +67,7 @@ function buildSyntheticPsbBytes(width: number, height: number): Uint8Array {
   dv.setUint32(26, 0, false); // Color mode data len
   dv.setUint32(30, 4, false); // Image resources len
   buf.set([1, 2, 3, 4], 34);
-  dv.setBigUint64(38, 128n, false); // Layer & mask len
+  dv.setBigUint64(38, BigInt(128), false); // Layer & mask len
   return buf;
 }
 
@@ -496,7 +496,7 @@ describe("실물 studio-wasm64-extended-suite.wasm 전체 21종 확장 C-ABI 래
       expect(psbInfo.height).toBe(30_000);
       expect(psbInfo.depthBits).toBe(8);
       expect(psbInfo.colorModeName).toBe("rgb");
-      expect(psbInfo.estimatedUncompressedRgbaBytes).toBe(4_800_000_000n);
+      expect(psbInfo.estimatedUncompressedRgbaBytes).toBe(BigInt(4_800_000_000));
       expect(psbInfo.requiresMemory64).toBe(true);
 
       // 오류 경로(잘못된 PSD 서명)에서도 선형 메모리 누수 0건 검증

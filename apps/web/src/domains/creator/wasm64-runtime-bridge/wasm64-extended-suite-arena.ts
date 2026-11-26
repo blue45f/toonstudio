@@ -403,7 +403,7 @@ export function createExtendedSuiteArenaManager(
       zeroU64: (count) => {
         if (count <= 0) return 0;
         const ptr = allocBytes(count * 8);
-        new BigUint64Array(e.memory.buffer, ptr, count).fill(0n);
+        new BigUint64Array(e.memory.buffer, ptr, count).fill(BigInt(0));
         return ptr;
       },
       copyF32: (src) => {

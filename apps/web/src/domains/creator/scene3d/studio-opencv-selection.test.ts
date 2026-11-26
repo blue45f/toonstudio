@@ -9,8 +9,7 @@ import {
   refineMaskEdges,
 } from "../studio-opencv-selection";
 
-import type { StudioSelectionPathArtifact } from "../studio-opencv-selection";
-import type { CV } from "@techstark/opencv-js";
+import type { StudioNativeSelectionRuntime, StudioSelectionPathArtifact } from "../studio-opencv-selection";
 import type { SceneIR } from "@toonstudio/studio-project-model";
 
 /**
@@ -122,7 +121,7 @@ function maskIoU(a: Uint8Array, b: Uint8Array): number {
 }
 
 describe("studio-opencv-selection", () => {
-  let cv: CV;
+  let cv: StudioNativeSelectionRuntime;
   let skia: SkiaRenderModule;
   let ck: unknown;
 

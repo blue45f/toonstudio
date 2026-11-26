@@ -15,9 +15,9 @@ import type {
   Wave3TileDedupResult,
 } from "./wave3-types";
 
-const FNV64_OFFSET = 0xcbf29ce484222325n;
-const FNV64_PRIME = 0x00000100000001b3n;
-const U64_MASK = 0xffffffffffffffffn;
+const FNV64_OFFSET = BigInt("0xcbf29ce484222325");
+const FNV64_PRIME = BigInt("0x00000100000001b3");
+const U64_MASK = BigInt("0xffffffffffffffff");
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
 
 export function jsFnv1a64(bytes: Uint8Array): bigint {

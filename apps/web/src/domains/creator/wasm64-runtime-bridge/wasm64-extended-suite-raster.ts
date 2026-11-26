@@ -362,25 +362,26 @@ export function createExtendedRasterOps(
         "wasm_parse_psd_header",
       );
       const meta = arena.readU64(metaPtr, 16);
-      const colorModeCode = Number(meta[6] ?? 0n);
+      const ZERO_U64 = BigInt(0);
+      const colorModeCode = Number(meta[6] ?? ZERO_U64);
       return {
-        version: Number(meta[0] ?? 0n),
-        isPsb: (meta[1] ?? 0n) !== 0n,
-        channels: Number(meta[2] ?? 0n),
-        width: Number(meta[3] ?? 0n),
-        height: Number(meta[4] ?? 0n),
-        depthBits: Number(meta[5] ?? 0n),
+        version: Number(meta[0] ?? ZERO_U64),
+        isPsb: (meta[1] ?? ZERO_U64) !== ZERO_U64,
+        channels: Number(meta[2] ?? ZERO_U64),
+        width: Number(meta[3] ?? ZERO_U64),
+        height: Number(meta[4] ?? ZERO_U64),
+        depthBits: Number(meta[5] ?? ZERO_U64),
         colorModeCode,
         colorModeName: resolvePsdColorModeName(colorModeCode),
-        colorModeDataOffset: meta[7] ?? 0n,
-        colorModeDataLength: meta[8] ?? 0n,
-        imageResourcesOffset: meta[9] ?? 0n,
-        imageResourcesLength: meta[10] ?? 0n,
-        layerAndMaskOffset: meta[11] ?? 0n,
-        layerAndMaskLength: meta[12] ?? 0n,
-        imageDataOffset: meta[13] ?? 0n,
-        estimatedUncompressedRgbaBytes: meta[14] ?? 0n,
-        requiresMemory64: (meta[15] ?? 0n) !== 0n,
+        colorModeDataOffset: meta[7] ?? ZERO_U64,
+        colorModeDataLength: meta[8] ?? ZERO_U64,
+        imageResourcesOffset: meta[9] ?? ZERO_U64,
+        imageResourcesLength: meta[10] ?? ZERO_U64,
+        layerAndMaskOffset: meta[11] ?? ZERO_U64,
+        layerAndMaskLength: meta[12] ?? ZERO_U64,
+        imageDataOffset: meta[13] ?? ZERO_U64,
+        estimatedUncompressedRgbaBytes: meta[14] ?? ZERO_U64,
+        requiresMemory64: (meta[15] ?? ZERO_U64) !== ZERO_U64,
       };
     });
 

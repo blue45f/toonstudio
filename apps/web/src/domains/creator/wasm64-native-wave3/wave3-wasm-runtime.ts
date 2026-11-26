@@ -208,7 +208,7 @@ export function createWave3WasmRuntimeFromExports(
       },
       u64Zero: (len) => {
         const ptr = alloc(len * 8);
-        if (ptr !== 0) new BigUint64Array(e.memory.buffer, ptr, len).fill(0n);
+        if (ptr !== 0) new BigUint64Array(e.memory.buffer, ptr, len).fill(BigInt(0));
         return ptr;
       },
       f32Zero: (len) => {
@@ -526,16 +526,23 @@ export function createWave3WasmRuntimeFromExports(
         const sum = new Uint32Array(e.memory.buffer, pSum, 8);
         const rawEnt = new BigUint64Array(e.memory.buffer, pEnt, total * 2);
         const entries: Wave3TileDedupEntry[] = [];
+        const ZERO_U64 = BigInt(0);
+        const MASK32 = BigInt("0xffffffff");
+        const SHIFT32 = BigInt(32);
+        const MASK8 = BigInt("0xff");
+        const SHIFT40 = BigInt(40);
+        const MASK12 = BigInt("0xfff");
+        const SHIFT52 = BigInt(52);
         for (let i = 0; i < total; i += 1) {
-          const fnv1a64 = rawEnt[i * 2] ?? 0n;
-          const packed = rawEnt[i * 2 + 1] ?? 0n;
+          const fnv1a64 = rawEnt[i * 2] ?? ZERO_U64;
+          const packed = rawEnt[i * 2 + 1] ?? ZERO_U64;
           entries.push({
             tileIndex: i,
             fnv1a64,
-            canonicalTileIndex: Number(packed & 0xffffffffn),
-            tileClass: decodeTileClass(Number((packed >> 32n) & 0xffn)),
-            tileWidth: Number((packed >> 40n) & 0xfffn),
-            tileHeight: Number((packed >> 52n) & 0xfffn),
+            canonicalTileIndex: Number(packed & MASK32),
+            tileClass: decodeTileClass(Number((packed >> SHIFT32) & MASK8)),
+            tileWidth: Number((packed >> SHIFT40) & MASK12),
+            tileHeight: Number((packed >> SHIFT52) & MASK12),
           });
         }
         const duplicateTiles = sum[4] ?? 0;
