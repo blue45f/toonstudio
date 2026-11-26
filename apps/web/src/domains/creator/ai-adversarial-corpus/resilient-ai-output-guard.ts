@@ -381,37 +381,6 @@ function repairTruncatedTail(
   tokens.push(working);
 }
 
-function redactJsonValueDeep(node: unknown, depth = 0): { value: unknown; count: number } {
-  if (depth > 16 || node === null || node === undefined) {
-    return { value: node, count: 0 };
-  }
-  if (typeof node === "string") {
-    const normalized = normalizeCreatorObfuscatedInput(node);
-    const res = redactCreatorSensitiveText(normalized);
-    return { value: res.sanitizedText, count: res.redactedCount };
-  }
-  if (Array.isArray(node)) {
-    let total = 0;
-    const mapped = node.map((item) => {
-      const child = redactJsonValueDeep(item, depth + 1);
-      total += child.count;
-      return child.value;
-    });
-    return { value: mapped, count: total };
-  }
-  if (typeof node === "object") {
-    let total = 0;
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
-      const child = redactJsonValueDeep(v, depth + 1);
-      total += child.count;
-      out[k] = child.value;
-    }
-    return { value: out, count: total };
-  }
-  return { value: node, count: 0 };
-}
-
 /**
  * 코드 펜스·주석·후행 쉼표·제어문자·중도 절단된 LLM JSON 응답을 선형 시간(`O(n)`)에 복원한다.
  */
@@ -556,20 +525,22 @@ export function recoverMalformedAiJson(raw: string): RecoveredAiJsonResult {
 
   const repairedJson = out.join("");
   try {
-    const parsed: unknown = JSON.parse(repairedJson);
-    const sanitized = redactJsonValueDeep(parsed);
+    let redactedCount = 0;
+    const value: unknown = JSON.parse(repairedJson, (_key, entry: unknown) => {
+      if (typeof entry !== "string") return entry;
+      const redacted = redactCreatorSensitiveText(normalizeCreatorObfuscatedInput(entry));
+      redactedCount += redacted.redactedCount;
+      return redacted.sanitizedText;
+    });
     return {
       ok: true,
-      value: sanitized.value,
-      repairedJson,
+      value,
+      repairedJson: JSON.stringify(value),
       repaired: notes.length > 0,
       repairNotes: notes,
-      redactedCount: sanitized.count,
+      redactedCount,
     };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "json_parse_failed",
-    };
+  } catch {
+    return { ok: false, error: "json_parse_failed" };
   }
 }

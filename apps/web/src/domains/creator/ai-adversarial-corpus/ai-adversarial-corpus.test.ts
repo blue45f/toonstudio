@@ -169,6 +169,7 @@ describe("ai-adversarial-corpus (340+ 한국형 PII · 장문 원고 · 입력 �
 
         if (jsonCase.expectPiiRedacted) {
           expect(res.redactedCount).toBeGreaterThanOrEqual(1);
+          expect(JSON.parse(res.repairedJson)).toEqual(res.value);
           expect(JSON.stringify(res.value)).not.toContain("8291-4402");
           expect(JSON.stringify(res.value)).not.toContain("482901-04-192837");
         }

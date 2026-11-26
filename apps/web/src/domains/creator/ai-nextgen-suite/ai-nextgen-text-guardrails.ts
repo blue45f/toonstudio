@@ -137,7 +137,8 @@ export function sanitizeValueStringsDeep<T>(
   let redactedCount = 0;
 
   const visit = (node: unknown, depth: number): unknown => {
-    if (depth > maxDepth || node === null || node === undefined) {
+    if (depth > maxDepth) throw new RangeError("입력 구조의 깊이 제한을 초과했습니다.");
+    if (node === null || node === undefined) {
       return node;
     }
     if (typeof node === "string") {
@@ -151,11 +152,9 @@ export function sanitizeValueStringsDeep<T>(
       return node.map((item) => visit(item, depth + 1));
     }
     if (typeof node === "object") {
-      const out: Record<string, unknown> = {};
-      for (const [key, entry] of Object.entries(node as Record<string, unknown>)) {
-        out[key] = visit(entry, depth + 1);
-      }
-      return out;
+      return Object.fromEntries(
+        Object.entries(node as Record<string, unknown>).map(([key, entry]) => [key, visit(entry, depth + 1)]),
+      );
     }
     return node;
   };

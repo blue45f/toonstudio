@@ -402,7 +402,7 @@ describe("3. ai-panel-camera-lighting-director (18..135mm 광학·OKLCH 3점 조
 
     const res = await runPanelCameraLightingDirector(
       {
-        sceneTitleKo: "제3부두 격돌",
+        sceneTitleKo: "제3부두 격돌 ![참고](https://example.invalid/scene.webp)",
         genre: "현대 느와르",
         panels: [{ cutNumber: 1, actionDescriptionKo: "빗속에서 쇠파이프가 부딪친다." }],
       },
@@ -413,6 +413,13 @@ describe("3. ai-panel-camera-lighting-director (18..135mm 광학·OKLCH 3점 조
     );
 
     expect(res.providerUsed).toBe("openai");
+    const request = JSON.parse(String(mockFetch.mock.calls[0]?.[1]?.body)) as {
+      messages: { role: string; content: string }[];
+    };
+    const manuscript = request.messages.find((message) => message.role === "user")?.content;
+    expect(manuscript).toContain('<creator_manuscript data-trusted="false">');
+    expect(manuscript).toContain("[외부 이미지 비콘 차단됨]");
+    expect(manuscript).not.toContain("example.invalid");
     const shot = res.data.shots[0]!;
     expect(shot.lensFocalLengthMm).toBe(18);
     expect(shot.horizontalFovDeg).toBe(90);
