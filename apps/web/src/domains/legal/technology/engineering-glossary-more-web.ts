@@ -382,6 +382,82 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "crates/studio-wasm64-drawing-core implements zero-dependency safe Rust (#![deny(unsafe_code)]) tile, pigment and filter kernels built for WASM64 compatibility. At run time, studio-wasm64-memory-governor.ts probes memory64 and SIMD128 first, while toon-silicon-engine.ts plans Relaxed-SIMD and WASM32 fallback dispatch across eight silicon profiles.",
     ),
     chapters: ["wasm-fixed-simd", "worker-architecture"],
-    atlasIds: ["wasm-self-built-fixed-simd", "wasm-memory64-zip-crc"],
+    atlasIds: ["wasm-self-built-fixed-simd", "wasm-memory64-zip-crc", "wasm64-drawing-core-extended-suite"],
+  },
+  {
+    id: "seqlock-lock-free-snapshot",
+    category: "web",
+    term: t("Seqlock (락프리 시퀀스 락)", "Seqlock (lock-free sequence lock)"),
+    definition: t(
+      "쓰기 시작 때 순서 번호를 홀수로, 끝날 때 짝수로 올리고 읽는 쪽은 앞뒤 번호가 같은 짝수일 때만 채택해 자물쇠 대기 없이 일관된 스냅샷을 읽는 동기화 기법입니다.",
+      "A lock-free synchronization pattern where writers bump a counter to odd on start and even on finish, so readers retry until both loads match and are even.",
+    ),
+    analogy: t(
+      "인쇄소 편집자가 판을 고칠 때 문 앞에 ‘수정 중(홀수)’ 팻말을 걸고 끝나면 ‘확정(짝수)’ 번호로 바꾸는 방식과 같습니다. 읽는 사람은 줄 서지 않고 들어갔다 나오며 번호가 안 바뀌었는지만 확인합니다.",
+      "Like a print editor hanging an odd ‘editing’ sign during changes and flipping to an even number when done: readers never queue and only check that the number stayed identical.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts 가 독립 64B 캐시라인(오프셋 128B)에 Atomics 시퀀스 카운터를 두고 메인 스레드·WASM 워커·WebGPU 렌더러 사이에서 0-카피 스냅샷을 읽습니다. 현재 모듈·테스트 검증을 마쳤으며, 편집기 전체 파이프라인 통합은 단계적으로 진행합니다.",
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts places an Atomics sequence counter on its own 64-byte cache line (byte 128) for zero-copy snapshots across the main thread, WASM Worker and WebGPU renderer. Unit verification is complete; full editor pipeline integration is phased.",
+    ),
+    chapters: ["worker-architecture", "performance-budget"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "cross-origin-isolation-studio-gate"],
+  },
+  {
+    id: "spsc-lock-free-ring-buffer",
+    category: "web",
+    term: t("SPSC 락프리 링 버퍼 (제로카피 IPC)", "SPSC lock-free ring buffer (zero-copy IPC)"),
+    definition: t(
+      "생산자 하나와 소비자 하나가 원형 공유 메모리에서 각자 포인터(head·tail)만 원자적으로 갱신하며 직렬화·락 없이 고정 크기 바이너리 명령을 주고받는 큐입니다.",
+      "A single-producer, single-consumer circular queue in shared memory where each side updates only its own atomic pointer to pass fixed binary commands without locks or serialization.",
+    ),
+    analogy: t(
+      "주방장 한 명이 회전 초밥 레일에 접시를 올리고 서빙 한 명만 집어 가는 원형 레일과 같습니다. 서로 맡은 번호표 칸만 고치므로 부딪히지 않고 접시를 옮겨 담을 필요도 없습니다.",
+      "Like one chef placing plates onto a conveyor belt and one server picking them up: each touches only its own counter, so neither waits nor repacks plates.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-zero-copy-ipc-ring.ts 가 head(64B)와 tail(128B)을 다른 64B 캐시라인에 격리해 False Sharing 을 막고 64B 명령을 전송합니다. Vitest 실측에서 0.931ms(10.74M cmds/s)를 기록했고, SharedArrayBuffer 미지원 환경에서는 ArrayBuffer 링으로 자동 폴백합니다.",
+      "wasm64-zero-copy-ipc/wasm64-zero-copy-ipc-ring.ts isolates head (byte 64) and tail (byte 128) on separate 64-byte cache lines to avoid false sharing while passing 64-byte commands. Vitest measured 0.931 ms (10.74M cmds/s), with automatic ArrayBuffer fallback when SharedArrayBuffer is absent.",
+    ),
+    chapters: ["worker-architecture", "performance"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "worker-envelope-64-workers"],
+  },
+  {
+    id: "opfs-sync-access-64bit-tile-mmap",
+    category: "web",
+    term: t("OPFS SyncAccessHandle 64비트 가상 타일 매퍼", "OPFS SyncAccessHandle 64-bit virtual tile mapper"),
+    definition: t(
+      "Dedicated Worker 의 동기 OPFS 파일 핸들과 BigInt 64비트 오프셋으로 4GiB 를 넘는 초대형 원고 타일을 디스크에 두고, 정해진 RAM 상한 안에서만 꺼내 쓰는 페이징 계층입니다.",
+      "A paging layer pairing Dedicated Worker synchronous OPFS handles with BigInt 64-bit offsets to address documents past 4 GiB while keeping resident RAM inside a fixed cap.",
+    ),
+    analogy: t(
+      "두꺼운 백과사전 전집을 책상에 다 펼치는 대신, 서고(OPFS)의 64비트 색인 번호로 지금 보는 64쪽(16MiB)만 꺼내 두고 안 보는 쪽은 제자리에 꽂아 두는 열람 방식입니다.",
+      "Like keeping an entire encyclopedia in the stacks (OPFS) by 64-bit call number and laying only 64 pages (16 MiB) on the desk at once.",
+    ),
+    inToonstudio: t(
+      "wasm64-webgpu-compute/opfs-streaming-tile-mmap.ts 가 TSM6 바이너리 헤더와 40B 희소 디렉터리로 16GiB+ 가상 오프셋을 주소 지정합니다. 기본 64타일(16MiB) LRU 상한·제로카피 버퍼 재활용·타일별 FNV-1a 32비트 변조 감지를 단위 테스트로 검증했습니다.",
+      "wasm64-webgpu-compute/opfs-streaming-tile-mmap.ts uses a TSM6 binary header and 40-byte sparse directory to address 16 GiB+ virtual offsets. Its 64-tile (16 MiB) LRU cap, zero-copy buffer recycling and per-tile FNV-1a 32-bit tamper checks are unit-tested.",
+    ),
+    chapters: ["storage", "browser-local-first"],
+    atlasIds: ["wasm64-webgpu-opfs-tile-pipeline", "opfs-content-addressed-store"],
+  },
+  {
+    id: "webcodecs-hardware-zero-copy",
+    category: "web",
+    term: t("WebCodecs 하드웨어 제로카피 인코딩", "WebCodecs hardware zero-copy encoding"),
+    definition: t(
+      "GPU 에서 그려 낸 영상 프레임(VideoFrame)을 CPU 메모리로 되복사하지 않고 WebCodecs 하드웨어 인코더(H.264·HEVC·AV1·Opus)에 직접 넘겨 압축하는 미디어 경로입니다.",
+      "A media path passing GPU-rendered VideoFrames directly into WebCodecs hardware encoders (H.264, HEVC, AV1, Opus) without round-tripping pixels through CPU copies.",
+    ),
+    analogy: t(
+      "화로에서 방금 구운 빵을 창고로 옮겼다가 다시 포장대로 나르지 않고, 오븐 출구에서 바로 포장 기계(전용 영상 칩)로 넘겨 시간과 열을 줄이는 직결 라인과 같습니다.",
+      "Like sending bread straight from the oven onto the wrapping machine (dedicated video chip) instead of hauling it to storage and back, saving time and heat.",
+    ),
+    inToonstudio: t(
+      "studio-hardware-accelerator-probe.ts 가 VideoEncoder·AudioEncoder 의 prefer-hardware 지원(H.264·HEVC·AV1·Opus)을 사전 탐지하고, studio-zero-copy-buffer-pool.ts 가 Transferable 슬랩 풀을 제공합니다. 모션 웹툰 내보내기는 실운용 중이며 하드웨어 사용 여부는 브라우저·OS 정책에 따릅니다.",
+      "studio-hardware-accelerator-probe.ts probes prefer-hardware support for H.264, HEVC, AV1 and Opus via VideoEncoder/AudioEncoder, paired with the Transferable slab pool in studio-zero-copy-buffer-pool.ts. Motion-webtoon export is live; actual hardware usage follows browser and OS policy.",
+    ),
+    chapters: ["performance", "nextgen-web-experiments"],
+    atlasIds: ["webcodecs-selected-pipeline", "hardware-silicon-npu-webcodecs-cascade"],
   },
 ];

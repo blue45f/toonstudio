@@ -382,4 +382,61 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
     chapters: ["brush-engine", "brush-pipeline"],
     atlasIds: ["spectral-color-mixing-mixbox", "material-physics-paper-tooth"],
   },
+  {
+    id: "soa-shared-render-state-tree",
+    category: "brush",
+    term: t("SoA (Struct-of-Arrays) 공유 렌더 상태 트리", "SoA (Struct-of-Arrays) shared render-state tree"),
+    definition: t(
+      "레이어마다 모든 속성을 한 객체에 묶는 대신, 좌표·투명도·블렌드 모드 같은 같은 속성끼리 연속 TypedArray 열로 모아 캐시 적중과 스레드 공유를 높이는 자료구조입니다.",
+      "A layout that stores each layer property (bounds, opacity, blend mode) in its own contiguous TypedArray column rather than per-layer objects, improving cache locality and shared-memory reads.",
+    ),
+    analogy: t(
+      "학생마다 키·몸무게·성적을 개인 봉투에 따로 넣는 대신 ‘키 명단’과 ‘성적 명단’을 표 열별로 묶어 두면, 키 평균만 낼 때 다른 종이를 뒤적이지 않고 한 번에 훑을 수 있는 것과 같습니다.",
+      "Like keeping separate lists for heights and scores instead of individual folders: when you only need heights, you scan one clean sheet without opening every folder.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts 가 12개의 64B 정렬 TypedArray 열(layerIds·boundsX/Y/W/H·opacity·dirtyGeneration 등)을 공유 아레나에 직접 배치해 JSON 직렬화 없이 워커와 렌더러가 함께 읽습니다. 단위·통합 테스트로 검증됐습니다.",
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts lays out 12 64-byte-aligned TypedArray columns (layerIds, boundsX/Y/W/H, opacity, dirtyGeneration, etc.) inside the shared arena for zero-serialization worker/renderer reads, verified by unit tests.",
+    ),
+    chapters: ["brush-render-authority", "worker-architecture"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "renderer-role-ledger"],
+  },
+  {
+    id: "xor-delta-rle-tile-undo",
+    category: "brush",
+    term: t("XOR-Delta + RLE 무손실 타일 언두 압축", "XOR-Delta + RLE lossless tile undo compression"),
+    definition: t(
+      "편집 전후 타일 픽셀의 비트 차이(XOR)만 구해 변화가 없는 0 구간을 길이 부호(RLE)로 묶고, 같은 패킷 하나로 Undo·Redo 를 0바이트 오차로 복원하는 압축 기법입니다.",
+      "A lossless undo scheme that XORs before/after tile pixels, run-length encodes unchanged zero spans, and reuses the single symmetric packet for zero-diff Undo and Redo.",
+    ),
+    analogy: t(
+      "문서를 고칠 때마다 전체 페이지를 복사해 쌓는 대신, ‘안 바뀐 줄 500칸 건너뛰고 501번째 칸만 이 글자로 뒤집기’라고 메모 한 장만 남기는 것과 같습니다. 같은 메모를 다시 적용하면 원래대로 돌아갑니다.",
+      "Like jotting ‘skip 500 unchanged cells, flip cell 501’ instead of photocopying the whole sheet each edit; applying the same note again restores the original.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-tile-undo-compressor.ts 와 Rust 커널 wasm_xor_tile_delta_bytes 가 256×256 RGBA8(256KiB) 타일을 단일 패스로 압축합니다. 테스트 실측에서 RAM 98.19% 절감(55.17×·0B 오차)을 확인했고 고엔트로피 타일은 raw-xor(+16B)로 보호합니다.",
+      "wasm64-zero-copy-ipc/wasm64-tile-undo-compressor.ts and the Rust kernel wasm_xor_tile_delta_bytes compress 256x256 RGBA8 tiles in a single pass. Tests verified 98.19% RAM savings (55.17x, 0-byte diff) with a raw-xor (+16 B) cap on high-entropy tiles.",
+    ),
+    chapters: ["performance-budget", "storage"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "undo-history-byte-budget"],
+  },
+  {
+    id: "skyline-texture-atlas-draw-batching",
+    category: "brush",
+    term: t("Skyline 동적 텍스처 아틀라스 & 드로우 콜 배칭", "Skyline dynamic texture atlas & draw-call batching"),
+    definition: t(
+      "여러 브러시 스탬프·글자 텍스처를 윗선 높이선(Skyline) 알고리즘으로 큰 텍스처 한 장에 빈틈없이 채우고, 겹치지 않는 같은 재질의 그리기를 한 번의 GPU 호출로 묶는 최적화입니다.",
+      "An optimization packing brush stamps and glyphs tightly into one large texture with a Skyline algorithm, then merging non-overlapping draws sharing the same material into one GPU call.",
+    ),
+    analogy: t(
+      "작은 스티커 백 장을 낱장으로 인쇄기에 넣으면 백 번 멈추지만, 큰 용지 한 장에 높이를 맞춰 빼곡히 배치(Skyline)하고 같은 색끼리 한 번에 찍어 내면(배칭) 작업이 훨씬 빨라지는 원리입니다.",
+      "Feeding 100 loose stickers into a press stops 100 times, whereas arranging them tightly on one sheet (Skyline) and printing matching inks together (batching) cuts passes drastically.",
+    ),
+    inToonstudio: t(
+      "wasm64-render-batcher/wasm64-texture-atlas-packer.ts 가 Skyline Bottom-Left(2048×2048·1px 거터·LRU 퇴거·더티 사각형 부분 업로드)를 구현하고, wasm64-draw-call-coalescer.ts 가 64B 고정 버퍼로 비겹침 드로우 콜을 병합합니다. 현재 모듈·테스트 검증을 마쳤습니다.",
+      "wasm64-render-batcher/wasm64-texture-atlas-packer.ts implements Skyline Bottom-Left packing (2048x2048, 1 px gutter, LRU eviction, dirty-rect uploads) and wasm64-draw-call-coalescer.ts merges non-overlapping calls in a 64-byte buffer. Module tests are verified.",
+    ),
+    chapters: ["brush-engine", "performance-budget"],
+    atlasIds: ["wasm64-drawing-core-extended-suite", "renderer-role-ledger"],
+  },
 ];

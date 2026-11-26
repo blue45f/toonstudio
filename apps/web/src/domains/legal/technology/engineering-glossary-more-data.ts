@@ -288,4 +288,23 @@ export const GLOSSARY_MORE_DATA: readonly GlossaryTerm[] = [
     chapters: ["infrastructure", "troubleshooting-runbook"],
     atlasIds: ["health-live-ready-capabilities"],
   },
+  {
+    id: "singleflight-4lane-edge-api",
+    category: "data",
+    term: t("Singleflight (동시 요청 병합) & 4-Lane 엣지 API 분산", "Singleflight request coalescing & 4-Lane edge API routing"),
+    definition: t(
+      "같은 공개 읽기 캐시 미스가 동시에 몰릴 때 원점 호출을 1건으로 합치는 Singleflight 와, 트래픽 성격에 따라 요청을 4개 전용 레인으로 갈라 보내는 엣지 분산 구조입니다.",
+      "Combining Singleflight—merging concurrent identical public cache misses into one origin fetch—with 4-Lane edge routing that isolates workloads by purpose.",
+    ),
+    analogy: t(
+      "손님 백 명이 동시에 ‘오늘 메뉴’를 물어도 주방에는 딱 한 번만 물어보고 답을 나눠 주며(Singleflight), 결제나 회원 정보는 아예 별도 창구(4-Lane)로 안내하는 프런트 운영과 같습니다.",
+      "Like a lobby desk checking the kitchen once when 100 guests ask for today's menu simultaneously (Singleflight), while sending billing and account writes to dedicated counters (4-Lane).",
+    ),
+    inToonstudio: t(
+      "deploy/cloudflare-static/edge-api-lane-router.mjs 와 edge-cache-coalescer.mjs 가 요청을 공개 읽기(Singleflight+SWR)·무료 AI·실시간 DO/P2P·서울 onpod 코어 4개 레인으로 나누고, 인증·쿠키 헤더는 fail-closed 로 공유 캐시를 우회합니다(코드·테스트 검증 완료).",
+      "deploy/cloudflare-static/edge-api-lane-router.mjs and edge-cache-coalescer.mjs split traffic across public read (Singleflight + SWR), free AI, realtime DO/P2P and Seoul onpod core lanes, bypassing shared cache fail-closed on auth or cookie headers (code and tests verified).",
+    ),
+    chapters: ["infrastructure", "free-first-infra"],
+    atlasIds: ["zero-cost-4lane-edge-5tier-storage", "static-first-edge-gateway"],
+  },
 ];

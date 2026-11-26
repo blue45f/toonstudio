@@ -5,6 +5,7 @@ import { ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA } from "./engineering-atlas-web-pl
 import { ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME } from "./engineering-atlas-web-platform-runtime";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE } from "./engineering-atlas-web-platform-surface";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_WASM } from "./engineering-atlas-web-platform-wasm";
+import { ENGINEERING_ATLAS_WEB_PLATFORM_WASM64_IPC } from "./engineering-atlas-web-platform-wasm64-ipc";
 
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
@@ -15,6 +16,7 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 export const ENGINEERING_ATLAS_WEB_PLATFORM: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_WASM,
+  ...ENGINEERING_ATLAS_WEB_PLATFORM_WASM64_IPC,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY,

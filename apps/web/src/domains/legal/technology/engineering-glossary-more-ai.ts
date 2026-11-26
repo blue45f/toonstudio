@@ -270,4 +270,23 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
     chapters: ["on-device-inference", "browser-local-compute"],
     atlasIds: ["onnx-runtime-web-inference", "capability-detection-registry-27"],
   },
+  {
+    id: "five-tier-zero-cost-storage-nine-pool-ai",
+    category: "ai",
+    term: t("5계층 ₩0 무료 저장소 연합 & 9단 무료 AI 가중 분산", "5-tier zero-cost storage federation & 9-pool free AI cascade"),
+    definition: t(
+      "파일 무게와 보안 성격에 따라 저장소를 5개 무료 계층으로 나누고, AI 요청은 온디바이스 0-토큰 선행 뒤 무료 공급자 9곳을 순서대로 두드려 유료 전환을 막는 비용 설계입니다.",
+      "A zero-cost design federating storage across five free tiers by data weight while routing AI through an on-device zero-token layer and nine free-only provider pools without paid auto-upgrade.",
+    ),
+    analogy: t(
+      "무거운 원고는 내 책상(OPFS)과 개인 드라이브(BYO)에 두고 공용 파일만 무료 서랍 다섯 곳에 나눠 보관하며, AI 는 내 기기에서 먼저 풀고 모자랄 때만 무료 창구 9곳을 차례로 이용하는 살림법입니다.",
+      "Like keeping heavy drafts on your desk (OPFS) and personal drive (BYO) while splitting shared files across five free drawers, and checking your own device before visiting nine free AI counters in order.",
+    ),
+    inToonstudio: t(
+      "저장소는 로컬 OPFS·BYO 클라우드·R2(10GB 무료)·서울 onpod+D1·Cloudflare Static Assets 5계층으로 분담하고, AI 는 ondevice-zero-token-router.ts 와 studio-free-ai-provider-catalog.ts(9단 무료 풀·90% 차단선)로 ₩0 경계를 지킵니다(운영 키 활성은 배포 설정 범위).",
+      "Storage splits across local OPFS, BYO Cloud, R2 (10 GB free), Seoul onpod+D1 and Cloudflare Static Assets, while AI enforces zero-bill boundaries via ondevice-zero-token-router.ts and studio-free-ai-provider-catalog.ts (9 free pools, 90% cutoff; live keys are deployment config).",
+    ),
+    chapters: ["free-first-infra", "free-ai-routing"],
+    atlasIds: ["zero-cost-4lane-edge-5tier-storage", "free-first-ai-routing"],
+  },
 ];

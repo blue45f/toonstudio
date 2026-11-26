@@ -497,6 +497,34 @@ export const TOONSTUDIO_FREE_AI_ROUTES: readonly ToonStudioFreeAiRoute[] = [
       "apps/web/src/shared/ai/free-ai-policy.ts",
     ],
   },
+  {
+    id: "zero-bill-9pool-and-ondevice-router",
+    title: t("9단 ₩0 무료 AI 가중 분산과 온디바이스 0-토큰 라우터", "9-pool zero-bill free AI cascade & on-device zero-token router"),
+    body: t(
+      "2026-11-26 코드 기준, 외부 무료 API 한도를 아끼기 위해 브라우저 쪽 온디바이스 0-토큰 라우터(ondevice-zero-token-router.ts)와 로컬 코사인 색인이 단순 분류·검색 질의를 먼저 처리합니다. 원격 호출이 필요하면 서버 ₩0 라우터가 9개 무료 공급자 카탈로그(openai-free-share → gemini-free → github-models-free → cloudflare-workers-ai-free → mistral-free → sambanova-free → groq-free → openrouter-free → local-zero-cost-fallback) 순서대로 무료 허용 모델만 시도하고, 90% 안전 차단선·402/429 감지 시 유료 전환 없이 중단하거나 로컬로 내립니다. 운영 공급자 키 활성은 별도 배포 설정 단계입니다.",
+      "As verified in code on 2026-11-26, a browser on-device zero-token router (ondevice-zero-token-router.ts) and local cosine index handle eligible lookup and routing prompts before spending remote quotas. When remote inference is needed, the zero-bill server router steps through nine allowlisted free pools with a 90% safety cutoff and 402/429 guards, dropping to local fallback rather than converting to paid billing. Live provider keys remain deployment configuration.",
+    ),
+    evidence: [
+      "apps/api/src/modules/studio-ai/openai-assist/studio-free-ai-provider-catalog.ts",
+      "apps/api/src/modules/studio-ai/studio-free-ai-zero-bill-router.ts",
+      "apps/web/src/domains/creator/free-ai-edge-optimizer/ondevice-zero-token-router.ts",
+      "apps/web/src/shared/ai/free-ai-zero-bill-cascade.ts",
+    ],
+  },
+  {
+    id: "four-lane-edge-and-five-tier-storage",
+    title: t("실리콘 NPU 캐스케이드 · 4-Lane 엣지 분산 · 5계층 ₩0 저장소", "Silicon NPU cascade, 4-Lane edge routing & 5-tier ₩0 storage"),
+    body: t(
+      "AI 토큰 비용뿐 아니라 서버·저장소 비용까지 ₩0 구조로 묶기 위해 6대 로컬 ONNX 모델은 WebNN NPU → WebGPU → WASM Relaxed-SIMD 순으로 자동 폴백하고(studio-onnx-session-cascade.ts), 트래픽은 공개 읽기(Singleflight 엣지 캐시)·무료 AI·실시간 DO/P2P·서울 onpod 상태 코어 4개 레인으로 나눕니다. 저장소 역시 로컬 OPFS(64비트 타일 매퍼)·사용자 BYO 클라우드·R2 10GB 무료·onpod+D1·Cloudflare Static Assets 5계층으로 역할을 분담해 무거운 원고가 유료 서버 대역폭을 태우지 않게 막습니다.",
+      "To hold both AI and infrastructure near zero cost, six local ONNX models fail over automatically from WebNN NPU to WebGPU to WASM Relaxed-SIMD (studio-onnx-session-cascade.ts), while requests split across four edge/origin lanes (Singleflight public reads, free AI, realtime DO/P2P, Seoul onpod writes). Storage is federated across five tiers—local OPFS, user BYO Cloud, R2 10 GB free, onpod+D1 and Cloudflare Static Assets—so heavy manuscripts never burn paid server bandwidth.",
+    ),
+    evidence: [
+      "apps/web/src/domains/creator/studio-onnx-session-cascade.ts",
+      "apps/web/src/domains/creator/wasm64-webgpu-compute/opfs-streaming-tile-mmap.ts",
+      "docs/operations/infrastructure-map.md",
+      "docs/operations/free-ai-runtime.md",
+    ],
+  },
 ];
 
 export const FREE_AI_TOKEN_CAUTIONS: readonly LocalizedText[] = [
