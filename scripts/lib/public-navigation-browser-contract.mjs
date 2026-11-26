@@ -10,78 +10,166 @@ const TASK_ROUTES = Object.freeze({
   "/help": { title: "도움말", parent: "/home", active: null },
 });
 const DESTINATIONS = ["/home", "/studio", "/team", "/hub"];
-const PUBLIC_MOBILE_DESTINATIONS = ["/studio", "/discover", "/market", "/my", "/sitemap"];
-const MENU_GROUP_DESTINATIONS = ["discover", "create", "grow", "publish", "connect", "rest", "personal"]
-  .map((group) => `/sitemap/${group}`);
+const MOBILE_TABS = [
+  { id: "home", tag: "A", href: "/", label: "홈" },
+  { id: "make", tag: "A", href: "/create", label: "만들기" },
+  { id: "studio", tag: "A", href: "/studio", label: "내 작업" },
+  { id: "all-menu", tag: "BUTTON", href: null, label: "더보기" },
+];
+const MENU_GROUPS = [
+  { id: "discover", label: "작품 찾기", links: ["/discover"] },
+  { id: "create", label: "만들기", links: ["/production"] },
+  { id: "grow", label: "자료·성장", links: ["/learn", "/market"] },
+  { id: "publish", label: "연재·내보내기", links: ["/studio/publish"] },
+  { id: "connect", label: "함께 보기", links: ["/community", "/showcase"] },
+  { id: "rest", label: "쉬어가기", links: ["/play"] },
+  { id: "personal", label: "내 기록", links: ["/home"] },
+];
+const ROUTE_MENU_GROUPS = new Map([
+  ["/create", "create"], ["/studio", "create"], ["/discover", "discover"],
+  ["/research", "grow"], ["/research/assets", "grow"], ["/learn", "grow"],
+  ["/market", "grow"], ["/market/browse", "grow"], ["/showcase", "connect"], ["/community", "connect"],
+]);
+const LINK_TAB_BY_ROUTE = new Map([["/", "home"], ["/create", "make"], ["/studio", "studio"]]);
+const MENU_ONLY_ROUTES = new Set(["/my", "/settings", "/notifications"]);
 
 // 목록·작품 카드가 많은 화면(/discover 등)은 소프트웨어 렌더링 러너에서 한 번의 레이아웃에도 5초를 넘길 수 있다.
 // 여기서 보는 것은 배치와 초점이지 속도가 아니므로(속도는 CWV 게이트의 몫) 기다림 한도만 넉넉히 둔다.
 const LAYOUT_WAIT = Object.freeze({ timeout: 20_000 });
 
-/** 개수만 맞춘 대체 내비가 아니라 순서·출처·현재 목적지를 함께 검사한다. */
+/** 모바일 고정 링크와 더보기 버튼의 역할, 순서, 출처, 현재 표시를 함께 검사한다. */
 export function assertPublicMobileNavigationSnapshot(snapshot, route, origin) {
-  const path = (href) => {
-    const url = new URL(href, origin);
-    assert.equal(url.origin, new URL(origin).origin, "모바일 목적지는 같은 출처를 유지해야 한다");
-    return url.pathname;
-  };
-  assert.deepEqual(snapshot.links.map((item) => path(item.href)), PUBLIC_MOBILE_DESTINATIONS,
-    "모바일은 네 작업 목적지와 다섯 번째 전체 메뉴를 정본 순서로 제공한다");
-  const expectedCurrent = /^\/sitemap(?:\/|$)/u.test(route) ? "/sitemap"
-    : ["/research", "/research/assets", "/market", "/market/browse"].includes(route)
-      ? "/market" : ["/discover", "/showcase"].includes(route) ? "/discover" : null;
-  assert.deepEqual(snapshot.links.filter((item) => item.current === "page").map((item) => path(item.href)),
-    expectedCurrent ? [expectedCurrent] : [], "현재 작업 목적지만 선택하고 목적 밖 페이지에는 선택을 강제하지 않는다");
+  const controls = snapshot.controls.map(({ id, tag, href, label }) => {
+    assert(href === null || href.trim(), "모바일 링크에 비어 있는 주소를 허용하지 않는다");
+    const url = href === null ? null : new URL(href, origin);
+    if (url) {
+      assert.equal(url.origin, new URL(origin).origin, "모바일 링크는 같은 출처를 유지해야 한다");
+      assert.equal(url.search + url.hash, "", "모바일 링크는 고정 목적지를 가리켜야 한다");
+    }
+    return { id, tag, href: url?.pathname ?? null, label };
+  });
+  assert.deepEqual(controls, MOBILE_TABS, "모바일은 홈·만들기·내 작업 링크와 더보기 버튼을 정본 순서로 제공한다");
+  const activeLink = LINK_TAB_BY_ROUTE.get(route);
+  const menuCurrent = ROUTE_MENU_GROUPS.has(route) || MENU_ONLY_ROUTES.has(route) || /^\/sitemap(?:\/|$)/u.test(route);
+  const expected = activeLink ? [[activeLink, "page"]] : menuCurrent ? [["all-menu", "true"]] : [];
+  const actual = snapshot.controls.filter((tab) => tab.current !== null).map(({ id, current }) => [id, current]);
+  assert.deepEqual(actual, expected, "현재 링크나 더보기만 표시하며 별도 메뉴가 없는 페이지에 선택을 강제하지 않는다");
 }
 
-/** 좁은 화면의 다섯 목적지와 목적별 페이지·검색으로 연결되는 전체 메뉴를 검사한다. */
+async function assertMobileTouchTarget(control) {
+  await expect(control).toBeVisible(LAYOUT_WAIT);
+  await expect.poll(async () => {
+    const box = await control.boundingBox();
+    return box ? Math.min(box.height, box.width) : 0;
+  }, LAYOUT_WAIT).toBeGreaterThanOrEqual(44);
+}
+
+async function assertMobileMenuLink(link) {
+  await expect(link).toHaveCount(1, LAYOUT_WAIT);
+  await link.scrollIntoViewIfNeeded();
+  await assertMobileTouchTarget(link);
+  await link.click({ trial: true });
+  await link.focus();
+  await expect(link).toBeFocused(LAYOUT_WAIT);
+}
+
+async function expandMenuGroup(group, menuId, groupId) {
+  const summary = group.locator(":scope > summary");
+  const bodyId = menuId + "-group-" + groupId;
+  const body = group.locator(".site-menu-group__body");
+  await expect(summary).toHaveAttribute("aria-controls", bodyId);
+  await expect(body).toHaveAttribute("id", bodyId);
+  await summary.scrollIntoViewIfNeeded();
+  await assertMobileTouchTarget(summary);
+  await summary.focus();
+  await expect(summary).toBeFocused(LAYOUT_WAIT);
+  if (await group.getAttribute("open") !== null) {
+    await summary.press("Enter");
+    await expect(group).not.toHaveAttribute("open");
+  }
+  await expect(summary).toHaveAttribute("aria-expanded", "false");
+  await expect(body).toBeHidden(LAYOUT_WAIT);
+  await summary.press("Enter");
+  await expect(group).toHaveAttribute("open");
+  await expect(summary).toHaveAttribute("aria-expanded", "true");
+  await expect(body).toBeVisible(LAYOUT_WAIT);
+}
+
+/** 빠른 이동과 더보기를 열어 실제 목적지·검색·키보드 복귀를 검사한다. */
 export async function assertPublicMobileNavigation(page, route) {
   const currentUrl = page.url();
   const quick = page.getByRole("navigation", { name: "빠른 이동", exact: true });
   await expect(quick).toBeVisible(LAYOUT_WAIT);
-  const links = quick.locator("a");
-  await expect(links).toHaveCount(5, LAYOUT_WAIT);
-  const snapshot = await links.evaluateAll((items) => ({ links: items.map((item) => ({
-    href: item.getAttribute("href"), current: item.getAttribute("aria-current"),
+  const tabs = quick.locator("a, button");
+  await expect(tabs).toHaveCount(4, LAYOUT_WAIT);
+  const snapshot = await tabs.evaluateAll((items) => ({ controls: items.map((item) => ({
+    id: item.getAttribute("data-mobile-tab"), tag: item.tagName, href: item.getAttribute("href"),
+    label: item.getAttribute("aria-label"), current: item.getAttribute("aria-current"),
   })) }));
-  assertPublicMobileNavigationSnapshot(snapshot, route, page.url());
-  for (const link of await links.all()) {
-    await expect(link).toBeVisible(LAYOUT_WAIT);
-    await expect.poll(async () => (await link.boundingBox())?.height ?? 0, LAYOUT_WAIT).toBeGreaterThanOrEqual(44);
-  }
-  const trigger = page.locator('[data-site-chrome="header"] button[data-site-mobile-menu-trigger="true"][data-site-menu-entry="available"]');
-  await expect(trigger).toHaveCount(1, LAYOUT_WAIT);
-  await expect(trigger).toHaveAccessibleName(/전체 메뉴/u);
+  assertPublicMobileNavigationSnapshot(snapshot, route, currentUrl);
+  for (const tab of await tabs.all()) await assertMobileTouchTarget(tab);
+
+  // 메뉴가 열리면 빠른 이동은 hidden/inert이므로 버튼의 같은 DOM 노드를 계속 추적한다.
+  const trigger = page.locator('nav.site-bottom-tabs button[data-mobile-tab="all-menu"]');
+  await expect(quick.getByRole("button", { name: "더보기", exact: true })).toHaveCount(1, LAYOUT_WAIT);
   await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
-  await trigger.click();
+  await trigger.focus();
+  await expect(trigger).toBeFocused(LAYOUT_WAIT);
+  await trigger.press("Enter");
   const dialog = page.getByRole("dialog", { name: "전체 메뉴", exact: true });
   await expect(dialog).toHaveCount(1, LAYOUT_WAIT);
   await expect(dialog).toBeVisible(LAYOUT_WAIT);
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(quick).toBeHidden(LAYOUT_WAIT);
   const menuId = await dialog.getAttribute("id");
   assert(menuId, "전체 메뉴는 dialog ID를 제공한다");
   await expect(trigger).toHaveAttribute("aria-controls", menuId);
-  assert(await dialog.evaluate((element) => element.contains(document.activeElement)), "The full menu must receive focus");
-  // 작품 시작 항목은 시작 시트(/create)를 가리킨다. /studio/new 는 시트에서 빈 작품을 골랐을 때 닿는 2단계 양식이다.
-  for (const href of ["/create", "/studio", "/sitemap/all", ...MENU_GROUP_DESTINATIONS]) {
-    const destination = dialog.locator(`a[href="${href}"]`);
-    await expect(destination).toHaveCount(1, LAYOUT_WAIT);
-    await destination.scrollIntoViewIfNeeded();
-    await expect(destination).toBeVisible(LAYOUT_WAIT);
-    await destination.click({ trial: true });
-    await destination.focus(); await expect(destination).toBeFocused(LAYOUT_WAIT);
+  const close = dialog.getByRole("button", { name: "전체 메뉴 닫기", exact: true });
+  const last = dialog.locator('a[href="/my"]');
+  await expect(close).toBeFocused(LAYOUT_WAIT);
+  await page.keyboard.press("Shift+Tab");
+  await expect(last).toBeFocused(LAYOUT_WAIT);
+  await page.keyboard.press("Tab");
+  await expect(close).toBeFocused(LAYOUT_WAIT);
+
+  // 새 작품은 시작 시트로 들어가며 일곱 그룹의 정본은 실제로 펼쳐야 사용할 수 있다.
+  const menuLink = (href) => dialog.locator('a[href="' + href + '"]');
+  for (const href of ["/create", "/studio", "/sitemap/all", "/my"]) await assertMobileMenuLink(menuLink(href));
+  const groups = dialog.locator("details[data-menu-group]");
+  await expect(groups).toHaveCount(MENU_GROUPS.length, LAYOUT_WAIT);
+  assert.deepEqual(await groups.evaluateAll((items) => items.map((item) => item.getAttribute("data-menu-group"))),
+    MENU_GROUPS.map(({ id }) => id));
+  const expandedGroups = dialog.locator("details[data-menu-group][open]");
+  const initialGroup = ROUTE_MENU_GROUPS.get(route);
+  assert.deepEqual(await expandedGroups.evaluateAll((items) => items.map((item) => item.getAttribute("data-menu-group"))),
+    initialGroup ? [initialGroup] : [], "첫 메뉴는 현재 경로 그룹만 열고 홈에서는 모두 접는다");
+  const menuGroup = (id) => dialog.locator('details[data-menu-group="' + id + '"]');
+  for (const { id, label, links } of MENU_GROUPS) {
+    const group = menuGroup(id);
+    await expect(group.locator("summary strong")).toHaveText(label);
+    await expect(group.locator("summary small")).toHaveText(/\S/u);
+    await expandMenuGroup(group, menuId, id);
+    await expect(expandedGroups).toHaveCount(1, LAYOUT_WAIT);
+    for (const href of [...links, "/sitemap/" + id]) {
+      const link = menuLink(href);
+      await expect(group.locator('a[href="' + href + '"]')).toHaveCount(1, LAYOUT_WAIT);
+      await assertMobileMenuLink(link);
+    }
   }
+
   const search = dialog.getByRole("searchbox", { name: "어떤 작업을 찾으세요?", exact: true });
   await search.fill("/learn");
-  const learningResult = dialog.locator('a[href="/learn"]');
-  await expect(learningResult).toHaveCount(1, LAYOUT_WAIT);
-  await expect(learningResult).toBeVisible(LAYOUT_WAIT);
+  await assertMobileMenuLink(menuLink("/learn"));
+  await search.fill("/sitemap");
+  await assertMobileMenuLink(menuLink("/sitemap"));
   await dialog.getByRole("button", { name: "메뉴 검색 지우기", exact: true }).click();
   await expect(search).toHaveValue("");
   await expect(search).toBeFocused(LAYOUT_WAIT);
-  // 목적 카드와 실제 기능이 별도 화면에서도 이어지는지 확인한 뒤 원래 기록으로 돌아온다.
-  await dialog.locator('a[href="/sitemap/grow"]').click();
+  await expect(groups).toHaveCount(7, LAYOUT_WAIT);
+  // 실제 그룹 페이지와 안쪽 기능으로 이동한 뒤 원래 쿼리와 해시까지 돌아온다.
+  await expandMenuGroup(menuGroup("grow"), menuId, "grow");
+  await menuLink("/sitemap/grow").click();
   await expect(page).toHaveURL(/\/sitemap\/grow$/u);
   await expect(dialog).toHaveCount(0, LAYOUT_WAIT);
   const growth = page.getByRole("navigation", { name: "자료·성장", exact: true });
@@ -94,7 +182,7 @@ export async function assertPublicMobileNavigation(page, route) {
   await trigger.click();
   await expect(dialog).toBeVisible(LAYOUT_WAIT);
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  await expect.poll(() => dialog.evaluate((element) => element.contains(document.activeElement)), LAYOUT_WAIT).toBe(true);
+  await expect(close).toBeFocused(LAYOUT_WAIT);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0, LAYOUT_WAIT);
   await expect(trigger).toHaveAttribute("aria-expanded", "false");

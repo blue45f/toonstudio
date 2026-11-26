@@ -13,24 +13,36 @@ const sample = () => ({
 });
 
 const mobileSample = (current: string | null = null) => ({
-  links: ["/studio", "/discover", "/market", "/my", "/sitemap"].map((href) => ({
-    href, current: href === current ? "page" : null,
+  controls: [
+    { id: "home", tag: "A", href: "/", label: "홈" },
+    { id: "make", tag: "A", href: "/create", label: "만들기" },
+    { id: "studio", tag: "A", href: "/studio", label: "내 작업" },
+    { id: "all-menu", tag: "BUTTON", href: null, label: "더보기" },
+  ].map((item) => ({
+    ...item, current: item.id === current ? item.tag === "BUTTON" ? "true" : "page" : null,
   })),
 });
 
-describe("모바일의 다섯 정본 목적지 계약", () => {
-  it.each([["/community", null], ["/market", "/market"], ["/research/assets", "/market"], ["/showcase", "/discover"], ["/sitemap/create", "/sitemap"]])(
+describe("모바일 고정 링크 셋과 더보기 버튼 계약", () => {
+  it.each([
+    ["/", "home"], ["/create", "make"], ["/studio", "studio"], ["/about", null], ["/help", null],
+    ["/community", "all-menu"], ["/market", "all-menu"], ["/research/assets", "all-menu"],
+    ["/showcase", "all-menu"], ["/sitemap/create", "all-menu"],
+  ])(
     "%s의 현재 목적지와 순서를 보존한다", (route, current) => {
       expect(() => assertPublicMobileNavigationSnapshot(mobileSample(current), route, origin)).not.toThrow();
     },
   );
-  it.each(["old-four", "duplicate", "wrong-order", "external", "wrong-current"])("%s 회귀를 통과시키지 않는다", (kind) => {
-    const snapshot = mobileSample();
-    if (kind === "old-four") snapshot.links.pop();
-    if (kind === "duplicate") snapshot.links[4] = snapshot.links[0]!;
-    if (kind === "wrong-order") snapshot.links.reverse();
-    if (kind === "external") snapshot.links[0]!.href = "https://other.invalid/studio";
-    if (kind === "wrong-current") snapshot.links[0]!.current = "page";
+  it.each(["missing", "duplicate", "wrong-order", "wrong-role", "wrong-label", "external", "not-canonical", "wrong-current"])("%s 회귀를 통과시키지 않는다", (kind) => {
+    const snapshot = mobileSample("all-menu");
+    if (kind === "missing") snapshot.controls.pop();
+    if (kind === "duplicate") snapshot.controls[3] = snapshot.controls[0]!;
+    if (kind === "wrong-order") snapshot.controls.reverse();
+    if (kind === "wrong-role") snapshot.controls[3]!.tag = "A";
+    if (kind === "wrong-label") snapshot.controls[2]!.label = "스튜디오";
+    if (kind === "external") snapshot.controls[0]!.href = "https://other.invalid/";
+    if (kind === "not-canonical") snapshot.controls[1]!.href = "/create?intent=my-story";
+    if (kind === "wrong-current") snapshot.controls[3]!.current = "page";
     expect(() => assertPublicMobileNavigationSnapshot(snapshot, "/community", origin)).toThrow();
   });
 });
