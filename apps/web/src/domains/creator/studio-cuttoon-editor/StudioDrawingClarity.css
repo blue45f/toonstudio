@@ -7,11 +7,11 @@
 :root[data-design-theme=contrast] .studio-drawing-clarity-header::after{border-block-end-color:var(--color-line-strong)}
 /* 44px 단일 상단바 안에서 원고명과 저장 상태 요약을 고정 예약해 캔버스 원점이 밀리지 않게 한다. */
 .studio-drawing-clarity-title{position:relative;flex:1;min-width:96px;height:44px;min-height:44px;max-height:44px;overflow:hidden}
-.studio-drawing-clarity-title h1{position:absolute;inset:5px 0 auto;z-index:1;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:16px;word-break:keep-all}
+.studio-drawing-clarity-title h1{position:absolute;inset:2px 0 auto;z-index:1;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:17px;word-break:keep-all}
 .studio-drawing-clarity-title [data-studio-document-chrome-slot]{display:block;position:static;min-width:0;width:100%;max-width:none;margin:0}
 .studio-drawing-clarity-title [data-studio-save-status-chrome-mount],.studio-drawing-clarity-title [data-studio-save-sync-status-center]{display:block;min-width:0;width:100%}
-button[data-studio-drawing-save-summary=true]{display:flex;align-items:center;min-height:44px;max-height:44px;min-width:44px;width:100%;gap:5px;padding:22px 0 6px;overflow:hidden;border:0;border-radius:8px;background:transparent;box-shadow:none;text-align:left;font-size:12px;line-height:14px;color:var(--color-fg-2)}
-button[data-studio-drawing-save-summary=true]>svg{flex-shrink:0}
+button[data-studio-drawing-save-summary=true]{display:flex;align-items:flex-end;min-height:44px;max-height:44px;min-width:44px;width:100%;gap:5px;padding:19px 0 4px;overflow:hidden;border:0;border-radius:8px;background:transparent;box-shadow:none;text-align:left;font-size:12px;line-height:1.25;color:var(--color-fg-2)}
+button[data-studio-drawing-save-summary=true]>svg{margin-bottom:1px;flex-shrink:0}
 button[data-studio-drawing-save-summary=true]>span:not([data-studio-connection-notice-summary]){flex:1 1 auto;min-width:0;max-width:100%;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-studio-drawing-save-summary=true] time{white-space:nowrap;font-variant-numeric:tabular-nums}
 [data-studio-connection-notice-summary]{white-space:normal}
@@ -69,8 +69,8 @@ button[data-studio-drawing-save-summary=true]>span:not([data-studio-connection-n
 }
 /* 중요한 안내는 원고명 아래의 24px 자리에 우선 표시한다. 큰 글꼴에서도 행간을 함께 키우고,
    전문과 복구 동작은 같은 버튼의 저장 상세에서 읽는다. 안내가 비면 저장 영수증을 다시 표시한다. */
-.studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)){padding-block:22px 6px;}
-.studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty))>span{display:block;line-height:14px;width:100%;max-height:16px;overflow:hidden;text-overflow:ellipsis;}
+.studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)){padding-block:19px 1px;}
+.studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty))>span{display:block;line-height:1;width:100%;max-height:24px;}
 .studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) [data-studio-clarity-receipt]{display:none;}
 .studio-drawing-clarity-title [data-studio-connection-notice-summary]>*{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:focus-visible{outline-offset:-2px}
