@@ -16,6 +16,24 @@ describe("redactCreatorSensitiveText (한국형 복합 PII 마스킹 및 오탐 
     expect(res.sanitizedText).toContain("카카오뱅크 [계좌번호 비공개]");
   });
 
+  it("계좌와 SNS 라벨에 줄바꿈과 유니코드 공백이 있어도 원래 표기를 보존한다", () => {
+    const cases = [
+      ["정산  계좌\n 번호 :\t", "123456789123", "[계좌번호 비공개]"],
+      ["KB \n 국민 은행：\u3000", "1234-5678901", "[계좌번호 비공개]"],
+      ["\n계좌:\n", "778899001122", "[계좌번호 비공개]"],
+      ["카카오\u3000톡\n ID：\t", "@line_artist", "[계정 비공개]"],
+      ["카카오\n ", "webtoon_id", "[계정 비공개]"],
+      ["Kakao \n Talk \t핸들 : ", "@test.sketch", "[계정 비공개]"],
+    ];
+
+    for (const [label, value, token] of cases) {
+      expect(redactCreatorSensitiveText(`${label}${value}`)).toEqual({
+        sanitizedText: `${label}${token}`,
+        redactedCount: 1,
+      });
+    }
+  });
+
   it("공백·가운뎃점 주민등록번호와 괄호·+82·0507·엔대시·무구분자 유선 전화번호를 모두 마스킹한다", () => {
     const raw =
       "주민번호 920514 - 2345678 / 880101 1234567 / 010315·4123456, 연락처 (010) 4321-8765 / 010)1234-5678 / +82 2-555-7890 / 0507-1342-8899 / 010–9988–7766 / 0212345678 / 0311234567 / 07012345678";
