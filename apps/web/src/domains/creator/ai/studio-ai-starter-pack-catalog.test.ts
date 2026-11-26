@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -13,7 +14,8 @@ import {
   type StarterPackSemanticIndex,
 } from "./studio-ai-starter-pack-catalog";
 
-const PUBLIC_ROOT = path.resolve(process.cwd(), "apps/web/public");
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC_ROOT = path.resolve(TEST_DIR, "../../../../public");
 
 function createDiskBackedFetch() {
   const requestedUrls: string[] = [];
