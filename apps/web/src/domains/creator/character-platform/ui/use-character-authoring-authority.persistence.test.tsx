@@ -57,6 +57,65 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("캐릭터 저작 문서 저장 수명주기", () => {
+  it("한 캐릭터의 두 컷이 새 외형을 읽되 각자의 포즈·표정·카메라를 보존한다", async () => {
+    const { repository } = fixture();
+    const base = document();
+    const part = (entryId: string) => ({ entryId, entryVersion: "1", providerId: "studio", catalogRevision: "v1" });
+    const character = {
+      ...base,
+      recipe: { ...base.recipe, slots: { hair: part("hair:bob") }, accessories: [part("accessory:glasses")] },
+    };
+    await repository.save(character);
+    const other = { ...base, documentId: "character:another" };
+    await repository.save(other);
+    const makeCut = (x: number): CharacterDocumentV3 => ({
+      ...base,
+      pose: { ...base.pose, root: { ...base.pose.root, position: [x, 0, 0] } },
+      expression: { ...base.expression, weights: { happy: x / 10 } },
+      recipe: { ...base.recipe, slots: { pose: part("pose:seated") }, handPose: { left: part("hand-pose:wave") } },
+      camera: { activeShotId: "camera:cut", shots: { "camera:cut": {
+        id: "camera:cut", name: "컷", position: [0, 0, x], target: [0, 0, 0], projection: "perspective",
+      } } },
+    });
+    const open = (cut: CharacterDocumentV3) => renderHook(() => useCharacterAuthoringAuthority(cut, "fp:cut", {
+      repository, autosave: false, synchronizeProjection: false, placementScene: { characterDocumentId: cut.documentId },
+    }));
+    const cutA = makeCut(2);
+    const first = open(cutA);
+    await flush();
+    expect(first.result.current.snapshot.document.recipe.slots).toEqual({ hair: part("hair:bob"), pose: part("pose:seated") });
+    const presented = first.result.current.snapshot.document;
+    expect(presented.pose).toEqual(cutA.pose);
+    expect(presented.expression).toEqual(cutA.expression);
+    expect(presented.camera).toEqual(cutA.camera);
+    expect(presented.recipe.handPose).toEqual(cutA.recipe.handPose);
+    const edited = {
+      ...presented,
+      recipe: { ...presented.recipe, slots: { ...presented.recipe.slots, hair: part("hair:long") }, accessories: [] },
+    };
+    await act(async () => {
+      expect(await first.result.current.importJson(serializeCharacterDocumentV3(edited))).toBe(true);
+    });
+    first.unmount();
+    const saved = await repository.load(base.documentId);
+    expect(saved?.pose).toEqual(base.pose);
+    expect(saved?.expression).toEqual(base.expression);
+    expect(saved?.camera).toEqual(base.camera);
+    expect(saved?.recipe.handPose).toEqual(base.recipe.handPose);
+    expect(saved?.recipe.slots.pose).toBeUndefined();
+    expect((await repository.load(other.documentId))?.recipe).toEqual(other.recipe);
+
+    const cutB = makeCut(5);
+    const second = open(cutB);
+    await flush();
+    const reopened = second.result.current.snapshot.document;
+    expect(reopened.recipe.slots.hair).toEqual(part("hair:long"));
+    expect(reopened.recipe.accessories).toEqual([]);
+    expect(reopened.pose).toEqual(cutB.pose);
+    expect(reopened.expression).toEqual(cutB.expression);
+    expect(reopened.camera).toEqual(cutB.camera);
+  });
+
   it("취소된 자동저장 타이머를 저장 완료로 간주하지 않는다", async () => {
     const f = fixture();
     const source = document();

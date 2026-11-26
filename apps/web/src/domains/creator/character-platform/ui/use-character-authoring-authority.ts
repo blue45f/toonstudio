@@ -21,6 +21,9 @@ import {
   serializeCharacterDocumentV3,
   type CharacterDocumentV3,
 } from "../document/character-document-v3";
+import { createCharacterPlacementSession } from "../document/character-placement-session";
+
+import type { StudioVrmSceneDocument } from "../../vrm/studio-vrm-scene-document";
 
 export type CharacterAuthoringPersistenceStatus =
   | "loading"
@@ -32,6 +35,7 @@ export type CharacterAuthoringPersistenceStatus =
 export interface UseCharacterAuthoringAuthorityOptions {
   readonly repository?: CharacterDocumentV3Repository;
   readonly autosave?: boolean;
+  readonly placementScene?: Pick<StudioVrmSceneDocument, "characterDocumentId">;
   readonly enabled?: boolean;
   readonly synchronizeProjection?: boolean;
   readonly initializeDocument?: (projection: CharacterDocumentV3) => Promise<CharacterDocumentV3>;
@@ -94,16 +98,22 @@ export function useCharacterAuthoringAuthority(
 ): CharacterAuthoringAuthorityHookResult {
   const repository = options.repository ?? getCharacterDocumentV3Repository();
   const autosave = options.autosave !== false;
+  const linkedCut = options.placementScene?.characterDocumentId === projection.documentId;
   const enabled = options.enabled !== false;
   const initializeRef = useRef(options.initializeDocument);
   initializeRef.current = options.initializeDocument;
   const holder = useRef<{
     readonly documentId: string;
     readonly authority: CharacterAuthoringAuthority;
+    readonly modelId: string;
+    readonly linkedCut: boolean;
   } | null>(null);
-  if (!holder.current || holder.current.documentId !== projection.documentId) {
+  if (!holder.current || holder.current.documentId !== projection.documentId
+    || holder.current.modelId !== projection.model.assetId || holder.current.linkedCut !== linkedCut) {
     holder.current = {
       documentId: projection.documentId,
+      modelId: projection.model.assetId,
+      linkedCut,
       authority: new CharacterAuthoringAuthority(projection),
     };
   }
@@ -115,6 +125,7 @@ export function useCharacterAuthoringAuthority(
   const [hydrationOwner, setHydrationOwner] = useState<{
     readonly authority: CharacterAuthoringAuthority;
     readonly repository: CharacterDocumentV3Repository;
+    readonly placement: ReturnType<typeof createCharacterPlacementSession> | null;
   } | null>(null);
   const hydrationRef = useRef<typeof hydrationOwner>(null);
   const hydrated = enabled && hydrationOwner?.authority === authority && hydrationOwner.repository === repository;
@@ -150,10 +161,14 @@ export function useCharacterAuthoringAuthority(
     if (!enabled) return;
     void repository.load(projection.documentId).then(async (stored) => {
       if (!active || generation !== generationRef.current) return;
-      const initial = stored ?? (initializeRef.current
+      const seed = stored ?? (initializeRef.current
         ? await initializeRef.current(projectionRef.current)
         : projectionRef.current);
       if (!active || generation !== generationRef.current) return;
+      const placement = linkedCut
+        ? createCharacterPlacementSession(seed, projectionRef.current, repository, stored !== null)
+        : null;
+      const initial = placement?.document ?? seed;
       const fingerprint = fingerprintRef.current;
       authority.replaceDocument(!stored && lastCompatibilityFingerprint(initial) !== fingerprint
         ? { ...initial, sourceReceipts: [
@@ -164,7 +179,7 @@ export function useCharacterAuthoringAuthority(
       synchronizedFingerprintRef.current = fingerprint;
       synchronizedProjectionRef.current = projectionRef.current;
       persistedDocumentRef.current = stored ? authority.getSnapshot().document : null;
-      const owner = { authority, repository };
+      const owner = { authority, repository, placement };
       hydrationRef.current = owner;
       setHydrationOwner(owner);
       // 저장 요청을 예약한 것과 실제로 저장된 것을 구분한다.
@@ -185,7 +200,7 @@ export function useCharacterAuthoringAuthority(
       // 소유권을 해제하면 이전 저장 결과가 현재 화면에 반영되지 않는다.
       hydrationRef.current = null;
     };
-  }, [authority, enabled, projection.documentId, repository, restoreAttempt]);
+  }, [authority, enabled, linkedCut, projection.documentId, repository, restoreAttempt]);
 
   useEffect(() => {
     if (options.synchronizeProjection === false || !hydrated || snapshot.previewCommandId !== null || runtimeSyncOwners.current.size > 0) return;
@@ -209,7 +224,8 @@ export function useCharacterAuthoringAuthority(
     const generation = ++saveGenerationRef.current;
     setPersistenceStatus("saving");
     try {
-      await repository.save(document);
+      if (owner.placement) await owner.placement.save(document);
+      else await repository.save(document);
       if (generation !== saveGenerationRef.current || hydrationRef.current !== owner) return false;
       persistedDocumentRef.current = document;
       const currentSaved = authority.getSnapshot().document === document;
