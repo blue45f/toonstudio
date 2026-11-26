@@ -75,6 +75,8 @@ interface StructuredCompletion<T> {
   readonly userPrompt: string;
   readonly piiRedactedCount: number;
   readonly maxOutputTokens: number;
+  readonly assistMode?: StudioOpenAiAssistMode;
+  readonly rawInputLength?: number;
   readonly parse: (content: string) => T;
 }
 
@@ -258,6 +260,8 @@ export class StudioOpenAiCreativeAssistService {
       systemInstruction: buildModeSystemInstruction(input.mode),
       schemaSpec: MODE_JSON_SCHEMAS[input.mode],
       maxOutputTokens: MAX_OUTPUT_TOKENS,
+      assistMode: input.mode,
+      rawInputLength: input.inputText.length,
       parse: (raw) => this.parseModeOutput(input.mode, raw),
     }, options);
   }
@@ -323,11 +327,13 @@ export class StudioOpenAiCreativeAssistService {
       let response: Response;
       let responseText: string;
       const reasoningModel = isOpenAiReasoningModel(config.model);
-      const isLongInput = input.inputText.length >= LONG_INPUT_OUTPUT_HEADROOM_CHARS;
+      const rawInputLength = completion.rawInputLength ?? completion.userPrompt.length;
+      const isLongInput = rawInputLength >= LONG_INPUT_OUTPUT_HEADROOM_CHARS;
       const isComplexReasoningMode =
         reasoningModel &&
-        (COMPLEX_REASONING_ASSIST_MODES.has(input.mode) ||
-          (isLongInput && MULTI_RECORD_NON_REASONING_MODES.has(input.mode)));
+        completion.assistMode !== undefined &&
+        (COMPLEX_REASONING_ASSIST_MODES.has(completion.assistMode) ||
+          (isLongInput && MULTI_RECORD_NON_REASONING_MODES.has(completion.assistMode)));
       const needsLongNonReasoningOutput = !reasoningModel && isLongInput;
       const baseMaxTokens = Math.max(MAX_OUTPUT_TOKENS, completion.maxOutputTokens);
       const maxCompletionTokens = reasoningModel
