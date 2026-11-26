@@ -6,6 +6,8 @@ export interface StudioVrmHeadSkinVertices {
   readonly count: number;
   /** 전체 정점이 순서대로 쓰이면 생략한다. */
   readonly indices?: readonly number[];
+  /** 비헤어 정점인지 원래 정점 번호로 바로 조회할 때 쓴다. */
+  readonly membership?: Uint8Array;
 }
 
 /** 그리기 범위에 포함된 비헤어 프리미티브의 정점만 한 번씩 돌려준다. */
@@ -47,5 +49,5 @@ export function getStudioVrmHeadSkinVertices(mesh: Mesh): StudioVrmHeadSkinVerti
     collectRange(drawStart, drawEnd);
   }
 
-  return { count: indices.length, indices };
+  return { count: indices.length, indices, membership: seen };
 }
