@@ -80,14 +80,17 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
     const currentProps = latestPropsRef.current;
     const token = new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY);
     if (!token || startedTokenRef.current === token) return;
-    const pending = peekStudioImportHandoff(token);
-    if (!pending) {
+    const reportExpiredHandoff = () => {
       startedTokenRef.current = token;
       removeHandoffQuery(token);
       setStatus({
         state: "failed",
         message: editorShellStatusText("studio.editorShellStatus.importHandoff.handoffExpired", "가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다. 파일을 다시 선택해 주세요."),
       });
+    };
+    const pending = peekStudioImportHandoff(token);
+    if (!pending) {
+      reportExpiredHandoff();
       return;
     }
     const waitForWorkspaceOrOperation = (fileName: string, workspace: boolean) => {
@@ -104,15 +107,22 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
 
     const timerId = window.setTimeout(() => {
       const liveProps = latestPropsRef.current;
+      if (startedTokenRef.current === token) return;
       if (new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY) !== token) return;
       const stillPending = peekStudioImportHandoff(token);
-      if (!stillPending || startedTokenRef.current === token) return;
+      if (!stillPending) {
+        reportExpiredHandoff();
+        return;
+      }
       if (!liveProps.workspaceReady || targetBusy(stillPending.target, liveProps)) {
         waitForWorkspaceOrOperation(stillPending.file.name, !liveProps.workspaceReady);
         return;
       }
       const handoff = consumeStudioImportHandoff(token);
-      if (!handoff) return;
+      if (!handoff) {
+        reportExpiredHandoff();
+        return;
+      }
       startedTokenRef.current = token;
       setStatus({ state: "idle" });
       const isCurrentToken = () => mountedRef.current && startedTokenRef.current === token

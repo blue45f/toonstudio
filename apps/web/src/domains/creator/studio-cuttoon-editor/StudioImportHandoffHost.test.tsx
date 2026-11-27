@@ -169,6 +169,33 @@ describe("StudioImportHandoffHost", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("가져오기를 예약한 직후 전달이 만료되면 같은 작업 주소에서 파일 재선택을 안내한다", async () => {
+    vi.useFakeTimers();
+    try {
+      const file = new File(["{}"], "manuscript.json", { type: "application/json" });
+      const handoff = registerStudioImportHandoff(file, "json");
+      const path = `/studio/canvas?room=fixture-room&importHandoff=${handoff.token}&language=ko#page-2`;
+      window.history.replaceState({ keep: true }, "", path);
+      vi.setSystemTime(handoff.expiresAt - 1);
+      const input = props({ handoffToken: handoff.token });
+      const view = render(<StudioImportHandoffHost {...input} />);
+
+      expect(peekStudioImportHandoff(handoff.token)?.file).toBe(file);
+      expect(location.pathname + location.search + location.hash).toBe(path);
+      expect(view.queryByRole("alert")).toBeNull();
+      vi.setSystemTime(handoff.expiresAt + 1);
+      await act(async () => { await vi.runOnlyPendingTimersAsync(); });
+
+      expect(input.onProjectJson).not.toHaveBeenCalled();
+      expect(location.pathname + location.search + location.hash).toBe("/studio/canvas?room=fixture-room&language=ko#page-2");
+      expect(history.state).toEqual({ keep: true });
+      expect(view.getByRole("alert").textContent).toContain("가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다");
+      expect(view.getByRole("link", { name: "파일 다시 선택" }).getAttribute("href")).toBe("/studio/import");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("처리 중인 전달은 다시 연 편집기에서 파일 재선택 안내로 이어지고 다시 적용되지 않는다", async () => {
     const file = new File(["{}"], "manuscript.json", { type: "application/json" });
     const handoff = registerStudioImportHandoff(file, "json");
