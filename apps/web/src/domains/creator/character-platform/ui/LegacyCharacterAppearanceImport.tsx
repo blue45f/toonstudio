@@ -1,8 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { LEGACY_LOOK_LIBRARY_KEY, MAX_LEGACY_RECIPE_BYTES, legacyAppearancePresets, readLegacyAppearance, readLegacyLookLibrary } from "../presets/legacy-character-appearance";
 import { readLegacyCharacterDraft } from "../presets/legacy-character-draft";
+import { LegacyCharacterPaintRecovery } from "./LegacyCharacterPaintRecovery";
+
+import type { LegacyOriginal } from "../presets/legacy-character-originals";
 
 import type { CharacterSlotCatalog } from "../../character-shaper/character-shaper-contract";
 import type { LegacyAppearance } from "../presets/legacy-character-appearance";
@@ -14,11 +18,24 @@ interface Props {
   readonly buttonClass: string;
 }
 
-export function LegacyCharacterAppearanceImport({ catalog, importPresets, download, buttonClass }: Props) {
+export function LegacyCharacterAppearanceImport(props: Props) {
+  const session = useSession();
+  const owner = session.ready ? JSON.stringify(session.data ? ["user", session.data.user.id] : ["guest"]) : null;
+  return <OwnedImport key={owner ?? "pending"} {...props} owner={owner} />;
+}
+
+function OwnedImport({ catalog, importPresets, download, buttonClass, owner }: Props & { owner: string | null }) {
   const bt = useBilingual("LegacyCharacterAppearanceImport");
   const input = useRef<HTMLInputElement>(null);
+  const serial = useRef(0);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const [originals, setOriginals] = useState<readonly LegacyOriginal[]>([]);
   const [saved, setSaved] = useState<ReturnType<typeof readLegacyLookLibrary>>([]);
-  const [preview, setPreview] = useState<{ appearance: LegacyAppearance; raw: string; name: string } | null>(null);
+  const [preview, setPreview] = useState<{ appearance: LegacyAppearance; raw: string; name: string; paint: unknown; serial: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -33,16 +50,33 @@ export function LegacyCharacterAppearanceImport({ catalog, importPresets, downlo
   };
 
   const open = (raw: string, name: string) => {
+    if (!mounted.current) return;
     if (raw.length > MAX_LEGACY_RECIPE_BYTES) throw new Error("source-too-large");
-    const appearance = readLegacyAppearance(JSON.parse(raw.replace(/^\uFEFF/u, "")), name, catalog);
-    setPreview({ appearance, raw, name });
+    const data: unknown = JSON.parse(raw.replace(/^\uFEFF/u, ""));
+    const appearance = readLegacyAppearance(data, name, catalog);
+    serial.current += 1;
+    const paint = data && typeof data === "object" && "paint" in data ? data.paint : undefined;
+    setPreview({ appearance, raw, name, paint, serial: serial.current });
+  };
+
+  const shelf = async () => {
+    if (owner === null) throw new Error("account-pending");
+    const { openLegacyOriginalShelf } = await import("../presets/legacy-character-originals");
+    return openLegacyOriginalShelf(owner);
+  };
+  const keep = async (raw: string, name: string) => {
+    try { await (await shelf()).save(raw, name); return true; }
+    catch {
+      setError(bt("이 기기에 원본을 보관하지 못했습니다. 원본 JSON 저장으로 파일을 내려받을 수 있습니다.", "Could not keep the source on this device. Use Save original JSON to download it."));
+      return false;
+    }
   };
 
   return <details className="rounded-2xl border border-line bg-card/70 p-3">
     <summary className="cursor-pointer text-sm font-bold text-fg">{bt("이전 캐릭터 작업 가져오기", "Import older character work")}</summary>
     <p className="my-2 text-xs text-fg-2">{bt(
-      "이전에 저장한 룩이나 레시피에서 호환 파츠와 색을 내 프리셋으로 가져옵니다. 원본 모델, 페인트, 물리 설정은 원본 JSON으로 보관할 수 있습니다.",
-      "Import compatible parts and colors as personal presets. Keep the original JSON for its model settings, paint, and physics.",
+      "호환 파츠와 색을 프리셋으로 가져오고 전체 레시피를 이 기기에 보관합니다. 직접 그린 페인트는 레이어별 PNG로 열 수 있습니다.",
+      "Import compatible parts and colors as presets and keep the whole recipe on this device. Open its original paint as individual PNG layers.",
     )}</p>
     <div className="flex flex-wrap gap-2">
       <button type="button" className={buttonClass} disabled={busy} onClick={() => input.current?.click()}>{bt("JSON 파일 열기", "Open JSON file")}</button>
@@ -53,7 +87,8 @@ export function LegacyCharacterAppearanceImport({ catalog, importPresets, downlo
         void run(async () => {
           setPreview(null);
           if (file.size > MAX_LEGACY_RECIPE_BYTES) throw new Error("source-too-large");
-          open(await file.text(), file.name);
+          const { decodeLegacyOriginal } = await import("../presets/legacy-character-originals");
+          open(decodeLegacyOriginal(new Uint8Array(await file.arrayBuffer())), file.name);
         });
       }} />
       <button type="button" disabled={busy} className={buttonClass} onClick={() => void run(() => {
@@ -69,7 +104,22 @@ export function LegacyCharacterAppearanceImport({ catalog, importPresets, downlo
         if (raw === null) setNotice(bt("이 주소에 저장된 이전 작업이 없습니다.", "No older draft was saved on this origin."));
         else open(raw, "device-draft.character.json");
       })}>{bt("이 기기의 작업 열기", "Open saved draft")}</button>
+      <button type="button" disabled={busy || owner === null} className={buttonClass} onClick={() => void run(async () => {
+        const entries = await (await shelf()).list();
+        setOriginals(entries);
+        if (!entries.length) setNotice(bt("이 기기에 보관한 원본이 없습니다.", "No originals have been kept on this device."));
+      })}>{bt("보관한 원본 찾기", "Find retained originals")}</button>
     </div>
+    {originals.length > 0 && <label className="mt-2 block text-xs text-fg-2">
+      {bt("이 기기에 보관한 원본", "Originals kept on this device")}
+      <select className="block min-h-11 w-full" value="" disabled={busy} onChange={(event) => {
+        const entry = originals.find((item) => item.path === event.currentTarget.value);
+        if (entry) void run(async () => open(await (await shelf()).read(entry.path), entry.name));
+      }}>
+        <option value="">{bt("원본 선택", "Choose an original")}</option>
+        {originals.map((item) => <option key={item.path} value={item.path}>{item.name} · {item.path.slice("originals/".length, "originals/".length + 8)}</option>)}
+      </select>
+    </label>}
     {saved.length > 0 && <label className="mt-2 block text-xs text-fg-2">
       {bt("저장된 룩", "Saved looks")}
       <select className="block min-h-11 w-full" disabled={busy} value="" onChange={(event) => {
@@ -86,16 +136,23 @@ export function LegacyCharacterAppearanceImport({ catalog, importPresets, downlo
       {preview.appearance.parts.length > 0 && <p className="text-xs text-fg-2">{preview.appearance.parts.map((part) => part.label).join(" · ")}</p>}
       <button type="button" className={buttonClass} disabled={busy || !preview.appearance.parts.length} onClick={() => void run(async () => {
         const presets = await legacyAppearancePresets(preview.appearance);
+        if (!mounted.current) return;
         if (await importPresets(JSON.stringify(presets)) !== presets.length) {
           setError(bt("프리셋을 저장하지 못했습니다. 저장 공간을 확인하고 다시 시도하세요.", "Could not save presets. Check your storage and try again."));
           return;
         }
+        if (!mounted.current) return;
+        const retained = await keep(preview.raw, preview.name);
         setNotice(bt("내 프리셋에 저장했습니다. 각 항목의 적용 버튼으로 캐릭터에 반영하세요.", "Saved to personal presets. Use Apply on an item to update your character."));
-        setPreview(null);
+        if (retained) setPreview(null);
       })}>{bt("호환 항목 가져오기", "Import compatible items")}</button>
+      <button type="button" className={buttonClass} disabled={busy || owner === null} onClick={() => void run(async () => {
+        if (await keep(preview.raw, preview.name)) setNotice(bt("이 기기에 보관했습니다. 보관한 원본 찾기에서 다시 열 수 있습니다.", "Kept on this device. Reopen it from Find retained originals."));
+      })}>{bt("이 기기에 원본 보관", "Keep original on this device")}</button>
       <button type="button" className={buttonClass} disabled={busy} onClick={() => {
         if (!download(preview.raw, preview.name)) setError(bt("원본 파일을 저장하지 못했습니다.", "Could not save the source file."));
       }}>{bt("원본 JSON 저장", "Save original JSON")}</button>
+      <LegacyCharacterPaintRecovery key={preview.serial} paint={preview.paint} buttonClass={buttonClass} />
     </div>}
     {notice && <p role="status" className="mt-2 text-xs text-fg-2">{notice}</p>}
     {error && <p role="alert" className="mt-2 text-xs text-bad">{error}</p>}
