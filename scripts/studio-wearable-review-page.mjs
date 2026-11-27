@@ -9,6 +9,7 @@ const reviewModels = new Map([
   ["shion", { url: "/vrm/Sendagaya_Shibu.vrm", poseId: "shion" }],
 ]);
 const cache = new Map();
+const reviewPropGroup = React.createRef();
 let selectState = null;
 let generation = 0;
 let active = null;
@@ -39,6 +40,8 @@ function propInstance(def, color) {
 
 api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full", color=null, assetUrl=null }={})=>{ // NOSONAR javascript:S3776
   if (!selectState) throw new Error("Review root not ready");
+  api.turnAttachment = null;
+  api.measureAttachment = null;
   const token = ++generation; api.status="loading"; api.frames=0; api.receipt=null;
   selectState(null); await tick(); await tick();
   if(type==="asset") {
@@ -101,6 +104,55 @@ api.pose = (kind)=>{
   api.frames = 0;
 };
 
+// 화면에 장착된 GLB를 독립적인 변형(raw) 본 좌표에서 계측한다.
+api.beginAttachmentMotion = (expectedBone) => {
+  const { vrm, instance, metrics } = active ?? {};
+  const asset = reviewPropGroup.current?.children[0]?.children[0];
+  const definition = instance && R.propDefById(instance.propId);
+  const bone = vrm?.humanoid.getNormalizedBoneNode(expectedBone);
+  const rawBone = vrm?.humanoid.getRawBoneNode(expectedBone);
+  if (api.status !== "ready" || instance?.bone !== expectedBone || definition?.geometrySource.kind !== "gltf" ||
+      !bone || !rawBone || !asset) throw new Error(`실제 GLB 또는 장착 본을 찾지 못했습니다: ${expectedBone}`);
+  const fit = R.resolvePropAttachment(definition, instance, metrics);
+  if (!fit.usesSmartRig) throw new Error("소켓으로 장착한 모델만 동작을 비교할 수 있습니다.");
+  let markerMesh;
+  asset.traverse((node) => {
+    if (!markerMesh && node.isMesh && node.geometry?.getAttribute("position")?.count) markerMesh = node;
+  });
+  if (!markerMesh) throw new Error("장착한 GLB에서 비교할 메시 정점을 찾지 못했습니다.");
+  const anchorWorld = () => asset.localToWorld(new T.Vector3(...fit.anchor.position));
+  const markerWorld = () => markerMesh.localToWorld(markerMesh.getVertexPosition(0, new T.Vector3()));
+  const relativeRotation = () => rawBone.getWorldQuaternion(new T.Quaternion()).invert()
+    .multiply(asset.getWorldQuaternion(new T.Quaternion()));
+  const baselineAnchor = rawBone.worldToLocal(anchorWorld());
+  const baselineMarker = rawBone.worldToLocal(markerWorld());
+  const baselineRotation = relativeRotation();
+  const baselineBoneRotation = rawBone.getWorldQuaternion(new T.Quaternion());
+  const startingPose = bone.quaternion.clone();
+  const axis = expectedBone === "head" ? new T.Vector3(0, 1, 0) : new T.Vector3(0, 0, 1);
+  api.turnAttachment = (degrees) => {
+    bone.quaternion.copy(startingPose).multiply(new T.Quaternion().setFromAxisAngle(axis, T.MathUtils.degToRad(degrees)));
+    vrm.update(0);
+    vrm.scene.updateMatrixWorld(true);
+    api.frames = 0;
+  };
+  api.measureAttachment = () => {
+    if (api.status !== "ready" || asset.parent?.parent !== reviewPropGroup.current) {
+      throw new Error("측정 중 장착한 GLB가 교체되거나 분리되었습니다.");
+    }
+    const anchor = anchorWorld();
+    return {
+      bone: expectedBone,
+      vrmVersion: vrm.meta.metaVersion,
+      actualTurnDeg: T.MathUtils.radToDeg(baselineBoneRotation.angleTo(rawBone.getWorldQuaternion(new T.Quaternion()))),
+      socketGapMm: anchor.distanceTo(bone.localToWorld(new T.Vector3(...fit.socketPosition))) * 1000,
+      anchorDriftMm: anchor.distanceTo(rawBone.localToWorld(baselineAnchor.clone())) * 1000,
+      vertexDriftMm: markerWorld().distanceTo(rawBone.localToWorld(baselineMarker.clone())) * 1000,
+      angularDriftDeg: T.MathUtils.radToDeg(baselineRotation.angleTo(relativeRotation())),
+    };
+  };
+};
+
 function Camera({selection}) {
   const {camera,scene,gl}=useThree();
   React.useLayoutEffect(()=>{
@@ -138,7 +190,8 @@ function Subject({selection}) {
   React.useEffect(()=>{if(selection.type==="asset"||selection.type==="native")api.status="ready";},[selection]);
   const children=[h("primitive",{key:"model",object:selection.vrm?.scene??selection.object,dispose:null})];
   if(selection.type==="wardrobe")children.push(h(R.StudioVrmWardrobeAttachment,{key:`garment-${token}`,vrm:selection.vrm,slot:selection.slot,equip:selection.equip,metrics:selection.wardrobeMetrics,effectiveFit:selection.effectiveFit,onSurfaceReceipt:receipt,onAttachmentStatus:status}));
-  if(selection.type==="prop")children.push(h(R.StudioVrmPropAttachment,{key:`prop-${token}`,vrm:selection.vrm,instance:selection.instance,metrics:selection.metrics,onAttachmentStatus:status}));
+  if(selection.type==="prop")children.push(h("group",{key:`prop-${token}`,ref:reviewPropGroup},
+    h(R.StudioVrmPropAttachment,{vrm:selection.vrm,instance:selection.instance,metrics:selection.metrics,onAttachmentStatus:status})));
   if(selection.instance)children.push(h(R.StudioVrmGripContactRefine,{key:`grip-${token}`,vrm:selection.vrm,items:[selection.instance],metrics:selection.metrics}));
   if(selection.vrm)children.push(h(R.StudioVrmRuntimeCommit,{key:"commit",vrm:selection.vrm,physicsPreview:false,webcamActive:false}));
   children.push(h(Camera,{key:"camera",selection}));
