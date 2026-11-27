@@ -158,6 +158,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   canvasGuides: { horizontal: number[]; vertical: number[]; };
   canvasH: number;
   canvasStartGuideReady: boolean;
+  importWorkspaceReady: boolean;
   canvasInteractionBlocked: boolean;
   canvasOnlyMode: boolean;
   canvasRotation: 0 | 180 | 90 | 270;
@@ -324,7 +325,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   guides: { x: number[]; y: number[]; };
   handleBrushPackImportFromMenu: (event: import("react").ChangeEvent<HTMLInputElement, Element>) => Promise<void>;
   handleImportInterchangeArchive: (e: import("react").ChangeEvent<HTMLInputElement, Element>) => Promise<void>;
-  handleImportProject: (event: import("react").ChangeEvent<HTMLInputElement, Element>) => Promise<void>;
+  handleImportProject: (event: import("react").ChangeEvent<HTMLInputElement, Element>) => Promise<void | "scope-changed">;
   handleImportProjectArchive: (event: import("react").ChangeEvent<HTMLInputElement, Element>) => Promise<void>;
   handleImportPsd: (e: import("react").ChangeEvent<HTMLInputElement, Element>) => Promise<void>;
   handleStudioCrdtAuthoritativeSaveBarrierChange: (barrier: import("../live/StudioLiveCollaborationProvider").StudioCrdtAuthoritativeSaveBarrier | null) => void;

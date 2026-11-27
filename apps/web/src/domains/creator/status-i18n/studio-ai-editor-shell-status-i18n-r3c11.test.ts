@@ -145,6 +145,9 @@ const EDITOR_SHELL_KEYS = [
   "studio.editorShellStatus.workspace.brushLibraryOpening",
   "studio.editorShellStatus.importHandoff.handoffExpired",
   "studio.editorShellStatus.importHandoff.importStartFailed",
+  "studio.editorShellStatus.importHandoff.workspaceChecking",
+  "studio.editorShellStatus.importHandoff.operationWaiting",
+  "studio.editorShellStatus.importHandoff.scopeChanged",
   "studio.editorShellStatus.floatingLayout.storageChecking",
 ] as const;
 

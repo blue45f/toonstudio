@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -102,152 +102,110 @@ function renderPreview() {
   );
 }
 
+function openWeekdayRail(summaryName = "요일 연재 보기") {
+  const summary = screen.getByText(summaryName).closest("summary");
+  const disclosure = summary?.closest("details");
+  if (!summary || !disclosure) throw new Error("요일 연재 메뉴가 필요합니다.");
+  fireEvent.click(summary);
+  expect(disclosure.open).toBe(true);
+  return disclosure;
+}
+
 describe("홈 발견 미리보기", () => {
-  it("스포트라이트 1장과 오늘 요일 레일 1줄을 실제 스냅샷으로 보여 준다", () => {
+  it("실제 스냅샷의 대표작과 중복 없는 추천을 최대 세 장으로 표시한다", () => {
     mockResource({ data: snapshot(currentKstWeekDay()) });
     renderPreview();
 
     const section = screen.getByRole("region", { name: "읽을 이야기 미리보기" });
-    expect(section).toBeTruthy();
-    // 스포트라이트: 대표 작품이 작품 상세로 이어진다.
-    expect(screen.getByRole("link", { name: /작품-spot/u }).getAttribute("href")).toBe("/title/spot");
-    expect(section.querySelectorAll("[data-discover-spotlight]")).toHaveLength(1);
-    expect(screen.getByText("오늘 만날 이야기")).toBeTruthy();
-    // 요일 레일: 스냅샷 요일이 오늘(KST)과 같으면 "오늘 업데이트"로 부른다.
-    expect(screen.getByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "작품-today" }).getAttribute("href")).toBe("/title/today");
-    // 레일은 요일 줄 하나뿐이다 — 나머지 레일은 /discover의 몫이다.
+    const cards = within(section).getAllByRole("listitem");
+    expect(cards.map((item) => item.querySelector("a")?.getAttribute("href"))).toEqual([
+      "/title/spot", "/title/pick", "/title/rated",
+    ]);
+    expect(cards[0]?.textContent).toContain("작가");
+    expect(screen.queryByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "평점 랭킹 상위 작품" })).toBeNull();
-    expect(screen.queryByRole("heading", { name: "최근 공개된 작품" })).toBeNull();
   });
 
-  it("스냅샷 요일이 오늘이 아니면 '오늘'이라 부르지 않고 해당 요일 연재로 표기한다", () => {
+  it("요일 연재를 직접 펼치면 현재 요일로 이동하고 기존 캘린더 출구를 유지한다", async () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPreview();
+
+    const disclosure = openWeekdayRail();
+    expect(await within(disclosure).findByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeTruthy();
+    expect(within(disclosure).getByRole("link", { name: "작품-today" }).getAttribute("href")).toBe("/title/today");
+    expect(within(disclosure).getByRole("link", { name: "오늘 업데이트되는 웹툰 전체 보기" }).getAttribute("href")).toBe("/calendar");
+  });
+
+  it("스냅샷 요일이 오늘이 아니면 해당 요일 연재로 표기한다", async () => {
     const day = otherWeekDay();
     mockResource({ data: snapshot(day) });
     renderPreview();
 
+    const disclosure = openWeekdayRail();
+    expect(await within(disclosure).findByRole("heading", { name: `${day}요일 연재 인기작` })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeNull();
-    expect(screen.getByRole("heading", { name: `${day}요일 연재 인기작` })).toBeTruthy();
   });
 
-  it("불러오기에 실패하면 오류 블록 없이 구간 자체를 만들지 않는다", () => {
+  it("불러오기에 실패하면 오류와 빈 구간을 남기지 않는다", () => {
     mockResource({ data: null, error: "추천 작품을 불러오지 못했습니다." });
     const { container } = renderPreview();
     expect(container.firstChild).toBeNull();
-    expect(screen.queryByRole("region", { name: "읽을 이야기 미리보기" })).toBeNull();
   });
 
   it("보여 줄 작품이 없는 스냅샷이면 구간을 만들지 않는다", () => {
-    mockResource({
-      data: {
-        topRated: [],
-        waitFree: [],
-        newest: [],
-        todayDay: currentKstWeekDay(),
-        todayReleases: [],
-        genres: [],
-        stats: { titles: 0, platforms: 0, genres: 0 },
-        generatedAt: "2026-10-05T00:00:00.000Z",
-      },
-    });
+    mockResource({ data: { ...snapshot(currentKstWeekDay()), spotlight: null, featured: [], topRated: [], todayReleases: [] } });
     const { container } = renderPreview();
     expect(container.firstChild).toBeNull();
   });
 
-  it("불러오는 동안에는 스포트라이트·레일 모양 스켈레톤을 같은 자리에 둔다", () => {
+  it("불러오는 동안 제목과 탐색 출구를 유지하며 작품 카드만 기다린다", () => {
     mockResource({ data: null, loading: true });
     renderPreview();
-    expect(screen.getByRole("status", { name: "대표 작품을 불러오는 중" })).toBeTruthy();
-    expect(screen.getByRole("status", { name: "추천 작품을 불러오는 중" })).toBeTruthy();
-  });
 
-  it("구간 제목을 눈에 보이는 제목으로 두고, 옆에 탐색 허브로 가는 전체 보기 출구를 표기한다", () => {
-    mockResource({ data: snapshot(currentKstWeekDay()) });
-    renderPreview();
-
-    // 제목: aria-label에만 있던 구간 이름이 실제 제목 요소로 보인다.
     expect(screen.getByRole("heading", { name: "읽을 이야기 미리보기" })).toBeTruthy();
-    // 출구: 보이는 문구는 "전체 보기", 접근명에는 구간 제목이 붙고, 도착지는 레일 전체를 소유한 /discover다.
+    expect(screen.getByRole("status", { name: "추천 작품을 불러오는 중" })).toBeTruthy();
     const exit = screen.getByRole("link", { name: "읽을 이야기 미리보기 전체 보기" });
-    expect(exit.textContent).toContain("전체 보기");
     expect(exit.getAttribute("href")).toBe("/discover");
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
-  it("요일 레일은 자기 제목 옆에 전체 보기를 두고, 도착지는 레일의 실제 전체 목록(연재 캘린더)을 쓴다", () => {
-    mockResource({ data: snapshot(currentKstWeekDay()) });
-    renderPreview();
-
-    const railExit = screen.getByRole("link", { name: "오늘 업데이트되는 웹툰 전체 보기" });
-    expect(railExit.textContent).toContain("전체 보기");
-    expect(railExit.getAttribute("href")).toBe("/calendar");
-    // 미리보기에서는 목적지 이름("연재 캘린더")이 아니라 전체 보기로 통일한다.
-    expect(screen.queryByRole("link", { name: /연재 캘린더/u })).toBeNull();
-  });
-
-  it("스포트라이트만 있으면 요일 레일 출구는 만들지 않고, 미리보기 출구만 남긴다", () => {
+  it("스포트라이트만 있으면 빈 요일 연재 메뉴를 만들지 않는다", () => {
     mockResource({ data: { ...snapshot(currentKstWeekDay()), todayReleases: [] } });
     renderPreview();
 
-    expect(screen.getByRole("link", { name: /작품-spot/u })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeNull();
-    expect(screen.getAllByRole("link").some((link) => link.getAttribute("href") === "/calendar")).toBe(false);
-    expect(screen.getAllByRole("link", { name: /전체 보기/u })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /^작품-spot/u }).getAttribute("href")).toBe("/title/spot");
+    expect(screen.queryByText("요일 연재 보기")).toBeNull();
     expect(screen.getByRole("link", { name: "읽을 이야기 미리보기 전체 보기" }).getAttribute("href")).toBe("/discover");
   });
 
-  it("요일 레일만 있어도 두 출구가 각자의 실제 도착지를 가리킨다", () => {
-    mockResource({
-      data: { ...snapshot(currentKstWeekDay()), spotlight: null, featured: [], topRated: [] },
-    });
+  it("요일 작품만 있어도 작품 상세와 탐색으로 이어진다", async () => {
+    mockResource({ data: { ...snapshot(currentKstWeekDay()), spotlight: null, featured: [], topRated: [] } });
     renderPreview();
 
-    expect(screen.queryByRole("link", { name: /작품-spot/u })).toBeNull();
+    expect(screen.getByRole("link", { name: /^작품-today/u }).getAttribute("href")).toBe("/title/today");
     expect(screen.getByRole("link", { name: "읽을 이야기 미리보기 전체 보기" }).getAttribute("href")).toBe("/discover");
-    expect(screen.getByRole("link", { name: "오늘 업데이트되는 웹툰 전체 보기" }).getAttribute("href")).toBe("/calendar");
+    const disclosure = openWeekdayRail();
+    expect((await within(disclosure).findByRole("link", { name: "오늘 업데이트되는 웹툰 전체 보기" })).getAttribute("href")).toBe("/calendar");
   });
 
-  it("불러오기 실패·빈 스냅샷에서는 제목도 출구도 남기지 않는다", () => {
-    mockResource({ data: null, error: "추천 작품을 불러오지 못했습니다." });
-    const failed = renderPreview();
-    expect(screen.queryByRole("heading", { name: "읽을 이야기 미리보기" })).toBeNull();
-    expect(screen.queryByRole("link", { name: /전체 보기/u })).toBeNull();
-    failed.unmount();
-
-    mockResource({
-      data: {
-        topRated: [],
-        waitFree: [],
-        newest: [],
-        todayDay: currentKstWeekDay(),
-        todayReleases: [],
-        genres: [],
-        stats: { titles: 0, platforms: 0, genres: 0 },
-        generatedAt: "2026-10-05T00:00:00.000Z",
-      },
-    });
+  it("성인 작품은 홈 카드에서 제목과 연령 표시를 사용하고 표지 파일을 요청하지 않는다", () => {
+    const restricted = { ...title("restricted"), ageRating: "19" as const, coverImage: "/restricted.webp" };
+    mockResource({ data: { ...snapshot(currentKstWeekDay()), spotlight: restricted } });
     renderPreview();
-    expect(screen.queryByRole("heading", { name: "읽을 이야기 미리보기" })).toBeNull();
-    expect(screen.queryByRole("link", { name: /전체 보기/u })).toBeNull();
+    const card = screen.getByRole("link", { name: /^19\+\s*작품-restricted/u });
+    expect(card.getAttribute("href")).toBe("/title/restricted");
+    expect(within(card).getByText("19+")).toBeTruthy();
+    expect(card.querySelector("img")).toBeNull();
   });
 
-  it("불러오는 동안에도 제목과 전체 보기 출구가 먼저 같은 자리에 있다", () => {
-    mockResource({ data: null, loading: true });
-    renderPreview();
-
-    expect(screen.getByRole("heading", { name: "읽을 이야기 미리보기" })).toBeTruthy();
-    // 레일은 아직 스켈레톤이라 출구는 미리보기 출구 하나뿐이다.
-    const exits = screen.getAllByRole("link", { name: /전체 보기/u });
-    expect(exits).toHaveLength(1);
-    expect(exits[0]?.getAttribute("href")).toBe("/discover");
-  });
-
-  it("영어에서는 제목과 출구 문구가 영어로 바뀐다", () => {
+  it("영어에서는 제목과 각 출구의 접근성 이름도 영어로 제공한다", async () => {
     useI18n.setState({ lang: "en" });
     mockResource({ data: snapshot(currentKstWeekDay()) });
     renderPreview();
 
     expect(screen.getByRole("heading", { name: "Stories to read" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Stories to read View all" }).getAttribute("href")).toBe("/discover");
-    expect(screen.getByRole("link", { name: "Webtoons updating today View all" }).getAttribute("href")).toBe("/calendar");
+    const disclosure = openWeekdayRail("Show weekday series");
+    expect((await within(disclosure).findByRole("link", { name: "Webtoons updating today View all" })).getAttribute("href")).toBe("/calendar");
   });
 });

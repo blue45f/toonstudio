@@ -116,7 +116,7 @@ afterEach(() => {
 describe("mobile site shell accessibility", () => {
   it("isolates the page, loops focus, closes with Escape, and restores the full-menu trigger", async () => {
     const { container } = render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/discover"]}>
         <SiteHeader />
         <button type="button" data-testid="page-action">본문 작업</button>
       </MemoryRouter>
@@ -203,8 +203,22 @@ describe("mobile site shell accessibility", () => {
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
+  it("공개 홈의 전체 메뉴에서 내 작업을 찾고 닫은 뒤 머리글 버튼으로 돌아온다", async () => {
+    render(<MemoryRouter initialEntries={["/"]}><SiteHeader /></MemoryRouter>);
+
+    const trigger = fullMenuTrigger();
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    expect(menuDestination(dialog, "/studio", "내 작업").getAttribute("href")).toBe("/studio");
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(screen.queryByRole("navigation", { name: "빠른 이동" })).toBeNull();
+  });
+
   it("더보기에서 연 메뉴는 닫은 뒤 같은 하단 버튼에 초점을 돌린다", async () => {
-    render(<MemoryRouter><SiteHeader /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/discover"]}><SiteHeader /></MemoryRouter>);
     const quickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
     const more = within(quickNavigation).getByRole("button", { name: "더보기" });
     fireEvent.click(more);
@@ -254,7 +268,7 @@ describe("mobile site shell accessibility", () => {
 
   it("keeps the desktop full-menu reachable and releases its trap after an explicit close following resize", async () => {
     const { container } = render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/discover"]}>
         <SiteHeader />
       </MemoryRouter>
     );

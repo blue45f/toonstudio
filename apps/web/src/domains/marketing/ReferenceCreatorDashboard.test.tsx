@@ -146,20 +146,26 @@ function openIdeaHelp(language: "ko" | "en" = "ko") {
   return { summary, details };
 }
 
+function openCreativeTools() {
+  const summary = document.querySelector<HTMLElement>("#creator-toolkit-title");
+  if (!summary) throw new Error("창작 도구를 여는 메뉴가 필요합니다.");
+  if (!summary.closest("details")?.open) fireEvent.click(summary);
+}
+
 function expectBefore(earlier: Element | null, later: Element | null) {
   if (!earlier || !later) throw new Error("순서를 확인할 두 화면 요소가 필요합니다.");
   expect(earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
 }
 
 describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
-  it("작품 시작과 내 작업을 먼저 보여 주고 아이디어 입력의 실제 시작 동선을 보존한다", async () => {
+  it("작품 시작과 감상을 먼저 보여 주고 아이디어 입력의 실제 시작 동선을 보존한다", async () => {
     await dashboard();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("상상한 장면을,나의 작품으로.");
     expect(screen.queryByRole("banner")).toBeNull();
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     expect(within(hero).getByRole("link", { name: "작품 시작하기" }).getAttribute("href")).toBe("/create");
-    expect(within(hero).getByRole("link", { name: "내 작업 이어가기" }).getAttribute("href")).toBe("/studio");
+    expect(within(hero).getByRole("link", { name: "작품 둘러보기" }).getAttribute("href")).toBe("/discover");
     expect(hero.querySelector("form")).toBeNull();
     // 전역 검색과 헤더는 기존 공통 셸이 맡는다.
     expect(screen.queryByRole("button", { name: "작품·도구·소재, 필요한 것을 찾아보세요" })).toBeNull();
@@ -195,6 +201,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     const core = screen.getByRole("region", { name: "핵심 작업실, 바로 들어가기" });
     fireEvent.click(within(core).getByRole("link", { name: "그리기 시작" }));
     expect(observedNavigation).toEqual([{ href: "/studio/canvas", prevented: false }]);
+    openCreativeTools();
     const start = screen.getByRole("navigation", { name: "오늘은 무엇을 만들까요?" });
     fireEvent.click(within(start).getByRole("link", { name: /이야기 만들기/u }));
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/create?intent=my-story");
@@ -218,7 +225,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
   it("로그인하면 홈은 그대로이고 개인 스트립으로 내 홈에 이어진다", async () => {
     useI18n.setState({ lang: "ko" });
     await act(async () => {
-      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
+      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { id: "user-1", name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
     });
     const strip = screen.getByRole("region", { name: "내 작업 이어가기" });
     expect(within(strip).getByText("연우님, 다시 오셨네요")).toBeTruthy();
@@ -232,7 +239,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     useApp.setState({ userId: "user-1", sessionToken: "token" });
     listProjects.mockResolvedValue({ projects: [projectSummary({})] });
     await act(async () => {
-      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
+      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { id: "user-1", name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
     });
     expect(await screen.findByText("하던 작업 이어하기")).toBeTruthy();
     const card = document.querySelector("[data-now-card]");
@@ -249,7 +256,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     useApp.setState({ userId: "user-1", sessionToken: "token" });
     listProjects.mockResolvedValue({ projects: [] });
     await act(async () => {
-      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
+      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { id: "user-1", name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
     });
     expect(await screen.findByText("첫 작품을 시작해 보세요")).toBeTruthy();
     const card = document.querySelector("[data-now-card]");
@@ -260,7 +267,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
   it("실제 가까운 일정은 소개보다 먼저, 할 일을 마친 상태는 소개 다음에 놓는다", async () => {
     useApp.setState({ userId: "user-1", sessionToken: "token" });
     listProjects.mockResolvedValue({ projects: [projectSummary({ activeEpisodeCount: 0, nextReleaseAt: new Date(Date.now() + 86_400_000).toISOString() })] });
-    const renderSignedIn = () => render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
+    const renderSignedIn = () => render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { id: "user-1", name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
     await act(async () => { renderSignedIn(); });
     const deadline = document.querySelector<HTMLElement>("[data-now-card]");
     if (!deadline) throw new Error("실제 가까운 일정 카드가 필요합니다.");
@@ -279,7 +286,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     let resolveProjects: ((result: { projects: ProductionProjectSummary[] }) => void) | undefined;
     listProjects.mockImplementation(() => new Promise<{ projects: ProductionProjectSummary[] }>((resolve) => { resolveProjects = resolve; }));
     await act(async () => {
-      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
+      render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { id: "user-1", name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
     });
     openIdeaHelp();
     await openLunaHelp();
@@ -319,10 +326,12 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     }
   });
 
-  it("시작 목적 세 가지를 바로 보여 주고 예시 작품은 펼쳐서 확인한다", async () => {
+  it("첫 행동은 바로 제공하고 창작 도구 세 가지와 예시는 펼쳐서 확인한다", async () => {
     await dashboard();
     const launchpad = screen.getByTestId("home-v2-spectrum-launchpad");
-    expect(launchpad.closest("details")).toBeNull();
+    expect(launchpad.closest("details")?.open).toBe(false);
+    openCreativeTools();
+    expect(launchpad.closest("details")?.open).toBe(true);
     expect(launchpad.textContent).not.toMatch(/1초|1S|WEBGPU|WEBXR|Rights BOM/u);
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     expect(within(hero).getByRole("link", { name: "작품 시작하기" }).closest("details")).toBeNull();
@@ -478,11 +487,11 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(form?.contains(screen.getByRole("button", { name: "시작하기" }))).toBe(true);
   });
 
-  it("홈은 히어로·시작 목적·작품 발견·작업실 소개 순서이고 추가 기능은 기본 접힘이다", async () => {
+  it("홈은 히어로·작품 발견·창작 도구·작업실 소개 순서이고 추가 기능은 기본 접힘이다", async () => {
     await dashboard();
     const root = document.querySelector("[data-reference-dashboard]");
     const bands = [...(root?.querySelectorAll("[data-home-band]") ?? [])].map((element) => element.getAttribute("data-home-band"));
-    expect(bands).toEqual(["hero", "continue", "discover", "more"]);
+    expect(bands).toEqual(["hero", "discover", "continue", "more"]);
     const more = document.querySelector<HTMLDetailsElement>("details.rd-more");
     expect(more?.open).toBe(false);
     await openMoreBand();
@@ -529,6 +538,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
 
   it("준비·그리기·완성은 실제 시작·원고·내보내기 화면으로 이어진다", async () => {
     const observedNavigation = await dashboard();
+    openCreativeTools();
     const steps = screen.getByRole("navigation", { name: "작품을 만드는 순서" });
     expect(within(steps).getByRole("list").tagName).toBe("OL");
     expect(within(steps).getAllByRole("listitem")).toHaveLength(3);
@@ -550,12 +560,11 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(root?.getAttribute("data-motion")).toBe("playing");
   });
 
-  it("검색과 도움을 접은 상태에서 세 가지 목적과 원고 시작 링크를 즉시 제공한다", async () => {
+  it("검색·도움과 함께 세 가지 도구를 접고 두 홈 행동은 즉시 제공한다", async () => {
     await dashboard();
-    const launchpad = screen.getByRole("navigation", { name: "오늘은 무엇을 만들까요?" });
-    expect(within(launchpad).getAllByRole("link")).toHaveLength(3);
-    expect(launchpad.closest("details")).toBeNull();
-    for (const selector of [".rd-idea-help", ".rd-luna-help", ".rd-discover", ".rd-more"]) {
+    const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
+    expect(within(hero).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/create", "/discover"]);
+    for (const selector of [".rd-idea-help", ".rd-luna-help", ".vivid-create-section", ".rd-more"]) {
       expect(document.querySelector<HTMLDetailsElement>(selector)?.open).toBe(false);
     }
     expect(document.querySelector(".home-wow-showcase")).toBeNull();
