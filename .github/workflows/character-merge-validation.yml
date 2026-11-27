@@ -25,6 +25,8 @@ on:
       - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
       - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
       - "apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority*"
+      - "apps/web/src/domains/creator/character-platform/presets/legacy-character-*"
+      - "apps/web/src/domains/creator/character-platform/ui/LegacyCharacter*"
   push:
     branches: ["main", "release/salvage-integration-20260908"]
     paths:
@@ -48,6 +50,8 @@ on:
       - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
       - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
       - "apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority*"
+      - "apps/web/src/domains/creator/character-platform/presets/legacy-character-*"
+      - "apps/web/src/domains/creator/character-platform/ui/LegacyCharacter*"
 
   workflow_dispatch:
 permissions:
@@ -136,6 +140,7 @@ jobs:
             apps/web/src/domains/creator/character-shaper/use-linked-cut-capture.test.tsx \
             apps/web/src/domains/creator/character-shaper/StudioCharacterShaper.capture.test.tsx \
             apps/web/src/domains/creator/canvas/StudioCanvasContextMenu.test.tsx \
+            apps/web/src/domains/creator/character-platform/presets/legacy-character-recovery.test.ts \
             apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority.persistence.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteCollaborationGateway.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts.test.tsx \
