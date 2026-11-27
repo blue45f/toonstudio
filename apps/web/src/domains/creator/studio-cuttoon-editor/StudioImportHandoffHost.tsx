@@ -5,6 +5,7 @@ import {
   STUDIO_IMPORT_HANDOFF_QUERY_KEY,
   consumeStudioImportHandoff,
   peekStudioImportHandoff,
+  type StudioImportHandoff,
   type StudioImportHandoffTarget,
 } from "../studio-import-handoff";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
@@ -93,29 +94,42 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       reportExpiredHandoff();
       return;
     }
-    const waitForWorkspaceOrOperation = (fileName: string, workspace: boolean) => {
+    const hasCurrentUnstartedToken = () => mountedRef.current && startedTokenRef.current !== token
+      && new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY) === token;
+    let timerId: number;
+    const clearTimer = () => window.clearTimeout(timerId);
+    const scheduleExpiryCheck = (expiresAt: number) => {
+      timerId = window.setTimeout(() => {
+        if (!hasCurrentUnstartedToken()) return;
+        const stillPending = peekStudioImportHandoff(token);
+        if (stillPending) scheduleExpiryCheck(stillPending.expiresAt);
+        else reportExpiredHandoff();
+      }, Math.max(0, expiresAt - Date.now()));
+    };
+    const waitForWorkspaceOrOperation = (handoff: StudioImportHandoff, workspace: boolean) => {
+      const fileName = handoff.file.name;
       setStatus((prev) => (
         prev.state === "waiting" && prev.fileName === fileName && prev.workspace === workspace
           ? prev
           : { state: "waiting", fileName, workspace }
       ));
+      scheduleExpiryCheck(handoff.expiresAt);
     };
     if (!currentProps.workspaceReady || targetBusy(pending.target, currentProps)) {
-      waitForWorkspaceOrOperation(pending.file.name, !currentProps.workspaceReady);
-      return;
+      waitForWorkspaceOrOperation(pending, !currentProps.workspaceReady);
+      return clearTimer;
     }
 
-    const timerId = window.setTimeout(() => {
+    timerId = window.setTimeout(() => {
       const liveProps = latestPropsRef.current;
-      if (startedTokenRef.current === token) return;
-      if (new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY) !== token) return;
+      if (!hasCurrentUnstartedToken()) return;
       const stillPending = peekStudioImportHandoff(token);
       if (!stillPending) {
         reportExpiredHandoff();
         return;
       }
       if (!liveProps.workspaceReady || targetBusy(stillPending.target, liveProps)) {
-        waitForWorkspaceOrOperation(stillPending.file.name, !liveProps.workspaceReady);
+        waitForWorkspaceOrOperation(stillPending, !liveProps.workspaceReady);
         return;
       }
       const handoff = consumeStudioImportHandoff(token);
@@ -151,9 +165,7 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       }
     }, 0);
 
-    return () => {
-      window.clearTimeout(timerId);
-    };
+    return clearTimer;
   }, [
     props.handoffToken,
     props.workspaceReady,
