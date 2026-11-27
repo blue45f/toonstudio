@@ -168,17 +168,26 @@ async function cutMenu(page: Page, cut: Cut) {
   return menu;
 }
 
+async function activateGpuEditorSelection(button: Locator, selection: string) {
+  await expect(button).toBeVisible({ timeout: 30000 });
+  await expect(button).toBeEnabled({ timeout: 30000 });
+  await expect(button).not.toHaveAttribute("aria-disabled", "true");
+  const started = performance.now();
+  // A mounted shelf may preview or rebuild the real GPU model before input is delivered.
+  // Keep that full elapsed time in the task while bounding missing controls separately.
+  await button.click({ timeout: 120000 });
+  await expect(button).toHaveAttribute("aria-pressed", "true", { timeout: 120000 });
+  console.log("[studio-eight-cut] Editor selection applied", selection, Math.round(performance.now() - started), "ms");
+}
+
 async function selectDesktopShelf(shaper: Locator, category: string, slot: string) {
   console.log("[studio-eight-cut] Choosing desktop category and slot", category, slot);
   const categoryButton = shaper.locator('[data-character-category-rail="desktop"] [data-character-category="' + category + '"]');
-  await expect(categoryButton).toBeVisible();
-  await categoryButton.click();
-  await expect(categoryButton).toHaveAttribute("aria-pressed", "true");
+  await activateGpuEditorSelection(categoryButton, category);
   // Hair and props have one shelf each. Pose has separate body and hand subslots.
   if (slot === "hand-pose") {
     const tab = shaper.locator('[data-character-subslot-tabs="pose"] [data-character-slot="hand-pose"]');
-    await tab.click();
-    await expect(tab).toHaveAttribute("aria-pressed", "true");
+    await activateGpuEditorSelection(tab, slot);
   }
   const shelf = shaper.locator('[data-character-shaper-shelf="' + slot + '"]');
   await expect(shelf).toBeVisible({ timeout: 120000 });
@@ -188,10 +197,7 @@ async function selectDesktopShelf(shaper: Locator, category: string, slot: strin
 async function chooseCard(shelf: Locator, id: string) {
   console.log("[studio-eight-cut] Waiting for preset card", id);
   const card = shelf.locator('[data-character-slot-card="' + id + '"]');
-  await expect(card).toBeVisible({ timeout: 60000 });
-  await expect(card).not.toHaveAttribute("aria-disabled", "true");
-  await card.click();
-  await expect(card).toHaveAttribute("aria-pressed", "true", { timeout: 30000 });
+  await activateGpuEditorSelection(card, id);
 }
 
 async function pixels(page: Page, src: string) {
