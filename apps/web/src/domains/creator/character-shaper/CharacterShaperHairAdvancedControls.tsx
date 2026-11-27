@@ -57,8 +57,8 @@ export function CharacterShaperHairAdvancedControls({
   return (
     <>
       <InspectorSection
-        title={t("studio.characterShaper.hairParts.title", "앞·옆·뒷머리 조합")}
-        hint={t("studio.characterShaper.hairParts.hint", "한 부위씩 커트를 바꾸거나 색을 다르게 칠할 수 있습니다.")}
+        title={t("studio.character.hairParts.title", "앞·옆·뒷머리 조합")}
+        hint={t("studio.character.hairParts.hint", "한 부위씩 커트를 바꾸거나 색을 다르게 칠할 수 있습니다.")}
         collapsible
         defaultOpen
       >
@@ -66,25 +66,25 @@ export function CharacterShaperHairAdvancedControls({
           {HAIR_SECTIONS.map(({ id, name, options }) => {
             const partKey = `${id}Part` as const;
             const tintKey = `${id}Tint` as const;
-            const label = t(`studio.characterShaper.hairParts.${id}`, name);
+            const label = t(`studio.character.hairParts.${id}`, name);
             return (
               <div key={id} className="space-y-1">
                 <label className="flex items-center justify-between gap-2 text-xs text-fg-2">
                   <span>{label}</span>
                   <select
-                    aria-label={t(`studio.characterShaper.hairParts.${id}Select`, `3분할 ${name} 파츠`)}
+                    aria-label={t(`studio.character.hairParts.${id}Select`, `3분할 ${name} 파츠`)}
                     disabled={locked}
                     value={hair[partKey] ?? ""}
                     onChange={(event) => commitPart({ [partKey]: event.currentTarget.value || undefined }, `헤어: ${label}`)}
                     className="min-h-11 min-w-0 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
                   >
-                    <option value="">{t("studio.characterShaper.hairParts.base", "기본 스타일")}</option>
+                    <option value="">{t("studio.character.hairParts.base", "기본 스타일")}</option>
                     {options.map((option) => (
-                      <option key={option.id} value={option.id}>{t(`studio.characterShaper.hairParts.${option.id}`, option.labelKo)}</option>
+                      <option key={option.id} value={option.id}>{t(`studio.character.hairParts.${option.id}`, option.labelKo)}</option>
                     ))}
                   </select>
                 </label>
-                {partColors && <CharacterColorControl label={t(`studio.characterShaper.hairParts.${id}Color`, `${name} 색`)}
+                {partColors && <CharacterColorControl label={t(`studio.character.hairParts.${id}Color`, `${name} 색`)}
                   value={hair[tintKey] ?? baseColor} disabled={locked}
                   onCommit={(color) => { if (color) commitPart({ [tintKey]: color }, `헤어: ${label} 색`); }} />}
               </div>
@@ -92,8 +92,8 @@ export function CharacterShaperHairAdvancedControls({
           })}
         </div>
         <InspectorToggleRow
-          label={t("studio.characterShaper.hairParts.tint", "부위별 색상")}
-          hint={t("studio.characterShaper.hairParts.tintHint", "끄면 세 부위가 헤어 팔레트의 기본색을 따릅니다.")}
+          label={t("studio.character.hairParts.tint", "부위별 색상")}
+          hint={t("studio.character.hairParts.tintHint", "끄면 세 부위가 헤어 팔레트의 기본색을 따릅니다.")}
           checked={partColors}
           disabled={locked}
           onToggle={() => {

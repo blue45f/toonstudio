@@ -81,8 +81,8 @@ describe("Studio lazy i18n assets", () => {
       // studio.bg3dScene.coplanarEdgeHeal.* 정본에 추가했다(2026-10-31).
       // 1_841 → 1_843: 기존 넓게 보기 studio.mainMenu.item.view.wide.open과
       // 평면 팩에만 있던 studio.bubble.insertSelectedFrame을 포함해 정본·75개 팩을 맞췄다.
-      // 기존 키를 유지하고 정상 동기화된 팩의 정확한 총 개수를 검사한다.
-      expect(Object.keys(dictionary ?? {})).toHaveLength(1_843);
+      // 1_843 → 1_879: 앞·옆·뒷머리 커트와 색 조절에 쓰는 studio.character.hairParts.* 36키.
+      expect(Object.keys(dictionary ?? {})).toHaveLength(1_879);
       expect(dictionary?.["studio.bubble.insertSelectedFrame"]).toBeTruthy();
       expect(dictionary?.["studio.mainMenu.item.view.wide.open"]).toBeTruthy();
     }
@@ -215,13 +215,9 @@ describe("Studio lazy i18n assets", () => {
   });
 
   it("loads both assets in parallel before either Studio route commits", async () => {
-    const assets = {
-      ko: readAsset("ko"),
-      en: readAsset("en"),
-    };
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const locale = String(input).endsWith("/ko.json") ? "ko" : "en";
-      return new Response(assets[locale]);
+      const asset = String(input).replace(/^\/preview\//u, "");
+      return new Response(readFileSync(path.join(process.cwd(), "apps/web/public", asset), "utf8"));
     });
 
     await loadStudioI18nDictionaries({
@@ -230,6 +226,8 @@ describe("Studio lazy i18n assets", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(STUDIO_I18N_NAMESPACES.length * 2);
+    expect(resolveI18nValue("ko", "studio.character.hairParts.title")).toBe("앞·옆·뒷머리 조합");
+    expect(resolveI18nValue("en", "studio.character.hairParts.title")).toBe("Mix hair sections");
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/preview/i18n/studio/");
     expect(String(fetchMock.mock.calls.at(-1)?.[0])).toContain("/preview/i18n/studio/");
     expect(studioI18nAssetUrl("ko", "/preview")).toBe(
