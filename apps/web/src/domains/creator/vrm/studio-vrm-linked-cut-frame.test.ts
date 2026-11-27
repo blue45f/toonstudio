@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
-import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, preserveUneditedCutPose, readLinkedCutPngSize, resolveVrmCaptureCameraForFrame } from "./studio-vrm-linked-cut-frame";
+import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, preserveUneditedCutPose, readEditableCutFrame, readLinkedCutPngSize, resolveVrmCaptureCameraForFrame } from "./studio-vrm-linked-cut-frame";
 import { vrmInsertCaptureSize } from "./studio-vrm-poser-helpers";
 import { createDefaultStudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
@@ -37,6 +37,22 @@ describe("linked placement recapture", () => {
       camera: { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 4 } };
     expect(() => resolveVrmCaptureCameraForFrame(new PerspectiveCamera(), altered, frame))
       .toThrow(/자세 \(bodyRotationY\).*카메라 \(fovDegrees\).*기존 이미지를 보존/u);
+  });
+  it("keeps an existing cut's PNG resolution and aspect when editing its pose or camera from a wider pane", () => {
+    const original = { ...scene, characterDocumentId: "character:page/a", render: { ...scene.render, width: 128, height: 64 } };
+    const frame = readEditableCutFrame(original, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAEA");
+    expect(frame?.pixels).toEqual({ width: 512, height: 256 });
+    expect(readEditableCutFrame(scene, "blob:unlinked")).toBeUndefined();
+    const viewport = new PerspectiveCamera(57, 3, .01, 100);
+    viewport.position.set(1, 2, 3);
+    const edited = { ...original, camera: { ...original.camera, fovDegrees: 57 }, pose: { ...original.pose, bodyRotationY: .7 } };
+    const rendered = resolveVrmCaptureCameraForFrame(viewport, edited, undefined, frame) as PerspectiveCamera;
+    expect(rendered.fov).toBe(57);
+    expect(rendered.aspect).toBe(2);
+    expect(rendered.position.toArray()).toEqual([1, 2, 3]);
+    expect(viewport.aspect).toBe(3);
+    expect(() => resolveVrmCaptureCameraForFrame(viewport, edited, frame)).toThrow();
+    expect(resolveVrmCaptureCameraForFrame(viewport, edited, undefined)).toBe(viewport);
   });
   it("captures with the stored shot aspect even when the current window is landscape", () => {
     const camera = new PerspectiveCamera(35, 2, .01, 100);

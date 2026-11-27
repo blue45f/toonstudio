@@ -25,6 +25,13 @@ export function readLinkedCutPngSize(source: string | undefined): LinkedCutFrame
   }
 }
 
+/** Keep the canvas layer's original image resolution when an artist reopens its character in Shaper. */
+export function readEditableCutFrame(scene: StudioVrmSceneDocument | undefined, src: string | undefined): LinkedCutFrame | undefined {
+  if (!scene?.characterDocumentId) return undefined;
+  const pixels = readLinkedCutPngSize(src);
+  return pixels ? { source: scene, pixels } : undefined;
+}
+
 type CutDifference = { path: string; saved: unknown; live: unknown };
 const cutContextFields = {
   model: "모델", pose: "자세", expressions: "표정", camera: "카메라", render: "출력",
@@ -107,8 +114,9 @@ export function resolveVrmCaptureCameraForFrame(
   viewportCamera: Camera,
   sceneDocument: StudioVrmSceneDocument,
   frame: LinkedCutFrame | undefined,
+  editableFrame?: LinkedCutFrame,
 ): Camera {
-  if (!frame) return viewportCamera;
+  if (!frame) return editableFrame ? cameraForLinkedCut(viewportCamera, editableFrame) : viewportCamera;
   const mismatches: string[] = [];
   for (const key of cutContextKeys) {
     const difference = firstCutDifference(frame.source[key], sceneDocument[key]);
