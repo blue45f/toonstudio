@@ -32,7 +32,7 @@ import {
   EMPTY_STUDIO_VRM_POSE_TRANSLATIONS,
   normalizeStudioVrmPoseTranslations,
 } from "./studio-vrm-pose-translations";
-import { studioVrmPoseControlOrder } from "./studio-vrm-pose-bake";
+import { canAutoOrientStudioVrmWrist, studioVrmPoseControlOrder } from "./studio-vrm-pose-bake";
 import { parseVrmProps, type PropInstance } from "./studio-vrm-props";
 import {
   DEFAULT_STUDIO_VRM_LIGHTING_TONE,
@@ -895,13 +895,13 @@ function palmNormalFromAlongAcross(
  *
  * Returns how many hands were corrected.
  */
-export function correctVrmHangingHandPalmTwist(vrm: VRM): number {
+export function correctVrmHangingHandPalmTwist(vrm: VRM, bones?: PoseBoneMap): number {
   const humanoid = vrm.humanoid;
   if (!humanoid) return 0;
 
   let corrected = 0;
   for (const side of ["left", "right"] as const) {
-    if (orientRelaxedHandPalm(humanoid, side)) corrected += 1;
+    if (canAutoOrientStudioVrmWrist(bones, side) && orientRelaxedHandPalm(humanoid, side)) corrected += 1;
   }
   if (corrected > 0) {
     // 트위스트는 normalized 손 본 quaternion을 직접 쓰므로 raw 스키튼에 즉시 동기화한다.
@@ -1239,7 +1239,7 @@ export function applyPoseToVrm(
   // One hanging-palm pass after limbs + hand euler + fingers (unless caller defers).
   // Stacking this with a second call after applyPoserVisualState fingers spun wrists.
   if (!options.skipPalmCorrect) {
-    correctVrmHangingHandPalmTwist(vrm);
+    correctVrmHangingHandPalmTwist(vrm, bones);
   }
 
   humanoid.update();
@@ -2669,7 +2669,7 @@ export function applyPoserVisualState(
   if (Object.keys(fingerEdits).length) {
     applyFingerRotations(vrm, fingerEdits);
   }
-  correctVrmHangingHandPalmTwist(vrm);
+  correctVrmHangingHandPalmTwist(vrm, bones);
   if (bodyScale) {
     applyBodyScale(vrm, bodyScale);
   }

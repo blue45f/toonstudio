@@ -8,9 +8,16 @@ import { describe, expect, it } from "vitest";
 
 import { POSER_FINGER_BONES, pickNaturalIdlePose } from "../studio-pose-presets";
 
+import { createStudioVrmHandPose } from "./studio-vrm-hand-poses";
+import {
+  STUDIO_VRM_DIRECT_EDIT_BONES,
+  bakeStudioVrmRuntimePose,
+  restoreStudioVrmBakedRotation,
+} from "./studio-vrm-pose-bake";
 import {
   applyFingerRotations,
   applyPoseToVrm,
+  applyPoserVisualState,
   desiredRelaxedPalmNormal,
   estimateVrmPalmNormal,
   stripFingerBones,
@@ -196,6 +203,49 @@ describe("relaxed hand palm orientation across bundled characters", () => {
 
     expect(failures, failures.join(" | ")).toEqual([]);
   }, 180_000);
+
+  it("저장한 컷에서 주먹을 쥐어도 손목과 아래팔의 원래 각도를 보존한다", async () => {
+    const vrm = await loadBundledVrm(CHARACTERS[0].file);
+    const idle = applyNaturalIdle(vrm, CHARACTERS[0].id);
+    const baked = bakeStudioVrmRuntimePose(vrm)!;
+    const controls: PoseBoneMap = {};
+    for (const name of STUDIO_VRM_DIRECT_EDIT_BONES) {
+      const rotation = baked.bones[name]?.rotation;
+      if (rotation && !POSER_FINGER_BONES.includes(name)) {
+        controls[name] = { rotation: restoreStudioVrmBakedRotation(name, rotation) };
+      }
+    }
+
+    const jointNames = ["rightHand", "rightLowerArm", "leftHand", "leftLowerArm"] as const;
+    const joints = jointNames.map(name => vrm.humanoid.getNormalizedBoneNode(name)!);
+    const original = joints.map(node => node.quaternion.clone());
+    const index = vrm.humanoid.getNormalizedBoneNode("rightIndexProximal")!;
+    const openIndex = index.quaternion.clone();
+
+    applyPoseToVrm(vrm, controls, baked.yOffset);
+    joints.forEach((node, i) => expect(node.quaternion.angleTo(original[i])).toBeLessThan(1e-6));
+
+    const fist = {
+      ...extractFingers(idle.bones as PoseBoneMap),
+      ...createStudioVrmHandPose("right", "fist"),
+    };
+    for (let edit = 0; edit < 2; edit++) {
+      applyPoserVisualState(vrm, {
+        bones: controls,
+        yOffset: baked.yOffset,
+        fingerEdits: fist,
+      });
+      expect(index.quaternion.angleTo(openIndex)).toBeGreaterThan(0.2);
+      joints.forEach((node, i) => expect(node.quaternion.angleTo(original[i])).toBeLessThan(1e-6));
+    }
+
+    // A separate upper-arm aim also leaves the authored local wrist rotation in control.
+    applyPoseToVrm(vrm, {
+      ...controls,
+      rightUpperArm: { direction: { sideX: 0.31, y: -0.95 } },
+    }, baked.yOffset);
+    expect(joints[0].quaternion.angleTo(original[0])).toBeLessThan(1e-6);
+  }, 60_000);
 
   it("does not force palm twist on a clearly raised arm (wave-like)", async () => {
     // AvatarSample_A.vrm was removed for rights reasons (see CHARACTERS note above);

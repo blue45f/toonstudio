@@ -36,6 +36,12 @@ export function studioVrmPoseControlOrder(bone: VRMHumanBoneName): "YXZ" | "XYZ"
   return /Hand|Arm|Finger/u.test(bone) ? "YXZ" : "XYZ";
 }
 
+/** An aimed upper/lower arm leaves wrist twist to the solver. A saved or manually posed wrist already sets it. */
+export function canAutoOrientStudioVrmWrist(bones: PoseBoneMap | undefined, side: "left" | "right"): boolean {
+  if (!bones?.[`${side}Hand`]?.rotation) return true;
+  return Boolean(bones[`${side}UpperArm`]?.direction && bones[`${side}LowerArm`]?.direction);
+}
+
 /** V6 stores baked XYZ radians even when the wrist/arm control uses YXZ. */
 export function restoreStudioVrmBakedRotation(bone: VRMHumanBoneName, rotation: Vec3): Vec3 {
   if (studioVrmPoseControlOrder(bone) === "XYZ" || rotation[0] === 0 || rotation[1] === 0) return [...rotation];
