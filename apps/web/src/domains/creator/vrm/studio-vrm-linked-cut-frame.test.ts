@@ -38,6 +38,19 @@ describe("linked placement recapture", () => {
     expect(() => resolveVrmCaptureCameraForFrame(new PerspectiveCamera(), altered, frame))
       .toThrow(/자세 \(bodyRotationY\).*카메라 \(fovDegrees\).*기존 이미지를 보존/u);
   });
+  it("preserves unaffected joints down to their saved precision when the artist intentionally rotates another joint", () => {
+    const saved = { ...scene, pose: { ...scene.pose, bones: {
+      leftEye: { rotation: [.02, -.0010363440663709866, 0] as const },
+      rightHand: { rotation: [-.5, 0, 0] as const },
+    } } };
+    const live = { ...saved, pose: { ...saved.pose, bones: {
+      leftEye: { rotation: [.02, -.0010363440663692103, 0] as const },
+      rightHand: { rotation: [-.7, 0, 0] as const },
+    } } };
+    const result = preserveUneditedCutPose(saved, live);
+    expect(result.pose.bones.leftEye).toBe(saved.pose.bones.leftEye);
+    expect(result.pose.bones.rightHand).toBe(live.pose.bones.rightHand);
+  });
   it("keeps an existing cut's PNG resolution and aspect when editing its pose or camera from a wider pane", () => {
     const original = { ...scene, characterDocumentId: "character:page/a", render: { ...scene.render, width: 128, height: 64 } };
     const frame = readEditableCutFrame(original, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAEA");

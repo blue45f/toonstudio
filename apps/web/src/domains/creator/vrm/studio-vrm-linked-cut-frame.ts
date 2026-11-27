@@ -1,6 +1,8 @@
 import type { Camera, PerspectiveCamera } from "three";
 import type { StudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
+import { STUDIO_VRM_HUMANOID_BONES } from "@toonstudio/contracts/studio-vrm-scene-fields";
+
 import { readPngDimensions } from "@/platform/creator-asset-response-validation";
 import { STUDIO_BG3D_SHOT_BATCH_MAX_DIMENSION } from "../bg3d/studio-bg3d-shot-batch-limits";
 import { STUDIO_VRM_PNG_MAX_PIXELS } from "./studio-vrm-png-worker-protocol";
@@ -74,14 +76,19 @@ export function preserveUneditedCutPose(
   saved: StudioVrmSceneDocument,
   captured: StudioVrmSceneDocument,
 ): StudioVrmSceneDocument {
-  const { fingerOverrides: savedFingers, ...originalBody } = saved.pose;
-  const { fingerOverrides, ...currentBody } = captured.pose;
+  const { bones: savedBones, fingerOverrides: savedFingers, ...originalBody } = saved.pose;
+  const { bones: currentBones, fingerOverrides, ...currentBody } = captured.pose;
+  const bones = { ...currentBones };
+  for (const name of STUDIO_VRM_HUMANOID_BONES) {
+    const original = savedBones[name];
+    if (original && firstCutDifference(original, currentBones[name], 1e-12) === null) bones[name] = original;
+  }
   const unchangedBody = firstCutDifference(originalBody, currentBody, 1e-12) === null;
   const unchangedFingers = firstCutDifference(savedFingers, fingerOverrides, 1e-12) === null;
   const unchangedCamera = firstCutDifference(saved.camera, captured.camera, 1e-12) === null;
   return {
     ...captured,
-    pose: { ...(unchangedBody ? originalBody : currentBody), fingerOverrides: unchangedFingers ? savedFingers : fingerOverrides },
+    pose: { ...(unchangedBody ? originalBody : currentBody), bones, fingerOverrides: unchangedFingers ? savedFingers : fingerOverrides },
     camera: unchangedCamera ? saved.camera : captured.camera,
   };
 }
