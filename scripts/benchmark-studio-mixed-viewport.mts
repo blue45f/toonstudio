@@ -105,11 +105,36 @@ try {
     const { measureMixedViewport } = await import(/* @vite-ignore */ url);
     return measureMixedViewport(c);
   }, probeUrl);
+  // 같은 위치에서 확대·축소를 번갈아 실행하고 실제 입력이 반영된 렌더만 센다.
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('휠 입력을 보낼 뷰포트 영역을 찾지 못했습니다.');
+  await page.mouse.move(Math.floor(box.x + box.width / 2), Math.floor(box.y + box.height / 2));
+  const wheelProbe = await canvas.evaluateHandle(async (c, url) => {
+    const { createMixedWheelProbe } = await import(/* @vite-ignore */ url);
+    return createMixedWheelProbe(c);
+  }, probeUrl);
+  const warmup = 2;
+  const sampleCount = 20;
+  const samples = [];
+  for (let i = 0; i < warmup + sampleCount; i++) {
+    const deltaY = i % 2 === 0 ? 120 : -120;
+    const pending = await wheelProbe.evaluateHandle((arm, delta) => arm(delta), deltaY);
+    await page.mouse.wheel(0, deltaY);
+    const sample = await pending.evaluate(observation => observation.result);
+    await pending.dispose();
+    if (sample.error) throw new Error(sample.error + ' (deltaY=' + deltaY + ')');
+    if (!Number.isFinite(sample.elapsedMs) || sample.elapsedMs < 0) throw new Error('유효하지 않은 휠 응답 시간입니다.');
+    if (i >= warmup) samples.push(sample);
+  }
+  await wheelProbe.dispose();
+  const ordered = samples.map(sample => sample.elapsedMs).sort((a, b) => a - b);
+  const wheelResponse = { unit: 'ms', metric: 'trusted wheel event.timeStamp to first main-camera onAfterRender with matching dolly or zoom',
+    warmup, sampleCount, samples, p50: ordered[Math.ceil(sampleCount * 0.50) - 1], p95: ordered[Math.ceil(sampleCount * 0.95) - 1] };
   const metadata = { sha, assets, date: new Date().toISOString(), os: os.platform(), arch: os.arch(),
     cpu: os.cpus()[0]?.model, runner: process.env.RUNNER_OS, runnerImage: process.env.ImageVersion,
     browser: browser.version(), build: 'Studio app served by Vite with the source checkout', launchArgs: args };
-  await writeFile(path.join(output, 'timing.json'), JSON.stringify({ ...metadata, ...timing }, null, 2) + '\n');
-  console.log('[mixed-viewport] ' + JSON.stringify({ sha, samples: timing.sampleCount, p50Ms: timing.p50, p95Ms: timing.p95, gpu: timing.gpu, counts: timing.counts, viewport: timing.buffer }));
+  await writeFile(path.join(output, 'timing.json'), JSON.stringify({ ...metadata, ...timing, wheelResponse }, null, 2) + '\n');
+  console.log('[mixed-viewport] ' + JSON.stringify({ sha, samples: timing.sampleCount, p50Ms: timing.p50, p95Ms: timing.p95, wheelP50Ms: wheelResponse.p50, wheelP95Ms: wheelResponse.p95, gpu: timing.gpu, counts: timing.counts, viewport: timing.buffer }));
 } catch (error) {
   if (observedPage) {
     await observedPage.screenshot({ path: path.join(output, 'failed-view.png'), timeout: 10000 }).catch(() => {});
