@@ -20,11 +20,14 @@ const source=[
   "export {createRoot} from 'react-dom/client';",
   "export {Canvas,useFrame,useThree} from '@react-three/fiber';",
   ...["studio-vrm-wardrobe","studio-vrm-garment-fit","studio-vrm-props","studio-vrm-prop-rig","studio-vrm-poser-utils","studio-vrm-costume-runtime","StudioVrmWardrobePropsProjection"].map((name)=>`export * from ${JSON.stringify(join(domain,"vrm",name))};`),
+  `export { StudioVrmGripContactRefine } from ${JSON.stringify(join(domain,"vrm","StudioVrmGripContactRefine"))};`,
+  `export { resolveStudioVrmFingerAuthority } from ${JSON.stringify(join(domain,"vrm","studio-vrm-auto-grip-authority"))};`,
   `export * from ${JSON.stringify(join(domain,"studio-pose-presets"))};`,
 ].join("\n");
 await writeFile(entry,source);
 await build({configFile:false,publicDir:false,resolve:{alias:{"@":process.cwd()}},define:{"process.env.NODE_ENV":JSON.stringify("production")},build:{outDir:join(directory,"runtime"),lib:{entry,formats:["es"],fileName:()=>"runtime.mjs"},minify:false,sourcemap:false}});
 await copyFile("scripts/studio-wearable-review-page.mjs",join(directory,"page.mjs"));
+await copyFile("scripts/studio-wearable-motion-grip.mjs",join(directory,"studio-wearable-motion-grip.mjs"));
 await copyFile("scripts/studio-wearable-frame-evidence.mjs",join(directory,"runtime/frame-evidence.mjs"));
 await writeFile(join(directory,"index.html"),'<!doctype html><html lang="en"><meta charset="utf-8"><title>Wearable production-renderer review</title><style>html,body,#root{margin:0;width:100%;height:100%;overflow:hidden}canvas{display:block}</style><div id="root"></div><script type="module" src="/page.mjs"></script></html>');
 await symlink(resolve("apps/web/public/assets"),join(directory,"assets"),"dir");
@@ -54,7 +57,8 @@ const motionCases = [
 ] as const;
 const reviewAssets = assets.assets.filter((asset) =>
   motionOnly ? motionCases.some(({ id }) => id === asset.id) : !headwearOnly || headwearIds.has(asset.id));
-type MotionReceipt = { bone: string; vrmVersion: string; actualTurnDeg: number; socketGapMm: number; anchorDriftMm: number; vertexDriftMm: number; angularDriftDeg: number };
+type GripDigit = { digit: string; skinVertices: number; minGapMm: number; maxPenetrationMm: number; jointBendDeg: number };
+type MotionReceipt = { grip?: GripDigit[]; bone: string; vrmVersion: string; actualTurnDeg: number; socketGapMm: number; anchorDriftMm: number; vertexDriftMm: number; angularDriftDeg: number };
 type MotionApi = { status: string; frames: number; catalogue: { models: string[] }; beginAttachmentMotion: (bone: string) => void;
   turnAttachment: (angle: number) => void; measureAttachment: () => MotionReceipt };
 const motionResults: Array<{ frame: string; commandedTurnDeg: number; verified: boolean; measured: MotionReceipt }> = [];
@@ -113,8 +117,19 @@ async function verifyMotion() {
           const measured = await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.measureAttachment());
           const verified = measured.bone === bone && Math.abs(measured.actualTurnDeg - Math.abs(angle)) <= 1
             && measured.socketGapMm <= 1 && measured.anchorDriftMm <= 1 && measured.vertexDriftMm <= 1 && measured.angularDriftDeg <= 0.5;
-          motionResults.push({ frame, commandedTurnDeg: angle, verified, measured });
+          const hasGripEvidence = id !== "mic" || (measured.grip?.length === 5 && measured.grip.every((digit) =>
+            digit.skinVertices > 0 && [digit.minGapMm, digit.maxPenetrationMm, digit.jointBendDeg].every(Number.isFinite)));
+          motionResults.push({ frame, commandedTurnDeg: angle, verified: verified && hasGripEvidence, measured });
           console.log("MOTION", frame, JSON.stringify(measured));
+        }
+        if (id === "mic") {
+          // One unchanged camera from the outside of the right hand (away from the torso).
+          await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.turnAttachment(0));
+          await view(-65, "grip");
+          for (const angle of [0, 35]) {
+            await page.evaluate((degrees) => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.turnAttachment(degrees), angle);
+            await capture(`${model}-prop-mic-grip-${angle}`);
+          }
         }
       } finally {
         await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.turnAttachment(0));

@@ -1,5 +1,6 @@
 /** Review-only page. runtime.mjs is built from the exact checkout's production components. */
 import * as R from "./runtime/runtime.mjs";
+import { createMicGripMeasurement } from "./studio-wearable-motion-grip.mjs";
 
 const { THREE: T, React, createRoot, Canvas, useFrame, useThree } = R;
 const h = React.createElement;
@@ -32,12 +33,6 @@ async function avatar(url) {
   cache.set(url, value); return value;
 }
 const tick = ()=>new Promise((resolve)=>requestAnimationFrame(resolve));
-function propInstance(def, color) {
-  const anchor = def.anchors.find((item)=>item.role==="primary") ?? def.anchors.find((item)=>item.role==="surface") ?? def.anchors[0];
-  return { uid:`review-${generation}-${def.id}`, propId:def.id, bone:def.defaultBone, position:[...def.defaultPosition], rotationDeg:[...def.defaultRotationDeg], scale:def.defaultScale, color:color??def.defaultColor,
-    rig:{version:2,mode:"auto",anchorId:anchor.id,autoScale:true,autoFingerPose:Boolean(def.grip),gripFit:1,deltaPosition:[0,0,0],deltaRotationDeg:[0,0,0],deltaScale:1} };
-}
-
 api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full", color=null, assetUrl=null }={})=>{ // NOSONAR javascript:S3776
   if (!selectState) throw new Error("Review root not ready");
   api.turnAttachment = null;
@@ -61,9 +56,12 @@ api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full"
   let instance=null; let equip=null; let slot=null; let effectiveFit=1;
   if(type==="prop") {
     const def=R.propDefById(id); if(!def)throw new Error(`Unknown prop ${id}`);
-    instance=propInstance(def,color);
+    instance=R.createPropInstance(id, "review-" + token + "-" + id);
+    if(color)instance={...instance,color};
     const fingers=R.createAutoGripFingerOverrides([instance],R.propDefById,metrics);
-    R.applyFingerRotations(vrm,fingers);
+    const authored=Object.fromEntries(R.POSER_FINGER_BONES.filter((name)=>idle.bones[name]?.rotation)
+      .map((name)=>[name,idle.bones[name].rotation]));
+    R.applyFingerRotations(vrm,R.resolveStudioVrmFingerAuthority(authored,fingers));
   } else if(type==="wardrobe") {
     const def=R.wardrobeItemById(id); if(!def)throw new Error(`Unknown garment ${id}`);
     equip=R.createWardrobeEquip(id);slot=def.slot;
@@ -120,14 +118,15 @@ api.beginAttachmentMotion = (expectedBone) => {
     if (!markerMesh && node.isMesh && node.geometry?.getAttribute("position")?.count) markerMesh = node;
   });
   if (!markerMesh) throw new Error("장착한 GLB에서 비교할 메시 정점을 찾지 못했습니다.");
+  const measureGrip = instance.propId === "mic" ? createMicGripMeasurement(vrm, asset) : null;
   const anchorWorld = () => asset.localToWorld(new T.Vector3(...fit.anchor.position));
   const markerWorld = () => markerMesh.localToWorld(markerMesh.getVertexPosition(0, new T.Vector3()));
-  const relativeRotation = () => rawBone.getWorldQuaternion(new T.Quaternion()).invert()
-    .multiply(asset.getWorldQuaternion(new T.Quaternion()));
+  const relativeRotation = () => rawBone.getWorldQuaternion(new T.Quaternion()).normalize().invert()
+    .multiply(asset.getWorldQuaternion(new T.Quaternion()).normalize()).normalize();
   const baselineAnchor = rawBone.worldToLocal(anchorWorld());
   const baselineMarker = rawBone.worldToLocal(markerWorld());
   const baselineRotation = relativeRotation();
-  const baselineBoneRotation = rawBone.getWorldQuaternion(new T.Quaternion());
+  const baselineBoneRotation = rawBone.getWorldQuaternion(new T.Quaternion()).normalize();
   const startingPose = bone.quaternion.clone();
   const axis = expectedBone === "head" ? new T.Vector3(0, 1, 0) : new T.Vector3(0, 0, 1);
   api.turnAttachment = (degrees) => {
@@ -143,8 +142,9 @@ api.beginAttachmentMotion = (expectedBone) => {
     const anchor = anchorWorld();
     return {
       bone: expectedBone,
+      ...(measureGrip ? { grip: measureGrip() } : {}),
       vrmVersion: vrm.meta.metaVersion,
-      actualTurnDeg: T.MathUtils.radToDeg(baselineBoneRotation.angleTo(rawBone.getWorldQuaternion(new T.Quaternion()))),
+      actualTurnDeg: T.MathUtils.radToDeg(baselineBoneRotation.angleTo(rawBone.getWorldQuaternion(new T.Quaternion()).normalize())),
       socketGapMm: anchor.distanceTo(bone.localToWorld(new T.Vector3(...fit.socketPosition))) * 1000,
       anchorDriftMm: anchor.distanceTo(rawBone.localToWorld(baselineAnchor.clone())) * 1000,
       vertexDriftMm: markerWorld().distanceTo(rawBone.localToWorld(baselineMarker.clone())) * 1000,
@@ -168,6 +168,12 @@ function Camera({selection}) {
       if(selection.crop==="head"){center.copy(head).add(new T.Vector3(0,.05,0));radius=.25;}
       if(selection.crop==="torso"){center.copy(hips).lerp(head,.55);radius=.39;}
       if(selection.crop==="shoes"){const foot=humanoid.getNormalizedBoneNode("leftFoot").getWorldPosition(new T.Vector3());center.set(0,foot.y+.035,foot.z);radius=.25;}
+      if(selection.crop==="grip"){
+        const wrist=humanoid.getNormalizedBoneNode("rightHand");
+        const knuckle=humanoid.getNormalizedBoneNode("rightMiddleProximal");
+        center.copy(wrist.getWorldPosition(new T.Vector3())).lerp(knuckle.getWorldPosition(new T.Vector3()),.85);
+        radius=Math.max(.08,selection.metrics.rightHand*1.35);
+      }
       if(selection.crop==="hand"){
         const bone=selection.instance?.bone??"rightHand";
         center.copy(humanoid.getNormalizedBoneNode(bone).getWorldPosition(new T.Vector3()));radius=.23;
