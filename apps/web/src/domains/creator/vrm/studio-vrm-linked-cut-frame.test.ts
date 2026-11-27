@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
-import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, readLinkedCutPngSize, resolveVrmCaptureCameraForFrame } from "./studio-vrm-linked-cut-frame";
+import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, preserveUneditedCutPose, readLinkedCutPngSize, resolveVrmCaptureCameraForFrame } from "./studio-vrm-linked-cut-frame";
 import { vrmInsertCaptureSize } from "./studio-vrm-poser-helpers";
 import { createDefaultStudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
@@ -20,6 +20,16 @@ describe("linked placement recapture", () => {
     expect(linkedCutContextMatches(scene, { ...changedLook, expressions: { ...scene.expressions, happy: 0.75 } })).toBe(false);
     expect(linkedCutContextMatches(scene, { ...changedLook, render: { ...scene.render, transparentBackground: !scene.render.transparentBackground } })).toBe(false);
     expect(linkedCutCameraMatches(scene.camera, { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 1 })).toBe(false);
+  });
+  it("retains original framing and body precision during a local finger edit, while accepting intentional body edits", () => {
+    const fingers = { rightIndexProximal: [0, 0, .5] as const };
+    const captured = { ...scene, pose: { ...scene.pose, bodyRotationY: scene.pose.bodyRotationY + 2e-15, fingerOverrides: fingers },
+      camera: { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 1e-13 } };
+    const edit = preserveUneditedCutPose(scene, captured);
+    expect(edit.pose).toEqual({ ...scene.pose, fingerOverrides: fingers });
+    expect(edit.camera).toBe(scene.camera);
+    const moved = { ...captured, pose: { ...captured.pose, bodyRotationY: .5 }, camera: { ...scene.camera, fovDegrees: 27 } };
+    expect(preserveUneditedCutPose(scene, moved)).toEqual(moved);
   });
   it("identifies the first differing field in each shot setting before pixel capture", () => {
     const frame = { source: scene, pixels: { width: 200, height: 100 } };

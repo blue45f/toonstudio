@@ -22,6 +22,7 @@ import { useCharacterPlatformWorkbench } from "../character-platform/ui/use-char
 import { CharacterPlatformWorkbench } from "../character-platform/ui/CharacterPlatformWorkbench";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
+import { preserveUneditedCutPose } from "../vrm/studio-vrm-linked-cut-frame";
 import { StudioVrmPoserViewport } from "../vrm/StudioVrmPoserViewport";
 import { StudioVrmPoserDialog } from "../vrm/StudioVrmPoserDialog";
 import { useStudioVrmPoserController } from "../vrm/useStudioVrmPoserController";
@@ -169,12 +170,16 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
   const { admitOutput } = linked;
   useLayoutEffect(() => {
     place.current = { scope: captureScope, insert: async result => {
-      if (!linkedCutCapture) return assets.insert(result, deliver);
+      if (!linkedCutCapture) {
+        const scene = placement && documentId && placement.characterDocumentId === documentId
+          ? preserveUneditedCutPose(placement, result.scene) : result.scene;
+        return assets.insert({ ...result, scene }, deliver);
+      }
       if (!await admitOutput() || place.current?.scope !== captureScope) return false;
       return deliver({ ...result, scene: { ...result.scene, characterDocumentId: linkedCutCapture.documentId } });
     } };
     return () => { place.current = null; };
-  }, [admitOutput, assets, captureScope, deliver, linkedCutCapture]);
+  }, [admitOutput, assets, captureScope, deliver, documentId, linkedCutCapture, placement]);
   const binding = controller.binding;
   const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced);
   const variantHost = {

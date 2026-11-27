@@ -34,17 +34,17 @@ const cutContextFields = {
 type CutContextField = keyof typeof cutContextFields;
 const cutContextKeys = Object.keys(cutContextFields) as CutContextField[];
 
-function firstCutDifference(saved: unknown, live: unknown): CutDifference | null {
+function firstCutDifference(saved: unknown, live: unknown, tolerance = 1e-5): CutDifference | null {
   if (saved === live) return null;
   if (typeof saved === "number" && typeof live === "number" &&
-      Math.abs(saved - live) <= 1e-5 * Math.max(1, Math.abs(saved), Math.abs(live))) return null;
+      Math.abs(saved - live) <= tolerance * Math.max(1, Math.abs(saved), Math.abs(live))) return null;
   if (saved && typeof saved === "object" && live && typeof live === "object" &&
       Array.isArray(saved) === Array.isArray(live)) {
     const left = saved as Record<string, unknown>;
     const right = live as Record<string, unknown>;
     for (const key of Object.keys(left)) {
       if (!Object.hasOwn(right, key)) return { path: key, saved: left[key], live: undefined };
-      const difference = firstCutDifference(left[key], right[key]);
+      const difference = firstCutDifference(left[key], right[key], tolerance);
       if (difference) return { ...difference, path: difference.path ? key + "." + difference.path : key };
     }
     const extra = Object.keys(right).find(key => !Object.hasOwn(left, key));
@@ -60,6 +60,23 @@ export function linkedCutCameraMatches(a: StudioVrmSceneDocument["camera"], b: S
 /** Validate the restored acting and scene before allowing fresh pixels to replace a saved cut. */
 export function linkedCutContextMatches(source: StudioVrmSceneDocument, rendered: StudioVrmSceneDocument): boolean {
   return cutContextKeys.every(key => firstCutDifference(source[key], rendered[key]) === null);
+}
+
+/** An interactive edit can change acting. Retain its exact original numbers when only Euler round-off occurred. */
+export function preserveUneditedCutPose(
+  saved: StudioVrmSceneDocument,
+  captured: StudioVrmSceneDocument,
+): StudioVrmSceneDocument {
+  const { fingerOverrides: savedFingers, ...originalBody } = saved.pose;
+  const { fingerOverrides, ...currentBody } = captured.pose;
+  const unchangedBody = firstCutDifference(originalBody, currentBody, 1e-12) === null;
+  const unchangedFingers = firstCutDifference(savedFingers, fingerOverrides, 1e-12) === null;
+  const unchangedCamera = firstCutDifference(saved.camera, captured.camera, 1e-12) === null;
+  return {
+    ...captured,
+    pose: { ...(unchangedBody ? originalBody : currentBody), fingerOverrides: unchangedFingers ? savedFingers : fingerOverrides },
+    camera: unchangedCamera ? saved.camera : captured.camera,
+  };
 }
 
 function describeCutField(key: CutContextField, difference: CutDifference): string {
