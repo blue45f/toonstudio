@@ -59,16 +59,16 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     ]);
   });
 
-  it(`monorepo-layout: 앱 7개·공유 패키지 13개·래칫 규칙 17개가 저장소와 같다 — ${hint}`, () => {
+  it(`monorepo-layout: 앱 6개·공유 패키지 13개·래칫 규칙 17개가 저장소와 같다 — ${hint}`, () => {
     const apps = directoriesIn("apps");
     const packages = directoriesIn("packages");
     const ratchetKeys = Object.keys(JSON.parse(read("config/architecture-boundary-ratchet.json")) as Record<string, number>);
-    expect(apps).toHaveLength(7);
+    expect(apps).toHaveLength(6);
     expect(packages).toHaveLength(13);
     expect(ratchetKeys).toHaveLength(17);
-    expect(factValues("monorepo-layout")).toEqual(expect.arrayContaining(["7", "13", "17"]));
+    expect(factValues("monorepo-layout")).toEqual(expect.arrayContaining(["6", "13", "17"]));
     const text = diagramText("monorepo-layout");
-    expect(text).toContain("앱 7개");
+    expect(text).toContain("앱 6개");
     expect(text).toContain("공유 패키지 13개");
     expect(text).toContain("경계 래칫 17개 규칙");
     // 작업공간이 앱·패키지·교차 앱 시험을 한 곳에 묶는다.
@@ -182,14 +182,14 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     expect(read(".github/workflows/ci.yml")).toContain("needs: [lint, typecheck, static, serial, a11y, build, database]");
   });
 
-  it(`ai-assisted-dev: 하네스 필수 파일 22개·AGENTS.md 10개(루트 1 + 하위 9)·어댑터 5개가 코드와 같다 — ${hint}`, () => {
+  it(`ai-assisted-dev: 하네스 필수 파일 21개·AGENTS.md 9개(루트 1 + 하위 8)·어댑터 5개가 코드와 같다 — ${hint}`, () => {
     const harness = read("scripts/agent-harness.mjs");
     const required = quotedItems(harness, /const REQUIRED_FILES = \[([^\]]*)\]/u);
     const adapters = quotedItems(harness, /const ADAPTER_FILES = \[([^\]]*)\]/u);
-    expect(required).toHaveLength(22);
-    expect(required.filter((path) => path.endsWith("AGENTS.md"))).toHaveLength(10);
+    expect(required).toHaveLength(21);
+    expect(required.filter((path) => path.endsWith("AGENTS.md"))).toHaveLength(9);
     expect(adapters).toHaveLength(5);
-    expect(factValues("ai-assisted-dev")).toEqual(["22", "1 + 9", "5", "7"]);
+    expect(factValues("ai-assisted-dev")).toEqual(["21", "1 + 8", "5", "7"]);
     // 한글 커밋 제목 규칙이 commitlint 에 연결되어 있다.
     expect(read("commitlint.config.cjs")).toContain('"subject-korean": [2, "always"]');
   });

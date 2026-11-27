@@ -80,7 +80,7 @@ export const COMPETITOR_ROWS_3D: readonly EngineeringMapRow[] = [
       "Learned: its auto-rigger is limited to humanoid, neutral-pose meshes, so unsupported structures are checked and reported before retargeting rather than producing low-confidence results. Mixamo bone naming is also recognized.",
     ),
     overlap: t("리타깃 전 자산 검사(지원 불가 구조 보고)와 본 이름 매핑.", "Pre-retarget asset checks (reporting unsupported topologies) and bone-name mapping."),
-    evidence: [WAVE_3D, COMPETITOR_REGISTRY, "apps/character-lab/docs/parity/vision.md"],
+    evidence: [WAVE_3D, COMPETITOR_REGISTRY, "docs/archive/character-lab/parity/vision.md"],
   }),
   row({
     id: "plask",

@@ -526,7 +526,7 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(repoPathExists("docs/perf/bundle-gate.md")).toBe(true);
   });
 
-  it("AI 개발 방식: AGENTS.md 10개, 필수 검사 7개, 루프 명령 23개, OpenWiki 주 1회 PR", () => {
+  it("AI 개발 방식: AGENTS.md 9개, 필수 검사 7개, 루프 명령 23개, OpenWiki 주 1회 PR", () => {
     const slide = slideOf("talk-ai-dev");
     const harness = read("scripts/agent-harness.mjs");
     const requiredFiles = /const REQUIRED_FILES = \[([^\]]*)\];/u.exec(harness)?.[1] ?? "";
