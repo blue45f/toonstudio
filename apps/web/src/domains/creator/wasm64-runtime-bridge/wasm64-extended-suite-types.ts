@@ -38,6 +38,8 @@ export interface StudioWasm64ExtendedSuiteMetadata {
   readonly atelierStageCapabilitiesMask: number;
   readonly extendedCapabilitiesMask: number;
   readonly cpuTier: Wasm64ExecutableTier;
+  readonly addressBits: 64 | 32;
+  readonly memory64Active: boolean;
   readonly resolvedUrl: string | null;
   readonly wasmByteLength: number;
   readonly linearMemoryBytes: number;
@@ -49,6 +51,8 @@ export interface LoadStudioWasm64ExtendedSuiteOptions {
   readonly wasmUrl?: string;
   readonly wasmBytes?: Uint8Array | ArrayBuffer;
   readonly cpuTierHint?: Wasm64ExecutableTier;
+  readonly preferMemory64?: boolean;
+  readonly validateFn?: (bytes: Uint8Array) => boolean;
   readonly fetchFn?: typeof fetch;
 }
 
