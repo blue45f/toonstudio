@@ -327,10 +327,10 @@ function extractSignals(
     ellipsisCount: (trimmed.match(/(\.{2,}|…)/gu) ?? []).length,
     tildeCount: (trimmed.match(/[~～]/gu) ?? []).length,
     repeatedJamoCount: (trimmed.match(/([ㄱ-ㅎㅏ-ㅣ])\1+|([가-힣])\2{2,}|([A-Za-z])\3{2,}/gu) ?? []).length,
-    hasWhisperBrackets: /^\s*[（(].+[)）]\s*$/su.test(trimmed) || /(속닥|소곤|쉿|작게)/u.test(trimmed),
+    hasWhisperBrackets: /^\s*[（(][\s\S]+[)）]\s*$/u.test(trimmed) || /(속닥|소곤|쉿|작게)/u.test(trimmed),
     hasThoughtMarkers:
-      isInnerThought || /^\s*['‘].+['’]\s*$/su.test(trimmed) || /(인가|일까|인 걸까|일지도|속으로|생각해)/u.test(trimmed),
-    hasNarrationMarkers: isNarrationBox || /^\s*[[【『〈].+[\]】』〉]\s*$/su.test(trimmed),
+      isInnerThought || /^\s*['‘][\s\S]+['’]\s*$/u.test(trimmed) || /(인가|일까|인 걸까|일지도|속으로|생각해)/u.test(trimmed),
+    hasNarrationMarkers: isNarrationBox || /^\s*[[【『〈][\s\S]+[\]】』〉]\s*$/u.test(trimmed),
     allCapsRatio: latin.length >= 4 ? round3(upper.length / latin.length) : 0,
     stutterSegmentCount: stutter,
     acousticEnergy,

@@ -147,9 +147,13 @@ function readVarUint32(bytes: Uint8Array, offset: number): { value: number; next
   throw new Error("LEB128 varuint32가 예기치 않게 끝났습니다");
 }
 
+const BIGINT_ZERO = BigInt(0);
+const BIGINT_SEVEN = BigInt(7);
+const BIGINT_SEVENTY = BigInt(70);
+
 function readVarUint64(bytes: Uint8Array, offset: number): { value: bigint; nextOffset: number } {
-  let result = 0n;
-  let shift = 0n;
+  let result = BIGINT_ZERO;
+  let shift = BIGINT_ZERO;
   let pos = offset;
   while (pos < bytes.length) {
     const byte = bytes[pos];
@@ -158,8 +162,8 @@ function readVarUint64(bytes: Uint8Array, offset: number): { value: bigint; next
     if ((byte & 0x80) === 0) {
       return { value: result, nextOffset: pos };
     }
-    shift += 7n;
-    if (shift > 70n) throw new Error("LEB128 varuint64 오버플로");
+    shift += BIGINT_SEVEN;
+    if (shift > BIGINT_SEVENTY) throw new Error("LEB128 varuint64 오버플로");
   }
   throw new Error("LEB128 varuint64가 예기치 않게 끝났습니다");
 }
@@ -277,12 +281,12 @@ function createWasmRuntime(
 ): FastKernelsRuntime {
   const toPtr = (byteLen: number): WasmPtr => (isMemory64 ? BigInt(byteLen) : byteLen);
   const ptrToOffset = (ptr: WasmPtr): number => (typeof ptr === "bigint" ? Number(ptr) : ptr);
-  const isNullPtr = (ptr: WasmPtr): boolean => (typeof ptr === "bigint" ? ptr === 0n : ptr === 0);
+  const isNullPtr = (ptr: WasmPtr): boolean => (typeof ptr === "bigint" ? ptr === BIGINT_ZERO : ptr === 0);
 
   const slots: ScratchSlot[] = [
-    { ptr: isMemory64 ? 0n : 0, capacity: 0 },
-    { ptr: isMemory64 ? 0n : 0, capacity: 0 },
-    { ptr: isMemory64 ? 0n : 0, capacity: 0 },
+    { ptr: isMemory64 ? BIGINT_ZERO : 0, capacity: 0 },
+    { ptr: isMemory64 ? BIGINT_ZERO : 0, capacity: 0 },
+    { ptr: isMemory64 ? BIGINT_ZERO : 0, capacity: 0 },
   ];
 
   let disposed = false;
@@ -301,7 +305,7 @@ function createWasmRuntime(
     }
     const allocated = exportsObj.wasm_alloc(toPtr(required));
     if (isNullPtr(allocated)) {
-      slot.ptr = isMemory64 ? 0n : 0;
+      slot.ptr = isMemory64 ? BIGINT_ZERO : 0;
       slot.capacity = 0;
       throw new Error(`WASM 선형 메모리 할당 실패 (${required} B)`);
     }
@@ -447,7 +451,7 @@ function createWasmRuntime(
         if (!isNullPtr(slot.ptr) && slot.capacity > 0) {
           exportsObj.wasm_free(slot.ptr, toPtr(slot.capacity));
         }
-        slot.ptr = isMemory64 ? 0n : 0;
+        slot.ptr = isMemory64 ? BIGINT_ZERO : 0;
         slot.capacity = 0;
       }
     },
