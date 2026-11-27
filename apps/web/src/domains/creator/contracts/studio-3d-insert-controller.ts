@@ -11,11 +11,12 @@ export type Studio3dInsertMutationAdmission = (
 export interface StudioVrmInsertTarget {
   readonly type: string;
   readonly width?: number;
+  readonly height?: number;
 }
 
 export interface StudioVrmTargetPatch {
   readonly src: string;
-  readonly height: number;
+  readonly height?: number;
   readonly vrmScene: StudioVrmPoserInsertResult["scene"];
 }
 
@@ -187,10 +188,15 @@ export function applyStudioVrmInsertResult({
     ) {
       return false;
     }
+    // Re-edit replaces the raster in the artist's existing canvas rectangle. Only
+    // older width-only placements need to recover their height from the capture.
+    const missingSize = isPositiveFiniteDimension(target.height) ? {} : {
+      height: Math.max(1, Math.round(target.width * (result.height / result.width))),
+    };
     return patchTarget(targetElementId, {
       src: result.pngDataUrl,
-      height: Math.max(1, Math.round(target.width * (result.height / result.width))),
       vrmScene: result.scene,
+      ...missingSize,
     });
   }
 

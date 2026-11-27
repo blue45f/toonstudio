@@ -139,6 +139,7 @@ jobs:
             apps/web/src/domains/creator/vrm/studio-vrm-linked-cut-frame.test.ts \
             apps/web/src/domains/creator/vrm/studio-vrm-pose-bake.test.ts \
             apps/web/src/domains/creator/character-shaper/StudioCharacterCutRefreshRunner.test.tsx \
+            apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.test.ts \
             apps/web/src/domains/creator/character-shaper/studio-character-linked-cut-refresh.test.ts \
             apps/web/src/domains/creator/character-shaper/use-linked-cut-capture.test.tsx \
             apps/web/src/domains/creator/vrm/StudioVrmPropAttachment.capture.test.tsx \
