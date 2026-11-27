@@ -385,4 +385,3 @@ export const KIT_FAILURE_CODES = [
   "kit-outline-shell-forbidden",
 ] as const;
 export type KitFailureCode = (typeof KIT_FAILURE_CODES)[number];
-
