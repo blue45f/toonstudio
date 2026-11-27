@@ -13,6 +13,8 @@ import {
   createStudioVrmGripContactTargets,
   type StudioVrmGripDigitOrdinal,
 } from "./studio-vrm-grip-contact-targets";
+import { usesDefaultMicrophoneThumbGrip } from "./studio-vrm-microphone-grip";
+import { createMicrophoneThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
 import { createAutoGripFingerOverrides, resolvePropAttachment, resolveSecondaryPropTarget } from "./studio-vrm-prop-rig";
 import { propDefById } from "./studio-vrm-props";
 import {
@@ -74,12 +76,17 @@ export function createStudioVrmGripContactPasses(
       const handSize = side === "left" ? metrics.leftHand : metrics.rightHand;
       if (![radius, handSize].every((value) => Number.isFinite(value) && value > 0)) continue;
 
+      const thumbContact = usesDefaultMicrophoneThumbGrip(item, metrics)
+        ? createMicrophoneThumbContactPass(vrm, side, resolved, handSize, locked) : null;
+      if (thumbContact) passes.push(thumbContact);
+
       hand.updateWorldMatrix(true, true);
       const chains: THREE.Object3D[][] = [];
       const fingerOrdinals: StudioVrmGripDigitOrdinal[] = [];
       const probes: StudioVrmVirtualFingertipProbe[] = [];
       const jointLimits: number[] = [];
       for (const digit of DIGITS) {
+        if (digit.name === "Thumb" && thumbContact) continue;
         const names = digit.segments.map((segment) => (
           `${side}${digit.name}${segment}` as VRMHumanBoneName
         ));

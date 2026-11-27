@@ -62,72 +62,12 @@ function findFingerSurface(vrm, digit) {
   return { digit, patches, joints };
 }
 
-// This diagnostic holds the measured skin pose fixed. It suggests where to inspect the real
-// renderer next; final contact numbers always come from fresh skinned vertices and GLB triangles.
-function probeMicrophoneAxis(surfaces, handle, localToMm, centerY) {
-  const profile = new Map();
-  const points = handle.geometry.getAttribute("position");
-  for (let i = 0; i < points.count; i++) {
-    const y = Math.round(points.getY(i) * 1e5) / 1e5 * localToMm;
-    const radius = Math.hypot(points.getX(i), points.getZ(i)) * localToMm;
-    profile.set(y, Math.max(profile.get(y) ?? 0, radius));
-  }
-  const rings = [...profile].sort((a, b) => a[0] - b[0]);
-  function score(dx, dz, tiltX, tiltZ) {
-    const dir = new T.Vector3(Math.tan(tiltX * Math.PI / 180), 1, Math.tan(tiltZ * Math.PI / 180)).normalize();
-    const digits = [];
-    let loss = 0;
-    for (const vertices of surfaces) {
-      let nearest = Infinity;
-      let depth = 0;
-      for (const [x, y, z] of vertices) {
-        const vx = x - dx, vy = y - centerY, vz = z - dz;
-        const along = vx * dir.x + vy * dir.y + vz * dir.z;
-        const axial = along + centerY;
-        const r = Math.sqrt(Math.max(0, vx * vx + vy * vy + vz * vz - along * along));
-        let k = 1;
-        while (k < rings.length - 1 && axial > rings[k][0]) k++;
-        const [lo, hi] = [rings[k - 1], rings[k]];
-        const f = Math.max(0, Math.min(1, (axial - lo[0]) / (hi[0] - lo[0])));
-        const signed = r - (lo[1] + f * (hi[1] - lo[1]));
-        const endGap = Math.max(rings[0][0] - axial, axial - rings.at(-1)[0], 0);
-        if (endGap > 0) nearest = Math.min(nearest, Math.hypot(Math.max(signed, 0), endGap));
-        else {
-          nearest = Math.min(nearest, Math.abs(signed));
-          depth = Math.max(depth, -signed);
-        }
-      }
-      loss += Math.max(0, nearest - 1) ** 2 + 2 * Math.max(0, depth - 1) ** 2;
-      digits.push({ gap: nearest, penetration: depth });
-    }
-    return { dx, dz, tiltX, tiltZ, loss, digits };
-  }
-  let best = score(0, 0, 0, 0);
-  const nominal = best;
-  for (const step of [8, 4, 2, 1]) {
-    for (let pass = 0; pass < 6; pass++) {
-      let improved = false;
-      for (const key of ["dx", "dz", "tiltX", "tiltZ"]) {
-        for (const sign of [-1, 1]) {
-          const options = { ...best, [key]: best[key] + sign * step };
-          if (Math.max(Math.abs(options.dx), Math.abs(options.dz)) > 16 || Math.max(Math.abs(options.tiltX), Math.abs(options.tiltZ)) > 32) continue;
-          const trial = score(options.dx, options.dz, options.tiltX, options.tiltZ);
-          if (trial.loss + 0.001 < best.loss) { best = trial; improved = true; }
-        }
-      }
-      if (!improved) break;
-    }
-  }
-  return { nominal, best, propScale: localToMm / 1000, units: "world mm displacement at grip anchor, degrees toward local X/Z" };
-}
-
-export function createMicGripMeasurement(vrm, asset, anchorY) {
+export function createMicGripMeasurement(vrm, asset) {
   const { handle, faces } = findHandle(asset);
   const surfaces = digits.map((digit) => findFingerSurface(vrm, digit));
   const point = new T.Vector3();
   const closest = new T.Vector3();
   const offset = new T.Vector3();
-  let measuredNeutral = false;
   return () => {
     handle.updateWorldMatrix(true, false);
     const scale = handle.getWorldScale(new T.Vector3());
@@ -135,9 +75,7 @@ export function createMicGripMeasurement(vrm, asset, anchorY) {
       throw new Error("손잡이의 비균일 배율을 확인해 주세요.");
     }
     const localToMm = scale.x * 1000;
-    const clouds = [];
-    const digits = surfaces.map(({ digit, patches, joints }) => {
-      const cloud = [];
+    return surfaces.map(({ digit, patches, joints }) => {
       const penetrations = [];
       const deepest = new T.Vector3();
       let deepestSkinInfluences = [];
@@ -149,7 +87,6 @@ export function createMicGripMeasurement(vrm, asset, anchorY) {
         mesh.updateWorldMatrix(true, false);
         for (const index of vertices) {
           handle.worldToLocal(mesh.localToWorld(mesh.getVertexPosition(index, point)));
-          if (!measuredNeutral) cloud.push(point.toArray().map((value) => value * localToMm));
           let minSquare = Infinity;
           let inside = false;
           for (const { triangle, normal } of faces) {
@@ -182,7 +119,6 @@ export function createMicGripMeasurement(vrm, asset, anchorY) {
       }
       const [base, middle, distal] = joints.map((joint) => joint.getWorldPosition(new T.Vector3()));
       const jointBendDeg = T.MathUtils.radToDeg(distal.sub(middle).angleTo(middle.sub(base)));
-      clouds.push(cloud);
       return { digit, skinVertices, minGapMm, maxPenetrationMm, jointBendDeg,
         deepestSkinInfluences,
         over3mm: penetrations.filter((depth) => depth > 3).length,
@@ -190,8 +126,5 @@ export function createMicGripMeasurement(vrm, asset, anchorY) {
         closestSkinLocalMm: closestSkinPoint.multiplyScalar(localToMm).toArray(),
       };
     });
-    const probe = !measuredNeutral && probeMicrophoneAxis(clouds, handle, localToMm, anchorY * localToMm);
-    measuredNeutral = true;
-    return { digits, probe };
   };
 }

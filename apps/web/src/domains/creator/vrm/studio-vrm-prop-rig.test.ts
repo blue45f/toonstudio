@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
+import { usesDefaultMicrophoneThumbGrip } from "./studio-vrm-microphone-grip";
 import {
   DEFAULT_VRM_PROP_RIG_METRICS,
   PROP_RIG_FIT_MAX,
@@ -777,12 +778,26 @@ describe("마이크 손잡이와 손바닥", () => {
     const axis = new THREE.Vector3(0, 1, 0).applyEuler(new THREE.Euler(
       THREE.MathUtils.degToRad(fitted.rotationDeg[0]), THREE.MathUtils.degToRad(fitted.rotationDeg[1]), THREE.MathUtils.degToRad(fitted.rotationDeg[2]),
     ));
-    expect(axis.dot(new THREE.Vector3(1, 0, 0).applyQuaternion(basis))).toBeCloseTo(1);
+    const localShaft = axis.applyQuaternion(basis.clone().invert());
+    expect(localShaft.x).toBeGreaterThan(0.97);
+    expect(localShaft.y * (bone === "rightHand" ? -1 : 1)).toBeGreaterThan(0.1);
+    expect(localShaft.z).toBeLessThan(-0.1);
     const custom = { ...mic, bone, rig: { ...mic.rig!, mode: "custom" as const, deltaPosition: [0.01, 0.02, 0] as Vec3 } };
     const saved = parseVrmProps(serializeVrmProps([custom])).items[0]!;
     expectVecClose(resolvePropAttachment(definition, saved, metrics).socketPosition, [
       fitted.socketPosition[0] + (bone === "leftHand" ? -0.01 : 0.01), fitted.socketPosition[1] + 0.02, fitted.socketPosition[2],
     ]);
+  });
+
+  it("새 마이크의 기본 자동 장착에서만 엄지 마디를 보정한다", () => {
+    expect(usesDefaultMicrophoneThumbGrip(mic, metrics)).toBe(true);
+    const rig = mic.rig!;
+    for (const patch of [
+      { mode: "custom" as const }, { autoFingerPose: false }, { autoScale: false }, { anchorId: "primary" },
+      { deltaScale: 1.1 }, { gripFit: 1.2 }, { deltaPosition: [0.01, 0, 0] as Vec3 }, { deltaRotationDeg: [0, 1, 0] as Vec3 },
+    ]) expect(usesDefaultMicrophoneThumbGrip({ ...mic, rig: { ...rig, ...patch } }, metrics)).toBe(false);
+    expect(usesDefaultMicrophoneThumbGrip({ ...mic, rig: undefined }, metrics)).toBe(false);
+    expect(usesDefaultMicrophoneThumbGrip({ ...mic, propId: "mug" }, metrics)).toBe(false);
   });
 
   it("저장된 구형 소켓과 자동 그립을 끈 손가락 저작값을 보존한다", () => {
