@@ -19,6 +19,7 @@ const expectedBoardLinks = [
   ["클라우드 작업", "/admin/platform/quality/?view=cloud-work"],
   ["사업계획·제출", "/admin/growth/business-plan/"],
   ["1R 최종 제출", "/admin/growth/business-plan/?view=final-submission"],
+  ["증빙·승인 조정", "/admin/growth/business-plan/?view=evidence-coordination"],
 ] as const;
 
 async function expectSpecialistBoardLinks(page: Page): Promise<void> {
@@ -106,7 +107,7 @@ async function downloadedText(download: Download): Promise<string> {
   return readFile(path, "utf8");
 }
 
-test("운영 범위와 여덟 전문 보드를 먼저 열고 통합 검토만 저장·재조회한다", async ({ page }) => {
+test("운영 범위와 전문 보드 링크를 먼저 열고 통합 검토만 저장·재조회한다", async ({ page }) => {
   const fixture = await workspaceFixture(page);
   await page.goto(boardPath);
   await expect(page.getByRole("heading", { name: "사업계획·운영 작업실", exact: true })).toBeVisible();

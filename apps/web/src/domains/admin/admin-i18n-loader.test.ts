@@ -35,12 +35,12 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
 }
 
 const MODULE_FILE = "admin-i18n-loader.ts";
-const PREFIXES = ["adminRest.status.", "admin.ciQuality.", "admin.workspace.", "admin.businessPlan.", "admin.finalSubmission.", "admin.productionChanges."] as const;
+const PREFIXES = ["adminRest.status.", "admin.ciQuality.", "admin.workspace.", "admin.businessPlan.", "admin.finalSubmission.", "admin.evidenceCoordination.", "admin.productionChanges."] as const;
 const STATUS_CONSUMERS = [
   "components/AdminIntegrations.tsx",
   "traffic/WebVitalsDashboardPage.tsx",
 ] as const;
-const CONSUMERS = [...STATUS_CONSUMERS, "components/AdminOps.tsx"] as const;
+const CONSUMERS = [...STATUS_CONSUMERS, "components/AdminOps.tsx", "shell/AdminShell.tsx"] as const;
 const MIGRATED_FILES = STATUS_CONSUMERS;
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));

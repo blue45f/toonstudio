@@ -1,3 +1,4 @@
+import { coordinationBasisChanged, coordinationStatus } from "./coordination";
 import { GLOBAL_PLATFORM_TASK_ID, REQUIRED_DOCUMENT_IDS } from "./types";
 
 import type { BoardState, DocumentRecord, Task } from "./types";
@@ -59,11 +60,30 @@ export function reconcileFinalSubmissionBoard(candidate: BoardState, previous: B
     const old = previous.tasks.find((item) => item.id === task.id);
     return (old?.status === "최종 확인" && taskEvidenceChanged(task, old)) || taskDependenciesChanged(task, next, previous) ? reopen(task) : task;
   });
+  if (next.coordination === undefined && previous.coordination) next.coordination = structuredClone(previous.coordination);
+  if (next.coordination) {
+    const prior = new Map(previous.coordination?.map(row => [row.id, row]));
+    next.coordination = next.coordination.map(row => {
+      const old = prior.get(row.id);
+      if (!old) return row;
+      const stale = old.latestVerified && coordinationBasisChanged(row, old, next, previous);
+      const confirmed = row.status === "최종 확인" || row.status === "검증 완료";
+      if (!stale && !(confirmed && coordinationStatus(row, next.coordination) !== row.status)) return row;
+      return { ...row, status: row.action ? "승인 대기" : "검토 필요", latestVerified: false, evidenceAt: "", checkedAt: "" };
+    });
+  }
   return next;
 }
 
 export function finalSubmissionTransitionErrors(next: BoardState, previous: BoardState): string[] {
   const errors: string[] = [];
+  for (const old of previous.coordination ?? []) {
+    const row = next.coordination?.find(item => item.id === old.id);
+    if (old.action && row?.action !== old.action) errors.push(`${old.title}: 기존 승인 대기 작업을 유지해 주세요.`);
+    if (row && old.latestVerified && coordinationBasisChanged(row, old, next, previous) && (row.latestVerified || row.checkedAt || row.evidenceAt)) {
+      errors.push(`${old.title}: 근거가 바뀌어 확인을 해제한 뒤 변경 내용을 먼저 저장해야 합니다.`);
+    }
+  }
   for (const old of previous.documents) {
     const doc = next.documents.find((item) => item.id === old.id);
     if (!doc) { errors.push(`${old.label}: 관리 대상 파일은 삭제할 수 없습니다.`); continue; }

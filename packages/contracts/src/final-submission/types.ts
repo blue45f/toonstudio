@@ -14,6 +14,21 @@ export const REQUIRED_APPROVALS = [
 
 export type Status = (typeof STATUSES)[number];
 export type Link = { label: string; url: string };
+export const COORDINATION_STATUSES = ["미확인", "검토 필요", "진행 중", "보완 중", "승인 대기", "검증 완료", "최종 확인"] as const;
+export const COORDINATION_ACTIONS = ["병합", "배포", "외부 계정 접근", "파일 교체", "문서 수정", "실제 제출"] as const;
+export const COORDINATION_REQUIRED_FIELDS = ["repo","branch","pr","commit","merge","ci","ciCommit","deployment","deployCommit","smoke","migration","platform","mentor","file","version","approvedVersion","digest","owner","checkedAt"] as const;
+export type CoordinationStatus = (typeof COORDINATION_STATUSES)[number];
+export type CoordinationItem = {
+  id: string; title: string; project: string; status: CoordinationStatus; priority: 1 | 2 | 3;
+  blocking: boolean; sourceTaskId: string; operationId: string; file: string; version: string;
+  approvedVersion: string; digest: string; repo: string; branch: string; pr: string; commit: string;
+  merge: string; ci: string; ciCommit: string; deployment: string; deployCommit: string; smoke: string;
+  migration: string; platform: string; mentor: string; owner: string; next: string; evidenceAt: string;
+  checkedAt: string; latestVerified: boolean; action: "" | (typeof COORDINATION_ACTIONS)[number];
+  refs: Link[]; attachments: Link[]; basisRefs?: Link[]; candidate: boolean;
+  sourceNote?: string; related?: string[]; required?: (typeof COORDINATION_REQUIRED_FIELDS)[number][];
+  comparisons?: { label: string; file: string; version: string; sha: string; note: string }[];
+};
 export type DocumentRecord = {
   id: string;
   label: string;
@@ -77,6 +92,7 @@ export type BoardState = {
   schemaVersion: 1;
   documents: DocumentRecord[];
   tasks: Task[];
+  coordination?: CoordinationItem[];
   sources: Source[];
   revision: number;
   updatedAt: string;
