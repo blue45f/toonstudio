@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
 import { office2dCharacterForAvatarSkin } from "./office2d/office2d-avatar-role";
-import { office2dCharacterUrl } from "./office2d/office2d-sprite-catalog";
+import { office2dPreviewUrl } from "./office2d/office2d-sprite-catalog";
 
 afterEach(cleanup);
 
@@ -39,9 +39,9 @@ describe("StudioVirtualSpaceEntryLobby", () => {
       projectName="review-project" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
     const preview = view.container.querySelector(".space-lobby__character");
     expect(preview?.getAttribute("data-office-character")).toBe(character);
-    expect(preview?.querySelector("image")?.getAttribute("href")).toBe(office2dCharacterUrl(character));
+    expect(preview?.querySelector("image")?.getAttribute("href")).toBe(office2dPreviewUrl(character));
     const selected = screen.getByRole("button", { name: "하늘 캐릭터 선택" });
-    expect(selected.querySelector("image")?.getAttribute("href")).toBe(office2dCharacterUrl(character));
+    expect(selected.querySelector("image")?.getAttribute("href")).toBe(office2dPreviewUrl(character));
   });
   it("3D 로비에서 입장할 모델을 직접 고르고 같은 모델 이름과 미리보기를 확인한다", async () => {
     const choose = vi.fn();

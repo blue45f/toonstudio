@@ -31,6 +31,7 @@ import {
   studioCharacterPresetPalette,
   studioCharacterPresetParts,
 } from "./studio-virtual-space-character-parts";
+import { isStudioCrewKey, STUDIO_CREW_SKINS } from "./studio-virtual-space-crew-characters";
 import { STUDIO_LPC_PLAYER_SKINS } from "./lpc/studio-lpc-characters";
 
 export type StudioCharacterSkinKey = string;
@@ -236,12 +237,13 @@ export const STUDIO_CHARACTER_SKINS: readonly StudioCharacterSkin[] = Object.fre
   ...STUDIO_THEME_CHARACTER_SOURCES.map(createStudioThemeCharacterSkin),
   // LPC 픽셀 프리셋은 기존 인덱스·자동 배정을 바꾸지 않게 끝에 붙이고 명시 선택에만 노출한다.
   ...STUDIO_LPC_PLAYER_SKINS,
+  ...STUDIO_CREW_SKINS,
 ]);
 
 const FALLBACK_SKIN = STUDIO_CHARACTER_SKINS[0]!;
 
-// LPC 픽셀 프리셋 12종을 붙인 뒤의 등록부. 다른 판의 피어는 registry-mismatch로 표시되고 모르는 스킨은 기본값으로 대체된다.
-export const STUDIO_CHARACTER_REGISTRY_REVISION = "drawn-characters-v3-lpc-pixel-presets";
+// 직접 선택하는 제작진 2종을 끝에 추가한 등록부. 다른 판의 피어는 registry-mismatch로 표시되고 모르는 스킨은 기본값으로 대체된다.
+export const STUDIO_CHARACTER_REGISTRY_REVISION = "drawn-characters-v4-studio-crew";
 export const STUDIO_CHARACTER_APPEARANCE_REGISTRY: StudioVirtualSpaceAppearanceRegistry = Object.freeze({
   revision: STUDIO_CHARACTER_REGISTRY_REVISION,
   fallbackSkinKey: FALLBACK_SKIN.key,
@@ -387,7 +389,7 @@ export function studioCharacterSkinForArtStyle(
   artStyle: StudioVirtualArtStyleKey,
 ): StudioCharacterSkin {
   // 네이티브 걷기 원본을 보존한다. 나머지 v6 행동은 별도 교체가 필요한 레거시다. LPC 픽셀 원본도 테마와 무관하다.
-  if (source.key === "imagegen25" || source.nativeArtStyle || source.pixelArt) return source;
+  if (source.key === "imagegen25" || isStudioCrewKey(source.key) || source.nativeArtStyle || source.pixelArt) return source;
   const cacheKey = `${source.key}:${artStyle}:v5`;
   const cached = STYLED_SKIN_CACHE.get(cacheKey);
   if (cached) return cached;

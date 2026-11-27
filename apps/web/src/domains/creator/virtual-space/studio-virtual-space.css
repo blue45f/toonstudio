@@ -528,6 +528,12 @@
 /* 통합 캐릭터 선택기(로비·꾸미기 탭 공용): 기본·테마 캐릭터를 한 격자에서 스타일 칩으로 좁힌다. */
 .studio-vspace-character-picker{display:grid;gap:10px;min-width:0;margin:0;padding:0;border:0}
 .studio-vspace-character-picker legend{margin-bottom:6px;color:var(--color-fg);font-size:14px;font-weight:800}
+.studio-vspace-character-picker__search{display:flex;align-items:center;gap:9px;min-height:44px;padding:0 12px;border:1px solid var(--color-line);border-radius:10px;background:var(--color-card);color:var(--color-fg-2)}
+.studio-vspace-character-picker__search input{min-width:0;width:100%;min-height:42px;border:0;background:transparent;color:var(--color-fg);font:inherit}
+.studio-vspace-character-picker__search:focus-within{outline:2px solid var(--color-accent);outline-offset:2px}
+.studio-vspace-character-picker__search input:focus{outline:0}
+.studio-vspace-character-picker__empty{display:flex;align-items:center;gap:10px;color:var(--color-fg-2)}
+.studio-vspace-character-picker__empty button{min-height:44px;color:var(--color-accent);text-decoration:underline}
 .studio-vspace-character-picker__filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .studio-vspace-character-picker__filters button{flex:none;min-height:44px;padding:0 14px;border:1px solid var(--color-line);border-radius:999px;background:var(--color-card);color:var(--color-fg-2);font-size:13px;font-weight:700;cursor:pointer}
 .studio-vspace-character-picker__filters button[aria-pressed=true]{border-color:var(--color-accent);background:var(--color-accent-soft);color:var(--color-accent)}

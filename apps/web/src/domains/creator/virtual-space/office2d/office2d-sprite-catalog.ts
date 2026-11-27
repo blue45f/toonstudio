@@ -7,6 +7,7 @@
  * × 4열이다. 이미지가 없거나 불러오지 못하면 렌더러가 절차형 폴백(보행 시트 0열 등)으로 같은 자리를 그린다.
  */
 
+import { isStudioCrewKey, STUDIO_CREW_KEYS, type StudioCrewKey } from "../studio-virtual-space-crew-characters";
 import { office2dGeneratedAtlas } from "./office2d-generated-atlases";
 import { office2dExpressionAssetUrls } from "./office2d-expression-catalog";
 
@@ -25,7 +26,7 @@ export type Office2dSpriteKey = typeof OFFICE2D_OBJECT_SPRITES[number];
 
 /** 웹툰 제작 직군 8종: 작화 · PD · 콘티(글) · 채색 · 배경 · 식자 · 3D 배경 · 편집(검수). */
 export const OFFICE2D_CHARACTERS = ["artist", "pd", "writer", "colorist", "bgartist", "letterer", "modeler", "editor"] as const;
-export type Office2dCharacterKey = typeof OFFICE2D_CHARACTERS[number];
+export type Office2dCharacterKey = typeof OFFICE2D_CHARACTERS[number] | StudioCrewKey;
 
 /** 캐릭터 시트 셀 크기(px), 보행 프레임 수(1~8열), 행 순서. 0열은 정지/착석 기준 자세다. */
 export const OFFICE2D_CHARACTER_CELL = Object.freeze({ width: 128, height: 192 });
@@ -116,6 +117,11 @@ export function office2dWorkSheetUrl(key: Office2dCharacterKey): string {
   return office2dGeneratedAtlas(key, "work")?.url ?? office2dLegacyWorkSheetUrl(key);
 }
 
+/** 미리보기 한 장에는 네 방향의 정지 그림만 담는다(96×144 셀). */
+export function office2dPreviewUrl(key: Office2dCharacterKey): string {
+  return `${OFFICE2D_ASSET_ROOT}/characters/preview/${key}.webp`;
+}
+
 export function office2dLegacyCharacterUrl(key: Office2dCharacterKey): string {
   return `${OFFICE2D_ASSET_ROOT}/characters/${key}.webp`;
 }
@@ -127,6 +133,7 @@ export function office2dLegacyWorkSheetUrl(key: Office2dCharacterKey): string {
 /** 첫 화면은 기존 시트로 열고 고해상도 시트는 자기 직군부터 이어 받는다. */
 export function office2dActorAssetPlan(preferred: Office2dCharacterKey): { readonly critical: readonly string[]; readonly deferred: readonly string[] } {
   const critical = OFFICE2D_CHARACTERS.map(office2dLegacyCharacterUrl);
+  if (isStudioCrewKey(preferred)) critical.unshift(office2dCharacterUrl(preferred));
   const order = [preferred, ...OFFICE2D_CHARACTERS.filter((key) => key !== preferred)];
   const deferred = [...order.flatMap((key) => [office2dCharacterUrl(key), office2dWorkSheetUrl(key)]),
     ...OFFICE2D_CHARACTERS.map(office2dLegacyWorkSheetUrl), ...office2dExpressionAssetUrls(preferred)];
@@ -210,6 +217,8 @@ export function office2dAccentFor(identity: string): string {
   return ACCENTS[office2dHashIndex(identity, ACCENTS.length)] ?? "#5b8def";
 }
 
+const ON_DEMAND_CREW_SHEETS = new Set(STUDIO_CREW_KEYS.flatMap((key) => [office2dCharacterUrl(key), office2dWorkSheetUrl(key)]));
+
 export interface Office2dImageSource {
   readonly width: number;
   readonly height: number;
@@ -227,6 +236,15 @@ export class Office2dSpriteStore<TImage extends Office2dImageSource = HTMLImageE
 
   get(url: string): TImage | null {
     return this.images.get(url) ?? null;
+  }
+
+  /** 다른 참가자가 고른 제작진의 실제 자세가 화면에 보일 때 그 시트만 한 번 요청한다. */
+  getForDisplay(url: string): TImage | null {
+    const image = this.get(url);
+    if (!image && ON_DEMAND_CREW_SHEETS.has(url) && !this.images.has(url) && !this.pending.has(url)) {
+      void this.load(url);
+    }
+    return image;
   }
 
   has(url: string): boolean {
