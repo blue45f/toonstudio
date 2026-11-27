@@ -2,6 +2,8 @@ import { Bone, BufferGeometry, Euler, Float32BufferAttribute, Group, MeshBasicMa
 import { describe, expect, it } from "vitest";
 
 import { createMicrophoneThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
+import { DEFAULT_VRM_PROP_RIG_METRICS, resolvePropAttachment } from "./studio-vrm-prop-rig";
+import { createPropInstance, propDefById } from "./studio-vrm-props";
 
 import type { ResolvedPropAttachment } from "./studio-vrm-prop-rig";
 import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
@@ -41,8 +43,17 @@ function fixture(withSkin = true) {
   const humanoid = { getNormalizedBoneNode: (name: VRMHumanBoneName) => nodes[name] ?? null,
     getRawBoneNode: (name: VRMHumanBoneName) => nodes[name] ?? null, update() {} };
   const vrm = { scene, humanoid } as unknown as VRM;
-  const fit = { bone: "rightHand", anchor: { id: "palm-grip", position: [0, -0.025, 0] }, usesSmartRig: true,
-    socketPosition: [0, 0, 0], rotationDeg: [0, 0, 0], scale: 1 } as ResolvedPropAttachment;
+  const microphone = propDefById("mic");
+  const instance = createPropInstance("mic", "thumb-contact");
+  if (!microphone || !instance) throw new Error("Missing microphone fixture");
+  const resolved = resolvePropAttachment(microphone, instance, DEFAULT_VRM_PROP_RIG_METRICS);
+  const fit: ResolvedPropAttachment = {
+    ...resolved,
+    anchor: { ...resolved.anchor, position: [0, -0.025, 0] },
+    socketPosition: [0, 0, 0],
+    rotationDeg: [0, 0, 0],
+    scale: 1,
+  };
   function measure() {
     scene.updateMatrixWorld(true);
     let deepest = 0, gap = Infinity;
