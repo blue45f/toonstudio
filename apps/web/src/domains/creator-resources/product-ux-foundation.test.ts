@@ -89,7 +89,11 @@ describe("purpose-first product UX foundation", () => {
     expect(mobile).toContain("isPurposeActive: (href: string, exact?: boolean) => boolean;");
     expect(mobile).toContain('from "./site-mobile-purpose"');
     expect(mobile).toContain("const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;");
-    expect(mobile).toMatch(/item\.id === "all-menu"\s*\? pathname === "\/sitemap" \|\| pathname\.startsWith\("\/sitemap\/"\)\s*: resolvedPurposeHref === item\.href/u);
+    // 사이트맵의 실제 진입 경로를 보존한다. 각 경로의 현재 탭은 모바일 내비게이션 렌더 테스트에서 확인한다.
+    const legalRoutes = readFileSync(LEGAL_ROUTES, "utf8");
+    for (const path of ["/sitemap", "/sitemap/all", "/sitemap/:section"]) {
+      expect(legalRoutes).toContain(`path: "${path}"`);
+    }
     // 검색한 실제 목적지와 고정 시작 주소는 넓은 목적 상태를 재사용하지 않는다.
     expect(mobile).toContain("<SiteMenuDestinations");
     expect(mobile).toContain("isActive={isActive}");
