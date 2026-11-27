@@ -12,7 +12,7 @@ afterEach(() => { cleanup(); sessionStorage.clear(); });
 const raster = { pngDataUrl: "data:image/png;base64,AAAA", width: 64, height: 128, displayWidth: 32, displayHeight: 64 };
 const path = "/studio/p/work/d/page";
 function create(owner: string | null = "artist") {
-  const href = stagePoserCut(sessionStorage, path + "?workspace=draw", owner, raster);
+  const href = stagePoserCut(path + "?workspace=draw", owner, raster);
   const id = new URL(href, "http://localhost").searchParams.get(POSER_CUT_QUERY);
   if (!id) throw new Error("테스트용 포즈 인계 토큰이 없습니다.");
   return { href, id };
@@ -30,6 +30,7 @@ describe("포저 컷 원고 인계", () => {
     view.rerender(build(true));
     expect(insert).toHaveBeenCalledTimes(1);
     expect(readPoserCut(sessionStorage, id, "artist", path)).toMatchObject(raster);
+    expect(readPoserCut(localStorage, id, "artist", path)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "다시 삽입" }));
     expect(insert).toHaveBeenCalledTimes(2);
     expect(insert).toHaveBeenLastCalledWith(expect.objectContaining(raster), `poser-cut-${id}`);

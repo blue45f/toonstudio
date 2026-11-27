@@ -76,7 +76,7 @@ export function StudioPoserPage(): ReactElement {
   const prepareCut = useCallback((raster: StudioMannequinCaptureResult) => {
     if (!destination.href) throw new Error(isKo ? "삽입할 원고를 선택해 주세요." : "Select a destination manuscript.");
     try {
-      return stagePoserCut(window.sessionStorage, destination.href, getAuthUserId(), raster);
+      return stagePoserCut(destination.href, getAuthUserId(), raster);
     } catch (cause) {
       throw new Error(isKo ? "포즈 컷을 보관하지 못했습니다. 저장 공간을 확보한 뒤 다시 시도하거나 PNG로 저장해 주세요."
         : "Could not store the pose. Free up storage and retry, or save it as a PNG.", { cause });
