@@ -86,7 +86,7 @@ describe("StudioIntegrationsSettingsPanel mount-time render contract", () => {
         textModel: "openrouter/free",
         imageModel: "",
         costPolicy: "openrouter-free",
-        apiKeys: [{ id: "key-1", label: "기본 키", apiKey: "sk-test-123", enabled: true, priority: 10 }],
+        apiKeys: [{ id: "key-1", label: "기본 키", apiKey: "sk-test-123", enabled: true, openRouterFreeBillingConfirmed: true, priority: 10 }],
         models: [{ id: "model-1", label: "무료 자동", model: "openrouter/free", capability: "text", enabled: true, priority: 10 }],
       }],
       assignments: { text: "integration", image: null, inference: null, "three-d": null },

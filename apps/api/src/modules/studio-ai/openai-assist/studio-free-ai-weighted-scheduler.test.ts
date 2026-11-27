@@ -17,6 +17,14 @@ import {
 
 function buildAllConfiguredEnv(): Record<string, string> {
   return {
+    STUDIO_AI_FREE_OPENAI_CONFIRMED: "true",
+    STUDIO_AI_FREE_GEMINI_CONFIRMED: "true",
+    STUDIO_AI_FREE_GITHUB_MODELS_CONFIRMED: "true",
+    STUDIO_AI_FREE_CLOUDFLARE_CONFIRMED: "true",
+    STUDIO_AI_FREE_MISTRAL_CONFIRMED: "true",
+    STUDIO_AI_FREE_SAMBANOVA_CONFIRMED: "true",
+    STUDIO_AI_FREE_GROQ_CONFIRMED: "true",
+    STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true",
     OPENAI_API_KEY: "test-openai-free-key",
     GEMINI_API_KEY: "test-gemini-free-key",
     STUDIO_AI_FREE_GITHUB_MODELS_API_KEY: "test-github-free-key",

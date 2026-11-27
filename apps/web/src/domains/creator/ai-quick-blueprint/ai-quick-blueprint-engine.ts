@@ -4,7 +4,7 @@
  * 설계 원칙:
  * 1) 게스트·오프라인에서도 대기 시간 0초로 동작하는 결정적 스마트 설계기(`buildAiQuickBlueprint`)를 기본으로 제공하고,
  *    로그인/AI 연결 환경에서는 선택적 클라우드 AI 문장 윤문(`polishBlueprintWithCloudAi`)으로 업그레이드한다.
- * 2) 모든 한국어/영어 사본은 완전 분리하여 `locale === "en"`에서 한글 누수가 0건이 되도록 보장한다.
+ * 2) 기본 제공 문구는 화면 언어에 맞추고, 사용자가 작성한 소재는 원래 언어 그대로 보존한다.
  * 3) 파일 크기 상한(<=800줄) 준수를 위해 컷 생성(`ai-quick-blueprint-cuts.ts`)과 전달·윤문(`ai-quick-blueprint-handoff.ts`)을 분리한다.
  */
 
@@ -162,12 +162,7 @@ export const AI_BLUEPRINT_TONES: readonly {
 
 function normalizeIdea(rawIdea: string, locale: AiBlueprintLocale): string {
   const cleaned = rawIdea.replace(/\s+/gu, " ").trim().slice(0, 200);
-  if (cleaned.length > 0) {
-    if (locale === "en" && /[가-힣]/u.test(cleaned)) {
-      return AI_IDEA_SPARK_PRESETS[0]?.ideaEn ?? "A mysterious diary appears on a rainy evening";
-    }
-    return cleaned;
-  }
+  if (cleaned) return cleaned;
   return locale === "ko"
     ? (AI_IDEA_SPARK_PRESETS[0]?.ideaKo ?? "비 오는 날 헌책방에서 내일의 일기장을 주웠다")
     : (AI_IDEA_SPARK_PRESETS[0]?.ideaEn ?? "On a rainy evening, I found a diary listing tomorrow's choices");

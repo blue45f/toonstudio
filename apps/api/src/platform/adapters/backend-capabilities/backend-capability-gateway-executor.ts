@@ -8,6 +8,7 @@ import {
   classifyStudioAiProviderFailure,
   resolveStudioAiProviderCandidates,
   resolveStudioAiTimeoutMs,
+  studioAiFreeProviderRequestOptions,
   type StudioAiProviderConfig,
 } from "../../../modules/studio-ai/studio-ai-provider";
 import { STUDIO_AI_BILLING_FAILOVER_REASON, studioAiProviderRequestId } from "../../../modules/studio-ai/studio-ai-provider";
@@ -1034,17 +1035,6 @@ export class BackendCapabilityGatewayExecutor {
         errorCode: "INVALID_WEBHOOK_PAYLOAD",
       });
     }
-    if (payloadParse.data.operation !== "studio-ai-chat") {
-      return this.parseGatewayResponse({
-        providerId: envelope.provider,
-        idempotencyKey: envelope.idempotencyKey,
-        outcome: "rejected",
-        retryable: false,
-        result: null,
-        errorCode: "UNSUPPORTED_OPERATION",
-      });
-    }
-
     const payload = payloadParse.data;
     const providers = resolveStudioAiProviderCandidates(
       (payload.provider ?? "zai") as StudioAiProviderPreference
@@ -1144,6 +1134,7 @@ export class BackendCapabilityGatewayExecutor {
         },
         body: JSON.stringify({
           model: provider.model,
+          ...studioAiFreeProviderRequestOptions(provider),
           messages: [
             { role: "system", content: webhookPayload.system },
             { role: "user", content: webhookPayload.user },

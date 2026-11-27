@@ -107,13 +107,7 @@ function fallbackSafeGatewayDispatch(
   if (dispatchResult.reason === "aborted" || dispatchResult.reason === "delivery-unknown") {
     return false;
   }
-  if (
-    dispatchResult.attempts.length > 0 &&
-    dispatchResult.attempts.some((attempt) => attempt.outcome !== "request-rejected")
-  ) {
-    return false;
-  }
-  return true;
+  return dispatchResult.attempts.every((attempt) => attempt.outcome === "request-rejected");
 }
 
 function normalizeGatewayUsage(usage: unknown): StudioAiTokenUsage {
@@ -682,7 +676,8 @@ export class StudioAiService {
     providerTimeoutMs: number,
     clientSignal?: AbortSignal
   ): Promise<StudioAiCompletionResult | null> {
-    if (!this.capabilityDispatcher) return null;
+    // 분산 웹훅의 입력 계약은 OpenRouter를 받지 않는다. 무료 요청은 아래 직접 경로에서 가격·플러그인 제한을 전송한다.
+    if (!this.capabilityDispatcher || (provider.id === "openrouter" && provider.freePool)) return null;
 
     const payload = {
       operation: "studio-ai-chat",

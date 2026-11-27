@@ -81,20 +81,19 @@ export function mergeContextNote(
   };
 }
 
+/** 화면 요약과 글자 수 제한이 있는 채색 지시가 같은 순서와 서식을 쓴다. */
+export function listContextNotePromptSections(note: StudioAiContextNote) {
+  return [
+    { label: "캐릭터 규칙", items: note.characterRules, separator: "; " },
+    { label: "팔레트", items: note.palette, separator: ", " },
+    { label: "배경 규칙", items: note.backgroundRules, separator: "; " },
+    { label: "금지", items: note.prohibitions, separator: "; " },
+  ].filter(({ items }) => items.length > 0);
+}
+
 /** 노트를 이후 LLM 프롬프트 컨텍스트로 쓸 수 있는 텍스트 블록으로 컴파일한다. */
 export function contextNoteToPromptContext(note: StudioAiContextNote): string {
-  const sections: string[] = [];
-  if (note.characterRules.length > 0) {
-    sections.push(`캐릭터 규칙: ${note.characterRules.join("; ")}`);
-  }
-  if (note.palette.length > 0) {
-    sections.push(`팔레트: ${note.palette.join(", ")}`);
-  }
-  if (note.backgroundRules.length > 0) {
-    sections.push(`배경 규칙: ${note.backgroundRules.join("; ")}`);
-  }
-  if (note.prohibitions.length > 0) {
-    sections.push(`금지: ${note.prohibitions.join("; ")}`);
-  }
-  return sections.join("\n");
+  return listContextNotePromptSections(note)
+    .map(({ label, items, separator }) => `${label}: ${items.join(separator)}`)
+    .join("\n");
 }

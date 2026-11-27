@@ -36,6 +36,9 @@
       "@toonstudio/contracts/*": [
         "../../packages/contracts/src/*"
       ],
+      "@toonstudio/studio-project-model/character-art-style": [
+        "../../packages/studio-project-model/src/character-style/index.ts"
+      ],
       "@toonstudio/studio-project-model/work-session": [
         "../../packages/studio-project-model/src/graph/work-session.ts"
       ],

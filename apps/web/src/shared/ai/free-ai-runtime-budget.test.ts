@@ -54,6 +54,7 @@ const managedConnection: UserAiConnection = {
   imageEditPath: "/images/edits",
   chatCompletionsPath: "/chat/completions",
   costPolicy: "openrouter-free",
+  openRouterFreeBillingConfirmed: true,
 };
 
 const paidCloudConnection: UserAiConnection = {

@@ -1139,6 +1139,25 @@ describe("StudioAiService", () => {
     }
   });
 
+  it("관리형 OpenRouter 무료 텍스트는 가격 상한과 검색 차단을 담아 한 번 전송한다", async () => {
+    configureSharedFreePool();
+    process.env.STUDIO_AI_FREE_PROVIDER_ORDER = "openrouter";
+    const { service, dispatch } = createService({ dispatchError: new Error("지원하지 않는 분산 경로") });
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      model: "openrouter/free",
+      choices: [{ finish_reason: "stop", message: { content: "원고 점검" } }],
+      usage: { prompt_tokens: 8, completion_tokens: 4, total_tokens: 12 },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(complete(service, "free-router-user")).resolves.toMatchObject({ provider: "openrouter" });
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+      provider: { max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false },
+      plugins: [{ id: "web", enabled: false }],
+    });
+  });
+
   it("공용 무료 제공자 세 곳이 모두 한도 거절하면 개인 키 안내용 오류로 끝낸다", async () => {
     configureSharedFreePool();
     const fetchMock = vi

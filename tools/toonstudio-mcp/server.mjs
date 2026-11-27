@@ -135,7 +135,7 @@ function createInitialState() {
 
 export function createToonStudioMcpEngine(options = {}) {
   const stateFile = options.stateFile ? resolve(String(options.stateFile)) : null;
-  const apiUrl = options.apiUrl ? String(options.apiUrl).trim().replace(/\/+$/, "") : null;
+  const apiUrl = !options.dryRun && options.apiUrl ? String(options.apiUrl).trim().replace(/\/+$/, "") : null;
   const env = options.env ?? process.env;
   let state = createInitialState();
 
@@ -570,7 +570,10 @@ export function createToonStudioMcpEngine(options = {}) {
     ...createDivisionAndAiMcpTools({
       state,
       persistState,
-      syncToRemoteApi,
+      apiUrl,
+      dryRun: options.dryRun,
+      remoteAiEnabled: options.remoteAiEnabled ?? Boolean(apiUrl),
+      fetchImpl: options.fetchImpl,
       env,
     }),
     ...createEcosystemV2McpTools({ state, persistState }),
@@ -627,15 +630,16 @@ export function createToonStudioMcpEngine(options = {}) {
           error: { code: -32601, message: `Unknown tool: ${String(name)}` },
         };
       }
-      const data = tool.handler(args);
-      return {
+      const format = (data) => ({
         jsonrpc: "2.0",
         id,
         result: {
           content: [{ type: "text", text: JSON.stringify(data) }],
           structuredContent: data,
         },
-      };
+      });
+      const data = tool.handler(args);
+      return data instanceof Promise ? data.then(format) : format(data);
     }
 
     if (method === "resources/list") {
@@ -699,21 +703,27 @@ export function createToonStudioMcpEngine(options = {}) {
 export function startStdioMcpServer(options = {}) {
   const engine = createToonStudioMcpEngine(options);
   const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
-  rl.on("line", (line) => {
+  rl.on("line", async (line) => {
     const trimmed = line.trim();
     if (!trimmed) return;
+    let parsed;
     try {
-      const parsed = JSON.parse(trimmed);
-      const response = engine.handleJsonRpcRequest(parsed);
+      parsed = JSON.parse(trimmed);
+    } catch {
+      process.stdout.write(`${JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "JSON 요청을 읽을 수 없습니다." } })}\n`);
+      return;
+    }
+    try {
+      const response = await engine.handleJsonRpcRequest(parsed);
       if (response !== null) {
         process.stdout.write(`${JSON.stringify(response)}\n`);
       }
-    } catch (error) {
+    } catch {
       process.stdout.write(
         `${JSON.stringify({
           jsonrpc: "2.0",
-          id: null,
-          error: { code: -32700, message: error instanceof Error ? error.message : "Parse error" },
+          id: parsed?.id ?? null,
+          error: { code: -32603, message: "도구 실행 결과를 기록하지 못했습니다. 세션 저장 경로를 확인하세요." },
         })}\n`,
       );
     }
@@ -725,5 +735,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const stateFile = stateIdx !== -1 ? process.argv[stateIdx + 1] : process.env.TOONSTUDIO_MCP_STATE_FILE;
   const apiIdx = process.argv.indexOf("--api-url");
   const apiUrl = apiIdx !== -1 ? process.argv[apiIdx + 1] : process.env.TOONSTUDIO_API_URL;
-  startStdioMcpServer({ stateFile, apiUrl });
+  startStdioMcpServer({ stateFile, apiUrl, remoteAiEnabled: apiIdx !== -1, dryRun: process.argv.includes("--dry-run") });
 }

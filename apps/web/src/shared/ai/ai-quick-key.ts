@@ -5,9 +5,10 @@
  * 순수 함수만 둔다: 설정 객체를 받아 새 설정을 돌려주고, 저장·네트워크·키 기록은 하지 않는다.
  * 실제 키 확인(모델 목록 조회)은 화면 쪽(`AiQuickKeyPanel`)이 등록 직전에 한다.
  */
+import { aiSharedStatusText } from "./ai-status-i18n";
 import { ASSIST_DEFAULT_MODEL_ID } from "./assist/assist-models";
 import { ANTHROPIC_API_ORIGIN, isAnthropicBaseUrl } from "./assist/assist-protocol";
-import { freeAiConnectionPolicyIssue } from "./free-ai-policy";
+import { freeAiConnectionPolicyIssue, isOpenRouterFreeModel } from "./free-ai-policy";
 import {
   EMPTY_AI_CONNECTION,
   USER_AI_CAPABILITIES,
@@ -319,7 +320,7 @@ export function addQuickKey(
   configuration: UserAiConfiguration,
   provider: QuickKeyProviderId,
   apiKey: string,
-  options: { readonly model?: string; readonly allowPaid?: boolean } = {},
+  options: { readonly model?: string; readonly allowPaid?: boolean; readonly openRouterFreeBillingConfirmed?: boolean } = {},
 ): QuickKeyAddResult {
   const key = apiKey.trim();
   if (!key) throw new Error("API 키를 입력해 주세요.");
@@ -329,6 +330,11 @@ export function addQuickKey(
   if (held?.active) {
     return { configuration, connectionId: held.connectionId, keyId: held.keyId, duplicate: true, reenabled: false };
   }
+  const openRouterFree = preset.costPolicy === "openrouter-free";
+  if (openRouterFree && options.openRouterFreeBillingConfirmed !== true) {
+    throw new Error(aiSharedStatusText("shared.aiStatus.settings.openRouterFreeCheckRequired", "OpenRouter에서 이 키의 추가 과금 차단과 유료 플러그인 설정을 확인해 주세요."));
+  }
+  const keyConfirmation = openRouterFree ? { openRouterFreeBillingConfirmed: true } : {};
   const routing = userAiRoutingSettings(configuration);
   // 유료 키를 "먼저 쓴다"에 동의하고 등록했다: 자동 경로에서 무료 경로보다 먼저 쓴다(동의 문구가 그렇게 알린다).
   // 동의는 이 키가 든 연결에만 남긴다(다른 유료 연결은 각자 동의해야 자동 경로에 든다).
@@ -345,25 +351,24 @@ export function addQuickKey(
     && (connection.apiKeys?.length ? connection.apiKeys : userAiConnectionApiKeys(connection))
       .some((entry) => entry.id !== keyId && entry.enabled !== false);
   const heldConnection = held ? configuration.connections.find((item) => item.id === held.connectionId) : undefined;
+  if (openRouterFree && heldConnection?.costPolicy === "user-funded-byok") {
+    throw new Error(aiSharedStatusText("shared.aiStatus.settings.openRouterPaidConnection", "사용자 결제 BYOK로 저장된 OpenRouter 키예요. 고급 설정에서 이 연결의 비용 정책을 선택해 주세요."));
+  }
   if (held && heldConnection && sharesUnconsentedKeys(heldConnection, held.keyId)) {
     // 꺼 둔 이 키를 그 연결에서 빼고(다른 키는 그대로) 아래에서 이 키만 든 동의한 연결을 새로 만든다.
     return addQuickKey(removeQuickKey(configuration, held.connectionId, held.keyId), provider, key, options);
   }
-  if (held) {
+  if (held && heldConnection) {
     // 꺼 둔 같은 키를 다시 붙였다: 사용자가 쓰려는 뜻이므로 그 키와 연결을 다시 켠다. 비용 정책·모델·순서는 그대로 둔다.
     // 연결이 통째로 꺼져 있었다면 붙인 그 키만 켠다(switchedOffKeys 참고).
-    const connections = configuration.connections.map((item) => (item.id === held.connectionId
-      ? consented({
-          ...item,
-          enabled: true,
-          ...(item.apiKeys?.length
-            ? {
-                apiKeys: (item.enabled === false ? switchedOffKeys(item.apiKeys) : item.apiKeys)
-                  .map((entry) => (entry.id === held.keyId ? { ...entry, enabled: true } : entry)),
-              }
-            : {}),
-        })
-      : item));
+    const keys = heldConnection.apiKeys?.length ? heldConnection.apiKeys : userAiConnectionApiKeys(heldConnection);
+    const updated = consented({
+      ...heldConnection,
+      enabled: true,
+      apiKeys: (heldConnection.enabled === false ? switchedOffKeys(keys) : keys)
+        .map((entry) => (entry.id === held.keyId ? { ...entry, ...keyConfirmation, enabled: true } : entry)),
+    });
+    const connections = configuration.connections.map((item) => item.id === held.connectionId ? updated : item);
     const next = releaseSwitchedOffKeyPins({ ...configuration, connections, routing: nextRouting }, held.connectionId);
     // 새 연결을 만들 때와 같이, 텍스트 배정이 비었거나 쓰일 수 없으면 다시 켠 연결로 바꾼다.
     return {
@@ -397,7 +402,7 @@ export function addQuickKey(
       enabled: true,
       apiKeys: [
         ...(existing.enabled === false ? switchedOffKeys(keys) : keys),
-        { id: keyId, label: `키 ${keyNumber}`, apiKey: key, enabled: true, priority: Math.min(999, lastPriority + 10) },
+        { id: keyId, label: `키 ${keyNumber}`, apiKey: key, enabled: true, priority: Math.min(999, lastPriority + 10), ...keyConfirmation },
       ],
     });
     return {
@@ -417,6 +422,9 @@ export function addQuickKey(
     throw new Error(`AI 연결은 ${MAX_CONNECTIONS}개까지 등록할 수 있어요. 쓰지 않는 연결을 지운 뒤 다시 등록해 주세요.`);
   }
   const model = (options.model ?? "").trim() || preset.model;
+  if (openRouterFree && !isOpenRouterFreeModel(model)) {
+    throw new Error(aiSharedStatusText("shared.aiStatus.settings.openRouterFreeModelRequired", "OpenRouter 무료 모델을 선택해 주세요."));
+  }
   const id = uniqueId(preset.connectionId, new Set(configuration.connections.map((item) => item.id)));
   const lastPriority = configuration.connections.reduce((max, item) => Math.max(max, item.priority ?? 100), 0);
   const connection: UserAiConnection = consented({
@@ -430,7 +438,7 @@ export function addQuickKey(
     costPolicy: preset.costPolicy,
     enabled: true,
     priority: Math.min(990, Math.max(10, configuration.connections.length ? lastPriority + 10 : 10)),
-    apiKeys: [{ id: "key-1", label: "키 1", apiKey: key, enabled: true, priority: 10 }],
+    apiKeys: [{ id: "key-1", label: "키 1", apiKey: key, enabled: true, priority: 10, ...keyConfirmation }],
     models: [{ id: "text-1", label: model, model, capability: "text", enabled: true, priority: 10 }],
   });
   const added = { ...configuration, connections: [...configuration.connections, connection], routing: nextRouting };

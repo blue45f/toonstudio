@@ -45,14 +45,19 @@ describe("cloud-only AI connection policy", () => {
     expect(isOpenRouterFreeModel("openrouter/free")).toBe(true);
     expect(isOpenRouterFreeModel("vendor/model:free")).toBe(true);
     expect(isOpenRouterFreeModel("vendor/paid-model")).toBe(false);
+    expect(isOpenRouterFreeModel("vendor/model:online:free")).toBe(false);
+    expect(isOpenRouterFreeModel("@preset/paid:free")).toBe(false);
 
     const free = {
       ...connection,
       baseUrl: "https://openrouter.ai/api/v1",
       textModel: "openrouter/free",
       costPolicy: "openrouter-free" as const,
+      openRouterFreeBillingConfirmed: true,
     };
     expect(() => assertFreeAiConnection(free, "text")).not.toThrow();
+    expect(() => assertFreeAiConnection({ ...free, openRouterFreeBillingConfirmed: false }, "text")).toThrow(/추가 청구/u);
+    expect(() => assertFreeAiConnection({ ...free, baseUrl: "https://openrouter.ai:8443/api/v1" }, "text")).toThrow(/공식/u);
     expect(() => assertFreeAiConnection({ ...free, textModel: "openrouter/auto" }, "text")).toThrow(/free/u);
     expect(() => assertFreeAiConnection(free, "image")).toThrow(/텍스트/u);
   });
