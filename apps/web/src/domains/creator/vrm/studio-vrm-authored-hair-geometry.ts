@@ -28,6 +28,8 @@ export type StudioVrmAuthoredHairSpine = Readonly<{
 export type StudioVrmAuthoredHairInstance = Readonly<{
   part: AvatarForgeHairPart;
   matrix: THREE.Matrix4;
+  /** 매듭에 묶인 뿌리의 폭·두께 배율. 가닥 아래쪽은 작가가 정한 굵기를 유지한다. */
+  rootGirthScale?: number;
   /** 있으면 `matrix` 대신 이 중심선을 따라 가닥을 굽혀 깐다(가닥 프리미티브 전용). */
   spine?: StudioVrmAuthoredHairSpine;
 }>;
@@ -211,6 +213,7 @@ function clumpWidth(t: number, taper: number): number {
  */
 export function createStudioVrmAuthoredHairClumpGeometry(
   part: AvatarForgeHairPart,
+  rootGirthScale = 1,
 ): THREE.BufferGeometry {
   const columns = CLUMP_CROSS_SEGMENTS + 1;
   const rows = CLUMP_LENGTH_SEGMENTS + 1;
@@ -225,7 +228,7 @@ export function createStudioVrmAuthoredHairClumpGeometry(
     for (let row = 0; row < rows; row += 1) {
       const t = row / CLUMP_LENGTH_SEGMENTS;
       const y = 1 - t * 2;
-      const width = clumpWidth(t, part.taper);
+      const width = clumpWidth(t, part.taper) * THREE.MathUtils.lerp(rootGirthScale, 1, smoothstep(0, 0.2, t));
       const depth = clumpDepth(part, t, width);
       const [centerX, centerZ] = resolveStudioVrmAuthoredHairClumpCenter(part, t);
       for (let column = 0; column < columns; column += 1) {
@@ -497,9 +500,10 @@ function createShellGeometry(
 export function createStudioVrmAuthoredHairGeometry(
   part: AvatarForgeHairPart,
   options?: StudioVrmHairScalpFitOptions,
+  rootGirthScale?: number,
 ): THREE.BufferGeometry {
   return part.primitive === "tapered-capsule"
-    ? createStudioVrmAuthoredHairClumpGeometry(part)
+    ? createStudioVrmAuthoredHairClumpGeometry(part, rootGirthScale)
     : createShellGeometry(part, options);
 }
 
@@ -584,8 +588,8 @@ export function mergeStudioVrmAuthoredHairGeometry(
   instances: readonly StudioVrmAuthoredHairInstance[],
   options?: StudioVrmHairScalpFitOptions,
 ): THREE.BufferGeometry | null {
-  const geometries = instances.map(({ part, matrix, spine }) => {
-    const geometry = createStudioVrmAuthoredHairGeometry(part, options);
+  const geometries = instances.map(({ part, matrix, spine, rootGirthScale }) => {
+    const geometry = createStudioVrmAuthoredHairGeometry(part, options, rootGirthScale);
     if (spine && part.primitive === "tapered-capsule") bendStudioVrmAuthoredHairAlongSpine(geometry, spine);
     else geometry.applyMatrix4(matrix);
     return geometry;
