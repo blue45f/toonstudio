@@ -157,8 +157,9 @@ async function run(baselineRef?: string) {
   await rm(directory, { recursive: true, force: true });
   await mkdir(join(directory, "screenshots"), { recursive: true });
   const options = { root, configFile: false as const, publicDir: false as const, build: { outDir, emptyOutDir: true },
-    esbuild: { jsx: "automatic" as const }, resolve: { alias: { "@": process.cwd() } } };
+    esbuild: { jsx: "automatic" as const }, resolve: { alias: { "@": resolve("apps/web/src") } } };
   await build({ ...options, plugins: baselineRef ? [rendererSources(baselineRef)] : [] });
+  await mkdir(join(outDir, "assets"), { recursive: true });
   await symlink(resolve("apps/web/public/assets/3d"), join(outDir, "assets/3d"), "dir");
   await symlink(resolve("apps/web/public/vrm"), join(outDir, "vrm"), "dir");
   const server = await preview({ ...options, preview: { host: "127.0.0.1", port: 0 } });
