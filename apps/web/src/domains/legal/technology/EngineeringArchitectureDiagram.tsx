@@ -23,7 +23,7 @@ const CONNECTIONS = [
   { id: "wss", label: "WSS", path: "M 468 365 H 544", both: true },
   { id: "api", label: "API", path: "M 808 173 H 908", both: false },
   { id: "db", label: "", path: "M 1040 248 V 272", both: false },
-  { id: "files", label: "", path: "M 1168 205 H 1180 V 436 H 1172", both: false },
+  { id: "files", label: "", path: "M 1168 205 H 1182 V 436 H 1171", both: false },
 ] as const;
 
 const LABEL_POSITIONS: Record<string, { readonly x: number; readonly y: number }> = {
@@ -47,12 +47,12 @@ export function EngineeringArchitectureDiagram({ className, fixed = false }: Eng
 
   return (
     <figure className={cx("eng-arch", className)} data-fixed={fixed ? "true" : undefined}>
-      <svg className="eng-arch__svg" viewBox="0 0 1200 540" aria-hidden="true" focusable="false">
+      <svg className="eng-arch__svg max-w-full" viewBox="0 0 1200 540" aria-hidden="true" focusable="false">
         <defs>
           <marker id={markerId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" className="eng-arch__arrowhead" />
           </marker>
-          <marker id={markerStartId} viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <marker id={markerStartId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" className="eng-arch__arrowhead" />
           </marker>
         </defs>
@@ -93,7 +93,7 @@ export function EngineeringArchitectureDiagram({ className, fixed = false }: Eng
         {CONNECTIONS.filter((connection) => connection.label).map((connection) => {
           const position = LABEL_POSITIONS[connection.id];
           return position ? (
-            <text key={connection.id} x={position.x} y={position.y} textAnchor="middle" className="eng-arch__link-label">{connection.label}</text>
+            <text key={connection.id} x={position.x} y={position.y} textAnchor="middle" dominantBaseline="middle" className="eng-arch__link-label">{connection.label}</text>
           ) : null;
         })}
       </svg>

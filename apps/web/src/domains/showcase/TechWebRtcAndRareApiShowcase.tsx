@@ -15,6 +15,7 @@ import {
 } from "./tech-presentation-webrtc-api-data";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { fitSvgPillWidth, wrapSvgText } from "@/shared/lib/svg-text-wrap";
 import { cn } from "@/shared/lib/utils";
 
 export interface TechWebRtcAndRareApiShowcaseProps {
@@ -145,39 +146,149 @@ function WebRtcProtocolDiagramSvg(props: { readonly title: string; readonly loca
   const count = WEBRTC_SVG_NODES.length;
   const gap = 24;
   const padX = 16;
-  const totalWidth = 840;
+  const totalWidth = 920;
   const boxWidth = Math.floor((totalWidth - padX * 2 - gap * (count - 1)) / count);
-  const boxHeight = 98;
-  const boxY = 44;
+  const titleLines = wrapSvgText(title, {
+    maxWidth: totalWidth - 44,
+    fontSize: 12,
+    maxLines: 2,
+    bold: true,
+  });
+  const boxY = titleLines.length > 1 ? 56 : 42;
+  const boxHeight = 122;
+  const totalHeight = boxY + boxHeight + 16;
 
   return (
     <svg
       data-testid="tech-webrtc-architecture-svg"
       role="img"
       aria-label={title}
-      viewBox={`0 0 ${totalWidth} 160`}
-      className="h-auto w-full rounded-2xl border border-line bg-canvas p-2 text-fg"
+      viewBox={`0 0 ${totalWidth} ${totalHeight}`}
+      className="block h-auto w-full max-w-full rounded-2xl border border-line bg-canvas p-2 text-fg"
     >
       <title>{title}</title>
-      <rect x={4} y={4} width={totalWidth - 8} height={152} rx={14} fill="var(--color-panel)" stroke="var(--color-line)" strokeWidth={1} />
-      <text x={20} y={27} fill="var(--color-fg-2)" fontSize={12} fontWeight={700}>{title}</text>
+      <rect
+        x={4}
+        y={4}
+        width={totalWidth - 8}
+        height={totalHeight - 8}
+        rx={14}
+        fill="var(--color-panel)"
+        stroke="var(--color-line)"
+        strokeWidth={1}
+      />
+      <text
+        x={20}
+        y={titleLines.length > 1 ? 20 : 24}
+        dominantBaseline="middle"
+        fill="var(--color-fg-2)"
+        fontSize={12}
+        fontWeight={700}
+      >
+        {titleLines.map((line, lineIdx) => (
+          <tspan key={`webrtc-title-${lineIdx}`} x={20} dy={lineIdx === 0 ? 0 : 16}>
+            {line}
+          </tspan>
+        ))}
+      </text>
       {WEBRTC_SVG_NODES.map((node, index) => {
         const x = padX + index * (boxWidth + gap);
         const accent = toneStrokeVar(node.tone);
         const arrowX1 = x + boxWidth + 4;
         const arrowX2 = x + boxWidth + gap - 4;
         const arrowY = boxY + boxHeight / 2;
+        const stagePillW = fitSvgPillWidth(node.stage, 10, 10, 64, boxWidth - 24, true);
+        const labelLines = wrapSvgText(pick(node.label, locale), {
+          maxWidth: boxWidth - 24,
+          fontSize: 12.5,
+          maxLines: 2,
+          bold: true,
+        });
+        const metricLines = wrapSvgText(pick(node.metric, locale), {
+          maxWidth: boxWidth - 24,
+          fontSize: 11,
+          maxLines: 2,
+          bold: false,
+        });
+        const labelStartY = boxY + 50;
+        const metricStartY = labelLines.length > 1 ? boxY + 84 : boxY + 78;
+
         return (
           <g key={node.stage}>
-            <rect x={x} y={boxY} width={boxWidth} height={boxHeight} rx={12} fill="var(--color-card)" stroke={accent} strokeWidth={1.75} />
-            <rect x={x + 12} y={boxY + 11} width={88} height={20} rx={10} fill="var(--color-raised)" stroke={accent} strokeWidth={1} />
-            <text x={x + 20} y={boxY + 25} fill={accent} fontSize={10} fontWeight={700}>{node.stage}</text>
-            <text x={x + 12} y={boxY + 54} fill="var(--color-fg)" fontSize={12.5} fontWeight={700}>{pick(node.label, locale)}</text>
-            <text x={x + 12} y={boxY + 76} fill="var(--color-fg-2)" fontSize={11}>{pick(node.metric, locale)}</text>
+            <rect
+              x={x}
+              y={boxY}
+              width={boxWidth}
+              height={boxHeight}
+              rx={12}
+              fill="var(--color-card)"
+              stroke={accent}
+              strokeWidth={1.75}
+            />
+            <rect
+              x={x + 12}
+              y={boxY + 12}
+              width={stagePillW}
+              height={20}
+              rx={10}
+              fill="var(--color-raised)"
+              stroke={accent}
+              strokeWidth={1}
+            />
+            <text
+              x={x + 12 + stagePillW / 2}
+              y={boxY + 22}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill={accent}
+              fontSize={10}
+              fontWeight={700}
+            >
+              {node.stage}
+            </text>
+            <text
+              x={x + 12}
+              y={labelStartY}
+              dominantBaseline="middle"
+              fill="var(--color-fg)"
+              fontSize={12.5}
+              fontWeight={700}
+            >
+              {labelLines.map((line, lineIdx) => (
+                <tspan key={`${node.stage}-lbl-${lineIdx}`} x={x + 12} dy={lineIdx === 0 ? 0 : 16}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+            <text
+              x={x + 12}
+              y={metricStartY}
+              dominantBaseline="middle"
+              fill="var(--color-fg-2)"
+              fontSize={11}
+            >
+              {metricLines.map((line, lineIdx) => (
+                <tspan key={`${node.stage}-met-${lineIdx}`} x={x + 12} dy={lineIdx === 0 ? 0 : 15}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
             {index < count - 1 ? (
               <g>
-                <line x1={arrowX1} y1={arrowY} x2={arrowX2 - 5} y2={arrowY} stroke="currentColor" strokeOpacity={0.55} strokeWidth={2} />
-                <polygon points={`${arrowX2},${arrowY} ${arrowX2 - 8},${arrowY - 5} ${arrowX2 - 8},${arrowY + 5}`} fill="currentColor" fillOpacity={0.7} />
+                <line
+                  x1={arrowX1}
+                  y1={arrowY}
+                  x2={arrowX2 - 5}
+                  y2={arrowY}
+                  stroke="currentColor"
+                  strokeOpacity={0.55}
+                  strokeWidth={2}
+                />
+                <polygon
+                  points={`${arrowX2},${arrowY} ${arrowX2 - 8},${arrowY - 5} ${arrowX2 - 8},${arrowY + 5}`}
+                  fill="currentColor"
+                  fillOpacity={0.7}
+                />
               </g>
             ) : null}
           </g>
@@ -265,21 +376,21 @@ export function TechWebRtcAndRareApiShowcase(props: TechWebRtcAndRareApiShowcase
             </h4>
             <span className="font-mono text-[11px] text-fg-3">{copy.evidenceDocLabel}: {WEBRTC_EVIDENCE_DOC_PATH}</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[38rem] border-collapse text-left text-xs">
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="w-full min-w-[44rem] border-collapse text-left text-xs [word-break:keep-all] tabular-nums">
               <thead>
                 <tr className="border-b border-line text-fg-3">
-                  <th scope="col" className="py-2 pr-3 font-bold">{copy.colConcern}</th>
-                  <th scope="col" className="py-2 pr-3 font-bold">{copy.colAuthority}</th>
-                  <th scope="col" className="py-2 pr-3 font-bold">{copy.colTech}</th>
-                  <th scope="col" className="py-2 font-bold">{copy.colDurability}</th>
+                  <th scope="col" className="sticky left-0 z-10 min-w-[9.5rem] border-r border-line/60 bg-card py-2 pr-3 font-bold">{copy.colConcern}</th>
+                  <th scope="col" className="min-w-[10rem] py-2 px-3 font-bold">{copy.colAuthority}</th>
+                  <th scope="col" className="min-w-[12rem] py-2 pr-3 font-bold">{copy.colTech}</th>
+                  <th scope="col" className="min-w-[10rem] py-2 font-bold">{copy.colDurability}</th>
                 </tr>
               </thead>
               <tbody>
                 {WEBRTC_AUTHORITY_MATRIX.map((row) => (
                   <tr key={row.id} data-testid={`tech-webrtc-authority-row-${row.id}`} className="border-b border-line/60 last:border-b-0">
-                    <th scope="row" className="py-2 pr-3 font-bold text-fg">{pick(row.concern, locale)}</th>
-                    <td className="py-2 pr-3 text-cool">{pick(row.authority, locale)}</td>
+                    <th scope="row" className="sticky left-0 z-10 border-r border-line/60 bg-card py-2 pr-3 font-bold text-fg">{pick(row.concern, locale)}</th>
+                    <td className="py-2 px-3 text-cool">{pick(row.authority, locale)}</td>
                     <td className="py-2 pr-3 text-fg-2">{pick(row.technology, locale)}</td>
                     <td className="py-2 font-semibold text-fg-2">{pick(row.durability, locale)}</td>
                   </tr>
@@ -340,7 +451,7 @@ export function TechWebRtcAndRareApiShowcase(props: TechWebRtcAndRareApiShowcase
 
         <div className="grid gap-3 md:grid-cols-2">
           {filteredRareApis.map((api) => {
-            const widthPct = Math.max(6, Math.round((api.fileCount / MAX_RARE_API_FILES) * 100));
+            const widthPct = Math.max(6, Math.min(100, Math.round((api.fileCount / MAX_RARE_API_FILES) * 100)));
             return (
               <article key={api.id} data-testid={`tech-rare-api-card-${api.id}`} className="flex flex-col justify-between rounded-2xl border border-line bg-card p-4">
                 <div className="space-y-2.5">

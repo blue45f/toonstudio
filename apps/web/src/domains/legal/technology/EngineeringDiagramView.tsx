@@ -152,12 +152,16 @@ function GraphSvg({ layout, markerId, markerStartId, text }: { readonly layout: 
           <text
             key={`label-${edge.from}-${edge.to}`}
             x={labelAt[0]}
-            y={labelAt[1] - 6}
+            y={labelAt[1] - 6 - (labelLines.length - 1) * 14}
             textAnchor="middle"
             className="eng-dia__edge-label"
             fontSize={FONT.edgeLabel}
           >
-            {labelLines[0]}
+            {labelLines.map((line, lineIdx) => (
+              <tspan key={`${edge.from}-${edge.to}-lbl-${lineIdx}`} x={labelAt[0]} dy={lineIdx === 0 ? 0 : 15}>
+                {line}
+              </tspan>
+            ))}
           </text>
         ) : null,
       )}
@@ -342,7 +346,7 @@ export function EngineeringDiagramView({ diagram, className, fixed = false, fit 
           <marker id={markerId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
             <path d="M 0 0 L 10 5 L 0 10 z" className="eng-dia__arrowhead" />
           </marker>
-          <marker id={markerStartId} viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <marker id={markerStartId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" className="eng-dia__arrowhead" />
           </marker>
         </defs>
