@@ -89,7 +89,6 @@ describe("purpose-first product UX foundation", () => {
     expect(mobile).toContain("isPurposeActive: (href: string, exact?: boolean) => boolean;");
     expect(mobile).toContain('from "./site-mobile-purpose"');
     expect(mobile).toContain("const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;");
-    expect(mobile).toMatch(/item\.id === "all-menu"\s*\? pathname === "\/sitemap" \|\| pathname\.startsWith\("\/sitemap\/"\)\s*: resolvedPurposeHref === item\.href/u);
     // 검색한 실제 목적지와 고정 시작 주소는 넓은 목적 상태를 재사용하지 않는다.
     expect(mobile).toContain("<SiteMenuDestinations");
     expect(mobile).toContain("isActive={isActive}");

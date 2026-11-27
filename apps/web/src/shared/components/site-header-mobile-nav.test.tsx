@@ -14,7 +14,7 @@ vi.mock("@/shared/lib/i18n", () => ({
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
-function menu(menuOpen = true, closeMenu = vi.fn(), pathname = "/market") {
+function menu(menuOpen = true, closeMenu = vi.fn(), pathname = "/market", onOpenMenu?: () => void) {
   return <MemoryRouter initialEntries={[pathname]}>
     <button data-testid="page-action">페이지 작업</button>
     <MobileHeaderNavigation
@@ -22,6 +22,7 @@ function menu(menuOpen = true, closeMenu = vi.fn(), pathname = "/market") {
       menuId="site-menu"
       panelRef={createRef<HTMLDivElement>()}
       closeMenu={closeMenu}
+      onOpenMenu={onOpenMenu}
       isActive={(href) => href === pathname}
       isPurposeActive={(href) => href === "/discover"}
     />
@@ -277,6 +278,20 @@ describe("모바일의 공통 네 행동 현재 위치", () => {
     const current = nav.querySelectorAll('[aria-current="page"]');
     expect(current).toHaveLength(1);
     expect(current[0]?.getAttribute("href")).toBe("/sitemap");
+  });
+
+  it.each(["/sitemap", "/sitemap/create", "/sitemap/all"])("%s에서 더보기는 현재 탭이고 전체 기능 링크는 정확한 목적지만 표시한다", (pathname) => {
+    const onOpenMenu = vi.fn();
+    const closeMenu = vi.fn();
+    const view = render(menu(false, closeMenu, pathname, onOpenMenu));
+    const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
+    expect(nav.querySelectorAll("[aria-current]")).toHaveLength(1);
+    expect(within(nav).getByRole("button", { name: "더보기", current: true })).toBeTruthy();
+
+    view.rerender(menu(true, closeMenu, pathname, onOpenMenu));
+    const directory = within(screen.getByRole("dialog")).getByRole("link", { name: "전체 기능" });
+    expect(directory.getAttribute("href")).toBe("/sitemap/all");
+    expect(directory.getAttribute("aria-current")).toBe(pathname === "/sitemap/all" ? "page" : null);
   });
 
   it.each(["/studio", "/discover", "/market", "/my"] as const)("정본 목적 %s를 현재 탭 하나로 표시한다", (href) => {
