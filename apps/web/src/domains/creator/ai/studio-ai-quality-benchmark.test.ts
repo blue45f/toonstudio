@@ -85,6 +85,21 @@ describe("Studio AI quality benchmark", () => {
     );
   });
 
+  it("중복 ID의 뒤쪽 결과가 앞선 실패를 가리거나 종합 판정을 통과하지 못한다", () => {
+    const perfect = { ...goodScores };
+    for (const key of Object.keys(perfect) as (keyof StudioAiQualityScores)[]) perfect[key] = 100;
+    const base = runWith(perfect);
+    const [item] = base.cases;
+    const failed = { ...item, scores: { ...perfect, characterIdentity: 0, styleConsistency: 0, anatomyAndFaces: 0 } };
+    const cases = [failed, item, ...Array.from({ length: 8 }, (_, i) => ({ ...item, id: `case-${i}` }))];
+    const evaluation = evaluateStudioAiQualityRun({ ...base, cases });
+
+    expect(evaluation.findings.map((finding) => finding.id)).toEqual(["duplicate-case", "worst-case"]);
+    expect(evaluation.passed).toBe(false);
+    expect(evaluation.worstCaseScore).toBe(58);
+    expect(evaluation.overallScore).toBe(95.8);
+  });
+
   it("reports per-dimension regressions instead of hiding them in the overall average", () => {
     const baseline = evaluateStudioAiQualityRun(runWith(goodScores));
     const candidate = evaluateStudioAiQualityRun(
