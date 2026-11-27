@@ -31,9 +31,9 @@ const placed = (project: Manuscript) => project.payload.data.pagesList[0].elemen
 async function saveShot(shaper: Locator) {
   const insert = shaper.locator('[data-character-dock-action="insert"]').filter({ visible: true }).first();
   // Move off the preset card as a user does before saving, to end hover audition.
-  await insert.hover();
+  await insert.hover({ timeout: 120000 });
   await expect(insert).toBeEnabled({ timeout: 150000 });
-  await insert.click();
+  await insert.click({ timeout: 150000 });
   await expect(shaper).toBeHidden({ timeout: 120000 });
 }
 
@@ -46,10 +46,11 @@ async function captureTemplate(page: Page, name: string, angle: string) {
   const shaper = page.locator(shaperRoot).filter({ visible: true }).first();
   const camera = shaper.getByRole("group", { name: "카메라 프리셋", exact: true });
   await expect(camera).toBeVisible({ timeout: 150000 });
-  await shaper.getByRole("button", { name: "확대", exact: true }).filter({ visible: true }).first().waitFor({ timeout: 150000 });
+  const zoom = shaper.locator('[data-character-shaper-hud] button[aria-label="확대"]').filter({ visible: true }).first();
+  await expect(zoom).toBeEnabled({ timeout: 150000 });
   const choice = camera.getByRole("button", { name: angle, exact: true });
   await expect(choice).toBeEnabled({ timeout: 150000 });
-  await choice.click();
+  await choice.click({ timeout: 120000 });
   await saveShot(shaper);
   const project = await exportManuscript(page);
   const cut = placed(project).at(-1);
@@ -210,8 +211,8 @@ async function pixels(page: Page, src: string) {
 }
 
 export async function runStudioEightCutTask(page: Page, info: TestInfo) {
-  // Keep locator/navigation mistakes short while explicit GPU and batch deadlines remain in force.
-  page.setDefaultTimeout(30_000);
+  // A cold software GPU can block even a visible preset button during the untimed fixture.
+  page.setDefaultTimeout(120_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/studio/draft/eight-cut-task?language=ko", { waitUntil: "domcontentloaded" });
   await expect(page.locator("[data-studio-canvas-viewport]").first()).toHaveAttribute("data-studio-canvas-input-state", "ready", { timeout: 180000 });
@@ -221,6 +222,8 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   const beforePixels: Awaited<ReturnType<typeof pixels>>[] = [];
   for (const cut of before) beforePixels.push(await pixels(page, cut.src));
   console.log("[studio-eight-cut] Decoded eight baseline rasters");
+  // User-task navigation stays bounded independently from actual GPU capture and batch work.
+  page.setDefaultTimeout(30_000);
   const individuallyOpened: string[] = [];
   const start = performance.now();
   const tools = await cutMenu(page, local);
