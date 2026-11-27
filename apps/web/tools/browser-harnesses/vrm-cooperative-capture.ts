@@ -3,8 +3,8 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { cameraForLinkedCut, readLinkedCutPngSize } from "../../src/domains/creator/vrm/studio-vrm-linked-cut-frame";
-import { createDefaultStudioVrmSceneDocument } from "../../src/domains/creator/vrm/studio-vrm-scene-document";
 import { captureStudioVrmRgba, captureStudioVrmRgbaCooperatively, encodeStudioVrmCapturePngDataUrl } from "../../src/domains/creator/vrm/studio-vrm-raster-capture";
+import { createDefaultStudioVrmSceneDocument } from "../../src/domains/creator/vrm/studio-vrm-scene-document";
 
 function invariant(value: boolean, message: string): void {
   if (!value) throw new Error(message);
