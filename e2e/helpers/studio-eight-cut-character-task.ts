@@ -5,7 +5,7 @@ import { expect, type Locator, type Page, type TestInfo } from "@playwright/test
 
 import type { StudioVrmSceneDocument } from "../../apps/web/src/domains/creator/contracts/studio-vrm-scene-document-schema";
 import { openStudioAllTools } from "../../scripts/lib/studio-bg3d-ui-interactions";
-import { openStudioMainMenu } from "../../scripts/lib/studio-shell-interactions";
+import { openStudioMainMenu, selectStudioLayerThroughNavigator } from "../../scripts/lib/studio-shell-interactions";
 
 interface Cut {
   id: string; type: "image"; name: string; src: string; x: number; y: number;
@@ -100,33 +100,54 @@ async function seedManuscript(page: Page) {
   return imported;
 }
 
-// Konva supplies the geometry solely to aim the Playwright pointer. Only the normal user
-// context-menu command below opens an editor or starts a refresh.
-async function cutMenu(page: Page, id: string) {
-  const point = await page.evaluate((elementId) => {
-    type Shape = { id(): string; getAttr(key: string): unknown; getParent(): Shape | null; getClientRect(): {x:number;y:number;width:number;height:number} };
-    type Stage = { container(): HTMLElement; width(): number; height(): number;
-      findOne(cb: (node: Shape) => boolean): Shape | undefined; getIntersection(p: {x:number;y:number}): Shape | null };
-    const app = window as Window & { Konva?: { stages: Stage[] } };
-    for (const stage of app.Konva?.stages ?? []) {
-      if (!stage.container().isConnected) continue;
-      const belongs = (node: Shape) => node.id() === elementId || node.getAttr("studioElementId") === elementId;
-      const shape = stage.findOne(belongs);
-      if (!shape) continue;
-      const box = shape.getClientRect(), bounds = stage.container().getBoundingClientRect();
-      for (const offset of [.5, .3, .7]) {
-        const x = box.x + box.width * offset, y = box.y + box.height * .52;
-        let hit = stage.getIntersection({ x, y });
-        while (hit && !belongs(hit)) hit = hit.getParent();
-        if (!hit) continue;
-        const result = { x: bounds.left + x* bounds.width/stage.width(), y: bounds.top + y*bounds.height/stage.height() };
-        const visible = document.elementFromPoint(result.x, result.y);
-        if (visible && stage.container().contains(visible)) return result;
-      }
-    }
-    throw new Error("No visible, hit-testable image on the real Studio stage: " + elementId);
-  }, id);
-  await page.mouse.click(point.x, point.y, { button: "right" });
+// Select and focus the real image through Studio before aiming the pointer. The page may
+// open scrolled or clipped at its saved zoom, so the canvas container is not a world origin.
+async function cutMenu(page: Page, cut: Cut) {
+  await page.keyboard.press("v");
+  await selectStudioLayerThroughNavigator(page, cut.id);
+  await page.keyboard.press("Shift+f");
+  let target: { x: number; y: number } | null = null;
+  let diagnostics = "";
+  try {
+    await expect.poll(async () => {
+      const attempt = await page.evaluate(({ id, x, y, width, height }) => {
+        type Point = { x: number; y: number };
+        type Shape = { attrs?: { studioElementId?: string }; getClassName(): string; getParent(): Shape | null };
+        type Stage = { container(): HTMLElement; getAbsoluteTransform(): { point(p: Point): Point };
+          getIntersection(p: Point): Shape | null };
+        const stages = (window as Window & { Konva?: { stages?: Stage[] } }).Konva?.stages ?? [];
+        const samples: string[] = [];
+        for (const stage of stages) {
+          const content = stage.container().querySelector<HTMLElement>(".konvajs-content");
+          if (!content?.isConnected) continue;
+          const bounds = content.getBoundingClientRect();
+          for (const fy of [.5, .3, .7]) for (const fx of [.5, .3, .7]) {
+            const local = stage.getAbsoluteTransform().point({ x: x + fx * width, y: y + fy * height });
+            const client = { x: bounds.left + local.x, y: bounds.top + local.y };
+            let hit = stage.getIntersection(local);
+            const ancestry: string[] = [];
+            while (hit && hit.attrs?.studioElementId !== id) {
+              ancestry.push(hit.attrs?.studioElementId ?? hit.getClassName());
+              hit = hit.getParent();
+            }
+            const visible = document.elementFromPoint(client.x, client.y);
+            if (hit && visible && content.contains(visible)) return { point: client, diagnostics: "" };
+            if (fx === .5 && fy === .5) samples.push(JSON.stringify({ client, local, ancestry,
+              element: visible?.tagName, content: [bounds.left, bounds.top, bounds.width, bounds.height] }));
+          }
+        }
+        return { point: null, diagnostics: "Stages=" + stages.length + " " + samples.join(" ") };
+      }, { id: cut.id, x: cut.x, y: cut.y, width: cut.width, height: cut.height });
+      target = attempt.point;
+      diagnostics = attempt.diagnostics;
+      return target !== null;
+    }, { timeout: 25000, intervals: [250, 500, 1000] }).toBe(true);
+  } catch (cause) {
+    throw new Error("No visible canvas hit for " + cut.id + ": " + diagnostics, { cause });
+  }
+  if (!target) throw new Error("Missing Studio pointer target");
+  const { x, y } = target as { x: number; y: number };
+  await page.mouse.click(x, y, { button: "right" });
   return page.getByRole("menu").filter({ visible: true }).last();
 }
 
@@ -171,7 +192,7 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   for (const cut of before) beforePixels.push(await pixels(page, cut.src));
   const individuallyOpened: string[] = [];
   const start = performance.now();
-  const tools = await cutMenu(page, local.id);
+  const tools = await cutMenu(page, local);
   await tools.getByRole("menuitem", {name:"3D 캐릭터 편집", exact:true}).click();
   individuallyOpened.push(local.id);
   const shaper = page.locator(shaperRoot).filter({visible:true}).first();
@@ -191,7 +212,7 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   await saveShot(shaper);
   const editMs = performance.now() - start;
   // A different cut of the same actor is a stable refresh entry even if the edited shot was selected.
-  const refresh = await cutMenu(page, before[0].id);
+  const refresh = await cutMenu(page, before[0]);
   await refresh.getByRole("menuitem", { name:"이 페이지의 같은 캐릭터 컷 갱신", exact:true }).click();
   const receipt = page.getByRole("dialog", { name:"캐릭터 컷 갱신", exact:true });
   await expect(receipt.getByRole("button", { name:"닫기", exact:true })).toBeVisible({ timeout: 480000 });
