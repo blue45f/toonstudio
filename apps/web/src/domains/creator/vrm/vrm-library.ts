@@ -1,4 +1,5 @@
 import { BLOCKED_WORK_VRM_MODELS } from "@toonstudio/contracts/studio-work-vrm-cut-bundled";
+import { studioManuscriptPortraitUrl } from "../catalog/studio-manuscript-portrait";
 import { STUDIO_3D_LOCAL_WASM64_MAX_BYTES, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { QUATERNIUS_FANTASY_VRMS } from "./quaternius-fantasy-catalog";
 import { QUATERNIUS_MODULAR_VRMS } from "./quaternius-modular-catalog";
@@ -23,7 +24,6 @@ const DB_NAME = "toonstudio-studio-vrm-library";
 const DB_VERSION = 1;
 const MODEL_STORE = "models";
 const THUMBNAIL_STORE = "thumbnails";
-
 const SHA256_CONTENT_HASH_PATTERN = /^sha256:([0-9a-f]{64})$/i;
 const GLB_HEADER_BYTES = 12;
 const GLB_CHUNK_HEADER_BYTES = 8;
@@ -337,7 +337,7 @@ export const SAMPLE_VRM_ENTRIES: VrmLibraryEntry[] = SAMPLE_VRMS
     id: sample.id,
     name: sample.name,
     source: "sample",
-    thumbnail: `/assets/3d/characters/thumbnails/manuscript-v1/${sample.id}.webp`,
+    thumbnail: studioManuscriptPortraitUrl(sample.id),
     createdAt: 0,
     updatedAt: 0,
     licenseNotice: sample.licenseNotice,
