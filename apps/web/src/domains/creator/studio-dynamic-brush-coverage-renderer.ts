@@ -123,6 +123,7 @@ import {
 } from "./studio-splatter-origin-anchor";
 
 import type { StudioPaperMediumV1 } from "./brush/studio-paper-media-profile-v1";
+import { applyStudioTactileReliefToTileContext } from "./brush/studio-tactile-physical-relief-runtime";
 
 export const STUDIO_DYNAMIC_COVERAGE_TILE_PIXEL_SIZE = 256;
 
@@ -573,12 +574,10 @@ export interface StudioDynamicBrushCoverageRenderOptions {
   readonly activeDraft: boolean;
   readonly opacity: number;
   readonly surfaceFactory?: StudioCoverageSurfaceFactory;
-  /**
-   * Stable identity for an immutable committed mark plan. When present on a committed render, the
-   * prepared coverage tiles are reused across retained layer redraws at the same physical scale.
-   * Reusing a key for a different marks array safely replaces the stale entry.
-   */
+  /** Stable identity for reusing committed coverage tiles across retained redraws. */
   readonly committedCacheKey?: object | string;
+  /** Optional brush identifier for 2.5D tactile relief shading on prepared tiles. */
+  readonly brushId?: string;
 }
 
 export type StudioDynamicBrushCoverageRenderResult =
@@ -2488,7 +2487,8 @@ export function studioDynamicCoverageCommittedCacheStats(): Readonly<{
 function prepareTileSurfaces(
   plan: TilePlan,
   marks: readonly StudioDynamicBrushCoverageMark[],
-  factory: StudioCoverageSurfaceFactory
+  factory: StudioCoverageSurfaceFactory,
+  brushId?: string,
 ): readonly PreparedTile[] | null {
   const tilePixels = STUDIO_DYNAMIC_COVERAGE_TILE_PIXEL_SIZE;
   const bleedPixels = STUDIO_DYNAMIC_COVERAGE_TILE_BLEED_PIXELS;
@@ -2505,18 +2505,11 @@ function prepareTileSurfaces(
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, surfacePixels, surfacePixels);
       context.globalCompositeOperation = "source-over";
-      context.setTransform(
-        plan.scale,
-        0,
-        0,
-        plan.scale,
-        bleedPixels - bin.tileX * tilePixels,
-        bleedPixels - bin.tileY * tilePixels
-      );
+      context.setTransform(plan.scale, 0, 0, plan.scale, bleedPixels - bin.tileX * tilePixels, bleedPixels - bin.tileY * tilePixels);
       for (const markIndex of bin.markIndexes) {
-        const mark = marks[markIndex]!;
-        renderStudioDynamicBrushCoverageMark(context, mark, 1, factory);
+        renderStudioDynamicBrushCoverageMark(context, marks[markIndex]!, 1, factory);
       }
+      if (brushId) applyStudioTactileReliefToTileContext(context, { width: surfacePixels, height: surfacePixels, brushIdOrFamily: brushId, worldOriginX: (bin.tileX * tilePixels - bleedPixels) / plan.scale, worldOriginY: (bin.tileY * tilePixels - bleedPixels) / plan.scale, worldScale: plan.scale });
       prepared.push({ ...bin, surface });
     }
     return prepared;
@@ -2589,6 +2582,7 @@ function compositeCommittedCoverageStreaming(
   plan: TilePlan,
   opacity: number,
   factory: StudioCoverageSurfaceFactory,
+  brushId?: string,
 ): StudioCommittedCoverageStreamingResult {
   const tilePixels = STUDIO_DYNAMIC_COVERAGE_TILE_PIXEL_SIZE;
   const bleedPixels = STUDIO_DYNAMIC_COVERAGE_TILE_BLEED_PIXELS;
@@ -2617,36 +2611,15 @@ function compositeCommittedCoverageStreaming(
       surfaceContext.setTransform(1, 0, 0, 1, 0, 0);
       surfaceContext.clearRect(0, 0, surfacePixels, surfacePixels);
       surfaceContext.globalCompositeOperation = "source-over";
-      surfaceContext.setTransform(
-        plan.scale,
-        0,
-        0,
-        plan.scale,
-        bleedPixels - bin.tileX * tilePixels,
-        bleedPixels - bin.tileY * tilePixels,
-      );
+      surfaceContext.setTransform(plan.scale, 0, 0, plan.scale, bleedPixels - bin.tileX * tilePixels, bleedPixels - bin.tileY * tilePixels);
       for (const markIndex of bin.markIndexes) {
-        renderStudioDynamicBrushCoverageMark(
-          surfaceContext,
-          marks[markIndex]!,
-          1,
-          factory,
-        );
+        renderStudioDynamicBrushCoverageMark(surfaceContext, marks[markIndex]!, 1, factory);
       }
+      if (brushId) applyStudioTactileReliefToTileContext(surfaceContext, { width: surfacePixels, height: surfacePixels, brushIdOrFamily: brushId, worldOriginX: (bin.tileX * tilePixels - bleedPixels) / plan.scale, worldOriginY: (bin.tileY * tilePixels - bleedPixels) / plan.scale, worldScale: plan.scale });
 
       phase = "destination";
       destinationStarted = true;
-      context.drawImage(
-        surface,
-        bleedPixels,
-        bleedPixels,
-        tilePixels,
-        tilePixels,
-        bin.tileX * tileLogicalSize,
-        bin.tileY * tileLogicalSize,
-        tileLogicalSize,
-        tileLogicalSize,
-      );
+      context.drawImage(surface, bleedPixels, bleedPixels, tilePixels, tilePixels, bin.tileX * tileLogicalSize, bin.tileY * tileLogicalSize, tileLogicalSize, tileLogicalSize);
     }
     context.restore();
     destinationSaved = false;
@@ -2726,13 +2699,7 @@ export function renderStudioDynamicBrushCoverage(
         selectedPlan = committedPlan;
         break;
       }
-      const streamed = compositeCommittedCoverageStreaming(
-        context,
-        marks,
-        committedPlan,
-        opacity,
-        factory,
-      );
+      const streamed = compositeCommittedCoverageStreaming(context, marks, committedPlan, opacity, factory, options.brushId);
       if (streamed.status !== "rendered") {
         return streamed.status === "partial"
           ? { status: "partial", reason: streamed.reason }
@@ -2764,8 +2731,7 @@ export function renderStudioDynamicBrushCoverage(
   }
   if (!selectedPlan) return { status: "rejected", reason: lastFailure };
 
-  const prepared = selectedCacheEntry?.prepared
-    ?? prepareTileSurfaces(selectedPlan, marks, factory);
+  const prepared = selectedCacheEntry?.prepared ?? prepareTileSurfaces(selectedPlan, marks, factory, options.brushId);
   if (!prepared) {
     return {
       status: "unavailable",
