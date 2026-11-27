@@ -1,3 +1,6 @@
+import { OPENROUTER_FREE_REQUEST_OPTIONS } from "@toonstudio/contracts/studio-openrouter-free";
+
+import { assertFreeAiConnection } from "./free-ai-policy";
 import { UserAiTransportError } from "./user-ai-transport-error";
 
 import type {
@@ -339,6 +342,33 @@ function positiveInteger(value: unknown): number | null {
     : null;
 }
 
+// 검색 도구·대체 모델·첨부 파일 등이 유료 작업을 켤 수 있어 텍스트 채팅에 필요한 값만 보낸다.
+const OPENROUTER_TEXT_FIELDS = new Set([
+  "temperature", "top_p", "stop", "seed", "frequency_penalty", "presence_penalty", "response_format",
+  "max_tokens", "max_completion_tokens", "reasoning_effort", "n", "best_of", "logprobs", "store",
+]);
+
+function openRouterFreeTextBody(body: Record<string, unknown>): Record<string, unknown> {
+  if (body.tools || body.web_search_options || body.modalities || body.audio) {
+    throw new Error("OpenRouter 무료 요청은 검색·도구·미디어 출력을 지원하지 않습니다.");
+  }
+  if (!Array.isArray(body.messages)) throw new Error("OpenRouter 무료 요청에는 텍스트 메시지가 필요합니다.");
+  const messages = body.messages.map((message: unknown) => {
+    if (typeof message === "object" && message !== null && "role" in message && "content" in message) {
+      const { role, content } = message;
+      if (typeof content === "string") return { role, content };
+      if (Array.isArray(content) && content.every((part: unknown) =>
+        typeof part === "object" && part !== null && "type" in part && part.type === "text"
+        && "text" in part && typeof part.text === "string")) {
+        return { role, content: content.map((part: { text: string }) => ({ type: "text", text: part.text })) };
+      }
+    }
+    throw new Error("OpenRouter 무료 요청은 텍스트 메시지만 지원합니다.");
+  });
+  const parameters = Object.fromEntries(Object.entries(body).filter(([field]) => OPENROUTER_TEXT_FIELDS.has(field)));
+  return { ...parameters, messages, ...OPENROUTER_FREE_REQUEST_OPTIONS };
+}
+
 function prepareManagedBody(
   connection: UserAiConnection,
   body: unknown,
@@ -353,11 +383,12 @@ function prepareManagedBody(
     throw new Error("외부 무료 티어 텍스트 요청은 JSON 객체 형식이어야 합니다.");
   }
 
-  const request = { ...(body as Record<string, unknown>) };
-  if (request.stream === true) {
+  const fields = body as Record<string, unknown>;
+  if (fields.stream === true) {
     throw new Error("무료량 보호를 위해 외부 무료 티어의 스트리밍 응답을 사용하지 않습니다.");
   }
 
+  const request = connection.costPolicy === "openrouter-free" ? openRouterFreeTextBody(fields) : { ...fields };
   // Never trust a caller-provided model for a managed endpoint.
   request.model = connection.textModel;
   if ("n" in request) request.n = 1;
@@ -419,11 +450,13 @@ function blockMessage(entry: FreeAiBudgetEntry, now: number): string | null {
 }
 
 function assertManagedEndpoint(
+  connection: UserAiConnection,
   path: string,
   method: string,
   body: unknown,
 ): void {
-  if (method === "GET" && path === "/models" && body === undefined) return;
+  const metadata = path === "/models" || (connection.costPolicy === "openrouter-free" && path === "/key");
+  if (method === "GET" && metadata && body === undefined) return;
   if (method === "POST" && path === "/chat/completions" && body !== undefined) return;
   throw new Error("자동 무료 텍스트 경로는 GET /models와 POST /chat/completions만 허용합니다. 다른 작업은 기능별 클라우드 BYOK 경로를 사용하세요.");
 }
@@ -449,7 +482,8 @@ export async function guardFreeAiRuntimeRequest(
   }
 
   const normalizedMethod = method.toUpperCase();
-  assertManagedEndpoint(path, normalizedMethod, body);
+  assertManagedEndpoint(connection, path, normalizedMethod, body);
+  if (connection.costPolicy === "openrouter-free") assertFreeAiConnection(connection, capability);
   const prepared = body === undefined
     ? { body, reservedTokens: 0, maxOutputTokens: 0 }
     : prepareManagedBody(connection, body);

@@ -25,6 +25,7 @@ const managedConnection: UserAiConnection = {
   imageEditPath: "/images/edits",
   chatCompletionsPath: "/chat/completions",
   costPolicy: "openrouter-free",
+  openRouterFreeBillingConfirmed: true,
 };
 
 beforeEach(() => {
@@ -82,18 +83,52 @@ describe("managed cloud AI transport", () => {
         messages: [{ role: "user", content: "hello" }],
         max_tokens: 50_000,
         n: 9,
+        models: ["vendor/paid:online"],
+        provider: { max_price: { request: 10 }, allow_fallbacks: true },
+        plugins: [{ id: "web", enabled: true }],
+        response_format: { type: "json_schema", json_schema: { name: "test", schema: { type: "object" } } },
       },
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.parse(String(init.body))).toMatchObject({
+    const request: unknown = JSON.parse(String(init.body));
+    expect(request).not.toHaveProperty("models");
+    expect(request).toMatchObject({
+      provider: { max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false },
+      plugins: [{ id: "web", enabled: false }],
+      response_format: { type: "json_schema", json_schema: { name: "test", schema: { type: "object" } } },
       model: "openrouter/free",
       max_tokens: 1_024,
       n: 1,
     });
     expect(init.credentials).toBe("omit");
     expect(init.redirect).toBe("error");
+  });
+
+  it("계정 확인이 없는 예전 고정 키로는 무료 요청을 보내지 않는다", async () => {
+    setUserAiConfiguration({
+      version: 1,
+      connections: [{ ...managedConnection, openRouterFreeBillingConfirmed: false }],
+      assignments: { text: managedConnection.id, image: null, inference: null, "three-d": null },
+      routing: { mode: "manual", allowPaidFallback: false, managedPoolPriority: 50, serverProviderOrder: [] },
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "not-configured" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("텍스트 무료 경로에서 유료 검색 도구와 첨부 파일 호출을 전송 전에 거절한다", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    for (const body of [
+      { messages: [{ role: "user", content: "search" }], tools: [{ type: "openrouter:web_search" }] },
+      { messages: [{ role: "user", content: [{ type: "file", file: { filename: "sample.pdf" } }] }] },
+    ]) {
+      await expect(userAiFetch("text", "/chat/completions", body)).rejects.toThrow(/OpenRouter 무료/u);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("reports a missing cloud route without sending a request", async () => {
@@ -339,8 +374,8 @@ describe("managed cloud AI transport", () => {
       connections: [{
         ...managedConnection,
         apiKeys: [
-          { id: "primary", label: "Primary", apiKey: "key-a", enabled: true, priority: 10 },
-          { id: "backup", label: "Backup", apiKey: "key-b", enabled: true, priority: 20 },
+          { id: "primary", label: "Primary", apiKey: "key-a", enabled: true, openRouterFreeBillingConfirmed: true, priority: 10 },
+          { id: "backup", label: "Backup", apiKey: "key-b", enabled: true, openRouterFreeBillingConfirmed: true, priority: 20 },
         ],
         models: [
           { id: "fast", label: "Fast", model: "openrouter/free", capability: "text", enabled: true, priority: 10 },

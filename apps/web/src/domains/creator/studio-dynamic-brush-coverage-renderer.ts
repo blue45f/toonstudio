@@ -13,6 +13,7 @@ import {
   studioDynamicBrushUsesFullTextureAuthority,
 } from "./brush/studio-brush-antigrid-parity";
 import {
+  STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION,
   isStudioDynamicBrushCausalDepositPipeline,
   isStudioSoftFalloffLinearAccumulationProgramPin,
   type NormalizedStudioBrushDynamicsSettings,
@@ -123,6 +124,7 @@ import {
 } from "./studio-splatter-origin-anchor";
 
 import type { StudioPaperMediumV1 } from "./brush/studio-paper-media-profile-v1";
+import { applyStudioTactileReliefToTileContext } from "./brush/studio-tactile-physical-relief-runtime";
 
 export const STUDIO_DYNAMIC_COVERAGE_TILE_PIXEL_SIZE = 256;
 
@@ -573,12 +575,10 @@ export interface StudioDynamicBrushCoverageRenderOptions {
   readonly activeDraft: boolean;
   readonly opacity: number;
   readonly surfaceFactory?: StudioCoverageSurfaceFactory;
-  /**
-   * Stable identity for an immutable committed mark plan. When present on a committed render, the
-   * prepared coverage tiles are reused across retained layer redraws at the same physical scale.
-   * Reusing a key for a different marks array safely replaces the stale entry.
-   */
+  /** Stable identity for reusing committed coverage tiles across retained redraws. */
   readonly committedCacheKey?: object | string;
+  /** Optional brush identifier for 2.5D tactile relief shading on prepared tiles. */
+  readonly brushId?: string;
 }
 
 export type StudioDynamicBrushCoverageRenderResult =
@@ -1257,10 +1257,15 @@ export function planStudioDynamicBrushCoverageMarks(
    */
   const paperResponse = input.paper?.response;
   const paperModel = input.paper?.model;
+  const paperSurface = input.paper?.surface ?? resolveStudioDocumentPaperSurface();
+  const sheetContactSeed = dryMediaKernelTipMaterial !== null
+    && dynamics.dryMediaKernelProgram?.version === STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION
+    ? paperSurface.seed
+    : undefined;
   const paperTile: StudioPaperGranulationTile | null =
     paperResponse && studioPaperGranulationIsActive(paperResponse)
       ? acquireStudioPaperGranulationTile(
-          input.paper?.surface ?? resolveStudioDocumentPaperSurface(),
+          paperSurface,
           paperResponse,
           paperModel,
         )
@@ -1633,23 +1638,9 @@ export function planStudioDynamicBrushCoverageMarks(
           angleRadians,
           medium: paperMedium,
           pressure: paperContactPressure,
+          gainFloor: kernelTipPaperGainFloor,
         });
         if (composed) texturedAlphaMap = composed;
-        if (composed && kernelTipPaperGainFloor > 0) {
-          /*
-           * 조성 맵의 골 텍셀은 0까지 가라앉는다 — 스칼라 하한만으로는 짧은 획의 dab이
-           * 통째로 스킵 구간에 빠지는 것을 막지 못한다(실측 플레이크). 원본 팁 맵 방향으로
-           * 하한 비율만큼 블렌드해 최소 가시 기반을 보장하면서 상대적 종이 결은 유지한다.
-           */
-          const floor = kernelTipPaperGainFloor;
-          const lifted = {
-            ...composed,
-            alphas: composed.alphas.map((texel, texelIndex) => (
-              Math.max(texel, tipAlphaMap.alphas[texelIndex]! * floor)
-            )),
-          };
-          texturedAlphaMap = lifted;
-        }
       }
       const strokeToothMultiplier = kernelTipMaterial
         ? studioDryMediaKernelStrokeToothMultiplier(
@@ -1668,6 +1659,8 @@ export function planStudioDynamicBrushCoverageMarks(
             strokeOriginX,
             strokeOriginY,
             dynamicSeed,
+            sheetContactSeed,
+            depositionAlpha,
           )
         : 1;
       /*
@@ -1687,7 +1680,7 @@ export function planStudioDynamicBrushCoverageMarks(
       const texturedMarkAlpha = clampAlpha(
         Math.max(
           depositionAlpha
-            * (paperFitsInsideDab
+            * (paperFitsInsideDab && (sheetContactSeed === undefined || texturedAlphaMap !== tipAlphaMap)
               ? resolveNormalizedStudioBrushFootprintGrainAlphaMultiplierAt(
                   composedDab.x,
                   composedDab.y,
@@ -1727,10 +1720,10 @@ export function planStudioDynamicBrushCoverageMarks(
         // evolves the same deterministic grain into per-fragment paper tooth.
         // 종이 이득이 알파맵 텍셀마다 들어가는 마크에서는 캐리어에 한 번 더 곱하지 않는다 —
         // 두 번 곱하면 같은 물리를 제곱해 획이 근거 없이 어두워진다. 판정 기준은 "합성이
-        // 성공했는가"가 아니라 "이 dab이 종이를 맵 안에 담을 수 있는가"다: 예산 소진으로
-        // 합성을 건너뛰더라도 알파는 그대로 남아 질감만 옅어지고 획의 농도는 흔들리지 않는다.
+        // 성공했는가"로 정한다. 새 건식 커널은 예산 뒤에도 문서 좌표의 9점 종이 접촉을
+        // 이어가고 기존 획은 과거의 footprint 크기 판정을 보존한다.
         alpha: texturedMarkAlpha,
-                color: dabColor,
+        color: dabColor,
         texture: {
           kind: "alpha-map",
           alphaMap: texturedAlphaMap,
@@ -2488,7 +2481,8 @@ export function studioDynamicCoverageCommittedCacheStats(): Readonly<{
 function prepareTileSurfaces(
   plan: TilePlan,
   marks: readonly StudioDynamicBrushCoverageMark[],
-  factory: StudioCoverageSurfaceFactory
+  factory: StudioCoverageSurfaceFactory,
+  brushId?: string,
 ): readonly PreparedTile[] | null {
   const tilePixels = STUDIO_DYNAMIC_COVERAGE_TILE_PIXEL_SIZE;
   const bleedPixels = STUDIO_DYNAMIC_COVERAGE_TILE_BLEED_PIXELS;
@@ -2505,18 +2499,11 @@ function prepareTileSurfaces(
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, surfacePixels, surfacePixels);
       context.globalCompositeOperation = "source-over";
-      context.setTransform(
-        plan.scale,
-        0,
-        0,
-        plan.scale,
-        bleedPixels - bin.tileX * tilePixels,
-        bleedPixels - bin.tileY * tilePixels
-      );
+      context.setTransform(plan.scale, 0, 0, plan.scale, bleedPixels - bin.tileX * tilePixels, bleedPixels - bin.tileY * tilePixels);
       for (const markIndex of bin.markIndexes) {
-        const mark = marks[markIndex]!;
-        renderStudioDynamicBrushCoverageMark(context, mark, 1, factory);
+        renderStudioDynamicBrushCoverageMark(context, marks[markIndex]!, 1, factory);
       }
+      if (brushId) applyStudioTactileReliefToTileContext(context, { width: surfacePixels, height: surfacePixels, brushIdOrFamily: brushId, worldOriginX: (bin.tileX * tilePixels - bleedPixels) / plan.scale, worldOriginY: (bin.tileY * tilePixels - bleedPixels) / plan.scale, worldScale: plan.scale });
       prepared.push({ ...bin, surface });
     }
     return prepared;
@@ -2589,6 +2576,7 @@ function compositeCommittedCoverageStreaming(
   plan: TilePlan,
   opacity: number,
   factory: StudioCoverageSurfaceFactory,
+  brushId?: string,
 ): StudioCommittedCoverageStreamingResult {
   const tilePixels = STUDIO_DYNAMIC_COVERAGE_TILE_PIXEL_SIZE;
   const bleedPixels = STUDIO_DYNAMIC_COVERAGE_TILE_BLEED_PIXELS;
@@ -2617,36 +2605,15 @@ function compositeCommittedCoverageStreaming(
       surfaceContext.setTransform(1, 0, 0, 1, 0, 0);
       surfaceContext.clearRect(0, 0, surfacePixels, surfacePixels);
       surfaceContext.globalCompositeOperation = "source-over";
-      surfaceContext.setTransform(
-        plan.scale,
-        0,
-        0,
-        plan.scale,
-        bleedPixels - bin.tileX * tilePixels,
-        bleedPixels - bin.tileY * tilePixels,
-      );
+      surfaceContext.setTransform(plan.scale, 0, 0, plan.scale, bleedPixels - bin.tileX * tilePixels, bleedPixels - bin.tileY * tilePixels);
       for (const markIndex of bin.markIndexes) {
-        renderStudioDynamicBrushCoverageMark(
-          surfaceContext,
-          marks[markIndex]!,
-          1,
-          factory,
-        );
+        renderStudioDynamicBrushCoverageMark(surfaceContext, marks[markIndex]!, 1, factory);
       }
+      if (brushId) applyStudioTactileReliefToTileContext(surfaceContext, { width: surfacePixels, height: surfacePixels, brushIdOrFamily: brushId, worldOriginX: (bin.tileX * tilePixels - bleedPixels) / plan.scale, worldOriginY: (bin.tileY * tilePixels - bleedPixels) / plan.scale, worldScale: plan.scale });
 
       phase = "destination";
       destinationStarted = true;
-      context.drawImage(
-        surface,
-        bleedPixels,
-        bleedPixels,
-        tilePixels,
-        tilePixels,
-        bin.tileX * tileLogicalSize,
-        bin.tileY * tileLogicalSize,
-        tileLogicalSize,
-        tileLogicalSize,
-      );
+      context.drawImage(surface, bleedPixels, bleedPixels, tilePixels, tilePixels, bin.tileX * tileLogicalSize, bin.tileY * tileLogicalSize, tileLogicalSize, tileLogicalSize);
     }
     context.restore();
     destinationSaved = false;
@@ -2726,13 +2693,7 @@ export function renderStudioDynamicBrushCoverage(
         selectedPlan = committedPlan;
         break;
       }
-      const streamed = compositeCommittedCoverageStreaming(
-        context,
-        marks,
-        committedPlan,
-        opacity,
-        factory,
-      );
+      const streamed = compositeCommittedCoverageStreaming(context, marks, committedPlan, opacity, factory, options.brushId);
       if (streamed.status !== "rendered") {
         return streamed.status === "partial"
           ? { status: "partial", reason: streamed.reason }
@@ -2764,8 +2725,7 @@ export function renderStudioDynamicBrushCoverage(
   }
   if (!selectedPlan) return { status: "rejected", reason: lastFailure };
 
-  const prepared = selectedCacheEntry?.prepared
-    ?? prepareTileSurfaces(selectedPlan, marks, factory);
+  const prepared = selectedCacheEntry?.prepared ?? prepareTileSurfaces(selectedPlan, marks, factory, options.brushId);
   if (!prepared) {
     return {
       status: "unavailable",

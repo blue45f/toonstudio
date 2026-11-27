@@ -5,11 +5,11 @@
  * 있고 채색 프롬프트 합성은 호출부의 몫이었다. 이 모듈은 기본 프롬프트에
  * 맥락·힌트·팔레트 문장을 한 번에 합성한다. 우선순위는 기본 프롬프트 >
  * 맥락 > 힌트 > 팔레트이며, 이미 들어 있는 문장은 중복 추가하지 않고,
- * 상한(채색 패널 입력 상한과 같은 300자)을 넘기면 뒤쪽부터 뺀다.
+ * 채색 패널의 300자 상한 안에 들어가는 항목을 순서대로 담는다.
  */
 
 import type { StudioAiContextNote } from "./studio-ai-context-note";
-import { contextNoteToPromptContext } from "./studio-ai-context-note";
+import { listContextNotePromptSections } from "./studio-ai-context-note";
 
 export const STUDIO_AI_CONTEXT_PROMPT_MAX = 300;
 
@@ -24,28 +24,25 @@ export interface StudioAiContextPromptInput {
 export function composeColorizeContextPrompt(
   input: StudioAiContextPromptInput,
 ): string {
-  const base = input.basePrompt.trim().slice(0, STUDIO_AI_CONTEXT_PROMPT_MAX);
-  const extras: string[] = [];
+  let prompt = input.basePrompt.trim().slice(0, STUDIO_AI_CONTEXT_PROMPT_MAX);
+
+  function appendIfFits(fragment: string): boolean {
+    const text = fragment.trim();
+    if (!text || prompt.includes(text)) return true;
+    const candidate = prompt ? `${prompt}, ${text}` : text;
+    if (candidate.length > STUDIO_AI_CONTEXT_PROMPT_MAX) return false;
+    prompt = candidate;
+    return true;
+  }
+
   if (input.note) {
-    const context = contextNoteToPromptContext(input.note)
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-    extras.push(...context);
-  }
-  for (const fragment of input.hintFragments ?? []) {
-    const trimmed = fragment.trim();
-    if (trimmed) extras.push(trimmed);
-  }
-  if (input.palettePhrase?.trim()) extras.push(input.palettePhrase.trim());
-  const kept: string[] = [];
-  for (const extra of extras) {
-    if (base.includes(extra) || kept.some((item) => item.includes(extra))) {
-      continue;
+    for (const { label, items, separator } of listContextNotePromptSections(input.note)) {
+      if (appendIfFits(`${label}: ${items.join(separator)}`)) continue;
+      // 긴 그룹은 개별 규칙으로 나눠, 들어가는 항목의 의미와 출처를 보존한다.
+      for (const item of items) appendIfFits(`${label}: ${item}`);
     }
-    const candidate = [base, ...kept, extra].filter(Boolean).join(", ");
-    if (candidate.length > STUDIO_AI_CONTEXT_PROMPT_MAX) break;
-    kept.push(extra);
   }
-  return [base, ...kept].filter(Boolean).join(", ");
+  for (const fragment of input.hintFragments ?? []) appendIfFits(fragment);
+  if (input.palettePhrase) appendIfFits(input.palettePhrase);
+  return prompt;
 }

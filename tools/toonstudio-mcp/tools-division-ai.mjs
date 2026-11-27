@@ -3,6 +3,8 @@
  * 절대 API 키/토큰 원문을 출력하거나 저장하지 않으며 유료 과금 ₩0(Fail-Closed)만 허용한다.
  */
 
+import { requestCreativeAssist, reviewLocalManuscript, sanitizeManuscript } from "./creative-assist.mjs";
+
 export const FREE_AI_14_MODES_CATALOG = Object.freeze([
   { id: "idea-remix", labelKo: "5가지 발상 리믹스", categoryKo: "기획·스토리", benchmark: "플롯르 AI · Canva" },
   { id: "script-to-cuts", labelKo: "대본 → 컷 분할", categoryKo: "기획·스토리", benchmark: "튜닝 AI · 플롯르 AI" },
@@ -183,7 +185,7 @@ export function inspectSafeFreeQuotaStatus(env = process.env) {
       model: openrouterModel,
       modelAllowed:
         openrouterModel.toLowerCase() === "openrouter/free" ||
-        openrouterModel.toLowerCase().endsWith(":free"),
+        /^[a-z0-9._-]+\/[a-z0-9._-]+:free$/iu.test(openrouterModel),
       dailyRequestCap: 100,
       safeRequestCutoff: 90,
       costUsdGuaranteed: "$0.00",
@@ -204,8 +206,18 @@ export function inspectSafeFreeQuotaStatus(env = process.env) {
   const configuredCloudCount = providers.filter(
     (p) => p.id !== "local-zero-cost-fallback" && p.configured,
   ).length;
+  const accountVendors = {
+    "openai-free-share": "OPENAI", "gemini-free": "GEMINI", "github-models-free": "GITHUB_MODELS",
+    "cloudflare-workers-ai-free": "CLOUDFLARE", "mistral-free": "MISTRAL",
+    "sambanova-free": "SAMBANOVA", "groq-free": "GROQ", "openrouter-free": "OPENROUTER",
+  };
+  for (const provider of providers) {
+    const vendor = accountVendors[provider.id];
+    const flag = `STUDIO_AI_FREE_${vendor}_CONFIRMED`;
+    provider.freeBillingConfirmed = !vendor || firstEnvValue(env, [flag, `ONPOD_API_ENV_${flag}`], "").toLowerCase() === "true";
+  }
   const activeCloudCount = providers.filter(
-    (p) => p.id !== "local-zero-cost-fallback" && p.configured && p.modelAllowed,
+    (p) => p.id !== "local-zero-cost-fallback" && p.configured && p.modelAllowed && p.freeBillingConfirmed,
   ).length;
 
   return {
@@ -214,6 +226,8 @@ export function inspectSafeFreeQuotaStatus(env = process.env) {
     guaranteedZeroCostLabel: "$0.00",
     guaranteedZeroCostKrwLabel: "₩0",
     paidBillingBlocked: true,
+    source: "local-configuration",
+    accountBalanceVerified: false,
     safetyCutoffRatio: 0.9,
     utcDay,
     nextResetUtcIso,
@@ -227,13 +241,7 @@ export function inspectSafeFreeQuotaStatus(env = process.env) {
   };
 }
 
-function redactText(raw) {
-  return String(raw || "")
-    .replace(/\b(?:sk-[A-Za-z0-9_-]{16,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{30,})\b/gu, "[비밀키 마스킹됨]")
-    .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu, "[이메일 비공개]");
-}
-
-export function createDivisionAndAiMcpTools({ state, persistState, syncToRemoteApi, env = process.env }) {
+export function createDivisionAndAiMcpTools({ state, persistState, apiUrl, remoteAiEnabled, dryRun, fetchImpl = fetch, env = process.env }) {
   return [
     {
       name: "studio.division.split_episode_cuts",
@@ -472,6 +480,8 @@ export function createDivisionAndAiMcpTools({ state, persistState, syncToRemoteA
           mode: { type: "string" },
           inputText: { type: "string" },
           projectTitle: { type: "string" },
+          remote: { type: "boolean", description: "연결한 ToonStudio API에서 구조화 결과를 받습니다." },
+          dryRun: { type: "boolean", description: "원격 전송과 실행 기록 저장 없이 로컬 점검만 합니다." },
         },
         required: ["mode", "inputText"],
       },
@@ -485,32 +495,49 @@ export function createDivisionAndAiMcpTools({ state, persistState, syncToRemoteA
             supportedModes: FREE_AI_14_MODES_CATALOG.map((m) => m.id),
           };
         }
-        const safeInput = redactText(args.inputText).slice(0, 6_000);
-        const title = String(args.projectTitle || state.canvas.title || "현재 원고");
-        const run = {
-          id: `ai-run-${state.ai.runs.length + 1}`,
-          mode,
-          labelKo: descriptor.labelKo,
-          provider: "local-zero-cost-fallback",
-          costGuaranteedZeroUsd: 0,
-          paidBillingBlocked: true,
-          summaryKo: `[₩0 Fail-Closed] '${title}' 대상 ${descriptor.labelKo} 초안을 생성했습니다.`,
-          inputPreview: safeInput.slice(0, 120),
-          recommendations: [
-            `${descriptor.labelKo} 핵심 점검을 현재 캔버스(${state.canvas.width}×${state.canvas.height})에 바로 적용하세요.`,
-            "유료 모델 자동 전환이 차단되어 있어 추가 과금은 $0.00(₩0)입니다.",
-          ],
-          createdAt: new Date().toISOString(),
+        const rawInput = typeof args.inputText === "string" ? args.inputText.trim() : "";
+        if (rawInput.length < 2 || rawInput.length > 6_000) {
+          return { ok: false, error: "검토할 원고를 2~6,000자로 입력하세요." };
+        }
+        if ((args.remote !== undefined && typeof args.remote !== "boolean") ||
+            (args.dryRun !== undefined && typeof args.dryRun !== "boolean")) {
+          return { ok: false, error: "remote와 dryRun은 true 또는 false로 지정하세요." };
+        }
+        const safeInput = sanitizeManuscript(rawInput);
+        const explicitTitle = typeof args.projectTitle === "string" ? sanitizeManuscript(args.projectTitle.trim())?.slice(0, 120) : "";
+        const title = explicitTitle || sanitizeManuscript(state.canvas.title || "현재 원고")?.slice(0, 120) || "현재 원고";
+        const preview = dryRun === true || args.dryRun === true;
+        const recommendations = reviewLocalManuscript(mode, safeInput ?? rawInput, state.canvas, safeInput !== null);
+        const finish = (remote) => {
+          const completed = remote.status === "completed";
+          const run = {
+            id: preview ? null : `ai-run-${state.ai.runs.length + 1}`,
+            mode, labelKo: descriptor.labelKo,
+            provider: completed ? remote.provider : "local-zero-cost-fallback",
+            costGuaranteedZeroUsd: 0, paidBillingBlocked: true,
+            summaryKo: completed
+              ? `'${title}'의 ${descriptor.labelKo} 결과를 받았습니다.`
+              : `'${title}'의 원고를 바탕으로 ${descriptor.labelKo} 작업을 준비했습니다.`,
+            inputPreview: safeInput?.slice(0, 120) ?? "",
+            recommendations,
+            remoteStatus: remote.status,
+            ...(remote.httpStatus ? { remoteHttpStatus: remote.httpStatus } : {}),
+            ...(completed ? { result: remote.result } : {}),
+            createdAt: new Date().toISOString(),
+          };
+          if (!preview) {
+            state.ai.runs.push(run);
+            persistState();
+          }
+          return { ok: true, run };
         };
-        state.ai.runs.push(run);
-        persistState();
-        syncToRemoteApi("/api/studio/ai/creative-assist", {
-          mode,
-          inputText: safeInput,
-          projectTitle: title,
-          allowZeroBillCascade: true,
-        });
-        return { ok: true, run };
+        if (preview) return finish({ status: "dry-run" });
+        if (!(args.remote ?? remoteAiEnabled)) return finish({ status: "not-requested" });
+        if (!apiUrl) return finish({ status: "not-configured" });
+        if (safeInput === null) return finish({ status: "contract-unavailable" });
+        return requestCreativeAssist(apiUrl, {
+          mode, inputText: safeInput, ...(explicitTitle ? { projectTitle: explicitTitle } : {}), allowZeroBillCascade: true,
+        }, fetchImpl).then(finish);
       },
     },
     {

@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -11,6 +12,7 @@ import {
   connectionFromFreeAiPreset,
   FREE_AI_PRESETS,
   freeAiConnectionPolicyIssue,
+  freeAiConnectionSetupIssue,
   USER_AI_COST_POLICIES,
   USER_AI_COST_POLICY_LABELS,
   type FreeAiPreset,
@@ -175,6 +177,7 @@ function AiSettingsEditor({
   configuration: UserAiConfiguration;
   poolStatus: FreeAiPoolStatus | null;
 }) {
+  const t = useT();
   const auxSnapshot = useUnifiedAiAuxSettings();
   const routing = userAiRoutingSettings(configuration);
   const [draft, setDraft] = useState<UserAiConnection>(structuredClone(EMPTY_AI_CONNECTION));
@@ -245,6 +248,7 @@ function AiSettingsEditor({
       apiKeys,
       models: draftModels,
       apiKey: firstKey?.apiKey ?? "",
+      openRouterFreeBillingConfirmed: firstKey?.openRouterFreeBillingConfirmed === true,
       textModel: firstText?.model ?? "",
       imageModel: firstImage?.model ?? "",
     };
@@ -252,19 +256,25 @@ function AiSettingsEditor({
 
   const draftPolicyIssue = (() => {
     const connection = resolvedDraftConnection(draft.id || "draft-preview");
-    const key = connection.apiKeys?.find((item) => item.enabled)?.apiKey ?? "";
-    if (!key) return "활성 API 키를 하나 이상 입력하세요.";
+    const keys = userAiConnectionApiKeys(connection);
+    const key = connection.costPolicy === "openrouter-free"
+      ? keys.find((item) => item.openRouterFreeBillingConfirmed) ?? keys[0]
+      : keys[0];
+    if (!key?.apiKey) return "활성 API 키를 하나 이상 입력하세요.";
     const models = connection.models?.filter((item) => item.enabled) ?? [];
     if (!models.length) return "활성 모델을 하나 이상 입력하세요.";
     for (const model of models) {
       if (!model.model.trim()) return "각 모델 프로필의 모델 ID를 입력하세요.";
       const route = {
         ...connection,
-        apiKey: key,
+        apiKey: key.apiKey,
+        openRouterFreeBillingConfirmed: key.openRouterFreeBillingConfirmed === true,
         textModel: model.capability === "text" ? model.model : "",
         imageModel: model.capability === "image" ? model.model : "",
       };
-      const issue = freeAiConnectionPolicyIssue(route, model.capability);
+      const issue = connection.enabled === false
+        ? freeAiConnectionSetupIssue(route, model.capability)
+        : freeAiConnectionPolicyIssue(route, model.capability);
       if (issue) return `${model.label || model.model}: ${issue}`;
     }
     return null;
@@ -377,7 +387,7 @@ function AiSettingsEditor({
             patch({
               baseUrl: value,
               apiKey: "",
-              apiKeys: draftKeys.map((item) => ({ ...item, apiKey: "" })),
+              apiKeys: draftKeys.map((item) => ({ ...item, apiKey: "", openRouterFreeBillingConfirmed: false })),
               costPolicy: "unverified",
             });
           } else {
@@ -489,10 +499,11 @@ function AiSettingsEditor({
         <h3 id="registered-cloud-routes-title" className="font-semibold">{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "등록된 클라우드 연결")}</h3>
         <div className="divide-y divide-line rounded-xl border border-line px-4">
           {orderedConnections.map((connection) => {
-            const issue = freeAiConnectionPolicyIssue(connection, connection.textModel ? "text" : undefined);
+            const routes = resolvedUserAiRoutes(connection, "text").filter((route) => !freeAiConnectionPolicyIssue(route, "text"));
+            const issue = routes.length ? null : freeAiConnectionPolicyIssue(connection, connection.textModel ? "text" : undefined);
             // 사용 기록은 주소·모델·키마다 쌓인다. 연결 ID로 읽으면 늘 비어 보이므로 켜진 텍스트 경로의 기록을 모아 보여 준다.
             // 같은 키나 같은 모델을 두 번 넣은 경로는 같은 기록을 쓰므로 한 번만 센다.
-            const routeBudgets = [...new Map(resolvedUserAiRoutes(connection, "text")
+            const routeBudgets = [...new Map(routes
               .map((route) => [freeAiRuntimeBudgetEntryId(route), route] as const)).values()]
               .map((route) => getFreeAiRuntimeBudgetSnapshot(route))
               .filter((item) => item.guarded);
@@ -580,10 +591,19 @@ function AiSettingsEditor({
           {draftKeys.map((key, index) => (
             <div key={key.id} className="grid gap-2 rounded-lg border border-line p-3 md:grid-cols-[1fr_2fr_8rem_auto_auto]">
               <input className={INPUT} aria-label={formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "키 {v0} 이름"), { v0: String(index + 1) })} value={key.label} onChange={(event) => patch({ apiKeys: draftKeys.map((item) => item.id === key.id ? { ...item, label: event.target.value } : item) })} />
-              <input className={INPUT} aria-label={formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "키 {v0} 값"), { v0: String(index + 1) })} type={showSecrets ? "text" : "password"} autoComplete="off" placeholder={previousConnection ? translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "비워 두면 기존 키 유지") : translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "API 키")} value={key.apiKey} onChange={(event) => patch({ apiKeys: draftKeys.map((item) => item.id === key.id ? { ...item, apiKey: event.target.value } : item) })} />
+              <input className={INPUT} aria-label={formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "키 {v0} 값"), { v0: String(index + 1) })} type={showSecrets ? "text" : "password"} autoComplete="off" placeholder={previousConnection ? translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "비워 두면 기존 키 유지") : translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "API 키")} value={key.apiKey} onChange={(event) => patch({ apiKeys: draftKeys.map((item) => item.id === key.id ? { ...item, apiKey: event.target.value, openRouterFreeBillingConfirmed: false } : item) })} />
               <input className={INPUT} aria-label={formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "키 {v0} 우선순위"), { v0: String(index + 1) })} type="number" min={1} max={999} value={key.priority} onChange={(event) => patch({ apiKeys: draftKeys.map((item) => item.id === key.id ? { ...item, priority: Number(event.target.value) } : item) })} />
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={key.enabled} onChange={(event) => patch({ apiKeys: draftKeys.map((item) => item.id === key.id ? { ...item, enabled: event.target.checked } : item) })} />{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "활성")}</label>
               <button type="button" className={formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "en", "{v0} text-bad"), { v0: String(BUTTON) })} disabled={draftKeys.length <= 1} onClick={() => patch({ apiKeys: draftKeys.filter((item) => item.id !== key.id) })}>{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "삭제")}</button>
+              {draft.costPolicy === "openrouter-free" && (
+                <label className="flex items-start gap-2 text-sm md:col-span-full">
+                  <input type="checkbox" checked={key.openRouterFreeBillingConfirmed === true}
+                    disabled={!key.apiKey.trim() && !previousConnection?.apiKeys?.some((item) => item.id === key.id && previousConnection.baseUrl === draft.baseUrl)}
+                    onChange={(event) => patch({ apiKeys: draftKeys.map((item) => item.id === key.id
+                      ? { ...item, openRouterFreeBillingConfirmed: event.target.checked } : item) })} />
+                  {key.label} · {t("shared.aiStatus.settings.openRouterFreeConfirmation", "OpenRouter 계정에서 이 키의 추가 과금이 차단되고 조직이 강제하는 유료 플러그인이 모두 꺼져 있는지 확인했어요.")}
+                </label>
+              )}
             </div>
           ))}
         </fieldset>

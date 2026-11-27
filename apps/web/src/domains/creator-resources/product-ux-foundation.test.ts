@@ -1,6 +1,13 @@
+// @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { createElement } from "react";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { SiteHeader } from "@/shared/components/site-header";
+import { useI18n } from "@/shared/lib/i18n";
 
 const ROOT_HOME = "apps/web/src/domains/creator-resources/CreatorHomePage.tsx";
 const HOME_EXPERIENCE = "apps/web/src/domains/marketing/CreatorHomeExperience.tsx";
@@ -12,14 +19,15 @@ const CREATOR_ROUTES = "apps/web/src/app/routes/groups/creator-resources.routes.
 const CATALOG_ROUTES = "apps/web/src/app/routes/groups/catalog.routes.tsx";
 const ACCOUNT_ROUTES = "apps/web/src/app/routes/groups/account.routes.tsx";
 const SITE_NAVIGATION = "apps/web/src/shared/components/site-navigation.ts";
-const SITE_HEADER = "apps/web/src/shared/components/site-header.tsx";
-const SITE_HEADER_NAV = "apps/web/src/shared/components/site-header-navigation.ts";
-const MOBILE_NAV = "apps/web/src/shared/components/site-header-mobile-nav.tsx";
-const MENU_DESTINATIONS = "apps/web/src/shared/components/SiteMenuDestinations.tsx";
 const COMMAND_PALETTE = "apps/web/src/shared/components/command-palette-data.ts";
 const LEGAL_ROUTES = "apps/web/src/app/routes/groups/legal.routes.tsx";
 const MARKET_NAV = "apps/web/src/domains/market/components/MarketNavHeader.tsx";
 const RANDOM_PAGE = "apps/web/src/domains/catalog/RandomPage.tsx";
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("purpose-first product UX foundation", () => {
   it("puts the task launcher before detailed creator guidance", () => {
@@ -79,27 +87,39 @@ describe("purpose-first product UX foundation", () => {
     expect(navigation).toMatch(/me:\s*item\(\s*"me",\s*"\/my"/u);
   });
 
-  it("keeps purpose-level active state separate from exact drawer destinations", () => {
-    const header = `${readFileSync(SITE_HEADER, "utf8")}\n${readFileSync(SITE_HEADER_NAV, "utf8")}`;
-    const mobile = readFileSync(MOBILE_NAV, "utf8");
-    const destinations = readFileSync(MENU_DESTINATIONS, "utf8");
-    expect(header).toContain("function purposeActive(");
-    expect(header).toContain("function useDestinationActive()");
-    expect(header).toContain("isPurposeActive={isPurposeActive}");
-    expect(mobile).toContain("isPurposeActive: (href: string, exact?: boolean) => boolean;");
-    expect(mobile).toContain('from "./site-mobile-purpose"');
-    expect(mobile).toContain("const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;");
-    // 사이트맵의 실제 진입 경로를 보존한다. 각 경로의 현재 탭은 모바일 내비게이션 렌더 테스트에서 확인한다.
-    const legalRoutes = readFileSync(LEGAL_ROUTES, "utf8");
-    for (const path of ["/sitemap", "/sitemap/all", "/sitemap/:section"]) {
-      expect(legalRoutes).toContain(`path: "${path}"`);
-    }
-    // 검색한 실제 목적지와 고정 시작 주소는 넓은 목적 상태를 재사용하지 않는다.
-    expect(mobile).toContain("<SiteMenuDestinations");
-    expect(mobile).toContain("isActive={isActive}");
-    expect(destinations).toContain('aria-current={isActive(item.href, item.exact) ? "page" : undefined}');
-    expect(destinations).toContain('aria-current={isActive(item.href, true) ? "page" : undefined}');
-    expect(mobile).toContain("const active = isActive(item.href, item.exact);");
+  it.each([
+    { pathname: "/sitemap/all", dockLabel: "더보기", drawerLabel: "전체 기능", href: "/sitemap/all", current: "page" },
+    { pathname: "/title/example", dockLabel: "더보기", drawerLabel: "전체 기능", href: "/sitemap/all", current: null },
+    { pathname: "/studio/new", dockLabel: "내 작업", drawerLabel: "내 작업", href: "/studio", current: null },
+  ])("keeps the $pathname dock purpose separate from the exact drawer destination", async ({ pathname, dockLabel, drawerLabel, href, current }) => {
+    useI18n.getState().setLang("ko");
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 1179px)",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    render(createElement(MemoryRouter, { initialEntries: [pathname] }, createElement(SiteHeader)));
+
+    const dock = await screen.findByRole("navigation", { name: "빠른 이동" });
+    const more = within(dock).getByRole("button", { name: "더보기" });
+    const purpose = dockLabel === "더보기" ? more : within(dock).getByRole("link", { name: dockLabel });
+    expect(dock.querySelectorAll("[aria-current]")).toHaveLength(1);
+    expect(purpose.getAttribute("aria-current")).toBe(purpose === more ? "true" : "page");
+
+    fireEvent.click(more);
+    const drawer = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    const destination = within(drawer).getByRole("link", { name: drawerLabel });
+    expect(destination.getAttribute("href")).toBe(href);
+    expect(destination.getAttribute("aria-current")).toBe(current);
+
+    const help = within(drawer).getByRole("link", { name: "도움말" });
+    expect(help.getAttribute("href")).toBe("/help");
+    expect(help.hasAttribute("aria-current")).toBe(false);
+
+    fireEvent.change(within(drawer).getByRole("searchbox"), { target: { value: "내 작업" } });
+    const studioResult = within(drawer).getByRole("link", { name: "내 작업" });
+    expect(studioResult.getAttribute("href")).toBe("/studio");
+    expect(studioResult.hasAttribute("aria-current")).toBe(false);
   });
 
   it("indexes the new purpose hubs in the global command palette", () => {
@@ -112,10 +132,11 @@ describe("purpose-first product UX foundation", () => {
     expect(palette).not.toContain('href: "/make"');
   });
 
-  it("exposes searchable help and accessibility destinations", () => {
+  it("exposes help, accessibility, and sitemap entry routes", () => {
     const routes = readFileSync(LEGAL_ROUTES, "utf8");
-    expect(routes).toContain('path: "/help"');
-    expect(routes).toContain('path: "/accessibility"');
+    for (const path of ["/help", "/accessibility", "/sitemap", "/sitemap/all", "/sitemap/:section"]) {
+      expect(routes).toContain(`path: "${path}"`);
+    }
   });
 
   it("keeps a single seller-center entrance in the marketplace header", () => {

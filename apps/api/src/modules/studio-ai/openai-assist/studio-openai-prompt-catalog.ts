@@ -1,3 +1,5 @@
+import { DIALOGUE_TONE_LABELS } from "@toonstudio/contracts/studio-assist-local-script";
+
 import type { StudioOpenAiAssistMode } from "../studio-openai-creative-assist.dto";
 import { EXTENDED_MODE_JSON_SCHEMAS } from "./studio-assist-extended-schemas";
 
@@ -110,7 +112,7 @@ export const STUDIO_OPENAI_MODE_DESCRIPTORS: readonly StudioOpenAiModeDescriptor
   },
 ]);
 
-export const DIALOGUE_TONE_LABELS = ["자연스러운 구어체", "짧고 강한 핵심형", "감정 여운 강조형"] as const;
+export { DIALOGUE_TONE_LABELS };
 const DIALOGUE_ALTERNATIVES = "balloons에는 톤마다 독립적으로 쓸 수 있는 완결된 대안 하나씩, 총 3개를 담으세요.";
 
 export const MODE_JSON_SCHEMAS: Readonly<

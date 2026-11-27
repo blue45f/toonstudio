@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { MyStoryTextCompleter } from "../my-story/my-story-ai";
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import { readStudioProjectFeatureSuite } from "../studio-project-feature-suite-store";
 import { storyDevelopmentStorageKey } from "../studio-story-adaptation";
@@ -127,6 +128,73 @@ describe("ai-quick-blueprint-engine", () => {
     expect(fallback.upgraded).toBe(false);
     expect(fallback.blueprint.title).toBe(base.title);
     expect(fallback.statusMessage).toContain("스마트 콘티");
+  });
+
+  describe("클라우드 윤문 응답 검증", () => {
+    const draft = buildAiQuickBlueprint({
+      idea: "옥상에서 찾은 실종 고양이", formatId: "instatoon-4", toneId: "mystery", locale: "ko",
+    });
+
+    it.each([
+      ["깨진 JSON", '{"title":'],
+      ["모르는 필드", '{"confidence":1}'],
+      ["잘못된 최상위 형식", '[{"title":"잘못된 제목"}]'],
+      ["따옴표뿐인 대사", JSON.stringify({ cuts: [{ dialogue: "“”" }] })],
+      ["바뀐 내용 없음", JSON.stringify({ title: draft.title, cuts: draft.cuts })],
+      ["없는 컷의 수정", '{"cuts":[{"id":"cut-90","dialogue":"오답"}]}'],
+    ])("%s 응답은 성공 표시 없이 원본 그대로 돌려준다", async (_label, content) => {
+      const complete = vi.fn().mockResolvedValue({ ok: true, data: { content } });
+      const outcome = await polishBlueprintWithCloudAi(draft, undefined, complete);
+      expect(complete).toHaveBeenCalledTimes(1);
+      expect(outcome.upgraded).toBe(false);
+      expect(outcome.blueprint).toBe(draft);
+      expect(outcome.statusMessage).toContain("수정 내용을 찾지 못했어요");
+    });
+
+    it("컷 순서가 바뀐 부분 응답도 원래 ID에 대응시키고 나머지 컷을 보존한다", async () => {
+      const content = JSON.stringify({ cuts: [
+        { id: "cut-4", narration: "고양이는 창틀로 돌아갔다." },
+        { dialogue: "ID가 없는 수정" },
+        { id: "cut-2", dialogue: "“발자국을 봐!”" },
+      ] });
+      const complete = vi.fn<MyStoryTextCompleter>().mockResolvedValue({ ok: true, data: { content: `메타 {}\n${content}` } });
+      const outcome = await polishBlueprintWithCloudAi(draft, undefined, complete);
+      const request = complete.mock.calls[0]?.[0];
+      expect(JSON.parse(request?.user ?? "null")).toMatchObject({
+        logline: draft.logline,
+        cuts: draft.cuts.map((cut) => ({ id: cut.id })),
+      });
+      expect(outcome.upgraded).toBe(true);
+      expect(outcome.blueprint.cuts.map((cut) => cut.id)).toEqual(draft.cuts.map((cut) => cut.id));
+      expect(outcome.blueprint.cuts[0]).toBe(draft.cuts[0]);
+      expect(outcome.blueprint.cuts[1]?.dialogue).toBe("발자국을 봐!");
+      expect(outcome.blueprint.cuts[2]).toBe(draft.cuts[2]);
+      expect(outcome.blueprint.cuts[3]?.narration).toBe("고양이는 창틀로 돌아갔다.");
+    });
+
+    it("동시에 윤문을 실행한 두 콘티에 서로 다른 요청 식별자를 준다", async () => {
+      const complete = vi.fn<MyStoryTextCompleter>().mockResolvedValue({ ok: true, data: { content: "{}" } });
+      const clock = vi.spyOn(Date, "now").mockReturnValue(1000);
+      try {
+        await Promise.all([
+          polishBlueprintWithCloudAi(draft, undefined, complete),
+          polishBlueprintWithCloudAi({ ...draft, title: "다른 작품" }, undefined, complete),
+        ]);
+        const ids = complete.mock.calls.map(([request]) => request.operationId);
+        expect(ids).toHaveLength(2);
+        expect(new Set(ids).size).toBe(2);
+      } finally {
+        clock.mockRestore();
+      }
+    });
+
+    it("무료 한도 소진 안내와 네트워크 오류 안내를 구분한다", async () => {
+      const outcome = await polishBlueprintWithCloudAi(draft, undefined, async () => ({
+        ok: false, code: "free_exhausted", error: "quota",
+      }));
+      expect(outcome.blueprint).toBe(draft);
+      expect(outcome.statusMessage).toContain("무료 AI 한도");
+    });
   });
 
   it("스튜디오 바로 열기는 프로젝트·스토리 문서·스토리 비트를 원자적으로 저장하고 경로를 반환한다", () => {

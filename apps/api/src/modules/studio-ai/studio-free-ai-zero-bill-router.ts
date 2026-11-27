@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { OPENROUTER_FREE_REQUEST_OPTIONS } from "@toonstudio/contracts/studio-openrouter-free";
 
 import {
   classifyUpstreamFailure,
@@ -37,6 +38,7 @@ interface ProviderLedgerEntry {
   utcDay: string;
   usedRequests: number;
   usedTokens: number;
+  pendingTokens: number;
   blockedUntilMs: number | null;
   blockReason: ZeroBillBlockReason | null;
 }
@@ -67,6 +69,7 @@ export class StudioFreeAiZeroBillRouter {
         utcDay: today,
         usedRequests: 0,
         usedTokens: 0,
+        pendingTokens: 0,
         blockedUntilMs: null,
         blockReason: null,
       };
@@ -100,7 +103,7 @@ export class StudioFreeAiZeroBillRouter {
   ): void {
     const entry = this.getLedgerEntry(providerId, nowMs);
     entry.usedRequests += 1;
-    entry.usedTokens += Math.max(0, Math.trunc(tokensUsed));
+    entry.usedTokens += Number.isSafeInteger(tokensUsed) ? Math.max(0, tokensUsed) : 0;
 
     const providers = resolveZeroBillFreeProviders(env);
     const spec = providers.find((item) => item.id === providerId);
@@ -137,18 +140,21 @@ export class StudioFreeAiZeroBillRouter {
       const quotaCutoffReached =
         spec.tier !== "local-fallback" &&
         (entry.usedRequests >= safeRequestCutoff || entry.usedTokens >= safeTokenCutoff);
+      const accountUnconfirmed = spec.configured && !spec.freeBillingConfirmed;
       const ledgerBlocked =
         entry.blockedUntilMs !== null && entry.blockedUntilMs > nowMs && entry.blockReason !== null;
 
-      const blocked = modelBlocked || ledgerBlocked || quotaCutoffReached;
+      const blocked = modelBlocked || accountUnconfirmed || ledgerBlocked || quotaCutoffReached;
       const blockReason: ZeroBillBlockReason | null = modelBlocked
         ? spec.modelBlockReason
-        : ledgerBlocked
-          ? entry.blockReason
-          : quotaCutoffReached
-            ? "safety_cutoff_90pct"
-            : null;
-      const blockedUntilUtc = modelBlocked
+        : accountUnconfirmed
+          ? "free_billing_unconfirmed"
+          : ledgerBlocked
+            ? entry.blockReason
+            : quotaCutoffReached
+              ? "safety_cutoff_90pct"
+              : null;
+      const blockedUntilUtc = modelBlocked || accountUnconfirmed
         ? null
         : ledgerBlocked && entry.blockedUntilMs !== null
           ? new Date(entry.blockedUntilMs).toISOString()
@@ -182,7 +188,7 @@ export class StudioFreeAiZeroBillRouter {
         dailyTokenCap: spec.dailyTokenCap,
         safeTokenCutoff,
         usedTokens: entry.usedTokens,
-        remainingSafeTokens: Math.max(0, safeTokenCutoff - entry.usedTokens),
+        remainingSafeTokens: Math.max(0, safeTokenCutoff - entry.usedTokens - entry.pendingTokens),
         utilizationPct,
         costUsdGuaranteed: "$0.00",
       };
@@ -194,6 +200,7 @@ export class StudioFreeAiZeroBillRouter {
     const blockedCloud = configuredCloud.filter((p) => p.blocked);
 
     return {
+      providerBilledUsd: null,
       guaranteedZeroCostUsd: 0,
       guaranteedZeroCostLabel: "$0.00",
       guaranteedZeroCostKrwLabel: "₩0",
@@ -228,17 +235,17 @@ export class StudioFreeAiZeroBillRouter {
     } = {},
   ): Promise<ZeroBillCascadeResult> {
     const env = options.env ?? process.env;
-    const nowMs = options.nowMs ?? Date.now();
     const fetchFn = options.fetchImpl ?? fetch;
     const cutoff = parseSafetyCutoffRatio(env);
+    const requestedTokens = request.maxOutputTokens ?? 1_000;
     const maxOutputTokens = Math.min(
       MAX_OUTPUT_TOKENS_HARD_CAP,
-      Math.max(16, Math.trunc(request.maxOutputTokens ?? 1_000)),
+      Math.max(16, Number.isFinite(requestedTokens) ? Math.trunc(requestedTokens) : 1_000),
     );
-    const estimatedInputTokens = Math.max(
-      16,
-      Math.ceil((request.systemInstruction.length + request.userPrompt.length) / 2),
-    );
+    // 한국어 다중 바이트 원고와 JSON 스키마·메시지 프레이밍도 전송 전 상한에 포함한다.
+    const estimatedInputTokens = Buffer.byteLength(JSON.stringify([
+      request.systemInstruction, request.userPrompt, request.jsonSchema,
+    ]), "utf8") + 256;
     const estimatedTotalTokens = estimatedInputTokens + maxOutputTokens;
 
     const allResolved = resolveZeroBillFreeProviders(env);
@@ -335,6 +342,15 @@ export class StudioFreeAiZeroBillRouter {
         continue;
       }
 
+      if (!provider.freeBillingConfirmed) {
+        attempts.push({
+          providerId: provider.id, model: provider.model, outcome: "skipped",
+          reason: "free_billing_unconfirmed", httpStatus: null,
+        });
+        continue;
+      }
+
+      const nowMs = options.nowMs ?? Date.now();
       const entry = this.getLedgerEntry(provider.id, nowMs);
       if (entry.blockedUntilMs !== null && entry.blockedUntilMs > nowMs && entry.blockReason) {
         attempts.push({
@@ -351,9 +367,8 @@ export class StudioFreeAiZeroBillRouter {
       const safeTokenCutoff = Math.max(1, Math.floor(provider.dailyTokenCap * cutoff));
       if (
         entry.usedRequests + 1 > safeRequestCutoff ||
-        entry.usedTokens + estimatedTotalTokens > safeTokenCutoff
+        entry.usedTokens + entry.pendingTokens + estimatedTotalTokens > safeTokenCutoff
       ) {
-        this.blockProviderUntilUtcMidnight(provider.id, "safety_cutoff_90pct", nowMs);
         attempts.push({
           providerId: provider.id,
           model: provider.model,
@@ -364,15 +379,24 @@ export class StudioFreeAiZeroBillRouter {
         continue;
       }
 
+      // 같은 프로세스 내 동시 요청이 남은 한도를 중복 사용하지 않게 전송 전에 예약한다.
+      entry.usedRequests += 1;
+      entry.pendingTokens += estimatedTotalTokens;
       const callResult = await this.invokeCloudProvider(provider, request, {
         fetchFn,
         maxOutputTokens,
         signal: options.signal,
       });
 
+      entry.pendingTokens -= estimatedTotalTokens;
       if (!callResult.ok) {
+        // 수신 중 단절·불완전한 200 응답의 실제 사용량을 알 수 없으면 예약 상한으로 정산한다.
+        if (callResult.httpStatus === null || callResult.httpStatus === 200 || callResult.httpStatus >= 500) {
+          entry.usedTokens += estimatedTotalTokens;
+        }
         if (callResult.blockReason) {
-          this.blockProviderUntilUtcMidnight(provider.id, callResult.blockReason, nowMs);
+          entry.blockedUntilMs = nextUtcMidnightMs(nowMs);
+          entry.blockReason = callResult.blockReason;
         }
         attempts.push({
           providerId: provider.id,
@@ -384,14 +408,9 @@ export class StudioFreeAiZeroBillRouter {
         continue;
       }
 
+      entry.usedTokens += callResult.usage.totalTokens || estimatedTotalTokens;
       const cleanedContent = stripJsonCodeFences(callResult.content);
       if (options.validateContent && !options.validateContent(cleanedContent)) {
-        this.recordProviderUsage(
-          provider.id,
-          callResult.usage.totalTokens || estimatedTotalTokens,
-          env,
-          nowMs,
-        );
         attempts.push({
           providerId: provider.id,
           model: provider.model,
@@ -402,12 +421,6 @@ export class StudioFreeAiZeroBillRouter {
         continue;
       }
 
-      this.recordProviderUsage(
-        provider.id,
-        callResult.usage.totalTokens || estimatedTotalTokens,
-        env,
-        nowMs,
-      );
       attempts.push({
         providerId: provider.id,
         model: callResult.model,
@@ -489,7 +502,7 @@ export class StudioFreeAiZeroBillRouter {
 
       const systemText =
         request.jsonSchema && !provider.supportsStrictJsonSchema
-          ? `${request.systemInstruction}\n반드시 마크다운 코드펜스 없이 순수 JSON 객체만 출력하세요.`
+          ? `${request.systemInstruction}\n다음 JSON Schema의 필드·타입·필수 항목을 지킨 JSON 객체만 출력하세요.\n${JSON.stringify(request.jsonSchema.schema)}`
           : request.systemInstruction;
 
       const body: Record<string, unknown> = {
@@ -506,6 +519,10 @@ export class StudioFreeAiZeroBillRouter {
         body.max_completion_tokens = options.maxOutputTokens;
       } else {
         body.max_tokens = options.maxOutputTokens;
+      }
+
+      if (provider.id === "openrouter-free") {
+        Object.assign(body, OPENROUTER_FREE_REQUEST_OPTIONS);
       }
 
       if (request.jsonSchema && provider.supportsStrictJsonSchema) {
@@ -556,14 +573,16 @@ export class StudioFreeAiZeroBillRouter {
         };
       }
 
-      const promptTokens =
-        typeof parsed.usage?.prompt_tokens === "number" ? parsed.usage.prompt_tokens : 0;
-      const completionTokens =
-        typeof parsed.usage?.completion_tokens === "number" ? parsed.usage.completion_tokens : 0;
-      const totalTokens =
-        typeof parsed.usage?.total_tokens === "number"
-          ? parsed.usage.total_tokens
-          : promptTokens + completionTokens;
+      const tokenCount = (value: unknown) =>
+        typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
+      const promptTokens = tokenCount(parsed.usage?.prompt_tokens);
+      const completionTokens = tokenCount(parsed.usage?.completion_tokens);
+      const reportedTotal = tokenCount(parsed.usage?.total_tokens);
+      const completeSum = promptTokens !== null && completionTokens !== null ? promptTokens + completionTokens : 0;
+      // 합계가 누락되고 부분 카운터만 온 경우 예약한 상한으로 정산한다.
+      const totalTokens = reportedTotal !== null && reportedTotal >= Math.max(promptTokens ?? 0, completionTokens ?? 0)
+        ? Math.max(reportedTotal, completeSum)
+        : completeSum;
 
       return {
         ok: true,
@@ -572,7 +591,7 @@ export class StudioFreeAiZeroBillRouter {
             ? parsed.model.trim().slice(0, 120)
             : provider.model,
         content: rawContent,
-        usage: { promptTokens, completionTokens, totalTokens },
+        usage: { promptTokens: promptTokens ?? 0, completionTokens: completionTokens ?? 0, totalTokens },
       };
     } catch {
       return {

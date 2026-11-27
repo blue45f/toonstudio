@@ -350,6 +350,25 @@ describe("보조 기능 서버 경로(/studio-ai/messages)", () => {
     });
   });
 
+  it("무료 OpenRouter 보조 요청도 제공자 단가를 제한하고 검색 플러그인을 끈다", async () => {
+    delete process.env.STUDIO_AI_ANTHROPIC_API_KEY;
+    process.env.STUDIO_AI_FREE_PROVIDER_ORDER = "openrouter";
+    process.env.STUDIO_AI_FREE_OPENROUTER_API_KEY = "free-messages-key";
+    process.env.STUDIO_AI_FREE_OPENROUTER_CONFIRMED = "true";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(freeCompletion("원고 점검", "openrouter/free")));
+    vi.stubGlobal("fetch", fetchMock);
+    const request = StudioAiMessagesSchema.parse({
+      max_tokens: 150, messages: [{ role: "user", content: "다음 장면을 점검해 주세요." }],
+    });
+    const result = await createService().service.completeMessages("user-1", request, IDEMPOTENCY_KEY);
+    expect(result.provider).toBe("openrouter");
+    expect(fetchCalls(fetchMock)[0]?.body).toMatchObject({
+      model: "openrouter/free",
+      provider: { max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false },
+      plugins: [{ id: "web", enabled: false }],
+    });
+  });
+
   it("이미지 요청은 비전 모델이 없는 무료 제공자로 보내지 않는다", async () => {
     delete process.env.STUDIO_AI_ANTHROPIC_API_KEY;
     delete process.env.STUDIO_AI_FREE_GEMINI_API_KEY;

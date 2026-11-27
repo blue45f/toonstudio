@@ -502,11 +502,15 @@ describe("studio brush catalogue paint performance matrix", () => {
     ["pastel", 1_658, 8_290, "457ca324"],
     ["oil-pastel", 2_295, 11_475, "6352efed"],
   ] as const)("preserves the persisted V3 work and geometry for %s", (catalogId, dabCount, markCount, geometryFloat32Digest) => {
-    // These are the pre-V4 work pins. A saved V3 revision must keep them even while new
-    // authoring uses taper-aware V4 spacing, which deliberately emits a different plan.
+    // 저장 시점의 간격 계산과 건식 커널을 함께 재생한다. 현재 카탈로그의 종이 접촉 커널은
+    // 새 획 전용이므로 과거 V3 스냅샷의 안료량 지문에 들어가면 안 된다.
     const options = {
       sampleCount: STUDIO_BRUSH_CRAYON_FAMILY_LONG_SAMPLES,
       depositPipeline: STUDIO_DYNAMIC_BRUSH_DEPOSIT_PIPELINE_CAUSAL_V3,
+      dryMediaKernelProgram: {
+        version: "dry-media-kernel-dab-path-v1",
+        programDigest: "30c48947ab54ce7efde21a4935d7d5e278e08510e061fc5fbefb7056de818860",
+      },
     } as const;
     const first = evaluateStudioBrushCataloguePaintPerfRow(catalogId, options);
     const second = evaluateStudioBrushCataloguePaintPerfRow(catalogId, options);

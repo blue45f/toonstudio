@@ -120,7 +120,13 @@ export function MaterialSentencePanel({ saved, onToggleSaved, saveDisabled, refi
     setRecents(saveRecentMaterialSearch(nextPlan.input));
   }, [draft, search]);
 
-  const changeDraft = (value: string) => {
+  const changeDraft = (value: string, restoreOriginal: string | null = null) => {
+    refineController.current?.abort();
+    refineController.current = null;
+    if (refine.running || refine.original !== null || restoreOriginal !== null) {
+      setRefine({ running: false, original: restoreOriginal });
+      setNotice(null);
+    }
     setDraft(value);
     setInvalid(false);
     // 문장이 바뀌면 이전 문장에 맞춘 칩 조정은 버리고 새로 읽는다.
@@ -186,7 +192,7 @@ export function MaterialSentencePanel({ saved, onToggleSaved, saveDisabled, refi
   };
 
   const runRefine = async () => {
-    if (!refineSentence || refine.running || !draft.trim()) return;
+    if (!refineSentence || refineController.current || !draft.trim()) return;
     const original = draft;
     const controller = new AbortController();
     refineController.current = controller;
@@ -197,8 +203,8 @@ export function MaterialSentencePanel({ saved, onToggleSaved, saveDisabled, refi
       const text = refined ? normalizeHubQuery(refined) : "";
       if (controller.signal.aborted) return;
       if (text && text !== normalizeHubQuery(original)) {
-        changeDraft(text);
-        setRefine({ running: false, original });
+        refineController.current = null;
+        changeDraft(text, original);
         setNotice({ text: bt("문장을 다듬었어요. 마음에 들면 찾기를 눌러 주세요.", "Sentence refined. Press Find if it looks right."), tone: "info" });
         return;
       }
@@ -206,6 +212,7 @@ export function MaterialSentencePanel({ saved, onToggleSaved, saveDisabled, refi
       // 조용히 규칙 기반 해석을 유지한다.
     }
     if (controller.signal.aborted) return;
+    refineController.current = null;
     setRefine({ running: false, original: refine.original });
     setNotice({ text: bt("AI 보조를 쓰지 못해 규칙 기반 해석을 그대로 두었어요. 로그인이 필요하거나 무료 한도가 찼을 수 있어요.", "AI help was not available, so the rule-based reading stays. You may need to sign in, or the free quota may be used up."), tone: "info" });
   };
@@ -273,7 +280,7 @@ export function MaterialSentencePanel({ saved, onToggleSaved, saveDisabled, refi
           {invalid ? <p role="alert" className="text-sm font-semibold text-fg">{bt("찾을 수 있는 단서가 없어요. 장면이나 소재를 한두 낱말 더 적어 주세요.", "No searchable cue was found. Add a word or two about the scene or material.")}</p> : null}
           {refine.original ? (
             <p className="text-xs text-fg-2">
-              <button type="button" className="inline-flex min-h-11 items-center underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => { changeDraft(refine.original ?? ""); setRefine({ running: false, original: null }); }}>
+              <button type="button" className="inline-flex min-h-11 items-center underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => changeDraft(refine.original ?? "")}>
                 {bt("원래 문장으로 되돌리기", "Restore my original sentence")}
               </button>
             </p>

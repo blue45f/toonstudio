@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
-import { STUDIO_OPENAI_MODE_DESCRIPTORS } from "./openai-assist/studio-openai-prompt-catalog";
+import { buildModeSystemInstruction, MODE_JSON_SCHEMAS, STUDIO_OPENAI_MODE_DESCRIPTORS } from "./openai-assist/studio-openai-prompt-catalog";
 import {
   isFreeModelWhitelisted,
   resolveZeroBillFreeProviders,
@@ -9,6 +9,17 @@ import {
   ZERO_BILL_FREE_PROVIDER_ORDER,
 } from "./studio-free-ai-zero-bill-router";
 import { validateAssistModeStructuredOutput } from "./studio-openai-creative-assist.dto";
+
+const confirmedAccounts = {
+  STUDIO_AI_FREE_OPENAI_CONFIRMED: "true",
+  STUDIO_AI_FREE_GEMINI_CONFIRMED: "true",
+  STUDIO_AI_FREE_GITHUB_MODELS_CONFIRMED: "true",
+  STUDIO_AI_FREE_CLOUDFLARE_CONFIRMED: "true",
+  STUDIO_AI_FREE_MISTRAL_CONFIRMED: "true",
+  STUDIO_AI_FREE_SAMBANOVA_CONFIRMED: "true",
+  STUDIO_AI_FREE_GROQ_CONFIRMED: "true",
+  STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true",
+};
 
 describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스케이드)", () => {
   it("무료 공급자 우선순위 9단계를 정확히 유지하고 키 값은 상태 응답에 절대 노출하지 않는다", () => {
@@ -25,7 +36,7 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
     };
 
     const router = new StudioFreeAiZeroBillRouter();
-    const status = router.getFreeQuotaStatus(fakeSecrets, Date.parse("2026-11-21T10:00:00.000Z"));
+    const status = router.getFreeQuotaStatus({ ...fakeSecrets, ...confirmedAccounts }, Date.parse("2026-11-21T10:00:00.000Z"));
 
     expect(status.guaranteedZeroCostUsd).toBe(0);
     expect(status.guaranteedZeroCostLabel).toBe("$0.00");
@@ -41,6 +52,100 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
     for (const secretVal of Object.values(fakeSecrets)) {
       expect(serialized).not.toContain(secretVal);
     }
+  });
+
+  it("키만 등록한 계정형 공급자는 무료 자격과 유료 청구 차단 확인 전까지 호출하지 않는다", async () => {
+    const env = { OPENAI_API_KEY: "test-openai", GEMINI_API_KEY: "test-gemini", OPENROUTER_API_KEY: "test-openrouter" };
+    const router = new StudioFreeAiZeroBillRouter();
+    const fetchMock = vi.fn<typeof fetch>();
+    const report = router.getFreeQuotaStatus(env);
+    expect(report.summary).toMatchObject({ configuredCloudCount: 3, activeCloudCount: 0 });
+    expect(report.providers[0]).toMatchObject({ blocked: true, blockReason: "free_billing_unconfirmed", blockedUntilUtc: null });
+    const result = await router.executeCascade(
+      { systemInstruction: "웹툰", userPrompt: "주인공", localDeterministicOutput: () => "{}" },
+      { env, fetchImpl: fetchMock },
+    );
+    expect(result.providerId).toBe("local-zero-cost-fallback");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each(ZERO_BILL_FREE_PROVIDER_ORDER.filter((id) => id !== "local-zero-cost-fallback"))(
+    "%s 공급자에 14개 모드 각각의 출력 계약을 전달하고 응답 형식을 검증한다",
+    async (providerId) => {
+      const router = new StudioFreeAiZeroBillRouter();
+      const env = {
+        ...confirmedAccounts,
+        OPENAI_API_KEY: "test-openai", GEMINI_API_KEY: "test-gemini",
+        STUDIO_AI_FREE_GITHUB_MODELS_API_KEY: "test-github", STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN: "test-cf",
+        STUDIO_AI_FREE_CLOUDFLARE_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
+        STUDIO_AI_FREE_MISTRAL_API_KEY: "test-mistral", STUDIO_AI_FREE_SAMBANOVA_API_KEY: "test-samba",
+        STUDIO_AI_FREE_GROQ_API_KEY: "test-groq", STUDIO_AI_FREE_OPENROUTER_API_KEY: "test-or",
+      };
+      const input = { inputText: "라온이 손에 든 우산을 서리에게 건넨다." };
+      for (const { id: mode } of STUDIO_OPENAI_MODE_DESCRIPTORS) {
+        const jsonSchema = MODE_JSON_SCHEMAS[mode];
+        const content = JSON.stringify(buildDeterministicAssistResult(mode, input).data);
+        const fetchMock = vi.fn<typeof fetch>(async () => Response.json({
+          choices: [{ message: { content } }], usage: { total_tokens: 20 },
+        }));
+        const result = await router.executeCascade({
+          systemInstruction: buildModeSystemInstruction(mode),
+          userPrompt: input.inputText,
+          preferredProviders: [providerId],
+          jsonSchema,
+        }, {
+          env, fetchImpl: fetchMock,
+          validateContent: (raw) => validateAssistModeStructuredOutput(mode, JSON.parse(raw)) !== null,
+        });
+        expect(result.providerId).toBe(providerId);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+        if (providerId === "openai-free-share" || providerId === "github-models-free") {
+          expect(body.response_format.json_schema).toEqual({ ...jsonSchema, strict: true });
+        } else {
+          expect(body.messages[0].content).toContain(JSON.stringify(jsonSchema.schema));
+        }
+        if (providerId === "openrouter-free") {
+          expect(body.provider).toEqual({ max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false });
+          expect(body.plugins).toEqual([{ id: "web", enabled: false }]);
+        }
+      }
+    },
+  );
+
+  it("동시 요청은 같은 토큰 잔액을 한 번만 예약하고 응답 후 남은 용량을 다시 사용한다", async () => {
+    const router = new StudioFreeAiZeroBillRouter();
+    const env = { ...confirmedAccounts, OPENAI_API_KEY: "test-openai", STUDIO_FREE_AI_OPENAI_DAILY_TOKEN_CAP: "1000" };
+    const request = { systemInstruction: "컷", userPrompt: "대사", maxOutputTokens: 250, localDeterministicOutput: () => "{}" };
+    const success = () => Response.json({
+      choices: [{ message: { content: "{}" } }], usage: { total_tokens: 20 },
+    });
+    let finish: () => void = () => { throw new Error("첫 번째 요청이 시작되지 않았습니다."); };
+    const fetchMock = vi.fn<typeof fetch>(() => new Promise<Response>((resolve) => {
+      finish = () => { resolve(success()); };
+    }));
+    const first = router.executeCascade(request, { env, fetchImpl: fetchMock });
+    const concurrent = await router.executeCascade(request, { env, fetchImpl: fetchMock });
+    expect(concurrent.providerId).toBe("local-zero-cost-fallback");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    finish();
+    expect((await first).providerId).toBe("openai-free-share");
+    expect(router.getFreeQuotaStatus(env).providers[0]).toMatchObject({ usedRequests: 1, usedTokens: 20, remainingSafeTokens: 880 });
+    const later = await router.executeCascade(request, { env, fetchImpl: async () => success() });
+    expect(later.providerId).toBe("openai-free-share");
+  });
+
+  it("총 사용량 없이 출력 토큰만 보고되면 입력 예약을 해제하지 않는다", async () => {
+    const env = { ...confirmedAccounts, OPENAI_API_KEY: "test-openai", STUDIO_FREE_AI_OPENAI_DAILY_TOKEN_CAP: "1000" };
+    const router = new StudioFreeAiZeroBillRouter();
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json({
+      choices: [{ message: { content: "{}" } }], usage: { completion_tokens: 3 },
+    }));
+    const request = { systemInstruction: "컷", userPrompt: "대사", maxOutputTokens: 250, localDeterministicOutput: () => "{}" };
+    expect((await router.executeCascade(request, { env, fetchImpl: fetchMock })).providerId).toBe("openai-free-share");
+    expect(router.getFreeQuotaStatus(env).providers[0].usedTokens).toBeGreaterThan(250);
+    expect((await router.executeCascade(request, { env, fetchImpl: fetchMock })).providerId).toBe("local-zero-cost-fallback");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("유료 전용 모델(OpenAI o3/gpt-5, Gemini 2.5 Pro, OpenRouter 유료)은 네트워크 호출 전에 즉시 차단한다", async () => {
@@ -65,6 +170,7 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
 
     expect(isFreeModelWhitelisted("openrouter-free", "openrouter/free").allowed).toBe(true);
     expect(isFreeModelWhitelisted("openrouter-free", "meta-llama/llama-3.3:free").allowed).toBe(true);
+    expect(isFreeModelWhitelisted("openrouter-free", "vendor/model:online:free").allowed).toBe(false);
     expect(isFreeModelWhitelisted("openrouter-free", "openai/gpt-4o")).toEqual({
       allowed: false,
       blockReason: "paid_model_blocked",
@@ -104,6 +210,7 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
     const nowMs = Date.parse("2026-11-21T14:30:00.000Z");
     const router = new StudioFreeAiZeroBillRouter();
     const env = {
+      ...confirmedAccounts,
       OPENAI_API_KEY: "test-openai",
       GEMINI_API_KEY: "test-gemini",
       STUDIO_AI_FREE_GITHUB_MODELS_API_KEY: "test-github",
@@ -185,6 +292,7 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
     const nowMs = Date.parse("2026-11-21T08:00:00.000Z");
     const router = new StudioFreeAiZeroBillRouter();
     const env = {
+      ...confirmedAccounts,
       OPENAI_API_KEY: "test-openai",
       STUDIO_FREE_AI_OPENAI_DAILY_REQUEST_CAP: "10",
       STUDIO_FREE_AI_OPENAI_DAILY_TOKEN_CAP: "1000",
@@ -281,5 +389,7 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
 
     const localFallback = resolved.find((item) => item.id === "local-zero-cost-fallback");
     expect(localFallback?.endpoint).toBe("local://toonstudio-deterministic-coach");
+    expect(resolveZeroBillFreeProviders({ STUDIO_LOCAL_OLLAMA_URL: "http://localhost:11434" }).at(-1))
+      .toMatchObject({ model: "toonstudio-deterministic-coach-v2", endpoint: "local://toonstudio-deterministic-coach" });
   });
 });

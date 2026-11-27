@@ -7,7 +7,6 @@ import {
   ArrowUpToLine,
   Download,
   Copy,
-  Eraser,
   Files,
   Grid3X3,
   Hand,
@@ -21,13 +20,11 @@ import {
   Maximize2,
   PaintBucket,
   Palette,
-  Pencil,
   Plus,
   Redo2,
   RotateCcw,
   Scissors,
   Search,
-  Shapes,
   SlidersHorizontal,
   Square,
   Trash2,
@@ -78,6 +75,7 @@ import {
 } from "./studio-mobile-sheet-snap";
 import { STUDIO_EASE } from "./studio-panel-ui";
 import { StudioMobileFilterSelect } from "./filter/StudioMobileFilterSelect";
+import { StudioMobileDrawModeSelector } from "./studio-cuttoon-editor/StudioMobileDrawModeSelector";
 import {
   STUDIO_ERASE_TO_INTERSECTION_LABEL,
   STUDIO_ERASE_TO_INTERSECTION_TIP,
@@ -543,10 +541,19 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   const workspaceToggleRef = useRef<HTMLButtonElement>(null);
   const workspacePanelRef = useRef<HTMLElement>(null);
   const suppressBrushHintOnReturnFocusRef = useRef(false);
+  const drawSettingsLauncherRef = useRef<HTMLButtonElement | null>(null);
+  const toggleDrawSettings = (launcher: HTMLButtonElement) => {
+    drawSettingsLauncherRef.current = mobileSheet === "draw" ? null : launcher;
+    setMobileSheet((sheet) => (sheet === "draw" ? null : "draw"));
+  };
   const dismissDrawSettings = () => {
+    const launcher = drawSettingsLauncherRef.current;
+    drawSettingsLauncherRef.current = null;
     suppressBrushHintOnReturnFocusRef.current = true;
     setMobileSheet(null);
-    (mobileBrushDockButtonRef.current ?? measuredDockRef.current?.querySelector<HTMLElement>('[aria-controls="studio-mobile-draw-settings"]'))?.focus({ preventScroll: true });
+    const fallback = mobileBrushDockButtonRef.current ?? measuredDockRef.current?.querySelector<HTMLElement>('[aria-controls="studio-mobile-draw-settings"]');
+    const target = launcher?.isConnected && !launcher.disabled ? launcher : fallback;
+    target?.focus({ preventScroll: true });
   };
   const mobileControlSide = workspaceState.mobileControlSide === "left" ? "left" : "right";
   const colorWorkspace = useStudioColorWorkspace();
@@ -836,7 +843,6 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
           </div>
         )}
 
-        {/* 모바일 전용 브러시 관리자 — 일반 속성 패널을 거치지 않고 저장·고정·복제·내보내기에 바로 접근한다. */}
         {isMobile && mobileSheet === "brushes" ? (
           <div
             ref={brushManagerSheetRef}
@@ -900,8 +906,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
           </div>
         ) : null}
 
-        {/* 모바일 브러시 설정 시트 — 드로잉 도크 바로 위에 떠서 도구를 보며 굵기·색·프리셋·도형을 조절한다.
-            도크(z-55)는 가리지 않게 그 위쪽에 앉히고, 캔버스는 계속 보이게 반투명 배경. 데스크톱엔 인라인 브러시 바가 있으므로 모바일 전용. */}
+        {/* 모바일 브러시 설정은 도크 위에서 캔버스를 계속 보여 준다. */}
         {isMobile && (
           <div
             id={MOBILE_DRAW_SETTINGS_ID}
@@ -1053,37 +1058,11 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
             </button> : null}
 
             {/* 모드 전환 — 일반 브러시와 1px raw 픽셀 도구를 같은 것으로 오인하지 않게 분리한다. */}
-            <div className="mb-2.5 grid grid-cols-4 gap-1 rounded-xl border border-line bg-card/60 p-1" role="group" aria-label="그리기 모드">
-              {([
-                { v: "pen" as const, label: "펜", icon: Pencil },
-                { v: "pixel" as const, label: "픽셀 펜", icon: Grid3X3 },
-                { v: "eraser" as const, label: "지우개", icon: Eraser },
-                { v: "shape" as const, label: "도형", icon: Shapes },
-              ]).map((m) => {
-                const Icon = m.icon;
-                const active = drawMode === m.v;
-                return (
-                  <button
-                    key={m.v}
-                    type="button"
-                    onClick={() => {
-                      if (!active) {
-                        activateCanvasTool("draw", m.v);
-                      }
-                    }}
-                    aria-pressed={active}
-                    aria-label={m.label}
-                    title={m.label}
-                    className={cn(
-                      "grid min-h-11 place-items-center rounded-lg transition-colors",
-                      active ? "bg-accent text-on-accent shadow-sm" : "text-fg-2 hover:bg-raised"
-                    )}
-                  >
-                    {m.v === "pen" || m.v === "eraser" ? <StudioToolArtwork tool={m.v} /> : <Icon size={18} strokeWidth={1.75} aria-hidden />}
-                  </button>
-                );
-              })}
-            </div>
+            <StudioMobileDrawModeSelector
+              drawMode={drawMode}
+              labels={{ pen: label.pen, pixel: bt("픽셀 펜", "Pixel pen"), eraser: label.eraser, shape: label.shape }}
+              onSelect={(mode) => activateCanvasTool("draw", mode)}
+            />
 
             {drawMode === "pixel" ? (
               <div
@@ -1464,11 +1443,11 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 active={penModeActive}
                 disabled={activeSurfaceReviewLocked}
                 title={activeSurfaceReviewLocked ? "편집 잠금을 해제한 뒤 펜을 사용할 수 있어요" : "펜 (B)"}
-                onClick={() => {
+                onClick={(event) => {
                   setWorkspaceDockExpanded(false);
                   setColorToolsOpen(false);
                   if (penModeActive) {
-                    setMobileSheet((s) => (s === "draw" ? null : "draw"));
+                    toggleDrawSettings(event.currentTarget);
                     return;
                   }
                   activateCanvasTool("draw", "pen");
@@ -1492,11 +1471,11 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 active={eraserModeActive}
                 disabled={activeSurfaceReviewLocked}
                 title={activeSurfaceReviewLocked ? "편집 잠금을 해제한 뒤 지우개를 사용할 수 있어요" : "지우개 (E)"}
-                onClick={() => {
+                onClick={(event) => {
                   setWorkspaceDockExpanded(false);
                   setColorToolsOpen(false);
                   if (eraserModeActive) {
-                    setMobileSheet((sheet) => (sheet === "draw" ? null : "draw"));
+                    toggleDrawSettings(event.currentTarget);
                     return;
                   }
                   activateCanvasTool("draw", "eraser");
@@ -1597,10 +1576,10 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 active={pixelModeActive}
                 disabled={activeSurfaceReviewLocked}
                 title={activeSurfaceReviewLocked ? "편집 잠금을 해제한 뒤 픽셀 펜을 사용할 수 있어요" : "픽셀 펜 (P)"}
-                onClick={() => {
+                onClick={(event) => {
                   setWorkspaceDockExpanded(false);
                   if (pixelModeActive) {
-                    setMobileSheet((sheet) => (sheet === "draw" ? null : "draw"));
+                    toggleDrawSettings(workspaceToggleRef.current ?? event.currentTarget);
                     return;
                   }
                   activateCanvasTool("draw", "pixel");
@@ -1642,10 +1621,10 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 active={shapeModeActive}
                 disabled={activeSurfaceReviewLocked}
                 title={activeSurfaceReviewLocked ? "편집 잠금을 해제한 뒤 도형을 사용할 수 있어요" : "도형"}
-                onClick={() => {
+                onClick={(event) => {
                   setWorkspaceDockExpanded(false);
                   if (shapeModeActive) {
-                    setMobileSheet((s) => (s === "draw" ? null : "draw"));
+                    toggleDrawSettings(workspaceToggleRef.current ?? event.currentTarget);
                     return;
                   }
                   activateCanvasTool("draw", "shape");
@@ -1689,7 +1668,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   // bubble into StudioToolHint and cover the touch canvas with a rich coach.
                   event.stopPropagation();
                 }}
-                onClick={() => { setWorkspaceDockExpanded(false); void loadStudioBrushStudio(); setMenu(null); setMobileSheet((s) => (s === "draw" ? null : "draw")); }}
+                onClick={(event) => { setWorkspaceDockExpanded(false); void loadStudioBrushStudio(); setMenu(null); toggleDrawSettings(workspaceToggleRef.current ?? event.currentTarget); }}
                 swatch={(
                   <span
                     aria-hidden
@@ -1698,8 +1677,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   />
                 )}
               />
-                <StudioDockNavButton icon={Layers} label="레이어" aria-label="레이어 열기"
-                  onClick={() => { setWorkspaceDockExpanded(false); setMenu(null); openInspectorRoute({ primary: "layers" }, "props"); }} />
+                <StudioDockNavButton icon={Layers} label="레이어" aria-label="레이어 열기" aria-haspopup="dialog"
+                  onClick={() => { workspaceToggleRef.current?.focus({ preventScroll: true }); setWorkspaceDockExpanded(false); setMenu(null); openInspectorRoute({ primary: "layers" }, "props"); }} />
                 <StudioDockNavButton icon={Search} label={bt("소재 찾기", "Find assets")} aria-haspopup="dialog"
                   onClick={() => { setWorkspaceDockExpanded(false); setMobileSheet(null); preloadStudioAssetToolPopoverBody(); setMenu("asset"); }} />
                 <StudioDockNavButton icon={Grid3X3} label="전체 도구" aria-label="전체 도구 열기"

@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { describe, expect, it, vi } from "vitest";
 import { POSTGRES_INTEGRATION_SUITES, createVitestArguments } from "./run-postgres-integration-tests.mjs";
@@ -47,24 +48,30 @@ describe("complete CI root and performance execution", () => {
         collect("original", []), collect("database", serial.slice(3)),
         collect("remaining", fullTestRemainderArguments().slice(2)),
       ]);
+      for (const name of ["edge-api-lane-router.test.mjs", "edge-image-negotiator.test.mjs"]) {
+        const nodeTest = fileURLToPath(new URL(`../deploy/cloudflare-static/${name}`, import.meta.url));
+        expect(original).not.toContain(nodeTest);
+      }
       expect(database).toHaveLength(POSTGRES_INTEGRATION_SUITES.length);
       expect(remaining.filter((file) => database.includes(file))).toEqual([]);
       expect([...database, ...remaining].sort()).toEqual(original);
     } finally { await rm(temporary, { recursive: true, force: true }); }
   });
 
-  it("DB 검증 후 엣지 Node 테스트, 나머지 루트 Vitest, 성능 검사를 한 번씩 실행한다", async () => {
+  it("워크스페이스 링크, DB, 엣지 Node 테스트, 나머지 루트 Vitest, 성능 검사를 한 번씩 실행한다", async () => {
     const events = [];
     const runDatabase = vi.fn(async (input) => { events.push(["database", input]); });
     const runChild = vi.fn(async (command, args, env) => { events.push(["child", command, args, env]); });
     await runFullTestCi({ environment, runDatabase, runChild });
-    expect(events[0]).toEqual(["database", { arguments_: [], environment }]);
-    expect(events.slice(1).map((event) => event.slice(0, 3))).toEqual([
+    const [workspaceLinks, database, ...afterDatabase] = events;
+    expect(workspaceLinks).toEqual(["child", process.execPath, ["scripts/verify-workspace-package-links.mjs"], environment]);
+    expect(database).toEqual(["database", { arguments_: [], environment }]);
+    expect(afterDatabase.map((event) => event.slice(0, 3))).toEqual([
       ["child", "pnpm", ["run", "test:cloudflare-static-edge"]],
       ["child", process.execPath, fullTestRemainderArguments()],
       ["child", "pnpm", ["run", "test:perf"]],
     ]);
-    for (const event of events.slice(1)) expect(event[3]).toMatchObject({
+    for (const event of afterDatabase) expect(event[3]).toMatchObject({
       CI: "1", NODE_ENV: "test", DATABASE_URL: environment.TEST_DATABASE_URL,
       TEST_DATABASE_URL: environment.TEST_DATABASE_URL,
       STUDIO_LIVE_POSTGRES_INTEGRATION_URL: environment.TEST_DATABASE_URL,
@@ -74,15 +81,21 @@ describe("complete CI root and performance execution", () => {
   });
 
   it.each([
-    ["database", 0], ["test:cloudflare-static-edge", 1], ["root", 2], ["test:perf", 3],
-  ])("%s 실패를 전달하고 다음 단계를 시작하지 않는다", async (phase, expectedChildCalls) => {
+    ["scripts/verify-workspace-package-links.mjs", 1, 0],
+    ["database", 1, 1],
+    ["test:cloudflare-static-edge", 2, 1],
+    ["vitest", 3, 1],
+    ["test:perf", 4, 1],
+  ])("%s 실패를 전달하고 다음 단계를 시작하지 않는다", async (phase, childCalls, databaseCalls) => {
     const failed = new Error(`${phase} failed`);
+    const entry = phase === "vitest" ? createVitestArguments()[0] : phase;
     const runDatabase = vi.fn(async () => { if (phase === "database") throw failed; });
     const runChild = vi.fn(async (command, args) => {
-      if ((command === process.execPath && phase === "root") || (command === "pnpm" && args[1] === phase)) throw failed;
+      if ((command === "pnpm" ? args[1] : args[0]) === entry) throw failed;
     });
     await expect(runFullTestCi({ environment, runDatabase, runChild })).rejects.toBe(failed);
-    expect(runChild).toHaveBeenCalledTimes(expectedChildCalls);
+    expect(runChild).toHaveBeenCalledTimes(childCalls);
+    expect(runDatabase).toHaveBeenCalledTimes(databaseCalls);
   });
 
   it("refuses missing database prerequisites before any phase", async () => {

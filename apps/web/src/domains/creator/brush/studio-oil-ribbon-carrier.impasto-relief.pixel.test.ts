@@ -4,6 +4,8 @@ import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 
 import { planOilBrushDabs } from "../studio-fx-brush";
+import { exportPageToSvg } from "../export/studio-svg-export";
+import { STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR } from "./studio-oil-ribbon-impasto-relief";
 
 import {
   planStudioOilRibbonCarrier,
@@ -34,7 +36,7 @@ function oilLaneSvg(
   )).join("");
   const relief = overlay
     ? (carrier.impastoReliefLanes ?? []).map((lane) => (
-      `<path d="${lane.runs.map((run) => studioOilRibbonPathData(run)).join("")}" fill="none" stroke="${lane.kind === "highlight" ? STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR : STROKE_COLOR}" stroke-width="${lane.lineWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="${lane.opacity}" style="mix-blend-mode:${lane.kind === "highlight" ? "screen" : "multiply"}"/>`
+      `<path d="${lane.runs.map((run) => studioOilRibbonPathData(run)).join("")}" fill="none" stroke="${lane.kind === "highlight" ? STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR : STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR}" stroke-width="${lane.lineWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="${lane.opacity}" style="mix-blend-mode:${lane.kind === "highlight" ? "screen" : "multiply"}"/>`
     )).join("")
     : "";
   return [
@@ -79,6 +81,20 @@ describe("studio impasto relief overlay raster behaviour (resvg)", () => {
         renderer.free();
       }
     };
+
+    // 흰 종이 위의 흰 유화도 홈이 빛을 가려야 한다. 실제 문서 내보내기의 획 내부를 읽는다.
+    const whiteOil = exportPageToSvg({ width: WIDTH, height: HEIGHT, bg: "#ffffff", elements: [{
+      id: "white-oil", type: "draw", kind: "freehand", brush: "oil", stroke: "#ffffff",
+      strokeWidth: 26, points: [...HORIZONTAL_STROKE.points], pressures: [...HORIZONTAL_STROKE.pressures],
+    }] });
+    const whitePixels = render(whiteOil.svg);
+    let shadedPixels = 0;
+    for (let x = 40; x < 260; x++) {
+      for (let y = CENTER_Y - 10; y <= CENTER_Y + 10; y++) {
+        if (luminanceAt(whitePixels, x, y) < 250) shadedPixels++;
+      }
+    }
+    expect(shadedPixels).toBeGreaterThan(100);
 
     const controlPixels = render(oilLaneSvg(control, false));
     const impastoPixels = render(oilLaneSvg(impasto, true));

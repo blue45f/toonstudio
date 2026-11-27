@@ -116,6 +116,17 @@ describe("tip x paper composition", () => {
     expect(Array.from(moved.alphas)).not.toEqual(Array.from(first.alphas));
   });
 
+  it("가시성 하한을 단일 합성 버퍼에 적용하고 원본의 빈 텍셀을 보존한다", () => {
+    const tip = buildStudioBrushTipAlphaMap({ shape: "grain", softness: 0.4 });
+    const input = { tip, tile: tile(), ...DAB };
+    const standard = composeStudioPaperTipAlphaMap(input)!;
+    const lifted = composeStudioPaperTipAlphaMap({ ...input, gainFloor: 0.95 })!;
+    const reference = standard.alphas.map((alpha, i) => Math.max(alpha, tip.alphas[i]! * 0.95));
+    expect(lifted.alphas).toEqual(reference);
+    expect(lifted.alphas).not.toEqual(standard.alphas);
+    expect(lifted.revision).not.toBe(standard.revision);
+  });
+
   it("rejects degenerate geometry instead of emitting a silently wrong stamp", () => {
     const tip = buildStudioBrushTipAlphaMap({ shape: "hard", softness: 0.38 });
     for (const override of [
