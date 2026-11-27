@@ -142,9 +142,8 @@ jobs:
           path: |
             .artifacts/studio-wearable-v5/review.json
             .artifacts/studio-wearable-v5/contact-sheet-*.jpg
-            .artifacts/studio-wearable-v5/screenshots/*-motion-*.png
+            .artifacts/studio-wearable-v5/screenshots/*.png
             .artifacts/studio-wearable-v5/preview-*.webp
-            .artifacts/studio-wearable-v5/screenshots/*-grip-*.png
           retention-days: 7
           include-hidden-files: true
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
