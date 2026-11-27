@@ -276,6 +276,28 @@ export class Office2dPhysicsWorld {
     return free;
   }
 
+  /** 물리 접촉의 잔여 겹침만 같은 쪽 표면으로 투영한다. 경로 탐색용이며 실제 몸체는 움직이지 않는다. */
+  navigationStart(point: { readonly x: number; readonly y: number }, radius: number): { readonly x: number; readonly y: number } | null {
+    const { x, y } = point;
+    if (this.canOccupyCircle(x, y, radius)) return point;
+    // 여러 면에 닿는 모서리와 분할 보정의 잔여량까지 허용하되, 몸이 파묻힌 좌표에서 탈출점을 찾지는 않는다.
+    const limit = POSITION_SLOP * 4;
+    const probe = new Office2dBody({ id: "__path_start__", kind: "dynamic", shape: { type: "circle", radius }, x, y });
+    // 정확한 접점이 원호 모서리에서 부동소수점 오차로 안쪽에 남으면 두 번째로 미세하게 분리한다.
+    for (const margin of [0, 1e-7]) {
+      this.staticHash.query(x - radius - limit, y - radius - limit, x + radius + limit, y + radius + limit, (body) => {
+        if (body.sensor) return;
+        const contact = office2dCollide(probe, body);
+        if (!contact) return;
+        probe.x -= contact.nx * (contact.depth + margin);
+        probe.y -= contact.ny * (contact.depth + margin);
+      });
+      if (Math.hypot(probe.x - x, probe.y - y) > limit) return null;
+      if (this.canOccupyCircle(probe.x, probe.y, radius)) return { x: probe.x, y: probe.y };
+    }
+    return null;
+  }
+
   /** 막힌 지점이면 나선형으로 가장 가까운 빈 지점을 찾는다. 찾지 못하면 null. */
   nearestFreePoint(x: number, y: number, radius: number, maxDistance = 240): { readonly x: number; readonly y: number } | null {
     const startX = office2dClamp(x, radius, this.width - radius);

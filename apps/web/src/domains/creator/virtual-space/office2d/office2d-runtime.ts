@@ -81,7 +81,6 @@ export interface Office2dRuntimeOptions {
   readonly ambientCoworkers?: boolean;
 }
 
-
 const SELF_BODY = "actor:self";
 const SELF_RADIUS = 12;
 const ACCELERATION = 1900;
@@ -291,7 +290,8 @@ export class Office2dRuntime {
     const free = this.physics.nearestFreePoint(target.x, target.y, SELF_RADIUS, 160);
     if (!free) return;
     if (this.options.bridge.getFollowingPeer()) this.options.getCallbacks().onCancelFollow();
-    const route = findStudioWorldPath(this.options.manifest, this.self, free, SELF_RADIUS);
+    const start = this.physics.navigationStart(this.self, SELF_RADIUS);
+    const route = start ? findStudioWorldPath(this.options.manifest, start, free, SELF_RADIUS) : [];
     this.path = route.filter((point) => length(point.x - this.self.x, point.y - this.self.y) > 6);
     this.pending = route.length ? pending : null;
   }

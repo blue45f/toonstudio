@@ -310,6 +310,54 @@ describe("Office2dRuntime", () => {
     expect(Math.hypot(self.x - 470, self.y - 1500)).toBeLessThan(16);
   });
 
+  it.each([
+    { kind: "바닥", point: { x: 470, y: 1500 } },
+    { kind: "작업대", point: { x: 190, y: 1330 } },
+    { kind: "NPC", point: { x: 190, y: 1265 } },
+  ])("키보드로 로비 동쪽 벽에 닿은 뒤 $kind 클릭으로 걸어 나온다", ({ kind, point }) => {
+    const { runtime, run, callbacks } = setup();
+    runtime.start();
+    runtime.keyDown("KeyD");
+    run(2);
+    runtime.keyUp("KeyD");
+    run(0.2);
+    const contact = runtime.debugState().self;
+    expect(contact.x).toBeCloseTo(600, 0);
+    const tap = runtime.camera.worldToScreen(point);
+    runtime.tap(tap.x, tap.y);
+    expect(runtime.debugState().self).toEqual(contact);
+    run(0.15);
+    expect(runtime.debugState().self.x).toBeLessThan(contact.x - 3);
+    run(5.5);
+    if (kind === "작업대") {
+      expect(callbacks.onInteract).toHaveBeenCalledWith(expect.objectContaining({ id: "hq-lobby-reception" }));
+    } else if (kind === "NPC") {
+      expect(callbacks.onNpcInteract).toHaveBeenCalled();
+    } else {
+      const arrived = runtime.debugState().self;
+      expect(Math.hypot(arrived.x - point.x, arrived.y - point.y)).toBeLessThan(16);
+    }
+  });
+
+  it("소파에 접촉한 상태에서도 지도 이동이 가구와 같은 쪽에서 시작한다", () => {
+    const { runtime, bridge, run } = setup({ snapshot: snapshot([], 470, 1460) });
+    runtime.start();
+    runtime.keyDown("KeyW");
+    run(1.2);
+    runtime.keyUp("KeyW");
+    run(0.1);
+    const contact = runtime.debugState().self;
+    expect(contact.y).toBeCloseTo(1352, 0);
+    bridge.requestMove({ x: 336, y: 1470 });
+    run(1 / 60);
+    const first = runtime.debugState().self;
+    expect(first.y).toBeGreaterThanOrEqual(contact.y);
+    expect(Math.hypot(first.x - contact.x, first.y - contact.y)).toBeLessThan(3);
+    run(2);
+    const arrived = runtime.debugState().self;
+    expect(Math.hypot(arrived.x - 336, arrived.y - 1470)).toBeLessThan(16);
+  });
+
   it("자기 발밑·도착·업무 패널의 중지 요청에는 이동 경로와 표식이 남지 않는다", () => {
     const { runtime, bridge, run } = setup();
     runtime.start();
@@ -357,6 +405,17 @@ describe("Office2dRuntime", () => {
     bridge.requestMove({ x: 500, y: 1470 });
     run(0.4);
     expect(runtime.debugState().self).toEqual(start);
+
+    runtime.keyDown("KeyD");
+    run(0.6);
+    runtime.keyUp("KeyD");
+    run(0.15);
+    const contact = runtime.debugState().self;
+    expect(contact.x).toBeGreaterThan(357);
+    bridge.requestMove({ x: 500, y: 1470 });
+    run(0.4);
+    expect(runtime.debugState().self.x).toBeCloseTo(contact.x, 3);
+    expect(runtime.debugState().self.y).toBeCloseTo(contact.y, 3);
     const render = vi.spyOn(runtime.renderer, "render").mockImplementation(() => undefined);
     runtime.draw(new FakeContext(), 1);
     expect(render.mock.calls[0]?.[1]).toMatchObject({ destination: null, waypoints: [] });

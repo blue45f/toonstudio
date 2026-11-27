@@ -82,6 +82,21 @@ describe("office2dCollide", () => {
 });
 
 describe("Office2dPhysicsWorld", () => {
+  it("가구 모서리의 미세 접촉을 현재 면에서만 보정하고 깊은 겹침은 거부한다", () => {
+    const physics = world();
+    physics.addBody({ id: "desk", kind: "static", shape: { type: "box", halfWidth: 20, halfHeight: 20 }, x: 120, y: 120 });
+    for (let degrees = 0; degrees <= 90; degrees++) {
+      const angle = degrees * Math.PI / 180;
+      const point = { x: 100 - 11.96 * Math.cos(angle), y: 100 - 11.96 * Math.sin(angle) };
+      expect(physics.canOccupyCircle(point.x, point.y, 12)).toBe(false);
+      const start = physics.navigationStart(point, 12);
+      if (!start) throw new Error(`모서리 ${degrees}도에서 경로를 시작할 수 없습니다.`);
+      expect(physics.canOccupyCircle(start.x, start.y, 12)).toBe(true);
+      expect(Math.hypot(start.x - point.x, start.y - point.y)).toBeCloseTo(0.04, 5);
+    }
+    expect(physics.navigationStart({ x: 120, y: 120 }, 12)).toBeNull();
+  });
+
   it("정적 벽을 뚫지 않고 벽 앞에서 멈춘다", () => {
     const physics = world();
     physics.addBody({ id: "wall", kind: "static", shape: { type: "box", halfWidth: 8, halfHeight: 200 }, x: 400, y: 300 });
