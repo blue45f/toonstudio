@@ -1258,17 +1258,9 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                     dynamicCoverageMarkPlan?.ok
                     && isStudioBoundedFlowPaintModelCompatible(el)
                   ) {
-                    const rendered = renderStudioDynamicBrushCoverage(
-                      context,
-                      dynamicCoverageMarkPlan.marks,
-                      {
-                        activeDraft,
-                        opacity,
-                        ...(durableDocumentRender
-                          ? { committedCacheKey: el.id }
-                          : {}),
-                      },
-                    );
+                    const rendered = renderStudioDynamicBrushCoverage(context, dynamicCoverageMarkPlan.marks, {
+                      activeDraft, opacity, brushId: el.brush, ...(durableDocumentRender ? { committedCacheKey: el.id } : {}),
+                    });
                     recordCommitRenderDebug("bounded-flow-coverage", rendered);
                     // bounded-flow-v2 owns stroke opacity as one final coverage composite. A
                     // surface/budget failure must remain empty (or retain a partial prefix) rather
