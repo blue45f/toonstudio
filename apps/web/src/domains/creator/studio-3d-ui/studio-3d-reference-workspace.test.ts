@@ -37,3 +37,13 @@ describe("3D 작업면의 잠금 상태 가독성", () => {
     expect(disabled).not.toContain("pointer-events");
   });
 });
+
+it("간편 장면 도우미에만 코발트 팔레트를 쓰고 강제색에는 시스템 색상을 유지한다", () => {
+  const selector = ':root [data-studio-3d-reference="tooncraft"][data-studio-bg3d-workspace="scene-assistant-v1"]';
+  expect(css).toContain(`@media (forced-colors: none) {\n  ${selector} {`);
+  const palette = block(selector);
+  expect(palette).toContain("--color-accent: var(--spectrum-pigment-3d);");
+  expect(palette).toContain("--color-accent-soft: var(--spectrum-pigment-3d-soft);");
+  expect(palette).toContain("--color-on-accent: var(--spectrum-pigment-3d-on);");
+  expect(css).toContain("--color-on-accent: HighlightText;");
+});

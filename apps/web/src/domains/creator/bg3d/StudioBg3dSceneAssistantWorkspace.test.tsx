@@ -88,6 +88,24 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(host.addSceneTemplate).not.toHaveBeenCalled();
   });
 
+  it("배치 중에는 기존 배치 도구가 안내를 맡고 배치가 끝나면 도우미 상태가 돌아온다", () => {
+    const idleHost = createHost();
+    const placementHost = createHost({ placementSession: { phase: "preview" } });
+    const onOpenProfessional = vi.fn();
+    const { rerender } = render(<StudioBg3dSceneAssistantWorkspace h={idleHost} onOpenProfessional={onOpenProfessional} />);
+    const statusText = "시작점 선택에서 장면을 골라 주세요";
+    const status = screen.getByText(statusText);
+    expect(status.getAttribute("aria-live")).toBe("polite");
+
+    rerender(<StudioBg3dSceneAssistantWorkspace h={placementHost} onOpenProfessional={onOpenProfessional} />);
+    expect(status.classList.contains("sr-only")).toBe(true);
+    expect(status.textContent).toBe("");
+
+    rerender(<StudioBg3dSceneAssistantWorkspace h={idleHost} onOpenProfessional={onOpenProfessional} />);
+    expect(screen.getByText(statusText)).toBe(status);
+    expect(status.classList.contains("scene-assistant__viewport-status")).toBe(true);
+  });
+
   it("opens with purpose-led choices and no professional DCC terminology", () => {
     render(<StudioBg3dSceneAssistantWorkspace h={createHost()} onOpenProfessional={vi.fn()} />);
 

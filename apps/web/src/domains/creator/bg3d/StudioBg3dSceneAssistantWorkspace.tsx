@@ -780,9 +780,9 @@ export function StudioBg3dSceneAssistantWorkspace({
     >
       <div className="scene-assistant__viewport">
         {viewport ?? <StudioBg3dEditorViewport h={h} simplified />}
-        <div className="scene-assistant__viewport-status" aria-live="polite">
+        <div className={placementActive ? "sr-only" : "scene-assistant__viewport-status"} aria-live="polite">
           {placementActive
-            ? "화면에서 배치할 위치를 선택하세요"
+            ? null
             : selectedCount > 0
               ? `${selectedCount}개 선택 · ${TRANSFORM_ACTIONS.find((item) => item.id === h.transformMode)?.label ?? "위치 조정"}`
               : hasScene

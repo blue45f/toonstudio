@@ -30,6 +30,17 @@
   color-scheme: light; background: #dcdde6;
 }
 
+/* 간편 장면 도우미의 선택과 주 동작은 제작 공통 코발트 토큰을 사용한다. */
+@media (forced-colors: none) {
+  :root [data-studio-3d-reference="tooncraft"][data-studio-bg3d-workspace="scene-assistant-v1"] {
+    --color-accent: var(--spectrum-pigment-3d);
+    --color-accent-2: color-mix(in oklch, var(--spectrum-pigment-3d) 88%, var(--color-fg));
+    --color-accent-soft: var(--spectrum-pigment-3d-soft);
+    --color-on-accent: var(--spectrum-pigment-3d-on);
+    --studio-3d-icon-accent: var(--spectrum-pigment-3d);
+  }
+}
+
 /* 데스크톱은 라이브러리 / 실제 3D / 프리셋과 정밀 조절의 세 영역이다. */
 [data-studio-3d-reference] [data-character-shaper-surface] { border-radius: 16px; max-width: 1800px; box-shadow: var(--studio-reference-elevation); }
 [data-studio-3d-reference] [data-character-shaper-summary] { min-height: 64px; background: linear-gradient(110deg, var(--color-canvas), var(--color-panel)); padding-inline: 18px; }
