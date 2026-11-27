@@ -202,13 +202,13 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       <span className="inline-flex flex-wrap items-center gap-1.5">
         <a
           href="/studio/import"
-          className="inline-flex min-h-9 items-center rounded-lg border border-danger/35 bg-card px-2.5 py-1 text-xs font-semibold text-fg hover:bg-raised"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-danger/35 bg-card px-2.5 py-1 text-xs font-semibold text-fg hover:bg-raised"
         >
           파일 다시 선택
         </a>
         <a
           href="/studio"
-          className="inline-flex min-h-9 items-center rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg"
         >
           내 작업 열기
         </a>
