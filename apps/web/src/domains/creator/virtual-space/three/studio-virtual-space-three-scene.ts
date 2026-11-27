@@ -6,7 +6,7 @@ import { isStudioVrmProductionModelUrl } from "../../vrm/studio-vrm-model-qualit
 import { isStudioVrmTechnicallyAdmittedModel } from "../../vrm/studio-vrm-model-technical-denylist.generated";
 import { isStudioVrmProductionThumbnailUrl } from "../../vrm/studio-vrm-thumbnail-quality";
 import { isStudioVrmTechnicallyAdmittedThumbnail } from "../../vrm/studio-vrm-thumbnail-technical-denylist.generated";
-import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../vrm/vrm-library";
+import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRMS } from "../../vrm/vrm-library";
 import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
@@ -131,18 +131,6 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 ]);
 
 const BUNDLED_VRM_RIGHTS_BLOCKED_URLS = new Set<string>(BUNDLED_VRM_RIGHTS_BLOCKS.map((e) => e.url));
-const ACTIVE_SAMPLE_VRM_IDS = new Set<string>(SAMPLE_VRM_ENTRIES.map((e) => e.id));
-const ADMITTED_HERO_V1_SAMPLE_IDS = new Set<string>(
-  STUDIO_VRM_HERO_V1_SAMPLES
-    .filter(
-      (sample) =>
-        isStudioVrmProductionThumbnailUrl(sample.thumbnailUrl)
-        && isStudioVrmTechnicallyAdmittedThumbnail(sample.id)
-        && isStudioVrmProductionModelUrl(sample.url)
-        && isStudioVrmTechnicallyAdmittedModel(sample.id),
-    )
-    .map((sample) => sample.id),
-);
 const SAMPLE_VRM_BY_URL = new Map(SAMPLE_VRMS.map((e) => [e.url, e] as const));
 /** `public/vrm/LICENSES.md` 상 CC0가 아닌 조건부·고지 조건부 또는 제외 대상 VRM. */
 const NON_CC0_BUNDLED_VRM_URLS = new Set<string>([
@@ -150,20 +138,27 @@ const NON_CC0_BUNDLED_VRM_URLS = new Set<string>([
   "/vrm/Victoria_Rubin.vrm", "/vrm/Vita.vrm", "/vrm/Vivi.vrm", "/vrm/cryptovoxels.vrm", "/vrm/sample.vrm",
 ]);
 
+const LEGACY_STUDIO_THREE_VRM_URLS = [
+  "/vrm/Sendagaya_Shino.vrm", "/vrm/Sendagaya_Shibu.vrm", "/vrm/Kate.vrm", "/vrm/Jennifer.vrm",
+  "/vrm/Erika.vrm", "/vrm/Olivia.vrm", "/vrm/Jimmy.vrm", "/vrm/Anna.vrm", "/vrm/Cyberpal.vrm",
+] as const;
+
+// avatarIndex가 저장된 방은 원고 추천에서 내려간 슬롯도 같은 모델로 복원해야 한다.
+const WORLD_VRM_URLS = new Set<string>([
+  ...STUDIO_VRM_HERO_V1_SAMPLES.map((sample) => sample.url), ...LEGACY_STUDIO_THREE_VRM_URLS,
+]);
+
 export function isVerifiedStudioThreeVrmUrl(value: unknown): value is string {
   if (!isStudioVrmProductionModelUrl(value) || !value.startsWith("/vrm/")) return false;
   if (BUNDLED_VRM_RIGHTS_BLOCKED_URLS.has(value) || NON_CC0_BUNDLED_VRM_URLS.has(value)) return false;
   const sample = SAMPLE_VRM_BY_URL.get(value);
   if (!sample) return false;
-  const catalogAdmitted = ACTIVE_SAMPLE_VRM_IDS.has(sample.id)
-    || (sample.visibility === "legacy" && ADMITTED_HERO_V1_SAMPLE_IDS.has(sample.id));
-  return catalogAdmitted && !sample.licenseNotice && !sample.limitations?.includes("heavy-payload");
+  return (sample.visibility !== "legacy" || WORLD_VRM_URLS.has(value))
+    && isStudioVrmTechnicallyAdmittedModel(sample.id)
+    && isStudioVrmProductionThumbnailUrl(sample.thumbnailUrl)
+    && isStudioVrmTechnicallyAdmittedThumbnail(sample.id)
+    && !sample.licenseNotice && !sample.limitations?.includes("heavy-payload");
 }
-
-const LEGACY_STUDIO_THREE_VRM_URLS = [
-  "/vrm/Sendagaya_Shino.vrm", "/vrm/Sendagaya_Shibu.vrm", "/vrm/Kate.vrm", "/vrm/Jennifer.vrm",
-  "/vrm/Erika.vrm", "/vrm/Olivia.vrm", "/vrm/Jimmy.vrm", "/vrm/Anna.vrm", "/vrm/Cyberpal.vrm",
-] as const;
 
 /** Hero VRM 1.0 8종을 기본 아바타 라인업 최우선(0..7)에 두고 기존 CC0 검증 VRM 9종을 호환 폴백(8..16)으로 유지한다. */
 export const STUDIO_THREE_HERO_VRM_URLS: readonly string[] = Object.freeze(

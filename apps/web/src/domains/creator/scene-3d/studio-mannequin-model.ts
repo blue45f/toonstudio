@@ -10,6 +10,10 @@
  * 항등이고, 팔다리 본은 관절 로컬 −Y 방향으로, 몸통 본은 +Y 방향으로 뻗는다(IK 전제).
  */
 
+import { buildSplayedHandDigitPrimitives } from "./studio-mannequin-hand-geometry";
+
+export { STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG } from "./studio-mannequin-hand-geometry";
+
 export type StudioMannequinVec3 = readonly [number, number, number];
 
 export const STUDIO_MANNEQUIN_JOINT_IDS = [
@@ -822,7 +826,9 @@ export type StudioMannequinPrimitiveMaterialRole =
   | "landmark"
   | "eye";
 
-export type StudioMannequinPrimitiveSpec =
+export type StudioMannequinPrimitiveSpec = {
+  readonly handPart?: "palm" | "digit" | "fingertip";
+} & (
   | {
       readonly kind: "capsule";
       readonly jointId: StudioMannequinJointId;
@@ -850,7 +856,7 @@ export type StudioMannequinPrimitiveSpec =
       readonly center: StudioMannequinVec3;
       readonly size: StudioMannequinVec3;
       readonly materialRole?: StudioMannequinPrimitiveMaterialRole;
-    };
+    });
 
 export const STUDIO_MANNEQUIN_CHAIN_IDS = ["leftArm", "rightArm", "leftLeg", "rightLeg"] as const;
 export type StudioMannequinChainId = (typeof STUDIO_MANNEQUIN_CHAIN_IDS)[number];
@@ -931,17 +937,6 @@ export type StudioMannequinResolvedFingerPose = Readonly<
   >
 >;
 
-/** 컬 100일 때 마디 관절의 최대 굽힘 각도(deg). 손바닥(+Z) 쪽으로 감긴다. */
-export const STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG: Readonly<
-  Record<StudioMannequinFingerName, readonly [number, number, number]>
-> = Object.freeze({
-  thumb: Object.freeze([45, 40, 30] as const),
-  index: Object.freeze([50, 65, 35] as const),
-  middle: Object.freeze([50, 65, 35] as const),
-  ring: Object.freeze([50, 65, 35] as const),
-  little: Object.freeze([52, 68, 38] as const),
-});
-
 const STUDIO_MANNEQUIN_FINGER_ZERO: StudioMannequinFingerSegmentCurls = Object.freeze([
   0, 0, 0,
 ] as const);
@@ -1008,132 +1003,6 @@ export function studioMannequinFingerPoseFromCurls(curls: {
     left: convertHand(curls.left),
     right: convertHand(curls.right),
   });
-}
-
-/** X축 회전으로 벡터의 y/z 성분만 굽힌다(굽힘 평면 고정, X 벌어짐 보존). */
-function bendVec3YpZ(
-  vector: StudioMannequinVec3,
-  angleRad: number,
-): StudioMannequinVec3 {
-  const cos = Math.cos(angleRad);
-  const sin = Math.sin(angleRad);
-  return vec3(vector[0], vector[1] * cos - vector[2] * sin, vector[1] * sin + vector[2] * cos);
-}
-
-/**
- * rest 폴리라인 점들을 마디 관절 체인으로 굽힌다. 각 마디는 자기 관절에서
- * 누적 각도만큼 회전하고, 컬이 전부 0이면 입력 점을 그대로 돌려준다.
- */
-function bendDigitChain(
-  restPoints: readonly StudioMannequinVec3[],
-  segmentCurls: StudioMannequinFingerSegmentCurls,
-  maxDeg: readonly [number, number, number],
-): readonly StudioMannequinVec3[] {
-  const points: StudioMannequinVec3[] = [restPoints[0] as StudioMannequinVec3];
-  let cumulativeRad = 0;
-  for (let segment = 0; segment < 3; segment += 1) {
-    const from = restPoints[segment] as StudioMannequinVec3;
-    const to = restPoints[segment + 1] as StudioMannequinVec3;
-    const restVector = vec3(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
-    cumulativeRad += ((segmentCurls[segment] as number) / 100) * radians(maxDeg[segment] as number);
-    // 손가락은 -Y로 뻗고 손바닥은 +Z 쪽이라, 굽힘은 X축 음의 회전이다.
-    const bent = bendVec3YpZ(restVector, -cumulativeRad);
-    const previous = points[segment] as StudioMannequinVec3;
-    points.push(vec3(previous[0] + bent[0], previous[1] + bent[1], previous[2] + bent[2]));
-  }
-  return points;
-}
-
-/** 손바닥 끝에 길이가 다른 네 손가락과 바깥쪽 엄지를 3마디 관절 체인으로 붙인다. 좌우는 X축 미러다. */
-function buildHandDigitPrimitives(
-  jointId: "leftHand" | "rightHand",
-  handLen: number,
-  sideSign: 1 | -1,
-  handPose: Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>,
-): readonly StudioMannequinPrimitiveSpec[] {
-  const fingers = [
-    { name: "little", x: -0.16, knuckleY: -0.76, middleY: -0.94, endY: -1.07, radius: 0.047 },
-    { name: "ring", x: -0.055, knuckleY: -0.77, middleY: -0.98, endY: -1.14, radius: 0.049 },
-    { name: "middle", x: 0.055, knuckleY: -0.77, middleY: -1.0, endY: -1.17, radius: 0.05 },
-    { name: "index", x: 0.16, knuckleY: -0.75, middleY: -0.95, endY: -1.1, radius: 0.046 },
-  ] as const satisfies readonly {
-    name: StudioMannequinFingerName;
-    x: number;
-    knuckleY: number;
-    middleY: number;
-    endY: number;
-    radius: number;
-  }[];
-  const result: StudioMannequinPrimitiveSpec[] = [];
-  const pushChain = (
-    restPoints: readonly StudioMannequinVec3[],
-    segmentCurls: StudioMannequinFingerSegmentCurls,
-    maxDeg: readonly [number, number, number],
-    radiusFactors: readonly [number, number, number, number],
-    baseRadius: number,
-    jointScales: readonly [StudioMannequinVec3, StudioMannequinVec3],
-  ): void => {
-    const points = bendDigitChain(restPoints, segmentCurls, maxDeg);
-    for (let segment = 0; segment < 3; segment += 1) {
-      result.push({
-        kind: "capsule",
-        jointId,
-        from: points[segment] as StudioMannequinVec3,
-        to: points[segment + 1] as StudioMannequinVec3,
-        radius: baseRadius * (radiusFactors[segment] as number),
-        endRadius: baseRadius * (radiusFactors[segment + 1] as number),
-        materialRole: "body",
-      });
-    }
-    for (let joint = 0; joint < 2; joint += 1) {
-      result.push({
-        kind: "sphere",
-        jointId,
-        center: points[joint + 1] as StudioMannequinVec3,
-        radius: baseRadius * (radiusFactors[joint + 1] as number) * 1.08,
-        scale: jointScales[joint] as StudioMannequinVec3,
-        materialRole: "joint",
-      });
-    }
-  };
-  for (const finger of fingers) {
-    const x = sideSign * finger.x * handLen;
-    const z = 0.026 * handLen;
-    const knuckle = vec3(x, finger.knuckleY * handLen, z);
-    const middle = vec3(x, finger.middleY * handLen, z);
-    const end = vec3(x, finger.endY * handLen, z + 0.008 * handLen);
-    const distal = vec3(
-      (middle[0] + end[0]) / 2,
-      (middle[1] + end[1]) / 2,
-      (middle[2] + end[2]) / 2,
-    );
-    pushChain(
-      [knuckle, middle, distal, end],
-      handPose[finger.name],
-      STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG[finger.name],
-      [1, 0.86, 0.74, 0.6],
-      finger.radius * handLen,
-      [vec3(1, 0.72, 0.86), vec3(1, 0.72, 0.86)],
-    );
-  }
-
-  const thumbStart = vec3(sideSign * 0.19 * handLen, -0.43 * handLen, 0.025 * handLen);
-  const thumbMiddle = vec3(sideSign * 0.34 * handLen, -0.61 * handLen, 0.065 * handLen);
-  const thumbEnd = vec3(sideSign * 0.43 * handLen, -0.76 * handLen, 0.09 * handLen);
-  const thumbDistal = vec3(
-    (thumbMiddle[0] + thumbEnd[0]) / 2,
-    (thumbMiddle[1] + thumbEnd[1]) / 2,
-    (thumbMiddle[2] + thumbEnd[2]) / 2,
-  );
-  pushChain(
-    [thumbStart, thumbMiddle, thumbDistal, thumbEnd],
-    handPose.thumb,
-    STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG.thumb,
-    [1, 0.83, 0.7, 0.56],
-    0.064 * handLen,
-    [vec3(1, 0.76, 0.9), vec3(1, 0.76, 0.9)],
-  );
-  return result;
 }
 
 /**
@@ -1389,8 +1258,8 @@ export function buildStudioMannequinSpec(
     { kind: "capsule", jointId: "leftLowerArm", from: vec3(0, 0, 0), to: vec3(0, -foreArmLen, 0), radius: 0.101 * hu * forearmR, endRadius: 0.08 * hu * forearmR, materialRole: "body" },
     { kind: "sphere", jointId: "leftLowerArm", center: vec3(0, -0.36 * foreArmLen, -0.014 * hu), radius: 0.09 * hu * forearmR, scale: vec3(0.98, 1.46, 0.92), materialRole: "body" },
     { kind: "sphere", jointId: "leftHand", center: vec3(0, 0, 0), radius: 0.085 * hu * limbR, materialRole: "joint" },
-    { kind: "sphere", jointId: "leftHand", center: vec3(0, -handLen * 0.49, 0), radius: handLen * 0.5, scale: vec3(0.43, 1, 0.27), materialRole: "body" },
-    ...buildHandDigitPrimitives("leftHand", handLen, 1, fingerPose.left),
+    { kind: "sphere", jointId: "leftHand", handPart: "palm", center: vec3(0, -handLen * 0.32, 0), radius: handLen * 0.34, scale: vec3(0.72, 1, 0.32), materialRole: "body" },
+    ...buildSplayedHandDigitPrimitives("leftHand", handLen, 1, fingerPose.left),
 
     { kind: "sphere", jointId: "rightUpperArm", center: vec3(0, 0, 0), radius: 0.132 * hu * upperArmR, materialRole: "joint" },
     { kind: "sphere", jointId: "rightUpperArm", center: vec3(0, -0.115 * hu, 0), radius: 0.135 * hu * upperArmR, scale: vec3(1.16, 1.38, 1.04), materialRole: "body" },
@@ -1401,8 +1270,8 @@ export function buildStudioMannequinSpec(
     { kind: "capsule", jointId: "rightLowerArm", from: vec3(0, 0, 0), to: vec3(0, -foreArmLen, 0), radius: 0.101 * hu * forearmR, endRadius: 0.08 * hu * forearmR, materialRole: "body" },
     { kind: "sphere", jointId: "rightLowerArm", center: vec3(0, -0.36 * foreArmLen, -0.014 * hu), radius: 0.09 * hu * forearmR, scale: vec3(0.98, 1.46, 0.92), materialRole: "body" },
     { kind: "sphere", jointId: "rightHand", center: vec3(0, 0, 0), radius: 0.085 * hu * limbR, materialRole: "joint" },
-    { kind: "sphere", jointId: "rightHand", center: vec3(0, -handLen * 0.49, 0), radius: handLen * 0.5, scale: vec3(0.43, 1, 0.27), materialRole: "body" },
-    ...buildHandDigitPrimitives("rightHand", handLen, -1, fingerPose.right),
+    { kind: "sphere", jointId: "rightHand", handPart: "palm", center: vec3(0, -handLen * 0.32, 0), radius: handLen * 0.34, scale: vec3(0.72, 1, 0.32), materialRole: "body" },
+    ...buildSplayedHandDigitPrimitives("rightHand", handLen, -1, fingerPose.right),
 
     // ── 다리·발 ─────────────────────────────────────────────────────────────
     { kind: "sphere", jointId: "leftUpperLeg", center: vec3(0, 0, 0), radius: 0.17 * hu * thighR, materialRole: "joint" },

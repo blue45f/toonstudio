@@ -11,7 +11,6 @@
 
 import {
   STUDIO_MANNEQUIN_FINGER_NAMES,
-  STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG,
   blendStudioMannequinBuild,
   clampStudioMannequinFingerPose,
   type StudioMannequinFingerName,
@@ -648,105 +647,4 @@ export function mergeHandPadIntoFingerPose(
   };
 }
 
-export function buildSplayedHandDigitPrimitives(
-  jointId: "leftHand" | "rightHand",
-  handLen: number,
-  sideSign: 1 | -1,
-  handPose: Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>,
-  splayDeg: Partial<StudioMannequinFingerSplayMap> = {},
-): readonly StudioMannequinPrimitiveSpec[] {
-  const fingers = [
-    { name: "little", x: -0.16, knuckleY: -0.76, middleY: -0.94, endY: -1.07, radius: 0.047 },
-    { name: "ring", x: -0.055, knuckleY: -0.77, middleY: -0.98, endY: -1.14, radius: 0.049 },
-    { name: "middle", x: 0.055, knuckleY: -0.77, middleY: -1.0, endY: -1.17, radius: 0.05 },
-    { name: "index", x: -0 + 0.16, knuckleY: -0.75, middleY: -0.95, endY: -1.1, radius: 0.046 },
-  ] as const;
-
-  const rotateAroundKnuckleZ = (origin: StudioMannequinVec3, point: StudioMannequinVec3, angleRad: number): StudioMannequinVec3 => {
-    if (Math.abs(angleRad) < 1e-6) return point;
-    const dx = point[0] - origin[0];
-    const dy = point[1] - origin[1];
-    const c = Math.cos(angleRad);
-    const s = Math.sin(angleRad);
-    return [origin[0] + dx * c - dy * s, origin[1] + dx * s + dy * c, point[2]];
-  };
-
-  const bendAndSplay = (
-    restPoints: readonly StudioMannequinVec3[],
-    curls: StudioMannequinFingerSegmentCurls,
-    maxDeg: readonly [number, number, number],
-    abductRad: number,
-  ): readonly StudioMannequinVec3[] => {
-    const pts: StudioMannequinVec3[] = [restPoints[0] as StudioMannequinVec3];
-    let cumRad = 0;
-    for (let seg = 0; seg < 3; seg += 1) {
-      const from = restPoints[seg] as StudioMannequinVec3;
-      const to = restPoints[seg + 1] as StudioMannequinVec3;
-      const rv: StudioMannequinVec3 = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
-      cumRad += ((curls[seg] ?? 0) / 100) * rad(maxDeg[seg] ?? 45);
-      const c = Math.cos(-cumRad);
-      const s = Math.sin(-cumRad);
-      const bent: StudioMannequinVec3 = [rv[0], rv[1] * c - rv[2] * s, rv[1] * s + rv[2] * c];
-      const prev = pts[seg] as StudioMannequinVec3;
-      pts.push([prev[0] + bent[0], prev[1] + bent[1], prev[2] + bent[2]]);
-    }
-    const knuckle = pts[0] as StudioMannequinVec3;
-    return pts.map((pt, i) => (i === 0 ? pt : rotateAroundKnuckleZ(knuckle, pt, abductRad)));
-  };
-
-  const result: StudioMannequinPrimitiveSpec[] = [];
-  const emitChain = (
-    pts: readonly StudioMannequinVec3[],
-    factors: readonly [number, number, number, number],
-    baseR: number,
-    jointScale: StudioMannequinVec3,
-  ): void => {
-    for (let seg = 0; seg < 3; seg += 1) {
-      result.push({
-        kind: "capsule",
-        jointId,
-        from: pts[seg] as StudioMannequinVec3,
-        to: pts[seg + 1] as StudioMannequinVec3,
-        radius: baseR * factors[seg],
-        endRadius: baseR * factors[seg + 1],
-        materialRole: "body",
-      });
-    }
-    for (let j = 0; j < 2; j += 1) {
-      result.push({
-        kind: "sphere",
-        jointId,
-        center: pts[j + 1] as StudioMannequinVec3,
-        radius: baseR * factors[j + 1] * 1.08,
-        scale: jointScale,
-        materialRole: "joint",
-      });
-    }
-  };
-
-  for (const f of fingers) {
-    const x = sideSign * f.x * handLen;
-    const z = 0.026 * handLen;
-    const k: StudioMannequinVec3 = [x, f.knuckleY * handLen, z];
-    const m: StudioMannequinVec3 = [x, f.middleY * handLen, z];
-    const e: StudioMannequinVec3 = [x, f.endY * handLen, z + 0.008 * handLen];
-    const d: StudioMannequinVec3 = [(m[0] + e[0]) / 2, (m[1] + e[1]) / 2, (m[2] + e[2]) / 2];
-    const abduct = sideSign * rad(splayDeg[f.name] ?? 0);
-    const pts = bendAndSplay([k, m, d, e], handPose[f.name], STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG[f.name], abduct);
-    emitChain(pts, [1, 0.86, 0.74, 0.6], f.radius * handLen, [1, 0.72, 0.86]);
-  }
-
-  const ts: StudioMannequinVec3 = [sideSign * 0.19 * handLen, -0.43 * handLen, 0.025 * handLen];
-  const tm: StudioMannequinVec3 = [sideSign * 0.34 * handLen, -0.61 * handLen, 0.065 * handLen];
-  const te: StudioMannequinVec3 = [sideSign * 0.43 * handLen, -0.76 * handLen, 0.09 * handLen];
-  const td: StudioMannequinVec3 = [(tm[0] + te[0]) / 2, (tm[1] + te[1]) / 2, (tm[2] + te[2]) / 2];
-  const thumbPts = bendAndSplay(
-    [ts, tm, td, te],
-    handPose.thumb,
-    STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG.thumb,
-    sideSign * rad(splayDeg.thumb ?? 0),
-  );
-  emitChain(thumbPts, [1, 0.83, 0.7, 0.56], 0.064 * handLen, [1, 0.76, 0.9]);
-
-  return result;
-}
+export { buildSplayedHandDigitPrimitives } from "./studio-mannequin-hand-geometry";

@@ -118,7 +118,7 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
       expect(catalogEntry).toBeDefined();
       const isHeroV1 = url.startsWith("/vrm/toonstudio-hero-v1/");
       const admittedCatalogEntry = activeIds.has(catalogEntry!.id)
-        || (isHeroV1 && catalogEntry!.visibility === "legacy" && savedLegacySampleVrmEntry(catalogEntry!.id) !== null);
+        || (catalogEntry!.visibility === "legacy" && savedLegacySampleVrmEntry(catalogEntry!.id) !== null);
       expect(admittedCatalogEntry).toBe(true);
       expect(catalogEntry?.licenseNotice).toBeUndefined();
       expect(catalogEntry?.limitations ?? []).not.toContain("heavy-payload");

@@ -4,6 +4,11 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
+import { StrictMode, useState } from "react";
+import { StudioPoserCutHandoffHost } from "../studio-cuttoon-editor/StudioPoserCutHandoffHost";
+import { POSER_CUT_QUERY, type PoserCutRaster } from "../studio-cuttoon-editor/studio-poser-cut-handoff";
+import { createStudioProject } from "../studio-project-library-store";
+import { createStudioProjectDocument } from "../studio-project-document-store";
 import { StudioPoserPage } from "./StudioPoserPage";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -11,6 +16,9 @@ import { useToastStore } from "@/shared/lib/toast-store";
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
+  localStorage.clear();
+  vi.restoreAllMocks();
   useI18n.setState({ lang: "ko" });
 });
 
@@ -44,7 +52,11 @@ vi.mock("./StudioMannequinPoserPanel", () => ({
       </button>
       <button
         type="button"
-        onClick={() => onInsert({ pngDataUrl: "data:image/png;base64,AAAA", width: 4, height: 4 })}
+        onClick={() => {
+          try {
+            if (onInsert({ pngDataUrl: "data:image/png;base64,AAAA", width: 4, height: 4 }) && captureTarget !== "download") onClose();
+          } catch (error) { useToastStore.getState().show(String(error), { tone: "error" }); }
+        }}
       >
         캡처 저장
       </button>
@@ -57,12 +69,23 @@ function LocationProbe(): React.JSX.Element {
   return <span data-testid="location">{location.pathname}</span>;
 }
 
+function CutEditorProbe() {
+  const location = useLocation();
+  const [layers, setLayers] = useState<ReadonlyMap<string, PoserCutRaster>>(new Map());
+  const token = new URLSearchParams(location.search).get(POSER_CUT_QUERY);
+  return <><LocationProbe />{token && <StudioPoserCutHandoffHost ready id={token} owner={null} exists={(id) => layers.has(id)}
+    insert={(cut, id) => { setLayers((previous) => new Map(previous).set(id, cut)); return true; }} />}
+    {[...layers].map(([id, cut]) => <img key={id} alt="포즈 레이어" src={cut.pngDataUrl} width={cut.width} height={cut.height} />)}</>;
+}
+
 function renderPage(initialEntry = "/studio/poser"): void {
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/studio/poser" element={<StudioPoserPage />} />
         <Route path="/studio" element={<LocationProbe />} />
+        <Route path="/studio/canvas" element={<StrictMode><CutEditorProbe /></StrictMode>} />
+        <Route path="/studio/p/:project/d/:document" element={<StrictMode><CutEditorProbe /></StrictMode>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -98,27 +121,46 @@ describe("StudioPoserPage (/studio/poser)", () => {
     expect(screen.getByTestId("location").textContent).toBe("/studio");
   });
 
-  it("기본 캡처는 2D 컷 레이어 삽입으로 동작하고 보조 모드에서 PNG 다운로드를 지원한다", () => {
+  it("독립 포저의 캡처를 실제 원고 선택 경로로 전달하고 레이어 하나만 소비한다", () => {
+    createStudioProject(localStorage, { id: "p1", title: "연재", kind: "webtoon" });
+    createStudioProjectDocument(localStorage, "p1", { id: "d1", title: "1화", kind: "webtoon" });
+    createStudioProjectDocument(localStorage, "p1", { id: "d2", title: "2화", kind: "webtoon" });
+    renderPage("/studio/poser?project=p1");
+    fireEvent.change(screen.getByRole("combobox", { name: "대상 원고 문서" }), { target: { value: "d2" } });
+    fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
+    expect(screen.getByTestId("location").textContent).toBe("/studio/p/p1/d/d2");
+    expect(screen.getAllByAltText("포즈 레이어")).toHaveLength(1);
+    expect(screen.getByAltText("포즈 레이어").getAttribute("src")).toBe("data:image/png;base64,AAAA");
+    expect(Object.keys(sessionStorage).some((key) => key.startsWith("toonstudio:poser:cut:"))).toBe(false);
+  });
+
+  it("저장 공간이 부족하면 포저를 유지하고 같은 화면에서 다시 캡처한다", () => {
     useToastStore.setState({ toasts: [] });
-    window.sessionStorage.clear();
+    renderPage();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new DOMException("quota", "QuotaExceededError"); });
+    fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
+    expect(screen.getByTestId("poser-panel")).toBeTruthy();
+    expect(useToastStore.getState().toasts.at(-1)?.tone).toBe("error");
+    fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
+    expect(screen.getByAltText("포즈 레이어")).toBeTruthy();
+  });
+
+  it("이전 판본의 목적지 없는 캡처는 원고를 선택해 명시적으로 복구한다", () => {
+    sessionStorage.setItem("toonstudio:poser:pending-cut-layer", JSON.stringify({ pngDataUrl: "data:image/png;base64,AAAA", width: 4, height: 4 }));
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "이전 포즈 컷 복구" }));
+    expect(screen.getByAltText("포즈 레이어")).toBeTruthy();
+    expect(sessionStorage.getItem("toonstudio:poser:pending-cut-layer")).toBeNull();
+  });
+
+  it("보조 모드에서는 PNG를 직접 저장하고 포저에 머문다", () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     renderPage();
-    const panel = screen.getByTestId("poser-panel");
-    expect(panel.getAttribute("data-capture-target")).toBe("canvas");
-    fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
-    expect(click).not.toHaveBeenCalled();
-    expect(window.sessionStorage.getItem("toonstudio:poser:pending-cut-layer")).toContain("data:image/png");
-    expect(useToastStore.getState().toasts.at(-1)?.message).toContain("2D 컷 레이어를 준비했어요");
-
     fireEvent.click(screen.getByTestId("studio-poser-capture-mode-download"));
-    expect(panel.getAttribute("data-capture-target")).toBe("download");
+    expect(screen.getByTestId("poser-panel").getAttribute("data-capture-target")).toBe("download");
     fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
     expect(click).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("location")).toBeNull();
-    expect(screen.getByTestId("poser-panel")).toBeTruthy();
-    expect(useToastStore.getState().toasts.at(-1)?.message).toContain("PNG를 저장했어요");
-    click.mockRestore();
-    useToastStore.setState({ toasts: [] });
   });
 
   it("체형·의상 정밀 워크벤치 토글로 도크를 열고 외부 브랜드 잔재 없이 체형 비율 적용 토스트를 띄운다", async () => {

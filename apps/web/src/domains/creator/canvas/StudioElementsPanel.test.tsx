@@ -121,6 +121,11 @@ describe("StudioElementsPanel expanded catalog UX", () => {
     fireEvent.click(screen.getByRole("tab", { name: /3D 오브젝트/u }));
     expect(screen.getByText("요소 · 3D 오브젝트")).toBeTruthy();
     expect(screen.getByRole("searchbox", { name: "3D 오브젝트 검색" })).toBeTruthy();
+    expect(document.querySelectorAll("[data-studio-object-insert]")).toHaveLength(60);
+    fireEvent.click(screen.getByRole("button", { name: /더 보기 \(60\//u }));
+    expect(document.querySelectorAll("[data-studio-object-insert]")).toHaveLength(120);
+    fireEvent.click(screen.getByRole("button", { name: /더 보기 \(120\//u }));
+    expect(document.querySelectorAll("[data-studio-object-insert]").length).toBeGreaterThan(120);
 
     fireEvent.change(screen.getByRole("searchbox", { name: "3D 오브젝트 검색" }), {
       target: { value: "검" },

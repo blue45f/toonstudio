@@ -136,8 +136,12 @@ describe("Studio VRM wardrobe/prop projection boundary", () => {
     expect(propRuntime).toContain(".applyQuaternion(group.quaternion)");
     expect(propRuntime).toContain("resolveSecondaryHandConstraint(");
     expect(propRuntime).toContain("metrics.handSockets[secondary.bone]");
-    expect(propRuntime).toContain("applyVrmTwoBoneGrip(");
-    expect(propRuntime).toContain("{ targetQuaternion, state: secondaryGripState }");
+    const secondaryIk = sourceBetween(propRuntime, "const applied = applyVrmTwoBoneGrip(", "reportAttachmentStatus(applied");
+    expect(propRuntime).toContain("const target = secondaryTargetSmoothedRef.current;");
+    expect(propRuntime).toContain("const targetQuaternion = secondaryTargetQuaternionSmoothedRef.current;");
+    expect(secondaryIk).toContain("secondary.elbowHint");
+    expect(secondaryIk).toMatch(/\{\s*targetQuaternion,\s*state:\s*secondaryGripState,\s*fadeBeyondReach:\s*resolved\.anchorId\s*===\s*"cover-grip"\s*,?\s*\}/u);
+    expect(propRuntime).toContain("releaseVrmTwoBoneGripState(secondaryGripState);");
     expect(propRuntime).toContain("}, VRM_FRAME_PROP_PRIORITY);");
     expect(propRuntime.match(/queueMicrotask\(/gu)).toHaveLength(1);
     expect(propRuntime).toContain("cancelScheduledPropDisposal(proceduralObject);");

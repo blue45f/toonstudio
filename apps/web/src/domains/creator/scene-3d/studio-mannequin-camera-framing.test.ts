@@ -1,4 +1,7 @@
+import { Box3, OrthographicCamera, PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
+
+import { studioMannequinBoundsFitCamera } from "./studio-mannequin-capture-camera";
 
 import { fitStudioMannequinCameraToBounds, type StudioMannequinBounds } from "./studio-mannequin-camera-framing";
 import { STUDIO_MANNEQUIN_BODY_PRESETS, buildStudioMannequinSpec } from "./studio-mannequin-model";
@@ -50,6 +53,17 @@ describe("fitStudioMannequinCameraToBounds", () => {
     [0, 2.88, 0.01],
     [1.4, -0.72, 2.8],
   ];
+
+  it("현재 전신 구도에 들어오는 보통 자세와 위로 벗어난 점프·옆으로 벗어난 사지를 구분한다", () => {
+    const standing = new Box3(new Vector3(-0.25, 0, -0.12), new Vector3(0.25, 1.65, 0.12));
+    for (const camera of [new PerspectiveCamera(35, 1.5, 0.05, 60), new OrthographicCamera(-1.6, 1.6, 1, -1, 0.05, 60)]) {
+      camera.position.set(0, 0.825, 3.2);
+      camera.lookAt(0, 0.825, 0);
+      expect(studioMannequinBoundsFitCamera(camera, standing)).toBe(true);
+      expect(studioMannequinBoundsFitCamera(camera, standing.clone().expandByPoint(new Vector3(0, 2.4, 0)))).toBe(false);
+      expect(studioMannequinBoundsFitCamera(camera, standing.clone().expandByPoint(new Vector3(-2, 1, 0)))).toBe(false);
+    }
+  });
 
   it("모든 앵글에서 경계 상자 꼭짓점이 화각 안에 들어오고 타깃은 상자 중심이다", () => {
     const bounds: StudioMannequinBounds = { min: [-0.35, 0, -0.2], max: [0.35, 1.2, 0.25] };

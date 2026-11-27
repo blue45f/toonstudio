@@ -73,7 +73,7 @@ import type { LucideIcon } from "lucide-react";
 /* Breakpoints                                                                  */
 /* -------------------------------------------------------------------------- */
 
-/** Desktop ≥ 1280 keeps four columns; tablet ≥ 768 folds the inspector into a slide-over. */
+/** 일반 포인터 기준 작업 공간 배치 폭. 터치 기기는 방향과 가용 높이도 함께 고려한다. */
 export const CHARACTER_SHAPER_BREAKPOINTS = Object.freeze({ desktop: 1280, tablet: 768 });
 
 export const CHARACTER_SHAPER_DESKTOP_QUERY = `(min-width: ${CHARACTER_SHAPER_BREAKPOINTS.desktop}px)`;

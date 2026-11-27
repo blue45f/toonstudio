@@ -120,6 +120,12 @@ describe("studio-bg3d-draft-session", () => {
       sceneBaseDocument: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
     });
 
+    const furnitureInsert = resolveStudioBg3dPropsWithUnappliedDraft({
+      open: true, operation: "insert", sharedStageSessionScopeKey: scopeKey, seedModelSourceId: "chair_v8",
+    });
+    expect(furnitureInsert.restoredDraft).toBeNull();
+    expect(furnitureInsert.unappliedDraftEligible).toBe(false);
+
     const updateMode = resolveStudioBg3dPropsWithUnappliedDraft({
       open: true,
       operation: "update" as const,

@@ -2182,14 +2182,13 @@ export function computeLightingUniforms(params: LightingParams) {
   const i = Math.max(0.1, Math.min(4, params.intensity ?? 1));
   const t = Math.max(0, Math.min(1, params.colorTemp ?? 0.5));
   const dir = (params.directionDeg ?? 45) * (Math.PI / 180);
-  // simple: cool (high blue) to warm (high red/yellow)
-  const r = 1.0 - t * 0.3;
-  const g = 0.95 - t * 0.15;
-  const b = 0.85 + t * 0.1;
+  // 중앙은 무채색이고, 양 끝에서는 반대 채널만 줄여 선택한 조명 톤을 유지한다.
+  const cool = Math.max(0, 1 - 2 * t);
+  const warm = Math.max(0, 2 * t - 1);
   return {
     intensity: i,
-    color: [r, g, b] as const,
-    dir: { x: Math.cos(dir), y: -0.6, z: Math.sin(dir) },
+    color: [1 - 0.28 * cool, 1 - 0.1 * cool - 0.14 * warm, 1 - 0.38 * warm] as const,
+    dir: { x: Math.cos(dir), y: 0.9, z: Math.sin(dir) },
   };
 }
 

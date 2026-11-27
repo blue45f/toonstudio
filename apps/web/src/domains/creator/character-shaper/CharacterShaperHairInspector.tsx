@@ -79,7 +79,9 @@ export function CharacterShaperHairInspector({
   const usingOriginalHair = characterSlotSelection(binding.recipe, "hair").includes(ORIGINAL_HAIR_ENTRY_ID);
   const accentMode: AvatarForgeHairAccentMode = hair.accentMode ?? "none";
   const accentColor = hair.accentColor ?? AVATAR_FORGE_DEFAULT_HAIR_ACCENT_COLOR;
-  const tied = AVATAR_FORGE_TIED_HAIR_STYLES.has(hair.style);
+  const tied = hair.backPart
+    ? ["back-high-ponytail", "back-twintail", "back-low-bun"].includes(hair.backPart)
+    : AVATAR_FORGE_TIED_HAIR_STYLES.has(hair.style);
   const commitNumber = (key: HairSliderKey, value: number, label: string) =>
     binding.commitHairParams({ [key]: value }, `헤어: ${label}`);
 
@@ -88,14 +90,19 @@ export function CharacterShaperHairInspector({
       {usingOriginalHair ? (
         <div className="px-3 pt-3" data-character-hair-original-note="true">
           <InspectorNote>
-            지금은 모델의 원본 헤어를 쓰고 있어 앞머리·팔레트·형태 조절이 화면에 보이지 않습니다. 위에서 헤어 스타일 카드를 고르면 바로 적용됩니다.
+            모델의 원본 헤어를 사용 중입니다. 헤어 스타일 카드나 아래의 앞·옆·뒷머리 중 한 부위를 선택하면 편집을 시작합니다.
           </InspectorNote>
         </div>
       ) : null}
+      <CharacterShaperHairAdvancedControls
+        h={h} binding={binding} locked={locked} hair={hair}
+        baseColor={baseColor} tipColor={tipColor}
+        usingOriginalHair={usingOriginalHair} replaceOriginal={Boolean(replaceOriginal)}
+      />
       <InspectorSection title="앞머리" hint="스타일과 따로 조합합니다.">
         <CharacterChipGroup
           label="앞머리 형태"
-          value={binding.snapshot.hairBangStyle ?? hair.bangStyle}
+          value={hair.frontPart ? null : binding.snapshot.hairBangStyle ?? hair.bangStyle}
           disabled={locked}
           columns={3}
           options={AVATAR_FORGE_BANG_STYLE_OPTIONS.map((option) => ({
@@ -263,11 +270,6 @@ export function CharacterShaperHairInspector({
             )}
         />
       </InspectorSection>
-      <CharacterShaperHairAdvancedControls
-        h={h} binding={binding} locked={locked} hair={hair}
-        baseColor={baseColor} tipColor={tipColor}
-        usingOriginalHair={usingOriginalHair} replaceOriginal={Boolean(replaceOriginal)}
-      />
     </>
   );
 }

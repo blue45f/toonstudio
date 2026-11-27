@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildLimbSegmentProfile,
+  fittedLimbCuffRadius,
   limbProfilesSignature,
   maxLimbCircumferenceM,
   maxLimbRadiusBetween,
   projectLimbSample,
   sampleLimbRadius,
   sanitizeLimbProfiles,
+  taperedLimbClearance,
   type LimbProfileSample,
   type LimbProfiles,
 } from "./studio-vrm-limb-profile";
@@ -71,6 +73,9 @@ describe("팔다리 둘레 실측 프로파일", () => {
     expect(maxLimbRadiusBetween(profile, 0.5, 1)).toBeCloseTo(0.06, 6);
     expect(maxLimbCircumferenceM(profile)).toBeCloseTo(2 * Math.PI * 0.07, 6);
     expect(sampleLimbRadius(profile, 0.375)).toBeCloseTo(0.07, 6);
+    const cuff = fittedLimbCuffRadius(profile, 0.09, 0.94, 0.008);
+    expect(cuff).toBeLessThan(0.09);
+    expect(taperedLimbClearance(profile, 0, 0.94, 0.09, cuff)).toBeCloseTo(0.008, 6);
   });
 
   it("정규화는 깨진 세그먼트만 버리고 나머지는 살린다(부분 실측)", () => {

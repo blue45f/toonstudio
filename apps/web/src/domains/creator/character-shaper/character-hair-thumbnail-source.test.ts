@@ -40,10 +40,14 @@ describe("헤어 카드 실제 렌더 썸네일(A-07)", () => {
       accentMode: "streak" as const,
       accentColor: "#ff0088",
       length: 1.33,
+      backPart: "back-low-bun" as const,
+      sideTint: "#cc2244",
     };
     expect(resolveCharacterHairCardParams(hairCard("bob"), live, true)).toBe(live);
     const other = resolveCharacterHairCardParams(hairCard("ponytail"), live, false);
     expect(other.style).toBe("ponytail");
+    expect(other.backPart).toBeUndefined();
+    expect(other.sideTint).toBeUndefined();
     // 색·하이라이트는 지금 헤어를 따른다(카드와 실제 렌더의 색이 어긋나지 않게).
     expect(other.baseColor).toBe("#123456");
     expect(other.tipColor).toBe("#abcdef");
@@ -57,6 +61,7 @@ describe("헤어 카드 실제 렌더 썸네일(A-07)", () => {
     const hair = resolveCharacterHairCardParams(hairCard("short"), null, false);
     const base = characterHairThumbnailKey(hair, HEAD);
     expect(characterHairThumbnailKey(hair, HEAD)).toBe(base);
+    expect(characterHairThumbnailKey(hair, { ...HEAD, eyeCenter: [0, 0.09, 0.02] })).not.toBe(base);
     expect(characterHairThumbnailKey({ ...hair, baseColor: "#000000" }, HEAD)).not.toBe(base);
     expect(characterHairThumbnailKey(hair, { ...HEAD, radiusX: 0.12 })).not.toBe(base);
     expect(characterHairThumbnailKey(hair, { ...HEAD, faceFront: 0.11 })).not.toBe(base);

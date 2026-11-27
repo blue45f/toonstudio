@@ -15,6 +15,8 @@
  * 화면 읽기 프로그램에도 전달된다. 문구는 해요체이고 실패에는 다음 행동이 있다(문구 가드 시험이 직접 검사한다).
  */
 
+import { Object3D } from "three";
+
 import {
   StudioBg3dThreeOperationError,
   createBgCustomModelInstance,
@@ -26,8 +28,11 @@ import {
   isStudioBg3dAssetPlacementRecipeId,
 } from "./studio-bg3d-asset-placement-catalog";
 import { createStudioBg3dAssetPlacementPlanner } from "./studio-bg3d-asset-placement-recipes";
-import { readStudioBg3dObjectWorldBounds } from "./studio-bg3d-camera-application";
-import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
+import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
+import { getStudioBg3dHdriLightingPreset } from "./studio-bg3d-hdri-lighting-presets";
+import { frameStudioBg3dEnvironmentCamera } from "./studio-bg3d-environment-camera";
+import { readStudioBg3dObjectWorldBounds, type BgViewportApi } from "./studio-bg3d-camera-application";
+import { getStudioBg3dEnvironmentAsset, isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
 import { probeStudioBg3dNearestWall } from "./studio-bg3d-wall-probe";
 import { readStudioBg3dModelCacheEntry, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
@@ -95,9 +100,8 @@ export interface StudioBg3dEditorRecipeHost {
   readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, StudioBg3dModelRootCacheEntry> };
   readonly primitiveObjectsRef: { readonly current: ReadonlyMap<string, THREE.Object3D> };
   readonly attachmentByStorageModelIdRef: { readonly current: ReadonlyMap<string, StudioBg3dModelAttachment> };
-  readonly viewportApiRef: {
-    readonly current: { readonly readView: () => { readonly target: readonly [number, number, number] } } | null;
-  };
+  readonly sharedCharacters?: readonly unknown[];
+  readonly viewportApiRef: { readonly current: Pick<BgViewportApi, "readView" | "applyView"> | null };
   readonly isModalAssetSessionCurrent: (session: StudioBg3dModalSession) => boolean;
   readonly canAdmitSceneNodes: (additionalNodeCount: number) => boolean;
   readonly cancelCustomModelPlacement: (message?: string) => void;
@@ -112,7 +116,7 @@ export interface StudioBg3dEditorRecipeHost {
     customModels: readonly BgCustomModelInstance[],
     document: StudioBg3dCanonicalDocumentState["sceneBaseDocument"],
     before?: StudioBg3dHistorySnapshot,
-    options?: { readonly commandId?: string; readonly label?: string; readonly source?: "menu" },
+    options?: { readonly preserveBeforeCamera?: boolean; readonly commandId?: string; readonly label?: string; readonly source?: "menu" },
   ) => void;
   readonly replaceCanonicalDocumentState: StudioBg3dCanonicalDocumentState["replaceCanonicalDocumentState"];
   readonly setError: (error: string | null) => void;
@@ -120,7 +124,7 @@ export interface StudioBg3dEditorRecipeHost {
   readonly setRefTick: (update: (revision: number) => number) => void;
   readonly setSurfaceSnapStatus: (status: { readonly tone: "info" | "error" | "success"; readonly message: string }) => void;
   /** 카드의 "배치 방식"이 부른다. 장면을 바꿨으면 true, 바꾸지 않았으면 false. */
-  placeCustomModelWithRecipe: (modelId: string, recipe: string) => Promise<boolean>;
+  placeCustomModelWithRecipe: (modelId: string, recipe: string, options?: { frameEmptyScene: boolean; indoorLighting?: boolean }) => Promise<boolean>;
 }
 
 class RecipePlacementUnavailableError extends Error {
@@ -208,6 +212,7 @@ export async function placeStudioBg3dModelWithRecipe(
   modelId: string,
   recipe: string,
   deps: StudioBg3dRecipeRunDeps,
+  options?: { frameEmptyScene: boolean; indoorLighting?: boolean },
 ): Promise<boolean> {
   const notify = (tone: "info" | "error" | "success", message: string): void => {
     h.setSurfaceSnapStatus({ tone, message });
@@ -272,9 +277,10 @@ export async function placeStudioBg3dModelWithRecipe(
         return {
           localBounds: { min: bounds.min, max: bounds.max } satisfies StudioBg3dPlacementBounds,
           modelLabel: recordName,
+          root,
         };
       },
-      ({ localBounds, modelLabel }) => {
+      ({ localBounds, modelLabel, root }) => {
         assertRuntimeCurrent();
         // 장면 변경은 직렬로 실행되므로 이 시점의 라이브 장면이 곧 반영 대상이다.
         const runtime = h.physicsRuntimeSourceRef.current;
@@ -295,7 +301,9 @@ export async function placeStudioBg3dModelWithRecipe(
           maximumCumulativeBytes: runtime.document.budgets.complexity.maxModelBytes,
         });
 
-        const target = h.viewportApiRef.current?.readView().target;
+        const viewport = h.viewportApiRef.current;
+        const beforeView = viewport?.readView();
+        const target = beforeView?.target;
         const dropPoint: readonly [number, number] = target && Number.isFinite(target[0]) && Number.isFinite(target[2])
           ? [target[0], target[2]]
           : [0, 0];
@@ -334,21 +342,40 @@ export async function placeStudioBg3dModelWithRecipe(
           rotation: [plan.rotation[0], plan.rotation[1], plan.rotation[2]],
           scale: [plan.scale[0], plan.scale[1], plan.scale[2]],
         };
+        const environment = options?.frameEmptyScene ? getStudioBg3dEnvironmentAsset(modelId) : null;
         const next = deps.nameNewCustomModel
-          ? deps.nameNewCustomModel(baseNext, modelLabel ?? attachment.name, runtime)
+          ? deps.nameNewCustomModel(baseNext, environment?.name ?? modelLabel ?? attachment.name, runtime)
           : baseNext;
         const nextCustomModels = [...runtime.customModels, next];
-        const before = deps.createHistorySnapshot({
-          primitives: runtime.primitives,
-          customModels: runtime.customModels,
-          document: runtime.document,
-        });
-        h.commitImmediateHistoryTransition(runtime.primitives, nextCustomModels, runtime.document, before, {
+        let beforeDocument = runtime.document;
+        let nextDocument = runtime.document;
+        if (environment && beforeView && !runtime.primitives.length && !runtime.customModels.length
+          && !runtime.document.nodes.length && !runtime.document.shots?.length && !h.sharedCharacters?.length) {
+          // 장면 트리가 아직 커밋되기 전이므로 배치될 인스턴스와 동일한 로컬 변환을 사용한다.
+          const instance = new Object3D();
+          instance.position.set(...next.position);
+          instance.rotation.set(...next.rotation);
+          instance.scale.set(...next.scale);
+          const framed = frameStudioBg3dEnvironmentCamera(environment.camera, beforeView, instance, root);
+          if (framed && viewport?.applyView(framed)) {
+            beforeDocument = { ...runtime.document, camera: beforeView };
+            nextDocument = { ...runtime.document, camera: framed };
+            const defaults = DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT;
+            const interior = options?.indoorLighting && getStudioBg3dHdriLightingPreset("studio");
+            if (interior && runtime.document.render.exposure === defaults.render.exposure
+              && JSON.stringify(runtime.document.lighting) === JSON.stringify(defaults.lighting)) {
+              nextDocument = { ...nextDocument, lighting: interior.lighting, render: { ...nextDocument.render, exposure: interior.exposure } };
+            }
+          }
+        }
+        const before = deps.createHistorySnapshot({ ...runtime, document: beforeDocument });
+        h.commitImmediateHistoryTransition(runtime.primitives, nextCustomModels, nextDocument, before, {
           commandId: COMMAND_ID,
+          preserveBeforeCamera: beforeDocument !== runtime.document,
           label: `Place asset (${recipeId})`,
           source: "menu",
         });
-        h.replaceCanonicalDocumentState({ customModels: nextCustomModels });
+        h.replaceCanonicalDocumentState({ customModels: nextCustomModels, document: nextDocument });
         h.setSelectedIds(new Set([next.id]));
         h.setRefTick((revision) => revision + 1);
         notify("success", describeStudioBg3dRecipePlacedMessage(definition.label));

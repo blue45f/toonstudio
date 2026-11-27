@@ -26,6 +26,18 @@ function replaceInput(
 }
 
 describe("Avatar Forge face controller", () => {
+  it("원본 본의 X축이 정수리를 향하는 루미에서도 얼굴 길이와 너비를 해부학적 방향으로 적용한다", () => {
+    const raw = new THREE.Bone(); const normalized = new THREE.Bone();
+    raw.quaternion.setFromAxisAngle(new THREE.Vector3(1, 1, 1).normalize(), 2 * Math.PI / 3);
+    const controller = createStudioVrmAvatarForgeFaceController();
+    controller.replace({ rawHead: raw, normalizedHead: normalized, rigRevision: 0, scale: [1.15, 0.92, 1.04] });
+    expect(raw.scale.x).toBeCloseTo(0.92, 10);
+    expect(raw.scale.y).toBeCloseTo(1.04, 10);
+    expect(raw.scale.z).toBeCloseTo(1.15, 10);
+    expect(normalized.scale.toArray()).toEqual([1.15, 0.92, 1.04]);
+    controller.release();
+    expect(raw.scale.toArray()).toEqual([1, 1, 1]);
+  });
   it("reports visual head units separately from the rig receipt after face-height sculpting", () => {
     const metrics = {
       totalHeight: 1.8,

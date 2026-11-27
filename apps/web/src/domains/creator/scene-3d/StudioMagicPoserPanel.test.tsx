@@ -67,6 +67,32 @@ describe("StudioMagicPoserPanel", () => {
     );
   });
 
+  it("오른손 미러는 오른손목에만 반사하고 컬 미세 조정은 그 손가락만 편집한다", () => {
+    const scene = { ...createSceneStub(), setFingerCurls: vi.fn(), setFingerSpread: vi.fn() };
+    render(<StudioMagicPoserPanel scene={scene} />);
+    fireEvent.click(screen.getByRole("button", { name: "손" }));
+    fireEvent.click(screen.getByRole("button", { name: "좌우 미러" }));
+    fireEvent.click(screen.getByRole("button", { name: "가리키기" }));
+    expect(scene.setJointRotation).toHaveBeenCalledExactlyOnceWith("rightHand", expect.arrayContaining([-0.2]));
+    fireEvent.change(screen.getByLabelText(/검지/), { target: { value: "38" } });
+    expect(scene.setFingerCurls).toHaveBeenLastCalledWith("right", { index: 38 });
+    expect(scene.setJointRotation).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "왼손" }));
+    expect((screen.getByLabelText(/검지/) as HTMLInputElement).value).toBe("0");
+    fireEvent.click(screen.getByRole("button", { name: "오른손" }));
+    expect((screen.getByLabelText(/검지/) as HTMLInputElement).value).toBe("38");
+  });
+
+  it("손 스캐너나 포즈 라이브러리에서 갱신한 관절 값을 현재 손의 슬라이더에 표시한다", () => {
+    const scene = createSceneStub();
+    const view = render(<StudioMagicPoserPanel scene={scene} currentFingerPose={{ right: { index: [73, 52, 31] } }} />);
+    fireEvent.click(screen.getByRole("button", { name: "손" }));
+    const slider = screen.getByLabelText(/검지/) as HTMLInputElement;
+    expect(slider.value).toBe("73");
+    view.rerender(<StudioMagicPoserPanel scene={scene} currentFingerPose={{ right: { index: [26, 40, 30] } }} />);
+    expect(slider.value).toBe("26");
+  });
+
   it("손가락 컬 슬라이더가 동작한다 (MP1)", () => {
     const scene = createSceneStub();
     render(<StudioMagicPoserPanel scene={scene} />);

@@ -52,7 +52,7 @@ export function useCharacterDocumentBinding(runtime: CharacterShaperBinding, aut
         ...(step.side !== "right" ? createStudioVrmHandPose("left", kind) : {}),
         ...(step.side !== "left" ? createStudioVrmHandPose("right", kind) : {}),
       };
-      const prepared = planCharacterPoseAuthoringInput({ source: h.vrm, previous, kind: "manual", bones: {}, fingers,
+      const prepared = planCharacterPoseAuthoringInput({ source: h.vrm, previous, kind: "manual", bones: {}, fingers, handPreset: kind,
         lockedBones: h.lockedPoseBones });
       pose = { ...prepared, poseId: previous.poseId, source: previous.source };
     }

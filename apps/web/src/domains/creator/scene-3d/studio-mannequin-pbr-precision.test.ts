@@ -281,6 +281,17 @@ describe("createStudioMannequinSceneFigure SubD 원주 분할 및 관절구 밀�
     });
 
     try {
+      const palms = figure.bodyMeshes().filter((mesh) =>
+        mesh.geometry.type === "BufferGeometry" && /studio-mannequin-part:(left|right)Hand:body/u.test(mesh.name));
+      expect(palms.map((mesh) => mesh.userData.studioMannequinJointId).sort()).toEqual(["leftHand", "rightHand"]);
+      const untouched = figure.bodyMeshes().filter((mesh) => mesh.userData.studioMannequinJointId !== "leftHand");
+      const leftSegments = figure.bodyMeshes().filter((mesh) => mesh.userData.studioMannequinJointId === "leftHand"
+        && mesh.geometry.type === "CylinderGeometry");
+      const replaced = vi.spyOn(leftSegments[0].geometry, "dispose");
+      figure.setFingerSpec(buildStudioMannequinSpec(baseSpec.params, { left: { index: [80, 76, 64] } }));
+      expect(replaced).toHaveBeenCalledOnce();
+      expect(untouched.every((mesh) => figure.bodyMeshes().includes(mesh))).toBe(true);
+      expect(palms.every((mesh) => figure.bodyMeshes().includes(mesh))).toBe(true);
       let sphereCount = 0;
       let cylinderCount = 0;
       let capsuleCount = 0;
@@ -384,6 +395,26 @@ describe("StudioVrmLighting 전 톤 헤미스피어 바운스 & PBR 접지 무�
       const hemiStudy = studyElements.find((el) => el.type === "hemisphereLight");
       expect((hemiStudy!.props as { intensity: number }).intensity).toBeCloseTo(0.26, 5);
     }
+  });
+
+  it("색온도 중앙에서 주광은 캐릭터 위에 있고 석양과 야간의 발색을 유지한다", () => {
+    const key = (tone: "studio" | "sunset" | "night", colorTemp: number) => {
+      const elements = collectReactElements(VrmLighting({
+        tone, lighting: { colorTemp, intensity: 1, directionDeg: 45 },
+      }));
+      const light = elements.find((element) => element.type === "directionalLight");
+      if (!light) throw new Error("주광이 없습니다.");
+      return light.props as { position: readonly number[]; color: { r: number; g: number; b: number } };
+    };
+    const studio = key("studio", 0.5);
+    expect(studio.position[1]).toBeGreaterThan(1.8);
+    expect(studio.color.r).toBeCloseTo(studio.color.b);
+    const sunset = key("sunset", 0.5).color;
+    const night = key("night", 0.5).color;
+    expect(sunset.r).toBeGreaterThan(sunset.b);
+    expect(night.b).toBeGreaterThan(night.r);
+    expect(key("studio", 0).color.r).toBeLessThan(key("studio", 1).color.r);
+    expect(key("studio", 1).color.b).toBeLessThan(key("studio", 0).color.b);
   });
 
   it("무대 바닥·벽면(room/outdoor)에 레거시 Lambert 대신 receiveShadow PBR Standard 재질을 적용한다", () => {

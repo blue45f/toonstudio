@@ -140,6 +140,7 @@ function harness() {
     cancelCustomModelPlacement: vi.fn(),
     commitSceneEntityRemoval: vi.fn(),
     startModelThumbnailCaptureBatch: vi.fn(),
+    commitImmediateHistoryTransition: vi.fn(),
     replaceCanonicalDocumentState: vi.fn(),
     setDeletingModelId: vi.fn(),
     setError: vi.fn(),
@@ -375,6 +376,11 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
     const committed = await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
 
     expect(committed).toBe(true);
+    expect(h.context.commitImmediateHistoryTransition).toHaveBeenCalledOnce();
+    expect(h.context.commitImmediateHistoryTransition.mock.calls[0]?.[4]).toMatchObject({ commandId: "studio.bg3d.model.import" });
+    expect(h.context.commitImmediateHistoryTransition.mock.invocationCallOrder[0]).toBeLessThan(
+      h.context.replaceCanonicalDocumentState.mock.invocationCallOrder[0],
+    );
     expect(runtime.persistAi).toHaveBeenCalledOnce();
     expect(runtime.persistAi.mock.calls[0]?.[0]).toMatchObject([{ id: "model-1", contentHash: HASH }]);
     expect(runtime.persistAi.mock.calls[0]?.[1]).toEqual({ aiGenerated: "yes", aiTraining: "prohibited" });

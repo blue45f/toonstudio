@@ -274,6 +274,18 @@ describe("studio-background-3d-scene-templates", () => {
     }
   });
 
+  it("교실 학생 좌석의 좌판과 상판 사이에 무릎이 들어갈 공간을 확보한다", () => {
+    const classroom = BG_SCENE_TEMPLATES.find((template) => template.id === "classroom");
+    if (!classroom) throw new Error("교실 템플릿이 필요합니다.");
+    const furniture = instantiateSceneTemplate(classroom, 0).map(worldBox);
+    // 가운데 열 첫 책상, 앞쪽은 칠판이고 +Z 쪽은 등받이다.
+    const knees = new THREE.Box3(new THREE.Vector3(-0.18, 0.47, -1.10), new THREE.Vector3(0.18, 0.65, -0.57));
+    expect(furniture.some((part) => part.intersectsBox(knees))).toBe(false);
+    for (const point of [[0, 0.73, -1], [0, 0.434, -0.51], [0, 0.69, -0.32]] as const) {
+      expect(furniture.some((part) => part.containsPoint(new THREE.Vector3(...point)))).toBe(true);
+    }
+  });
+
   it("cafe table renders at a realistic radius (bigger than a chair's half-width) — regression guard for the cylinder-scale bug", () => {
     // makeGeometry("cylinder")의 기본 반지름은 0.3이라 실제 렌더 반지름은 0.3 * scale.x다(scale.x
     // 자체가 반지름이 아니다). 이 값을 잘못 계산하면(검증 패스에서 실제로 발견) 테이블이 의자보다

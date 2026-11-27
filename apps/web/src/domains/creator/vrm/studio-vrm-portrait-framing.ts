@@ -27,12 +27,18 @@ function perpendicular(v: Vec3, up: Vec3): Vec3 | null {
   return unit([v[0] - up[0] * projection, v[1] - up[1] * projection, v[2] - up[2] * projection]);
 }
 
+export function isStudioVrmHairView(id: string): boolean {
+  return id === "hairFront" || id === "hairProfile" || id === "hairBack";
+}
+
 export function resolveStudioVrmPortraitBounds(
   presetId: string,
   body: StudioVrmPortraitBounds,
   points: StudioVrmPortraitLandmarks,
+  visibleHair?: StudioVrmPortraitBounds,
 ): StudioVrmPortraitBounds | null {
-  if (!["closeup", "dramaticEye", "bust"].includes(presetId)) return null;
+  const hair = isStudioVrmHairView(presetId);
+  if (!hair && !["closeup", "dramaticEye", "bust"].includes(presetId)) return null;
   if (!finite(body.min) || !finite(body.max) || !finite(points.head)) return null;
   const span = subtract(body.max, body.min);
   // World Y height collapses for lying/reclining poses; use the largest body extent.
@@ -61,14 +67,23 @@ export function resolveStudioVrmPortraitBounds(
     ?? perpendicular(Math.abs(up[0]) < 0.8 ? [1, 0, 0] : [0, 1, 0], up)!;
   const forward: Vec3 = [right[1] * up[2] - right[2] * up[1], right[2] * up[0] - right[0] * up[2], right[0] * up[1] - right[1] * up[0]];
   const radius = clamp(Math.max(size * 0.065, neckSpan * 1.25, eyeCenter ? eyeSpan * 1.65 : 0), size * 0.05, size * 0.22);
-  const center: Vec3 = eyeCenter ?? [head[0] + up[0] * radius * 0.45, head[1] + up[1] * radius * 0.45, head[2] + up[2] * radius * 0.45];
+  // 옆·뒤에서 볼 때도 같은 크기로 두상과 목덜미를 담도록 눈 앞쪽으로 중심이 쏠리는 것을 피한다.
+  const headCenter: Vec3 = [head[0] + up[0] * radius * 0.45, head[1] + up[1] * radius * 0.45, head[2] + up[2] * radius * 0.45];
+  const center = hair ? head : eyeCenter ?? headCenter;
   const radii: Vec3 = presetId === "dramaticEye" && eyeCenter
     ? [radius * 0.95, radius * 0.72, radius * 0.65]
-    : [radius * 1.05, radius * 1.2, radius * 0.95];
+    : hair ? [radius * 1.55, radius * 1.95, radius * 1.55] : [radius * 1.05, radius * 1.2, radius * 0.95];
   // World bounds of a head-aligned ellipsoid: a tilted head keeps its vertical headroom.
   const extent = [0, 1, 2].map((axis) => Math.hypot(right[axis] * radii[0], up[axis] * radii[1], forward[axis] * radii[2]));
   const min: [number, number, number] = [center[0] - extent[0], center[1] - extent[1], center[2] - extent[2]];
   const max: [number, number, number] = [center[0] + extent[0], center[1] + extent[1], center[2] + extent[2]];
+  if (hair && visibleHair && finite(visibleHair.min) && finite(visibleHair.max)
+    && visibleHair.min.every((value, axis) => value <= visibleHair.max[axis])) {
+    for (let axis = 0; axis < 3; axis += 1) {
+      min[axis] = Math.min(min[axis], visibleHair.min[axis]);
+      max[axis] = Math.max(max[axis], visibleHair.max[axis]);
+    }
+  }
   if (presetId === "bust") {
     const chest: Vec3 = nearby(points.chest, 0.75) ? points.chest
       : [head[0] - up[0] * radius * 2.1, head[1] - up[1] * radius * 2.1, head[2] - up[2] * radius * 2.1];

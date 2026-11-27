@@ -24,10 +24,11 @@ import {
 } from "./StudioMannequinPoserPanel";
 import { StudioAsset3dInspectorWorkbench } from "./StudioAsset3dInspectorWorkbench";
 
+import { getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
+import { LEGACY_POSER_CUT_KEY, readLegacyPoserCut, stagePoserCut } from "../studio-cuttoon-editor/studio-poser-cut-handoff";
+import { useStudioPoserCutDestination } from "./useStudioPoserCutDestination";
 import { useI18n } from "@/shared/lib/i18n";
 import { toast } from "@/shared/lib/toast-store";
-
-const POSER_PENDING_CUT_LAYER_KEY = "toonstudio:poser:pending-cut-layer";
 
 const CAMERA_LENSES = [
   { id: "manga-18mm-foreshorten", shortKo: "18mm", shortEn: "18mm", ko: "만화 18mm 과장 투시", en: "Manga 18mm foreshortening", fovDeg: 64 },
@@ -67,8 +68,22 @@ export function StudioPoserPage(): ReactElement {
   const [workbenchOpen, setWorkbenchOpen] = useState<boolean>(false);
   const applyBodyRef = useRef<StudioMannequinApplyBody>(null);
 
+  const destination = useStudioPoserCutDestination(searchParams, isKo);
+  const preparedHref = useRef<string | null>(null);
+  const [legacy, setLegacy] = useState(() => {
+    try { return readLegacyPoserCut(window.sessionStorage); } catch { return null; }
+  });
+  const prepareCut = useCallback((raster: StudioMannequinCaptureResult) => {
+    if (!destination.href) throw new Error(isKo ? "삽입할 원고를 선택해 주세요." : "Select a destination manuscript.");
+    try {
+      return stagePoserCut(window.sessionStorage, destination.href, getAuthUserId(), raster);
+    } catch (cause) {
+      throw new Error(isKo ? "포즈 컷을 보관하지 못했습니다. 저장 공간을 확보한 뒤 다시 시도하거나 PNG로 저장해 주세요."
+        : "Could not store the pose. Free up storage and retry, or save it as a PNG.", { cause });
+    }
+  }, [destination.href, isKo]);
   const handleClose = useCallback(() => {
-    navigate("/studio", { replace: true });
+    navigate(preparedHref.current ?? "/studio", { replace: true });
   }, [navigate]);
 
   const handleInsert = useCallback(
@@ -83,25 +98,10 @@ export function StudioPoserPage(): ReactElement {
         toast("포즈 PNG를 저장했어요 · 다운로드 폴더", { tone: "success", durationMs: 4_000 });
         return true;
       }
-      try {
-        window.sessionStorage.setItem(
-          POSER_PENDING_CUT_LAYER_KEY,
-          JSON.stringify({
-            pngDataUrl: result.pngDataUrl,
-            width: result.width,
-            height: result.height,
-            lensId: cameraLens,
-            solverId: jointSolver,
-            capturedAt: new Date().toISOString(),
-          }),
-        );
-      } catch {
-        // 세션 저장소 용량 제한 시에도 캡처 흐름은 중단하지 않는다.
-      }
-      toast("포즈 2D 컷 레이어를 준비했어요 · 원고 캔버스에 바로 삽입됩니다", { tone: "success", durationMs: 4_000 });
+      preparedHref.current = prepareCut(result);
       return true;
     },
-    [cameraLens, captureMode, jointSolver],
+    [captureMode, prepareCut],
   );
 
   return (
@@ -123,6 +123,15 @@ export function StudioPoserPage(): ReactElement {
             <StudioPageIntro motif="pose" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {captureMode === "canvas" && destination.selector}
+            {captureMode === "canvas" && legacy && <button type="button" className="min-h-10 rounded-md border border-line px-2 text-xs" onClick={() => {
+              try {
+                const href = prepareCut(legacy);
+                window.sessionStorage.removeItem(LEGACY_POSER_CUT_KEY);
+                setLegacy(null);
+                void navigate(href, { replace: true });
+              } catch (cause) { toast(cause instanceof Error ? cause.message : pickLang("포즈 복구 실패", "Pose recovery failed"), { tone: "error" }); }
+            }}>{pickLang("이전 포즈 컷 복구", "Recover previous pose")}</button>}
             <div
               role="group"
               aria-label={pickLang("포즈 캡처 출력 방식", "Pose capture output mode")}

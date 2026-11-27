@@ -56,6 +56,42 @@ async function prepareStudioStorage(page: Page): Promise<void> {
 }
 
 test.describe("Studio 3D V30~V31 장르 확장 · 세부 히어로 소품 · 초성 검색 실브라우저 UX 검증", () => {
+  test("큐브 치수를 편집하면서 데스크톱 뷰포트를 유지하고 모바일에서 설정을 스크롤한다", async ({ page }, info) => {
+    await prepareStudioStorage(page);
+    await page.setViewportSize({ width: 1440, height: 960 });
+    await page.goto("/studio/3d/dcc/model", { waitUntil: "domcontentloaded" });
+    const panel = page.locator('[data-studio-hybrid-dcc-panel="true"]');
+    await expect(panel).toBeVisible({ timeout: 150_000 });
+    await panel.getByRole("button", { name: "큐브로 시작", exact: true }).first().click();
+
+    const viewport = panel.locator('[data-studio-hybrid-dcc-viewport="true"] canvas').first();
+    const size = panel.getByRole("spinbutton", { name: "크기 Z", exact: true });
+    const dimensions = panel.locator("[data-studio-hybrid-dcc-selection-metrics]");
+    await size.fill("1.6");
+    await size.press("Enter");
+    await expect(dimensions).toContainText("1.00m × 1.00m × 1.60m");
+    await size.focus();
+    await expect(size).toBeInViewport({ ratio: 1 });
+    await expect(viewport).toBeInViewport({ ratio: 0.95 });
+    await page.screenshot({ path: info.outputPath("desktop-inspector.png"), animations: "disabled" });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await size.fill("1.8");
+    await size.press("Enter");
+    await expect(dimensions).toContainText("1.00m × 1.00m × 1.80m");
+    await size.focus();
+    await expect(size).toBeInViewport({ ratio: 1 });
+    await size.click({ trial: true });
+    const fieldBottom = await size.evaluate((node) => node.getBoundingClientRect().bottom);
+    const footerTop = await panel.locator(":scope > footer").evaluate((node) => node.getBoundingClientRect().top);
+    expect(fieldBottom).toBeLessThanOrEqual(footerTop);
+    expect(await panel.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: info.outputPath("mobile-inspector.png"), animations: "disabled" });
+
+    await viewport.scrollIntoViewIfNeeded();
+    await expect(viewport).toBeInViewport({ ratio: 0.95 });
+  });
+
   test("모델링 작업대(/studio/3d/dcc/model) 19개 서랍 초성 검색·V31 실파일 임포트·GLB 손상 차단·반응형·접근성을 통과한다", async ({
     page,
   }) => {

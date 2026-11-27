@@ -24,11 +24,13 @@ import {
   createStudioVrmSmoothOutlineGeometry,
   type StudioVrmBodyMtoonProfile,
 } from "./studio-vrm-custom-part-material";
+import { cropPixieHairPart, FLOWING_BACK_SHELL_IDS, refineBasePartForRender, UNIT_CAP_RADIUS } from "./studio-vrm-avatar-forge-hair-layers";
+import { fitStudioVrmHairLockSpine, fitStudioVrmTwinTailSpine } from "./studio-vrm-hair-lock-spine";
+import { fitStudioVrmBraidLinks } from "./studio-vrm-hair-braid";
 import type { StudioVrmHeadFit } from "./studio-vrm-head-fit";
 
 /** 헤어 단위 공간에서 두상(캡) 중심과 반경. 파츠 계획(studio-vrm-avatar-forge.ts)이 이 공간으로 쓰여 있다. */
 const UNIT_CAP_CENTER = [0, 0.18, 0.015] as const;
-const UNIT_CAP_RADIUS = [0.56, 0.46, 0.54] as const;
 
 /** 생성 헤어가 소유한 텍스처 목록(userData 키). 폐기 때 함께 버린다. */
 export const AVATAR_FORGE_OWNED_TEXTURES = "toonSpectrumAvatarForgeOwnedTextures";
@@ -204,7 +206,12 @@ function layoutBang(part: AvatarForgeHairPart, x0: number, head: CanonicalHead):
     const rootFloor = skinDepth + back + 0.005 * head.rz;
     const capCeiling = Math.max(rootFloor, skullFrontDepth(x, y, head, BANG_CAP_SHELL) - front * 0.35);
     const underCap = smoothstep(hairline, rootY, y);
-    const depth = outside + (Math.min(capCeiling, outside) - outside) * underCap;
+    // 캡 가장자리에서 갈래가 두피 아래로 사라졌다가 다시 나오는 단차를 막는다.
+    // 뿌리와 끝의 위치를 보존하고, 헤어라인을 통과하는 동안에만 두상 표면을 따른다.
+    const atHairline = (1 - underCap) * (1 - smoothstep(hairline, tipY, y));
+    const scalpDepth = skullFrontDepth(x, y, head, BANG_CAP_SHELL);
+    const depth = outside + (Math.min(capCeiling, outside) - outside) * underCap
+      + Math.max(0, scalpDepth - outside) * atHairline;
     points.push(new THREE.Vector3(x, y, depth));
     normals.push(new THREE.Vector3(
       (x - head.cx) / (head.rx * head.rx),
@@ -308,9 +315,24 @@ export function transformAvatarForgeHairPart(part: AvatarForgeHairPart, fit: Stu
 }
 
 export function avatarForgeHairInstance(part: AvatarForgeHairPart, fit: StudioVrmHeadFit): StudioVrmAuthoredHairInstance {
+  if (part.role === "back" && part.primitive === "ellipsoid" && (FLOWING_BACK_SHELL_IDS.has(part.id) || part.id === "wolf-layer")) {
+    const matrix = new THREE.Matrix4().compose(
+      new THREE.Vector3(...fit.center),
+      fit.frontSign < 0 ? FACE_MINUS_Z : new THREE.Quaternion(),
+      new THREE.Vector3(fit.radiusX, fit.radiusY, fit.radiusZ),
+    );
+    return { part, matrix, drapeLength: (0.18 - part.position[1] + Math.abs(part.scale[1])) / UNIT_CAP_RADIUS[1] };
+  }
   const layout = layoutAvatarForgeHairPart(part, fit);
   const matrix = new THREE.Matrix4().compose(layout.position, layout.quaternion, layout.scale);
-  return Object.freeze(layout.spine ? { part, matrix, spine: layout.spine } : { part, matrix });
+  if (part.id === "twin-left" || part.id === "twin-right") {
+    return { part, matrix, spine: fitStudioVrmTwinTailSpine(part, fit), rootGirthScale: 0.44 };
+  }
+  const flowingLock = part.primitive === "tapered-capsule"
+    && (part.role === "back" || part.id.startsWith("wolf-nape-") || (part.role === "side" && part.position[1] < 0.18));
+  const spine = flowingLock ? fitStudioVrmHairLockSpine(part, fit, layout) : layout.spine;
+  // 정면과 측후면 모두에서 넓고 각진 가닥의 시작 단면을 숨긴다.
+  return Object.freeze(spine ? { part, matrix, spine, rootGirthScale: 0.035 } : { part, matrix });
 }
 
 /** 매듭과 꼬리를 한 두상 좌표계에서 맞춘 뒤 병합한다. */
@@ -319,6 +341,7 @@ export function fitAvatarForgeHairParts(
   fit: StudioVrmHeadFit,
 ): StudioVrmAuthoredHairInstance[] {
   const instances = parts.map((part) => avatarForgeHairInstance(part, fit));
+  fitStudioVrmBraidLinks(instances, fit);
   const knot = instances.find(({ part }) => part.id === "pony-root");
   const tailIndex = instances.findIndex(({ part }) => part.id === "pony-tail");
   const tail = instances[tailIndex];
@@ -350,16 +373,6 @@ export function fitAvatarForgeHairParts(
   return instances;
 }
 
-const FLOWING_BACK_SHELL_IDS = new Set(["back", "wavy-back", "hime-back", "halfup-back"]);
-const SOFTENED_SIDE_PILLAR_IDS = new Set([
-  "side-left",
-  "side-right",
-  "wavy-side-left",
-  "wavy-side-right",
-  "halfup-side-left",
-  "halfup-side-right",
-]);
-
 function deriveRenderHairStrand(
   template: AvatarForgeHairPart,
   patch: Pick<AvatarForgeHairPart, "id" | "role" | "position" | "rotation" | "scale" | "taper">
@@ -370,53 +383,6 @@ function deriveRenderHairStrand(
     ...patch,
     primitive: "tapered-capsule",
   };
-}
-
-function refineBasePartForRender(part: AvatarForgeHairPart): AvatarForgeHairPart {
-  // 기본 캡이 헬멧 돔처럼 부풀어 보이지 않도록 렌더 캡의 과잉 볼륨을 두상 밀착 비율(약 3.0~3.5%)로 다듬는다.
-  if (part.role === "cap") {
-    const tightCapAxis = (value: number, unitRadius: number) => {
-      const ratio = Math.abs(value) / unitRadius;
-      const tightened = ratio <= 1
-        ? clamp(0.68 * ratio, 0.55, 0.68)
-        : 0.68 + (ratio - 1) * 1.12;
-      return unitRadius * tightened;
-    };
-    return {
-      ...part,
-      scale: [
-        tightCapAxis(part.scale[0], UNIT_CAP_RADIUS[0]),
-        tightCapAxis(part.scale[1], UNIT_CAP_RADIUS[1]),
-        tightCapAxis(part.scale[2], UNIT_CAP_RADIUS[2]),
-      ],
-    };
-  }
-  // 딱딱한 직사각형 기둥처럼 보이던 기본 사이드락을 부드러운 S-웨이브·테이퍼 리본으로 다듬는다.
-  if (SOFTENED_SIDE_PILLAR_IDS.has(part.id)) {
-    return {
-      ...part,
-      scale: [part.scale[0] * 0.84, part.scale[1], part.scale[2] * 0.86],
-      taper: Math.max(part.taper, 0.56),
-      curl: Math.max(part.curl, 0.2),
-      wave: Math.max(part.wave ?? 0, 0.26),
-      waveFrequency: part.waveFrequency ?? 2.5,
-    };
-  }
-  if (part.id === "hime-lock-left" || part.id === "hime-lock-right") {
-    return {
-      ...part,
-      scale: [part.scale[0] * 0.88, part.scale[1], part.scale[2] * 0.84],
-      taper: Math.max(part.taper, 0.14),
-    };
-  }
-  // 뒷머리 타원체는 가닥 사이 빈틈을 막는 내피 코어 역할로 줄이고 외곽 실루엣은 다층 드레이프 리본이 맡는다.
-  if (part.role === "back" && part.primitive === "ellipsoid" && FLOWING_BACK_SHELL_IDS.has(part.id)) {
-    return {
-      ...part,
-      scale: [part.scale[0] * 0.88, part.scale[1] * 0.88, part.scale[2] * 0.82],
-    };
-  }
-  return part;
 }
 
 /**
@@ -718,7 +684,16 @@ export function expandAvatarForgeHairPartsForRender(
     pushBackDrape("back-drape-outer-right", [0.375, -0.28 * l, -0.295], [-0.04, Math.PI - 0.72, 0.05], [0.158 * w, drapeLength * 0.92, 0.098 * w], 0.7);
   }
 
-  return expanded;
+  if (inferredStyle === "pixie") return expanded.map((part) => cropPixieHairPart(part, hair.bangStyle === "side-swept"));
+  if (inferredStyle !== "bob") return expanded;
+  // 단발은 목 뒤로 모이고 턱 옆이 살짝 길다. 어깨 아래까지 뻗는 롱 드레이프와 길이를 구분한다.
+  return expanded.map((part) => {
+    if (part.role !== "back" && part.role !== "side") return part;
+    const hemScale = part.role === "back" ? 0.65 : 0.72;
+    const [x, y, z] = part.position;
+    const [width, length, thickness] = part.scale;
+    return { ...part, position: [x, 0.18 + (y - 0.18) * hemScale, z], scale: [width, length * hemScale, thickness] };
+  });
 }
 
 /**
@@ -732,7 +707,7 @@ export function addAvatarForgeHairParts(
   fit: StudioVrmHeadFit,
   profile?: StudioVrmBodyMtoonProfile,
 ): void {
-  const parts = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(state), state.hair);
+  const parts = buildAvatarForgeHairParts(state, expandAvatarForgeHairPartsForRender);
   const merged = mergeStudioVrmAuthoredHairGeometry(
     fitAvatarForgeHairParts(parts, fit),
     { minScalpMargin: 0.004, crownCompression: 0.24, crownLatitudeMin: 0.36, earArchRelief: 0.25 },

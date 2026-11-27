@@ -93,12 +93,13 @@ export function StudioCharacterShaper({ recoverFromRenderFailure = true, ...prop
 
 function CharacterShaperMaterialSyncBridge({ h, interactive = true }: { readonly h: ReturnType<typeof useStudioVrmPoserController>; readonly interactive?: boolean }) {
   const { shaperMaterial, setShaperMaterial } = useCharacterShaperMaterialSettings();
+  const { vrm, captureRef, invalidateViewport } = h;
   useEffect(() => {
     const runSync = () => {
-      const hostScene = (h.captureRef?.current as { readonly scene?: import("three").Object3D } | null | undefined)?.scene ?? null;
-      applyShaperMtoonUniformsToVrm(h.vrm, shaperMaterial);
-      syncCustomAttachmentQuality([h.vrm?.scene, hostScene], shaperMaterial);
-      if (typeof h.invalidateViewport === "function") h.invalidateViewport();
+      const hostScene = (captureRef?.current as { readonly scene?: import("three").Object3D } | null | undefined)?.scene;
+      applyShaperMtoonUniformsToVrm(vrm, shaperMaterial);
+      syncCustomAttachmentQuality([vrm?.scene, hostScene], shaperMaterial);
+      invalidateViewport?.();
     };
     runSync();
     // 절차형 헤어·워드로브·소품이 비동기 마운트된 직후 프레임에도 본체 MToon 톤과 100% 일치시킨다.
@@ -110,7 +111,8 @@ function CharacterShaperMaterialSyncBridge({ h, interactive = true }: { readonly
         window.cancelAnimationFrame(raf);
       }
     };
-  }, [h, h.vrm, h.avatarForgeState, h.wardrobeState, h.vrmPropItems, h.costumeState, shaperMaterial]);
+  }, [vrm, captureRef, invalidateViewport, shaperMaterial, h.captureSceneGeneration, h.avatarForgeState,
+    h.avatarForgeReferencePreviewActive, h.wardrobeState, h.wardrobeSurfaceReceipts, h.vrmPropItems, h.costumeState]);
 
   // SHAPER Space 단축키(`MaterialData::ToggleShader`): 웹툰 툰 ↔ 모델링 입체 셰이더 즉시 전환
   useEffect(() => {

@@ -208,20 +208,14 @@ export function isBundledVrmUrlRightsBlocked(url: string): boolean {
   return BUNDLED_VRM_RIGHTS_BLOCK_BY_URL.has(url.trim());
 }
 
-// 전체 번들 VRM 레지스트리. 모든 엔트리는 public/vrm/ 아래 실파일과 1:1 대응한다.
-// visibility가 legacy인 모델은 기존 프로젝트 복원을 위해 여기에 남지만 기본 선택 목록에서는 숨긴다.
-// old beta 샘플 4종은 pixiv CC0 조건을 따른다. 구 AvatarSample A–C(VRoidPreset, 비CC0)와
-// fem/masc_vroid(조건 불명)는 2026-10-14 원문 대조로 재배포 불가 판정되어 레지스트리에서
-// 내리고 BUNDLED_VRM_RIGHTS_BLOCKS로 격리했다 — 대체는 기번들 CC0 모델이 맡는다:
-// 여성 휴머노이드 슬롯은 CC0 베타 샘플(shino·shion·vivi·vita)과 100Avatars CC0
-// (kate·jennifer·erika·olivia), 인체 베이스 슬롯은 Quaternius CC0 모듈러 남녀와
-// 100Avatars CC0 남성(jimmy·robert)이 이미 같은 레지스트리에 있다.
-// 모델별 출처 URL·라이선스 요약은 public/vrm/LICENSES.md 참고
-// (2026-06: madjin/vrm-samples VRoid 공식 샘플 + UniVRM Alicia Solid,
-//  2026-07: github.com/ToxSam/open-source-avatars 레지스트리의 Polygonal Mind
-//  100Avatars R1~R3 CC0 모델 71종 — 캐릭터/로봇/동물/판타지/SF/푸드 마스코트,
-//  그 중 OldMoustache·Eugenia는 "노인" 카테고리 보강).
-export const SAMPLE_VRMS: SampleVrm[] = [
+// 대사 컷에서 얼굴과 손을 함께 연기할 수 있는 모델을 기본 원고 목록에 싣는다.
+// 게임 블록아웃·푸드 아바타 판본도 기존 원고가 선택한 ID·URL로 복원할 수 있다.
+const MANUSCRIPT_VRM_IDS = new Set([
+  SAMPLE_VRM_ID, "shion", "shino", "vivi", "vita", "rubin", "fumi", "kage", "alicia",
+  ...STUDIO_VRM_HERO_MANUSCRIPT_SAMPLES.filter((sample) => sample.visibility !== "legacy").map((sample) => sample.id),
+]);
+
+const BUNDLED_MODELS: SampleVrm[] = [
   { id: SAMPLE_VRM_ID, name: "루미", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/sample-vrm.png", url: SAMPLE_VRM_URL },
   ...STUDIO_VRM_HERO_MANUSCRIPT_SAMPLES,
   ...QUATERNIUS_FANTASY_VRMS,
@@ -327,6 +321,9 @@ export const SAMPLE_VRMS: SampleVrm[] = [
   { id: "old-moustache", name: "올드무스타치 (할아버지)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/old-moustache.png", url: "/vrm/OldMoustache.vrm" },
   { id: "eugenia", name: "유제니아 (할머니)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/eugenia.png", url: "/vrm/Eugenia.vrm" },
 ];
+export const SAMPLE_VRMS: SampleVrm[] = BUNDLED_MODELS.map((sample) =>
+  MANUSCRIPT_VRM_IDS.has(sample.id) ? sample : { ...sample, visibility: "legacy" },
+);
 export const SAMPLE_VRM_ENTRIES: VrmLibraryEntry[] = SAMPLE_VRMS
   .filter(
     (sample) =>
@@ -340,7 +337,7 @@ export const SAMPLE_VRM_ENTRIES: VrmLibraryEntry[] = SAMPLE_VRMS
     id: sample.id,
     name: sample.name,
     source: "sample",
-    thumbnail: sample.thumbnailUrl ?? `/assets/3d/characters/thumbnails/${sample.id === SAMPLE_VRM_ID ? "sample-vrm" : sample.id}.png`,
+    thumbnail: `/assets/3d/characters/thumbnails/manuscript-v1/${sample.id}.webp`,
     createdAt: 0,
     updatedAt: 0,
     licenseNotice: sample.licenseNotice,
@@ -367,10 +364,10 @@ export function selectableSampleVrmUrl(id: string): string | null {
 }
 
 /** 신규 목록에서 숨긴 모델도 해당 판본으로 저장한 원고를 열 때는 원래 엔트리를 사용한다. */
-export function savedLegacySampleVrmEntry(id: string): VrmLibraryEntry | null {
-  const sample = SAMPLE_VRMS.find((entry) => entry.id === id && entry.visibility === "legacy");
-  return sample && selectableSampleVrmUrl(id) ? {
-    id, name: sample.name, source: "sample", thumbnail: sampleVrmThumbnailUrl(id),
+export function savedLegacySampleVrmEntry(id?: string, name?: string): VrmLibraryEntry | null {
+  const sample = SAMPLE_VRMS.find((entry) => entry.visibility === "legacy" && (id ? entry.id === id : entry.name === name));
+  return sample && selectableSampleVrmUrl(sample.id) ? {
+    id: sample.id, name: sample.name, source: "sample", thumbnail: sampleVrmThumbnailUrl(sample.id),
     createdAt: 0, updatedAt: 0, licenseNotice: sample.licenseNotice,
   } : null;
 }

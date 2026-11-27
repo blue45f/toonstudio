@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 
-import { useIsMobile } from "@/shared/hooks/use-media-query";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
@@ -214,7 +214,7 @@ export function StudioBg3dProfessionalWorkspace({
   onTransferTemplatePose,
 }: StudioBg3dProfessionalWorkspaceProps) {
   useBilingualI18nRevision();
-  const isMobile = useIsMobile();
+  const compactCutPanel = useMediaQuery("(max-width: 1279px), (max-height: 800px)");
   const canonicalStorageKey = studioBg3dProfessionalWorkspaceStorageKey(scopeKey);
   const [layout, setLayout] = useState(() =>
     readStudioBg3dProfessionalWorkspaceLayout(browserStorage(), scopeKey));
@@ -562,7 +562,7 @@ export function StudioBg3dProfessionalWorkspace({
 
   return (
     <div data-bg3d-professional-workspace="true" className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {cutHost != null && <StudioScene3dBg3dCutPanel host={cutHost} preferredExpanded={!isMobile} />}
+      {cutHost != null && <StudioScene3dBg3dCutPanel host={cutHost} preferredExpanded={!compactCutPanel} />}
       <div
         data-bg3d-stage-header="true"
         className="flex min-h-12 shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-panel px-2.5 py-1.5"

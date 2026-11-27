@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { PerspectiveCamera, Scene } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -8,6 +9,7 @@ import {
 } from "./useStudioBg3dEngineRuntime";
 
 import type { StudioBg3dEnginePreference } from "./studio-bg3d-engine-selection";
+import type { StudioBg3dFrameRenderer } from "./studio-bg3d-canvas-renderer-admission";
 import type { StudioBg3dWebGpuProbeResult } from "./studio-bg3d-webgpu-capability";
 import type { UseStudioBg3dEngineRuntimeOptions } from "./useStudioBg3dEngineRuntime";
 
@@ -170,6 +172,41 @@ describe("useStudioBg3dEngineRuntime", () => {
     expect(result.current.canvasKey).toBe("webgl2#0");
   });
 
+  it("재시도한 WebGL2 캔버스에서 실제 화면 draw를 끝내야 활성화한다", async () => {
+    const { result } = renderHook(() => useStudioBg3dEngineRuntime(options()));
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    act(() => result.current.setPreference("webgl2"));
+    const scene = new Scene(), camera = new PerspectiveCamera();
+    const info = { autoReset: true, render: { calls: 0 } };
+    let offscreen = true;
+    const createRenderer = (): StudioBg3dFrameRenderer => ({
+      domElement: document.body.appendChild(document.createElement("canvas")), info, render: vi.fn(),
+      getRenderTarget: () => offscreen ? {} : null, getContext: () => ({ isContextLost: () => false }),
+    });
+    const previous = createRenderer(), current = createRenderer();
+    try {
+      act(() => result.current.observeWebGl2Renderer(previous));
+      expect(result.current.canvasStage).toBe("waiting-for-frame");
+      act(() => result.current.setPreference("webgl2", true));
+      expect(result.current.canvasKey).toBe("webgl2#1");
+      expect(result.current.canvasStage).toBe("waiting-for-canvas");
+      act(() => result.current.observeWebGl2Renderer(current));
+      info.render.calls = 1;
+      act(() => current.render(scene, camera));
+      offscreen = false;
+      act(() => previous.render(scene, camera));
+      info.render.calls = 0;
+      act(() => current.render(scene, camera));
+      expect(result.current.canvasStage).toBe("waiting-for-frame");
+      info.render.calls = 1;
+      act(() => current.render(scene, camera));
+      expect(result.current.canvasStage).toBe("rendered");
+    } finally {
+      previous.domElement.remove();
+      current.domElement.remove();
+    }
+  });
+
   it("keeps WebGPU selected and failed when renderer initialization fails", async () => {
     const createWebGpuRenderer = vi.fn(async () => {
       throw new Error("device-lost-during-init");
@@ -238,19 +275,19 @@ describe("useStudioBg3dEngineRuntime", () => {
       createWebGpuRenderer: createWebGpuRenderer as never,
     })));
     await waitFor(() => expect(result.current.glFactory).toBeTypeOf("function"));
-    expect(result.current.webGpuCanvasStage).toBe("waiting-for-canvas");
+    expect(result.current.canvasStage).toBe("waiting-for-canvas");
     const first = document.createElement("canvas");
     const second = document.createElement("canvas");
     await act(async () => { await result.current.glFactory!({ canvas: first }); });
     await act(async () => { await result.current.glFactory!({ canvas: second }); });
-    expect(result.current.webGpuCanvasStage).toBe("waiting-for-frame");
+    expect(result.current.canvasStage).toBe("waiting-for-frame");
     act(() => notifications.get(first)!());
-    expect(result.current.webGpuCanvasStage).toBe("waiting-for-frame");
+    expect(result.current.canvasStage).toBe("waiting-for-frame");
     act(() => notifications.get(second)!());
-    expect(result.current.webGpuCanvasStage).toBe("rendered");
+    expect(result.current.canvasStage).toBe("rendered");
     act(() => result.current.setPreference("webgl2"));
     act(() => notifications.get(second)!());
-    expect(result.current.webGpuCanvasStage).toBe("waiting-for-canvas");
+    expect(result.current.canvasStage).toBe("waiting-for-canvas");
   });
 
   it("marks a live device loss failed without mounting WebGL2", async () => {

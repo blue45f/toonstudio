@@ -375,8 +375,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     if (!acceptStudioBg3dViewportRenderer(viewportHostRef.current, gl)) return;
                     modelRendererRef.current = gl;
                     setModelRenderer(gl);
-                    // Routes by the renderer's own brand flag so the WebGPU renderer receives the
-                    // same document colour contract instead of being silently skipped.
+                    if (gl.isWebGLRenderer) engineRuntime.observeWebGl2Renderer(gl);
                     applyStudioBg3dThreeRenderSettings(gl, sceneBaseDocument.render);
                     gl.setClearColor(getSkyPreset(renderedSkyPresetId).clearColor, 1);
                   }}

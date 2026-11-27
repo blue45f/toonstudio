@@ -31,6 +31,7 @@ import {
   type StudioMannequinSpec,
   type StudioMannequinVec3,
 } from "./studio-mannequin-model";
+import { buildStudioMannequinPalmLoft } from "./studio-mannequin-hand-geometry";
 import { normalizeStudioMannequinPose, type StudioMannequinPose } from "./studio-mannequin-poses";
 import {
   buildStudioMannequinLoftGeometry,
@@ -81,7 +82,9 @@ export interface StudioMannequinSceneFigure {
   readonly bodyMeshes: () => readonly THREE.Mesh[];
   readonly effectorHandles: () => readonly THREE.Mesh[];
   rebuild(spec: StudioMannequinSpec, pose: StudioMannequinPose): void;
-  setEcorcheState(next: Partial<StudioMannequinFigureEcorcheState>, pose: StudioMannequinPose): void;
+  setFingerSpec(spec: StudioMannequinSpec): void;
+  /** 관절 그래프까지 다시 만들었을 때 true를 돌려준다. */
+  setEcorcheState(next: Partial<StudioMannequinFigureEcorcheState>, pose: StudioMannequinPose): boolean;
   getEcorcheState(): StudioMannequinFigureEcorcheState;
   applyPose(pose: StudioMannequinPose): void;
   readPose(): StudioMannequinPose;
@@ -110,11 +113,6 @@ export function resolveStudioMannequinPickedJoint(hit?: THREE.Intersection): Stu
 
 function toVec3(value: StudioMannequinVec3): THREE.Vector3 {
   return new THREE.Vector3(value[0], value[1], value[2]);
-}
-
-function hasNonZeroSplay(splay?: Partial<StudioMannequinFingerSplayMap>): boolean {
-  if (!splay) return false;
-  return Object.values(splay).some((deg) => typeof deg === "number" && Math.abs(deg) > 1e-4);
 }
 
 const SPLIT_TORSO_TUBE_IDS = new Set(["loft-pelvis-basin", "loft-spine-waist", "loft-chest-ribcage"]);
@@ -162,6 +160,7 @@ export function createStudioMannequinSceneFigure(input: {
   };
   let joints = new Map<StudioMannequinJointId, THREE.Group>();
   let bodyMeshes: THREE.Mesh[] = [];
+  const digits = new Map<"left" | "right", { key: string; meshes: Set<THREE.Mesh> }>();
   let outlineMeshes: THREE.Mesh[] = [];
   let effectorHandles: THREE.Mesh[] = [];
   let torsoBones: [THREE.Bone, THREE.Bone, THREE.Bone] | null = null;
@@ -172,6 +171,7 @@ export function createStudioMannequinSceneFigure(input: {
   let selectedJointId: StudioMannequinJointId | null = null;
 
   function disposeGraph(): void {
+    digits.clear();
     for (const outline of outlineMeshes) outline.removeFromParent();
     outlineMeshes = [];
     if (torsoOutlineOwnGeometry) {
@@ -224,7 +224,7 @@ export function createStudioMannequinSceneFigure(input: {
     jointId: StudioMannequinJointId,
     materialRole: StudioMannequinPrimitiveMaterialRole,
     dynamicBulge?: StudioMannequinBodyMeshUserData["studioMannequinDynamicBulge"],
-  ): void {
+  ): THREE.Mesh {
     const restScale: StudioMannequinVec3 = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
     Object.assign(mesh.userData as StudioMannequinBodyMeshUserData, {
       studioMannequinJointId: jointId,
@@ -253,13 +253,17 @@ export function createStudioMannequinSceneFigure(input: {
     outline.renderOrder = -1;
     jointGroup.add(outline);
     outlineMeshes.push(outline);
+    return outline;
   }
 
   function buildPrimitiveMesh(primitive: StudioMannequinSpec["primitives"][number]): THREE.Mesh {
     const role = primitive.materialRole ?? "body";
     const material = materials.palette()[role];
     let mesh: THREE.Mesh;
-    if (primitive.kind === "sphere") {
+    if (primitive.kind === "sphere" && primitive.handPart === "palm") {
+      const geometry = buildStudioMannequinLoftGeometry(buildStudioMannequinPalmLoft(primitive.jointId, primitive.radius / 0.34));
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (primitive.kind === "sphere") {
       const relativeRadius = primitive.radius / Math.max(0.001, spec.headUnit);
       const widthSegments = relativeRadius < 0.055 ? 20 : relativeRadius < 0.11 ? 28 : 40;
       const heightSegments = relativeRadius < 0.055 ? 16 : relativeRadius < 0.11 ? 20 : 28;
@@ -318,6 +322,18 @@ export function createStudioMannequinSceneFigure(input: {
             relativeRadius < 0.055 ? 6 : 10,
             radialSegments,
           );
+      if (primitive.handPart === "fingertip" && geometry instanceof THREE.CylinderGeometry && endRadius) {
+        // 말단의 마지막 단면을 둥글게 좁혀 잘린 원통처럼 보이지 않게 한다.
+        const position = geometry.getAttribute("position");
+        for (let i = 0; i < position.count; i += 1) {
+          const distanceToTip = segmentLength * 0.5 - position.getY(i);
+          if (distanceToTip >= endRadius) continue;
+          const t = Math.max(0, distanceToTip / endRadius);
+          const scale = Math.sqrt(t * (2 - t));
+          position.setXYZ(i, position.getX(i) * scale, position.getY(i), position.getZ(i) * scale);
+        }
+        geometry.computeVertexNormals();
+      }
       mesh = new THREE.Mesh(geometry, material);
       mesh.position.copy(from).addScaledVector(segment, 0.5);
       if (segmentLength > 1e-9) {
@@ -498,6 +514,36 @@ export function createStudioMannequinSceneFigure(input: {
     outlineMeshes.push(skinnedOutline);
   }
 
+  function syncDigits(): void {
+    const resolved = clampStudioMannequinFingerPose(ecorcheState.fingerPose ?? spec.fingerPose);
+    const length = 0.085 * spec.heightM * spec.params.armLength * (spec.params.handScale ?? 1);
+    for (const side of ["left", "right"] as const) {
+      const jointId = side === "left" ? "leftHand" : "rightHand";
+      const group = joints.get(jointId);
+      if (!group) continue;
+      const spread = side === "left" ? ecorcheState.leftSplayDeg : ecorcheState.rightSplayDeg;
+      const key = JSON.stringify([length, resolved[side], spread]);
+      const previous = digits.get(side);
+      if (previous?.key === key) continue;
+      if (previous) {
+        bodyMeshes = bodyMeshes.filter((mesh) => {
+          if (!previous.meshes.has(mesh)) return true;
+          mesh.geometry.dispose();
+          return false;
+        });
+        outlineMeshes = outlineMeshes.filter((mesh) => !previous.meshes.has(mesh));
+        for (const mesh of previous.meshes) mesh.removeFromParent();
+      }
+      const meshes = new Set<THREE.Mesh>();
+      for (const part of buildSplayedHandDigitPrimitives(jointId, length, side === "left" ? 1 : -1, resolved[side], spread)) {
+        const mesh = buildPrimitiveMesh(part);
+        meshes.add(mesh);
+        meshes.add(attachBodyMesh(group, mesh, jointId, part.materialRole ?? "body"));
+      }
+      digits.set(side, { key, meshes });
+    }
+  }
+
   function rebuild(nextSpec: StudioMannequinSpec, pose: StudioMannequinPose): void {
     spec = nextSpec;
     disposeGraph();
@@ -511,49 +557,16 @@ export function createStudioMannequinSceneFigure(input: {
       if (jointSpec.id === "pelvis") pelvisRestOffset = toVec3(jointSpec.offset);
     }
 
-    const replaceLeftDigits = hasNonZeroSplay(ecorcheState.leftSplayDeg);
-    const replaceRightDigits = hasNonZeroSplay(ecorcheState.rightSplayDeg);
-    const handLen = 0.085 * spec.heightM * spec.params.armLength * (spec.params.handScale ?? 1);
-
     for (const primitive of spec.primitives) {
-      if (shouldSkipLegacyCoreBodyPrimitive(primitive, ecorcheState.surfaceMode)) {
-        continue;
-      }
-      if (
-        (replaceLeftDigits && primitive.jointId === "leftHand" && primitive.kind !== "box")
-        || (replaceRightDigits && primitive.jointId === "rightHand" && primitive.kind !== "box")
-      ) {
-        const isWristSphere =
-          primitive.kind === "sphere"
-          && Math.abs(primitive.center[0]) < 1e-5
-          && Math.abs(primitive.center[1]) < 1e-5;
-        if (!isWristSphere) continue;
-      }
+      if (primitive.handPart === "digit" || primitive.handPart === "fingertip"
+        || shouldSkipLegacyCoreBodyPrimitive(primitive, ecorcheState.surfaceMode)) continue;
       const jointGroup = joints.get(primitive.jointId);
       if (!jointGroup) continue;
       const mesh = buildPrimitiveMesh(primitive);
       attachBodyMesh(jointGroup, mesh, primitive.jointId, primitive.materialRole ?? "body");
     }
 
-    if (replaceLeftDigits || replaceRightDigits) {
-      const resolvedFingers = clampStudioMannequinFingerPose(ecorcheState.fingerPose);
-      if (replaceLeftDigits) {
-        const leftGroup = joints.get("leftHand");
-        if (leftGroup) {
-          for (const prim of buildSplayedHandDigitPrimitives("leftHand", handLen, 1, resolvedFingers.left, ecorcheState.leftSplayDeg)) {
-            attachBodyMesh(leftGroup, buildPrimitiveMesh(prim), "leftHand", prim.materialRole ?? "body");
-          }
-        }
-      }
-      if (replaceRightDigits) {
-        const rightGroup = joints.get("rightHand");
-        if (rightGroup) {
-          for (const prim of buildSplayedHandDigitPrimitives("rightHand", handLen, -1, resolvedFingers.right, ecorcheState.rightSplayDeg)) {
-            attachBodyMesh(rightGroup, buildPrimitiveMesh(prim), "rightHand", prim.materialRole ?? "body");
-          }
-        }
-      }
-    }
+    syncDigits();
 
     if (ecorcheState.surfaceMode !== "standard") {
       mountContinuousSkinnedTorso();
@@ -622,13 +635,27 @@ export function createStudioMannequinSceneFigure(input: {
     bodyMeshes: () => bodyMeshes,
     effectorHandles: () => effectorHandles,
     rebuild,
+    setFingerSpec(nextSpec) {
+      spec = nextSpec;
+      ecorcheState = { ...ecorcheState, fingerPose: nextSpec.fingerPose };
+      syncDigits();
+      applySelectionTint();
+    },
     setEcorcheState(next, pose) {
+      const previous = ecorcheState;
       ecorcheState = {
         ...ecorcheState,
         ...next,
         surfaceMode: resolveStudioMannequinSurfaceMode(next.surfaceMode ?? ecorcheState.surfaceMode),
       };
+      if (previous.surfaceMode === ecorcheState.surfaceMode && previous.pectoralVolume === ecorcheState.pectoralVolume
+        && previous.muscleDefinition === ecorcheState.muscleDefinition) {
+        syncDigits();
+        applySelectionTint();
+        return false;
+      }
       rebuild(spec, pose);
+      return true;
     },
     getEcorcheState: () => ecorcheState,
     applyPose,

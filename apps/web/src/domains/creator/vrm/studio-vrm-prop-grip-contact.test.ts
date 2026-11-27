@@ -7,6 +7,11 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
 import { POSER_FINGER_BONES, pickNaturalIdlePose } from "../studio-pose-presets";
+import { createStudioVrmGripContactPasses } from "./StudioVrmGripContactRefine";
+import { applyFingerRotations, applyPoseToVrm, correctVrmHangingHandPalmTwist, stripFingerBones } from "./studio-vrm-poser-utils";
+import { createAutoGripFingerOverrides, measureVrmPropRigMetrics, resolvePropAttachment } from "./studio-vrm-prop-rig";
+import { createPropInstance, propDefById } from "./studio-vrm-props";
+
 
 (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
 
@@ -28,6 +33,46 @@ async function load(file: string) {
 }
 
 describe("VRM prop grip contact", () => {
+  it.each([
+    ["sample-vrm", "apps/web/public/vrm/sample.vrm"],
+    ["shino", MODEL.file],
+  ])("%s의 대기 자세에서 머그 입구가 수평이고 검지·중지가 고리 안을 지난다", async (id, file) => {
+    const vrm = await load(file);
+    const pose = pickNaturalIdlePose(id);
+    applyPoseToVrm(vrm, stripFingerBones(pose.bones), pose.yOffset ?? 0, undefined, { skipPalmCorrect: true });
+    const metrics = measureVrmPropRigMetrics(vrm);
+    const mug = createPropInstance("mug", "test-handle")!;
+    applyFingerRotations(vrm, createAutoGripFingerOverrides([mug], propDefById, metrics));
+    correctVrmHangingHandPalmTwist(vrm);
+    createStudioVrmGripContactPasses(vrm, [mug], metrics, []).forEach(pass => pass.run());
+    const hand = vrm.humanoid.getNormalizedBoneNode("rightHand")!;
+    const fit = resolvePropAttachment(propDefById("mug")!, mug, metrics);
+    const rotation = hand.getWorldQuaternion(new THREE.Quaternion()).multiply(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        THREE.MathUtils.degToRad(fit.rotationDeg[0]),
+        THREE.MathUtils.degToRad(fit.rotationDeg[1]),
+        THREE.MathUtils.degToRad(fit.rotationDeg[2]),
+      )),
+    );
+    expect(new THREE.Vector3(0, 1, 0).applyQuaternion(rotation).y).toBeGreaterThan(Math.cos(6 * Math.PI / 180));
+    const grip = hand.localToWorld(new THREE.Vector3(...fit.socketPosition));
+    const inverse = rotation.clone().invert();
+    for (const finger of ["Index", "Middle"] as const) {
+      const chain = (["Proximal", "Intermediate", "Distal"] as const).map(segment =>
+        vrm.humanoid.getNormalizedBoneNode(`right${finger}${segment}`)!.getWorldPosition(new THREE.Vector3())
+          .sub(grip).applyQuaternion(inverse).divideScalar(fit.scale).add(new THREE.Vector3(...fit.anchor.position)),
+      );
+      // GLB 손잡이 고리는 XY 평면에서 반지름 26mm, 튜브 두께 반지름 6.5mm다.
+      const throughOpening = chain.slice(1).some((end, i) => {
+        const start = chain[i]!;
+        if (start.z * end.z > 0 || start.z === end.z) return false;
+        const crossing = start.clone().lerp(end, start.z / (start.z - end.z));
+        return Math.hypot(crossing.x - 0.045, crossing.y) < 0.026 - 0.0065;
+      });
+      expect(throughOpening, finger).toBe(true);
+    }
+  }, 120_000);
+
   it("lands the anchor on the palm socket and wraps fingers around the grip", async () => {
     const { createAutoGripFingerOverrides, measureVrmPropRigMetrics, resolvePropAttachment } =
       await import("./studio-vrm-prop-rig");

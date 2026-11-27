@@ -1,0 +1,650 @@
+{
+  "method": {
+    "referenceCommit": "be3c81c22a6481ca9554078d98571dd7aefbb690",
+    "candidate": "worktree",
+    "browser": "156.0.8078.79",
+    "device": "SwiftShader, viewport 390x280, devicePixelRatio=1",
+    "input": "기본 체형·대기 자세·에코르셰, 우측 검지만 75/18로 번갈아 굽힘",
+    "scope": "실제 setBodySpec와 setEcorcheState 두 효과, 스펙 계산·그래프·가이드·카메라 갱신 포함. GPU 프레임·React 렌더·프레임 대기 제외.",
+    "instrumentation": "동일 Three.js BufferGeometry의 연속 ID 차와 실제 dispose 호출을 기록. 양 끝의 계측용 빈 지오메트리는 측정에서 제외하고 즉시 dispose. frameFigures 실제 호출에 메모리 전용 카운터 주입. 양쪽 씬 모두 종료 시 dispose.",
+    "clock": "Chromium CDP threadTicks ThreadTime 차이. 배치당 4개 갱신 및 CDP 호출 오버헤드 포함. 단일 갱신 벽시계 시간은 performance.now().",
+    "warmupPerVariant": 12,
+    "measuredPerVariant": 40,
+    "order": "AB → BA 교대, 10회, 조건별 동일 입력과 반복 수"
+  },
+  "environment": {
+    "dateUTC": "2026-11-27T11:45:25.891Z",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "cpuQuota": "400000 100000",
+    "logicalCpus": 4,
+    "loadAverageBefore": [
+      6.28,
+      8.7,
+      13.1
+    ],
+    "loadAverageAfter": [
+      7.06,
+      8.82,
+      13.12
+    ],
+    "note": "공유 장비의 배경 부하 및 가비지 컬렉션이 벽시계 꼬리 지연에 영향을 줄 수 있다. 별도의 실사용 FPS 측정은 포함하지 않았다."
+  },
+  "summary": {
+    "before": {
+      "edits": 40,
+      "wallMsPerEdit": {
+        "p50": 84.5,
+        "p95": 159.3,
+        "sum": 3605
+      },
+      "rendererMainThreadCpuMsPerEdit": {
+        "mean": 49.215,
+        "p50Of4EditBatchMeans": 48.93,
+        "p95Of4EditBatchMeans": 65.223
+      },
+      "geometriesCreatedPerEdit": [
+        304
+      ],
+      "geometriesDisposedPerEdit": [
+        300
+      ],
+      "cameraFitCallsPerEdit": [
+        1
+      ]
+    },
+    "after": {
+      "edits": 40,
+      "wallMsPerEdit": {
+        "p50": 3.5,
+        "p95": 11.5,
+        "sum": 205.3
+      },
+      "rendererMainThreadCpuMsPerEdit": {
+        "mean": 2.744,
+        "p50Of4EditBatchMeans": 2.332,
+        "p95Of4EditBatchMeans": 3.937
+      },
+      "geometriesCreatedPerEdit": [
+        25
+      ],
+      "geometriesDisposedPerEdit": [
+        25
+      ],
+      "cameraFitCallsPerEdit": [
+        0
+      ]
+    }
+  },
+  "batches": {
+    "before": [
+      {
+        "threadMs": 225.498,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 195.719,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 148.866,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 240.187,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 260.893,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 213.852,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 170.599,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 153.747,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 212.928,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 146.301,
+        "scriptMs": 0
+      }
+    ],
+    "after": [
+      {
+        "threadMs": 15.478,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 15.109,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 9.541,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 9.326,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 15.749,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 6.37,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 12.726,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 8.101,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 9.158,
+        "scriptMs": 0
+      },
+      {
+        "threadMs": 8.221,
+        "scriptMs": 0
+      }
+    ]
+  },
+  "perEdit": {
+    "before": [
+      {
+        "ms": 92.59999999962747,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 113.60000000009313,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 159.3000000002794,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 102.60000000009313,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 129.39999999990687,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 116.29999999981374,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 105.20000000018626,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 88.29999999981374,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 83.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 153.60000000009313,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 114.1999999997206,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 120,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 108.90000000037253,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 167.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 94.59999999962747,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 60.700000000186265,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 101.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 86.20000000018626,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 79.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 163.79999999981374,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 110.6999999997206,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 106,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 72.10000000009313,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 66.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 45.3000000002794,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 82.09999999962747,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 83.40000000037253,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 69.6999999997206,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 60.60000000009313,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 72.79999999981374,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 73,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 33.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 52.39999999990687,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 113.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 76.79999999981374,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 34.299999999813735,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 84.5,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 42.60000000009313,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 41.60000000009313,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      },
+      {
+        "ms": 42.299999999813735,
+        "created": 304,
+        "disposed": 300,
+        "cameraFits": 1
+      }
+    ],
+    "after": [
+      {
+        "ms": 2.900000000372529,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 3.599999999627471,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 4,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 7.5,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 4.100000000093132,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 26.799999999813735,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 3.5,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 11.5,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2.1000000000931323,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 26.800000000279397,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 3.1999999997206032,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2.2000000001862645,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2.2000000001862645,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 10.199999999720603,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2.1000000000931323,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 6.399999999906868,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 7.2999999998137355,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 4.100000000093132,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 3.8999999999068677,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 4.5,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.5,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.2000000001862645,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.2999999998137355,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.7999999998137355,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2.2000000001862645,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 5.7999999998137355,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2.8000000002793968,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 5.199999999720603,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.8999999999068677,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 9,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.7000000001862645,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 5.899999999906868,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 2.2000000001862645,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 4.199999999720603,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.7000000001862645,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 6.5,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.6999999997206032,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 1.7999999998137355,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      },
+      {
+        "ms": 6,
+        "created": 25,
+        "disposed": 25,
+        "cameraFits": 0
+      }
+    ]
+  }
+}

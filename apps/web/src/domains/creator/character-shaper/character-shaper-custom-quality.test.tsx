@@ -177,7 +177,10 @@ describe("#236 커스텀 3D 품질 일관성 & #234 SHAPER REA 완전 내재화 
     const swordMesh = new THREE.Mesh(new THREE.BoxGeometry(), metalMat);
     swordMesh.name = "prop:sword";
 
-    root.add(hairMesh, swordMesh);
+    const sourceMaterial = new THREE.MeshStandardMaterial({ roughness: 0.21, flatShading: true });
+    const sourceHair = new THREE.Mesh(new THREE.BoxGeometry(), sourceMaterial);
+    sourceHair.name = "Hair"; // 원본 VRM에 포함된 머리카락
+    root.add(hairMesh, swordMesh, sourceHair);
 
     const synced = syncCustomAttachmentQuality([root], DEFAULT_SHAPER_MTOON_SETTINGS);
     expect(synced.harmonizedMaterials).toBe(2);
@@ -192,6 +195,11 @@ describe("#236 커스텀 3D 품질 일관성 & #234 SHAPER REA 완전 내재화 
     // 금속 소품은 고유 금속 광택을 보존한다
     expect(metalMat.metalness).toBe(0.9);
     expect(metalMat.roughness).toBe(0.25);
+    expect(sourceMaterial.roughness).toBe(0.21);
+    expect(sourceMaterial.flatShading).toBe(true);
+    const version = hairMat.version;
+    syncCustomAttachmentQuality([root, hairMesh], DEFAULT_SHAPER_MTOON_SETTINGS);
+    expect(hairMat.version).toBe(version);
   });
 
   it("SHAPER Toon ↔ Modeling 셰이더 토글, _ShadeColor/_RLightColor/외곽선 배율 적용과 원복, SpringBone hitRadius 하한을 검증한다", () => {

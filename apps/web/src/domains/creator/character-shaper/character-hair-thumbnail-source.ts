@@ -13,6 +13,7 @@ import {
   sanitizeAvatarForgeState,
   type AvatarForgeHairParams,
 } from "../vrm/studio-vrm-avatar-forge";
+import { mergeAvatarForgeHair } from "../vrm/studio-vrm-hair-sections";
 import { useStudioVrmHairPreviewSource } from "../vrm/studio-vrm-hair-preview-source";
 import { buildStudioVrmHairGeometryIdentity } from "../vrm/studio-vrm-hair-transition";
 
@@ -33,7 +34,7 @@ export function characterHairThumbnailKey(hair: AvatarForgeHairParams, head: Stu
   return [
     buildStudioVrmHairGeometryIdentity(hair),
     fit ? [Math.abs(fit.center[0]), fit.center[1], Math.abs(fit.center[2])].map(round).join(",") : "standard",
-    fit ? [fit.radiusX, fit.radiusY, fit.radiusZ, fit.faceFront].map(round).join(",") : "",
+    fit ? [fit.radiusX, fit.radiusY, fit.radiusZ, fit.faceFront, fit.eyeCenter[1]].map(round).join(",") : "",
   ].join("|");
 }
 
@@ -53,7 +54,7 @@ export function resolveCharacterHairCardParams(
   const base = live ?? createAvatarForgeState().hair;
   return sanitizeAvatarForgeState({
     version: AVATAR_FORGE_VERSION,
-    hair: { ...base, ...card, style: spec.style },
+    hair: mergeAvatarForgeHair(base, { ...card, style: spec.style }),
   }).hair;
 }
 

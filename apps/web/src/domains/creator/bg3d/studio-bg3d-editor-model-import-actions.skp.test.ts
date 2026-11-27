@@ -116,6 +116,7 @@ function harness() {
     cancelCustomModelPlacement: vi.fn(),
     commitSceneEntityRemoval: vi.fn(),
     startModelThumbnailCaptureBatch: vi.fn(),
+    commitImmediateHistoryTransition: vi.fn(),
     replaceCanonicalDocumentState: vi.fn(),
     setDeletingModelId: vi.fn(),
     setError: vi.fn(),
