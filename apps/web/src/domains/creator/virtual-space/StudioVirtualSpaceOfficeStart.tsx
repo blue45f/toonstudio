@@ -1,6 +1,9 @@
-import { Armchair, ArrowUpRight, ClipboardList, RefreshCw, UsersRound, X } from "lucide-react";
+import type { ProductionTask } from "@toonstudio/core/production";
+import { Armchair, ArrowUpRight, ClipboardList, Copy, RefreshCw, UsersRound, X } from "lucide-react";
+import { useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
+import { copyText } from "@/shared/lib/copy-text";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { HyperAutomationOsDisclosure, SpaceRoleGuide } from "./SpaceRoleGuide";
 import type { SpaceRolePreset } from "./use-space-role-preset";
@@ -13,6 +16,51 @@ const dueTime = (value: string | null | undefined) => {
   const time = value ? Date.parse(value) : NaN;
   return Number.isFinite(time) ? time : Infinity;
 };
+
+function NextTaskCard({ task, projectId, assigned, onGuide }: {
+  readonly task: ProductionTask;
+  readonly projectId: string;
+  readonly assigned: boolean;
+  readonly onGuide?: (destination: StudioVirtualProductionDestination) => void;
+}) {
+  const bt = useBilingual("StudioVirtualSpaceOfficeStart");
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
+  const destination = studioVirtualProductionDestination(task);
+  const taskHref = `/production/projects/${encodeURIComponent(projectId)}/production?productionView=board&openTask=${encodeURIComponent(task.id)}`;
+  const due = dueTime(task.dueAt);
+  const dateOptions = { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" } as const;
+  const dueLabel = Number.isFinite(due)
+    ? bt(`마감 ${new Intl.DateTimeFormat("ko-KR", dateOptions).format(due)}`, `Due ${new Intl.DateTimeFormat("en-US", dateOptions).format(due)}`)
+    : bt("마감 미정", "No due date");
+  const status = bt(...STUDIO_VIRTUAL_TASK_STATUS_LABELS[task.status]);
+  const handoff = () => [
+    task.title, `${status} · ${dueLabel}`,
+    ...task.completionCriteria.map((criterion) => `• ${criterion}`),
+    new URL(taskHref, window.location.href).href,
+  ].join("\n");
+
+  return <div className="studio-vspace-office-next">
+    <span>{assigned ? bt("내 다음 작업", "Your next task") : bt("팀의 다음 작업", "Team's next task")}</span>
+    <Link className="studio-vspace-office-task-link" href={taskHref}
+      aria-label={bt(`${task.title} 작업 카드 열기`, `Open task card for ${task.title}`)}>
+      <strong>{task.title}</strong><ArrowUpRight size={16} aria-hidden />
+    </Link>
+    <small>{status} · {dueLabel}</small>
+    <div className="studio-vspace-office-task-actions">
+      <button type="button" onClick={async () => { setCopyState(await copyText(handoff()) ? "copied" : "manual"); }}>
+        <Copy size={15} aria-hidden />{bt("인계 메모 복사", "Copy handoff note")}
+      </button>
+      {onGuide ? <button type="button" onClick={() => onGuide(destination)}>
+        {bt(...STUDIO_VIRTUAL_PRODUCTION_DESTINATIONS[destination])}{bt("로 이동", " · walk there")}<ArrowUpRight size={15} aria-hidden />
+      </button> : null}
+    </div>
+    {copyState === "copied" ? <small role="status">{bt("작업 링크와 인계 메모를 복사했어요.", "Handoff note and task link copied.")}</small> : null}
+    {copyState === "manual" ? <label className="studio-vspace-office-manual-copy">
+      {bt("인계 메모를 선택해 직접 복사하세요.", "Select the handoff note to copy it manually.")}
+      <textarea readOnly rows={3} value={handoff()} onFocus={(event) => event.currentTarget.select()} />
+    </label> : null}
+  </div>;
+}
 
 export function StudioVirtualSpaceOfficeStart({ snapshot, workId, personal = false, peerCount, onOpenWork, onOpenPeople, onOpenSeats, onRefresh, onGuide, onGuidePlace, onDismiss, showHeader = true, rolePreset }: {
   readonly snapshot: StudioVirtualOperationsSnapshot;
@@ -39,22 +87,15 @@ export function StudioVirtualSpaceOfficeStart({ snapshot, workId, personal = fal
   const assignedIds = new Set(snapshot.inbox.filter((item) => item.projectId === project?.projectId || item.projectId === workId).map((item) => item.taskId));
   const assignedTasks = tasks.filter((task) => assignedIds.has(task.id));
   const nextTask = [...(assignedTasks.length ? assignedTasks : tasks)].sort((a, b) => dueTime(a.dueAt) - dueTime(b.dueAt))[0];
-  const destination = nextTask ? studioVirtualProductionDestination(nextTask) : null;
-  const due = nextTask ? dueTime(nextTask.dueAt) : Infinity;
   const count = Number.isFinite(peerCount) ? Math.max(0, Math.floor(peerCount)) : 0;
 
   return <section className="studio-vspace-office-start" aria-label={bt("스튜디오에서 작업 시작", "Start work in the studio")} data-space-interactive="true">
     {showHeader ? <header><div><p>{bt("나의 웹툰 작업실", "Your webtoon office")}</p><h2>{bt("무엇부터 할까요?", "What will you work on?")}</h2></div>
       {onDismiss ? <button type="button" className="studio-vspace-office-dismiss" onClick={onDismiss} aria-label={bt("작업 시작 안내 접기", "Collapse work start guide")}><X size={18} aria-hidden /></button> : null}
     </header> : null}
-    {nextTask ? <div className="studio-vspace-office-next">
-      <span>{assignedTasks.length ? bt("내 다음 작업", "Your next task") : bt("팀의 다음 작업", "Team's next task")}</span>
-      <strong>{nextTask.title}</strong>
-      <small>{bt(...STUDIO_VIRTUAL_TASK_STATUS_LABELS[nextTask.status])} · {Number.isFinite(due)
-        ? bt(`마감 ${new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(due)}`, `Due ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(due)}`)
-        : bt("마감 미정", "No due date")}</small>
-      {destination && onGuide ? <button type="button" onClick={() => onGuide(destination)}>{bt(...STUDIO_VIRTUAL_PRODUCTION_DESTINATIONS[destination])}{bt("로 이동", " · walk there")}<ArrowUpRight size={16} aria-hidden /></button> : null}
-    </div> : personal ? <p>{bt("내 작품을 열어 원고 작업을 시작하세요. 이곳은 혼자 사용하는 로컬 작업실이에요.", "Open a work to start your manuscript. This is your personal local office.")}</p>
+    {nextTask && project ? <NextTaskCard key={JSON.stringify([project.projectId, nextTask.id])}
+      task={nextTask} projectId={project.projectId} assigned={assignedTasks.length > 0} onGuide={onGuide} />
+      : personal ? <p>{bt("내 작품을 열어 원고 작업을 시작하세요. 이곳은 혼자 사용하는 로컬 작업실이에요.", "Open a work to start your manuscript. This is your personal local office.")}</p>
       : snapshot.phase === "loading" || scopeChanged ? <p role="status">{bt("오늘의 작업을 확인하고 있어요. 작업함은 바로 열 수 있어요.", "Checking today's tasks. You can open your work inbox now.")}</p>
         : snapshot.phase === "unavailable" || snapshot.error ? <div className="studio-vspace-office-unavailable"><p role="status">{bt("오늘의 작업을 확인하지 못했어요. 작업함에서 작품 연결과 작업을 확인할 수 있어요.", "Today's tasks could not be confirmed. Check the work connection and tasks in your inbox.")}</p><button type="button" onClick={onRefresh}><RefreshCw size={16} aria-hidden />{bt("다시 확인", "Try again")}</button></div>
           : <p>{bt("지금 표시할 진행 작업이 없어요. 작업함에서 다음 작업을 선택하세요.", "There are no open tasks to show. Choose your next task in the inbox.")}</p>}
