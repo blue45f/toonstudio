@@ -18,6 +18,7 @@ const confirmedAccounts = {
   STUDIO_AI_FREE_MISTRAL_CONFIRMED: "true",
   STUDIO_AI_FREE_SAMBANOVA_CONFIRMED: "true",
   STUDIO_AI_FREE_GROQ_CONFIRMED: "true",
+  STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true",
 };
 
 describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스케이드)", () => {
@@ -54,11 +55,11 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
   });
 
   it("키만 등록한 계정형 공급자는 무료 자격과 유료 청구 차단 확인 전까지 호출하지 않는다", async () => {
-    const env = { OPENAI_API_KEY: "test-openai", GEMINI_API_KEY: "test-gemini" };
+    const env = { OPENAI_API_KEY: "test-openai", GEMINI_API_KEY: "test-gemini", OPENROUTER_API_KEY: "test-openrouter" };
     const router = new StudioFreeAiZeroBillRouter();
     const fetchMock = vi.fn<typeof fetch>();
     const report = router.getFreeQuotaStatus(env);
-    expect(report.summary).toMatchObject({ configuredCloudCount: 2, activeCloudCount: 0 });
+    expect(report.summary).toMatchObject({ configuredCloudCount: 3, activeCloudCount: 0 });
     expect(report.providers[0]).toMatchObject({ blocked: true, blockReason: "free_billing_unconfirmed", blockedUntilUtc: null });
     const result = await router.executeCascade(
       { systemInstruction: "웹툰", userPrompt: "주인공", localDeterministicOutput: () => "{}" },
@@ -106,6 +107,7 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
         }
         if (providerId === "openrouter-free") {
           expect(body.provider).toEqual({ max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false });
+          expect(body.plugins).toEqual([{ id: "web", enabled: false }]);
         }
       }
     },
@@ -168,6 +170,7 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
 
     expect(isFreeModelWhitelisted("openrouter-free", "openrouter/free").allowed).toBe(true);
     expect(isFreeModelWhitelisted("openrouter-free", "meta-llama/llama-3.3:free").allowed).toBe(true);
+    expect(isFreeModelWhitelisted("openrouter-free", "vendor/model:online:free").allowed).toBe(false);
     expect(isFreeModelWhitelisted("openrouter-free", "openai/gpt-4o")).toEqual({
       allowed: false,
       blockReason: "paid_model_blocked",

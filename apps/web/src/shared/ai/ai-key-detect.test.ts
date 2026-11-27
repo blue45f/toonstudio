@@ -10,6 +10,7 @@ const GEMINI = `AIza${"A".repeat(35)}`;
 const GROQ = `gsk_${"b".repeat(52)}`;
 const CLAUDE = `sk-ant-api03-${"c".repeat(40)}`;
 const OPENROUTER = `sk-or-v1-${"d".repeat(64)}`;
+const confirmedOpenRouterKey = { openRouterFreeBillingConfirmed: true };
 
 describe("detectAiKeyProvider", () => {
   it.each([
@@ -127,7 +128,7 @@ describe("addQuickKey / removeQuickKey", () => {
   });
 
   it("주소가 같아도 재확인이 필요한 옛 연결이나 이미지 전용 연결에는 키를 붙이지 않고, 텍스트에 쓰일 새 연결을 만든다", () => {
-    const legacy = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", `sk-or-v1-${"0".repeat(64)}`);
+    const legacy = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", `sk-or-v1-${"0".repeat(64)}`, confirmedOpenRouterKey);
     const migrated = normalizeUserAiConfiguration({
       ...legacy.configuration,
       connections: legacy.configuration.connections.map((item) => ({ ...item, id: "migrated", costPolicy: "unverified" as const })),
@@ -136,7 +137,7 @@ describe("addQuickKey / removeQuickKey", () => {
     });
     expect(findQuickKeyConnection(migrated, "openrouter")).toBeUndefined();
 
-    const added = addQuickKey(migrated, "openrouter", OPENROUTER);
+    const added = addQuickKey(migrated, "openrouter", OPENROUTER, confirmedOpenRouterKey);
     expect(added.connectionId).not.toBe("migrated");
     const normalized = normalizeUserAiConfiguration(added.configuration);
     expect(normalized.connections.find((item) => item.id === added.connectionId)?.costPolicy).toBe("openrouter-free");
@@ -166,6 +167,35 @@ describe("addQuickKey / removeQuickKey", () => {
       .toBe("provider-free-tier");
   });
 
+  it("OpenRouter 무료 빠른 등록은 계정 확인과 무료 모델을 요구하고 기존 키에 확인을 전파하지 않는다", () => {
+    expect(() => addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER, { allowPaid: true })).toThrow(/추가 과금|additional charges/iu);
+    expect(() => addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER, {
+      ...confirmedOpenRouterKey, model: "vendor/model:online:free",
+    })).toThrow(/무료 모델|free OpenRouter model/iu);
+    const original = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER, confirmedOpenRouterKey).configuration;
+    const legacy = normalizeUserAiConfiguration({
+      ...original,
+      connections: original.connections.map((entry) => ({
+        ...entry, apiKeys: entry.apiKeys?.map((key) => ({ ...key, openRouterFreeBillingConfirmed: undefined })),
+      })),
+    });
+    const replacement = `sk-or-v1-${"2".repeat(64)}`;
+    const added = addQuickKey(legacy, "openrouter", replacement, confirmedOpenRouterKey);
+    const saved = normalizeUserAiConfiguration(added.configuration);
+    expect(saved.connections[0]?.apiKeys?.map((key) => key.openRouterFreeBillingConfirmed === true)).toEqual([false, true]);
+    expect(userAiConnectionsForCapability("text", saved).map((route) => route.apiKey)).toEqual([replacement]);
+  });
+
+  it("무료 OpenRouter 빠른 등록으로 꺼 둔 유료 BYOK 연결을 다시 켜지 않는다", () => {
+    const original = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER, confirmedOpenRouterKey).configuration;
+    const paid = normalizeUserAiConfiguration({
+      ...original,
+      connections: original.connections.map((entry) => ({ ...entry, enabled: false, costPolicy: "user-funded-byok" as const })),
+    });
+    expect(() => addQuickKey(paid, "openrouter", OPENROUTER, confirmedOpenRouterKey)).toThrow(/BYOK/u);
+    expect(paid.connections[0]?.enabled).toBe(false);
+  });
+
   it("텍스트에 쓰이는 기존 배정은 다른 서비스 키를 더해도 그대로 둔다", () => {
     const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
     const second = addQuickKey(first.configuration, "gemini", GEMINI);
@@ -178,7 +208,7 @@ describe("addQuickKey / removeQuickKey", () => {
   });
 
   it("텍스트에 쓰이는 연결에 있는 키만 이미 등록한 키로 본다(재확인 필요 연결의 키는 다시 등록할 수 있다)", () => {
-    const added = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER);
+    const added = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER, confirmedOpenRouterKey);
     expect(isQuickKeyRegistered(added.configuration, OPENROUTER)).toBe(true);
     expect(isQuickKeyRegistered(added.configuration, GROQ)).toBe(false);
 
@@ -432,7 +462,7 @@ describe("addQuickKey / removeQuickKey", () => {
   });
 
   it("마지막 키를 지우면 연결과 그 연결을 가리키던 배정도 함께 지운다", () => {
-    const added = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER);
+    const added = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER, confirmedOpenRouterKey);
     const removed = removeQuickKey(added.configuration, added.connectionId, added.keyId);
 
     const normalized = normalizeUserAiConfiguration(removed);

@@ -164,3 +164,15 @@ test("CLI 할당량은 OpenAI 키만 있는 계정을 활성 무료 경로로 �
     assert.equal(quota.accountBalanceVerified, false);
   }
 });
+
+test("MCP는 무료 청구 조건이 확인된 단일 OpenRouter 무료 모델만 활성 경로로 표시한다", () => {
+  const account = { OPENROUTER_API_KEY: "standin", ONPOD_API_ENV_STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true" };
+  for (const [overrides, active] of [
+    [{}, 1],
+    [{ STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "false" }, 0],
+    [{ STUDIO_AI_FREE_OPENROUTER_MODEL: "vendor/one:online:free" }, 0],
+    [{ STUDIO_AI_FREE_OPENROUTER_MODEL: "vendor/one:free" }, 1],
+  ]) {
+    assert.equal(inspectSafeFreeQuotaStatus({ ...account, ...overrides }).summary.activeCloudCount, active);
+  }
+});

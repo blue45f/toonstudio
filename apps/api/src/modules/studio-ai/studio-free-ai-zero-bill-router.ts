@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { OPENROUTER_FREE_REQUEST_OPTIONS } from "@toonstudio/contracts/studio-openrouter-free";
 
 import {
   classifyUpstreamFailure,
@@ -521,7 +522,7 @@ export class StudioFreeAiZeroBillRouter {
       }
 
       if (provider.id === "openrouter-free") {
-        body.provider = { max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false };
+        Object.assign(body, OPENROUTER_FREE_REQUEST_OPTIONS);
       }
 
       if (request.jsonSchema && provider.supportsStrictJsonSchema) {

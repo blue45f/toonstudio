@@ -185,7 +185,7 @@ export function inspectSafeFreeQuotaStatus(env = process.env) {
       model: openrouterModel,
       modelAllowed:
         openrouterModel.toLowerCase() === "openrouter/free" ||
-        openrouterModel.toLowerCase().endsWith(":free"),
+        /^[a-z0-9._-]+\/[a-z0-9._-]+:free$/iu.test(openrouterModel),
       dailyRequestCap: 100,
       safeRequestCutoff: 90,
       costUsdGuaranteed: "$0.00",
@@ -209,7 +209,7 @@ export function inspectSafeFreeQuotaStatus(env = process.env) {
   const accountVendors = {
     "openai-free-share": "OPENAI", "gemini-free": "GEMINI", "github-models-free": "GITHUB_MODELS",
     "cloudflare-workers-ai-free": "CLOUDFLARE", "mistral-free": "MISTRAL",
-    "sambanova-free": "SAMBANOVA", "groq-free": "GROQ",
+    "sambanova-free": "SAMBANOVA", "groq-free": "GROQ", "openrouter-free": "OPENROUTER",
   };
   for (const provider of providers) {
     const vendor = accountVendors[provider.id];

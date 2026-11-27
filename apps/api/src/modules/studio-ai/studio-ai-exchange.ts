@@ -37,6 +37,7 @@ import {
   resolveStudioAiTimeoutMs,
   STUDIO_AI_MAX_PROVIDER_ATTEMPTS,
   STUDIO_AI_PREMIUM_PROVIDER_ID,
+  studioAiFreeProviderRequestOptions,
   studioAiProviderRequestId,
 } from "./studio-ai-provider";
 import { estimateStudioAiTokenReservation } from "./studio-ai-usage";
@@ -441,6 +442,7 @@ export function buildStudioAiChatExchange(
         },
         body: {
           model: provider.model,
+          ...studioAiFreeProviderRequestOptions(provider),
           messages: [
             { role: "system", content: system },
             { role: "user", content: input.user },
@@ -508,7 +510,10 @@ export function buildStudioAiMessagesExchange(
           "Content-Type": "application/json",
           ...(provider.id === "zai" ? { "Accept-Language": "en-US,en" } : {}),
         },
-        body: premiumMessagesToFreeChatBody(input, { model: provider.model, scope: CREATOR_SCOPE }),
+        body: {
+          ...premiumMessagesToFreeChatBody(input, { model: provider.model, scope: CREATOR_SCOPE }),
+          ...studioAiFreeProviderRequestOptions(provider),
+        },
       };
     },
     parse: (provider, payload) => provider.id === STUDIO_AI_PREMIUM_PROVIDER_ID

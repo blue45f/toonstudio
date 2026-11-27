@@ -5,7 +5,8 @@
  * - `.env.local` / `.env.infrastructure.local`에서 설정된 무료 AI 공급자를 읽되
  *   비밀값(API 키·토큰·계정 ID)은 절대 출력·저장·반환하지 않는다.
  * - 기본 동작과 --offline-only는 외부 통신 없이 구성과 차단 규칙을 점검한다.
- * - --live-openrouter는 단가 상한 0의 무료 모델에만 합성 입력을 1회 보낸다.
+ * - --live-openrouter는 STUDIO_AI_FREE_OPENROUTER_CONFIRMED로 유료 부가 기능 차단을 확인한 키에서만
+ *   웹 검색을 끄고 단가 상한 0의 무료 모델에 합성 입력을 1회 보낸다.
  * - OpenAI 크레딧 실행은 계정 증거를 검증하는 studio-openai-credit-evaluation.mts에서 수행한다.
  * - HTTP 402/429·insufficient_quota·billing_hard_limit·90% 안전선 차단 시뮬레이션과
  *   시크릿 누출 0건 자체 감사를 함께 실행해 JSON 리포트를 출력한다.
@@ -16,6 +17,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isOpenRouterFreeModel, OPENROUTER_FREE_REQUEST_OPTIONS } from "../packages/contracts/src/studio-openrouter-free.ts";
 import { FREE_AI_14_MODES_CATALOG } from "../tools/toonstudio-mcp/tools-division-ai.mjs";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -122,7 +124,7 @@ function isAllowedFreeModel(providerId, model) {
     return { allowed: false, reason: "retired_model_blocked" };
   }
   if (providerId === "openrouter-free") {
-    return normalized === "openrouter/free" || /^[a-z0-9._-]+\/[a-z0-9._-]+:free$/u.test(normalized)
+    return isOpenRouterFreeModel(normalized)
       ? { allowed: true, reason: null }
       : { allowed: false, reason: "paid_model_blocked" };
   }
@@ -258,6 +260,10 @@ function resolveProbeSpecs(env) {
     },
     {
       id: "openrouter-free",
+      freeBillingConfirmed: readFirst(env, [
+        "STUDIO_AI_FREE_OPENROUTER_CONFIRMED",
+        "ONPOD_API_ENV_STUDIO_AI_FREE_OPENROUTER_CONFIRMED",
+      ]).toLowerCase() === "true",
       labelKo: "OpenRouter 무료(:free 전용)",
       priority: 8,
       apiKey: readFirst(env, [
@@ -285,7 +291,7 @@ async function runSingleHardCappedProbe(spec, liveOpenRouter, fetchImpl) {
     return { ...result, outcome: "fail-closed-blocked-before-send", diagnosticCode: modelCheck.reason };
   }
   if (!liveOpenRouter) return { ...result, outcome: "skipped-offline-mode", diagnosticCode: "offline_mode" };
-  if (spec.id !== "openrouter-free") {
+  if (spec.id !== "openrouter-free" || !spec.freeBillingConfirmed) {
     return { ...result, outcome: "skipped-account-billing-unverified", diagnosticCode: "account_billing_unverified" };
   }
 
@@ -304,8 +310,7 @@ async function runSingleHardCappedProbe(spec, liveOpenRouter, fetchImpl) {
         messages: [{ role: "user", content: "Reply with exactly OK." }],
         max_tokens: MAX_PROBE_TOKENS,
         temperature: 0,
-        provider: { max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false },
-        plugins: [],
+        ...OPENROUTER_FREE_REQUEST_OPTIONS,
         usage: { include: true },
       }),
       redirect: "error",

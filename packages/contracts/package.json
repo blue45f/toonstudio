@@ -21,6 +21,11 @@
       "import": "./src/admin-cloud-workboard.ts",
       "default": "./src/admin-cloud-workboard.ts"
     },
+    "./studio-openrouter-free": {
+      "types": "./src/studio-openrouter-free.ts",
+      "import": "./src/studio-openrouter-free.ts",
+      "default": "./src/studio-openrouter-free.ts"
+    },
     "./ai-operations": {
       "types": "./src/ai-operations.ts",
       "import": "./src/ai-operations.ts",

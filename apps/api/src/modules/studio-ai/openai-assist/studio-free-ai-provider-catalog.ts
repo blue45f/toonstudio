@@ -1,3 +1,5 @@
+import { isOpenRouterFreeModel } from "@toonstudio/contracts/studio-openrouter-free";
+
 import {
   DEFAULT_FREE_SAFETY_CUTOFF_RATIO,
   isGeminiFreeTierModel,
@@ -275,7 +277,7 @@ export function isFreeModelWhitelisted(
         ? { allowed: true, blockReason: null }
         : { allowed: false, blockReason: "paid_model_blocked" };
     case "openrouter-free":
-      return normalized === "openrouter/free" || normalized.endsWith(":free")
+      return isOpenRouterFreeModel(normalized)
         ? { allowed: true, blockReason: null }
         : { allowed: false, blockReason: "paid_model_blocked" };
     case "local-zero-cost-fallback":
@@ -517,7 +519,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "OpenRouter 무료(:free 전용)",
       priority: 8,
       tier: "cloud-free",
-      freeBillingConfirmed: true,
+      freeBillingConfirmed: freeBillingConfirmed(env, "OPENROUTER"),
       configured: openrouterKey.length > 0,
       endpoint: "https://openrouter.ai/api/v1/chat/completions",
       apiKey: openrouterKey,

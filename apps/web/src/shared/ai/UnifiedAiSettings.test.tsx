@@ -23,7 +23,8 @@ function textConnection(id: string, label: string, priority: number): UserAiConn
     textModel: "openrouter/free",
     imageModel: "",
     costPolicy: "openrouter-free",
-    apiKeys: [{ id: `key-${id}`, label: "기본 키", apiKey: `key-${id}`, enabled: true, priority: 10 }],
+    openRouterFreeBillingConfirmed: true,
+    apiKeys: [{ id: `key-${id}`, label: "기본 키", apiKey: `key-${id}`, enabled: true, openRouterFreeBillingConfirmed: true, priority: 10 }],
     models: [{ id: `model-${id}`, label: "무료 자동", model: "openrouter/free", capability: "text", enabled: true, priority: 10 }],
   };
 }
@@ -159,7 +160,7 @@ describe("UnifiedAiSettings guided setup", () => {
         ...connection,
         apiKeys: [
           ...(connection.apiKeys ?? []),
-          { id: "key-free-a-copy", label: "같은 키", apiKey: "key-free-a", enabled: true, priority: 20 },
+          { id: "key-free-a-copy", label: "같은 키", apiKey: "key-free-a", enabled: true, openRouterFreeBillingConfirmed: true, priority: 20 },
         ],
       }],
       assignments: { text: "free-a", image: null, inference: null, "three-d": null },
@@ -217,6 +218,41 @@ describe("UnifiedAiSettings guided setup", () => {
       String(url).startsWith("https://openrouter.ai/"),
     );
     expect(providerCalls).toHaveLength(1);
+    expect(String(providerCalls[0]?.[0])).toBe("https://openrouter.ai/api/v1/key");
+    expect(snapshot.configuration.connections[0]?.apiKeys?.[0]?.openRouterFreeBillingConfirmed).toBe(true);
+  });
+
+  it("기존 키를 다시 입력하지 않고 선택한 키만 무료로 확인하고 키 교체 시 확인을 해제한다", async () => {
+    const connection = textConnection("free", "기존 OpenRouter", 10);
+    setUserAiConfiguration({
+      version: 1, assignments: { text: "free", image: null, inference: null, "three-d": null },
+      connections: [{ ...connection, apiKeys: [
+        { id: "first", apiKey: "old-first", label: "첫 키", priority: 10, enabled: true },
+        { id: "second", apiKey: "old-second", label: "둘째 키", priority: 20, enabled: true },
+      ] }],
+    });
+    expect(userAiConnectionsForCapability("text")).toHaveLength(0);
+    render(<UnifiedAiSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "고급 설정" }));
+    fireEvent.click(await screen.findByRole("button", { name: "수정·키 교체" }));
+    expect((screen.getByLabelText("키 2 값") as HTMLInputElement).value).toBe("");
+    const confirmation = screen.getByRole("checkbox", { name: /둘째 키 ·/u });
+    fireEvent.click(confirmation);
+    fireEvent.click(screen.getByRole("checkbox", { name: /이 주소가 신뢰/u }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /무료 플랜·모델/u }));
+    fireEvent.click(screen.getByRole("button", { name: "클라우드 연결 적용" }));
+    expect(userAiConnectionsForCapability("text").map((route) => route.apiKey)).toEqual(["old-second"]);
+    fireEvent.click(await screen.findByRole("button", { name: "수정·키 교체" }));
+    fireEvent.change(screen.getByLabelText("키 2 값"), { target: { value: "replacement" } });
+    expect((screen.getByRole("checkbox", { name: /둘째 키 ·/u }) as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole("checkbox", { name: /이 주소가 신뢰/u }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /무료 플랜·모델/u }));
+    expect((screen.getByRole("button", { name: "클라우드 연결 적용" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("checkbox", { name: "이 연결 활성화" }));
+    fireEvent.click(screen.getByRole("button", { name: "클라우드 연결 적용" }));
+    expect(userAiConnectionsForCapability("text")).toHaveLength(0);
+    expect(getUserAiSnapshot().configuration.connections[0]?.apiKeys?.[1]?.openRouterFreeBillingConfirmed).not.toBe(true);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it("does not save a key when provider authentication fails", async () => {

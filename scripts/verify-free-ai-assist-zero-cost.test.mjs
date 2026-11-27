@@ -7,6 +7,7 @@ const env = {
   OPENAI_API_KEY: "simulated-account-key",
   GEMINI_API_KEY: "simulated-second-key",
   OPENROUTER_API_KEY: "simulated-router-key",
+  STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true",
 };
 
 function verify(args, reply, customEnv = env) {
@@ -47,7 +48,7 @@ test("실행 모드는 단가가 0인 OpenRouter 요청 1건만 보내고 공급
   assert.equal(body.model, "openrouter/free");
   assert.equal(body.max_tokens, 32);
   assert.deepEqual(body.provider.max_price, { prompt: 0, completion: 0, request: 0 });
-  assert.deepEqual(body.plugins, []);
+  assert.deepEqual(body.plugins, [{ id: "web", enabled: false }]);
   assert.equal(options.redirect, "error");
   assert.equal(report.ok, true);
   assert.equal(report.reportedCostUsd, 0);
@@ -65,6 +66,8 @@ test("잘못된 인수와 유료·혼합 모델, 미설정 계정은 전송 전�
   }
   for (const customEnv of [
     { OPENAI_API_KEY: env.OPENAI_API_KEY },
+    { OPENROUTER_API_KEY: env.OPENROUTER_API_KEY },
+    { ...env, STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "false", ONPOD_API_ENV_STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true" },
     { ...env, STUDIO_AI_FREE_OPENROUTER_MODEL: "openai/gpt-4o" },
     { ...env, STUDIO_AI_FREE_OPENROUTER_MODEL: "openai/gpt-4o:online:free" },
   ]) {
