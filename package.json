@@ -173,6 +173,7 @@
     "verify:studio-bg3d-inapp-editor": "tsx scripts/verify-studio-bg3d-inapp-editor.mts",
     "verify:studio-engine-webgpu-textured-brush": "node scripts/verify-studio-engine-webgpu-textured-brush.mjs",
     "build:studio-hokusai-wasm": "node scripts/verify-studio-hokusai-wasm.mjs --build",
+    "build:wasm64:memory64": "node scripts/build-wasm64-memory64.mjs",
     "test:studio-hokusai-wasm": "node scripts/verify-studio-hokusai-wasm.mjs --test",
     "verify:studio-hokusai-wasm": "node scripts/verify-studio-hokusai-wasm.mjs --check",
     "verify:studio-hokusai-wasm:rebuild": "node scripts/verify-studio-hokusai-wasm.mjs --rebuild",

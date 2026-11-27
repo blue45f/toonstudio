@@ -28,6 +28,7 @@ import {
   type CompetitorToolId,
 } from "./competitor-benchmark-data";
 
+import { wrapSvgText } from "@/shared/lib/svg-text-wrap";
 import { cn } from "@/shared/lib/utils";
 
 export interface BenchmarkCoverageAndWorkflowPanelsProps {
@@ -102,10 +103,12 @@ function CoverageRadarSvg(props: {
   readonly locale: "ko" | "en";
 }): ReactElement {
   const { axes, competitorId, competitorName, locale } = props;
-  const cx = 230;
-  const cy = 180;
-  const radius = 112;
-  const labelOffset = 24;
+  const viewWidth = 640;
+  const viewHeight = 420;
+  const cx = 320;
+  const cy = 212;
+  const radius = 114;
+  const labelOffset = 22;
 
   const studioPoints = computeRadarGeometry("toonstudio", axes, cx, cy, radius, labelOffset);
   const rivalPoints = computeRadarGeometry(competitorId, axes, cx, cy, radius, labelOffset);
@@ -116,14 +119,14 @@ function CoverageRadarSvg(props: {
       data-testid="benchmark-coverage-svg"
       data-chart-mode="radar"
       data-competitor-id={competitorId}
-      viewBox="0 0 460 364"
+      viewBox={`0 0 ${viewWidth} ${viewHeight}`}
       role="img"
       aria-label={
         locale === "ko"
           ? `ToonStudio와 ${competitorName}의 9축 공개 스펙 커버리지 레이더 도표 (실측 성능 아님)`
           : `9-axis public-spec coverage radar chart comparing ToonStudio and ${competitorName} (not a performance benchmark)`
       }
-      className="mx-auto w-full max-w-[29rem] text-fg"
+      className="mx-auto block h-auto w-full max-w-[36rem] max-w-full text-fg"
     >
       {rings.map((ring) => (
         <polygon
@@ -140,6 +143,18 @@ function CoverageRadarSvg(props: {
       {studioPoints.map((pt) => {
         const outerX = Math.round((cx + Math.cos(pt.angleRad) * radius) * 10) / 10;
         const outerY = Math.round((cy + Math.sin(pt.angleRad) * radius) * 10) / 10;
+        const anchor = getLabelAnchor(pt.angleRad);
+        const fullLabel = `${pt.axis.order}. ${pick(pt.axis.shortLabel, locale)}`;
+        const maxLabelWidth = anchor === "middle" ? 190 : 168;
+        const lines = wrapSvgText(fullLabel, {
+          maxWidth: maxLabelWidth,
+          fontSize: 11,
+          maxLines: 2,
+          bold: true,
+        });
+        const lineHeight = 14;
+        const firstLineY = pt.labelY - ((lines.length - 1) * lineHeight) / 2;
+
         return (
           <g key={pt.axis.id}>
             <line
@@ -153,15 +168,23 @@ function CoverageRadarSvg(props: {
             />
             <text
               x={pt.labelX}
-              y={pt.labelY}
+              y={firstLineY}
               fill="currentColor"
-              fillOpacity={0.86}
-              fontSize="10.5"
+              fillOpacity={0.88}
+              fontSize="11"
               fontWeight="600"
-              textAnchor={getLabelAnchor(pt.angleRad)}
+              textAnchor={anchor}
               dominantBaseline="middle"
             >
-              {pt.axis.order}. {pick(pt.axis.shortLabel, locale)}
+              {lines.map((line, lineIdx) => (
+                <tspan
+                  key={`${pt.axis.id}-line-${lineIdx}`}
+                  x={pt.labelX}
+                  dy={lineIdx === 0 ? 0 : lineHeight}
+                >
+                  {line}
+                </tspan>
+              ))}
             </text>
           </g>
         );
@@ -206,10 +229,32 @@ function CoverageRadarSvg(props: {
         />
       ))}
 
-      <text x={cx + 5} y={cy - radius + 10} fill="currentColor" fillOpacity={0.5} fontSize="9">
+      <text
+        x={cx + 8}
+        y={cy - radius + 12}
+        fill="currentColor"
+        fillOpacity={0.62}
+        stroke="var(--color-card)"
+        strokeWidth={3}
+        paintOrder="stroke"
+        fontSize="9.5"
+        fontWeight="700"
+        dominantBaseline="middle"
+      >
         100
       </text>
-      <text x={cx + 5} y={cy - radius * 0.5 + 10} fill="currentColor" fillOpacity={0.45} fontSize="9">
+      <text
+        x={cx + 8}
+        y={cy - radius * 0.5 + 12}
+        fill="currentColor"
+        fillOpacity={0.56}
+        stroke="var(--color-card)"
+        strokeWidth={3}
+        paintOrder="stroke"
+        fontSize="9.5"
+        fontWeight="700"
+        dominantBaseline="middle"
+      >
         50
       </text>
     </svg>
@@ -223,46 +268,83 @@ function CoverageBarSvg(props: {
   readonly locale: "ko" | "en";
 }): ReactElement {
   const { axes, competitorId, competitorName, locale } = props;
-  const rowHeight = 38;
-  const topPad = 24;
-  const labelWidth = 148;
-  const barMaxWidth = 278;
-  const svgHeight = topPad + axes.length * rowHeight + 18;
+  const viewWidth = 580;
+  const rowHeight = 42;
+  const topPad = 36;
+  const labelWidth = 178;
+  const barMaxWidth = 310;
+  const scoreColX = labelWidth + barMaxWidth + 14;
+  const svgHeight = topPad + axes.length * rowHeight + 16;
 
   return (
     <svg
       data-testid="benchmark-coverage-svg"
       data-chart-mode="bar"
       data-competitor-id={competitorId}
-      viewBox={`0 0 520 ${svgHeight}`}
+      viewBox={`0 0 ${viewWidth} ${svgHeight}`}
       role="img"
       aria-label={
         locale === "ko"
           ? `ToonStudio와 ${competitorName}의 9축 공개 스펙 커버리지 비교 막대 도표 (실측 성능 아님)`
           : `9-axis public-spec coverage bar chart comparing ToonStudio and ${competitorName} (not a performance benchmark)`
       }
-      className="w-full text-fg"
+      className="block h-auto w-full max-w-full text-fg"
     >
+      {/* 상단 시리즈 범례 */}
+      <g>
+        <circle cx={labelWidth + 6} cy={12} r={4} fill={BENCHMARK_SVG_PIGMENTS.toonstudioStroke} />
+        <text
+          x={labelWidth + 15}
+          y={12}
+          fill={BENCHMARK_SVG_PIGMENTS.toonstudioStroke}
+          fontSize="10"
+          fontWeight="700"
+          dominantBaseline="middle"
+        >
+          ToonStudio
+        </text>
+        <rect
+          x={labelWidth + 96}
+          y={8}
+          width={8}
+          height={8}
+          rx={1.5}
+          fill={BENCHMARK_SVG_PIGMENTS.competitorStroke}
+        />
+        <text
+          x={labelWidth + 110}
+          y={12}
+          fill={BENCHMARK_SVG_PIGMENTS.competitorStroke}
+          fontSize="10"
+          fontWeight="700"
+          dominantBaseline="middle"
+        >
+          {competitorName}
+        </text>
+      </g>
+
       {[0, 50, 100].map((tick) => {
         const x = labelWidth + (barMaxWidth * tick) / 100;
         return (
           <g key={tick}>
             <line
               x1={x}
-              y1={topPad - 6}
+              y1={topPad - 4}
               x2={x}
-              y2={svgHeight - 12}
+              y2={svgHeight - 10}
               stroke="currentColor"
               strokeOpacity={tick === 0 ? 0.3 : 0.14}
               strokeDasharray={tick === 0 ? undefined : "3 3"}
             />
             <text
               x={x}
-              y={12}
+              y={26}
               fill="currentColor"
-              fillOpacity={0.55}
+              fillOpacity={0.58}
               fontSize="9.5"
+              fontWeight="600"
               textAnchor="middle"
+              dominantBaseline="middle"
             >
               {tick}
             </text>
@@ -272,61 +354,102 @@ function CoverageBarSvg(props: {
 
       {axes.map((axis, idx) => {
         const y = topPad + idx * rowHeight;
-        const tsScore = getToolAxisCoverageScore(axis, "toonstudio");
-        const rvScore = getToolAxisCoverageScore(axis, competitorId);
-        const tsWidth = Math.max(4, Math.round((barMaxWidth * tsScore) / 100));
-        const rvWidth = Math.max(4, Math.round((barMaxWidth * rvScore) / 100));
+        const tsScore = Math.max(0, Math.min(100, getToolAxisCoverageScore(axis, "toonstudio")));
+        const rvScore = Math.max(0, Math.min(100, getToolAxisCoverageScore(axis, competitorId)));
+        const tsWidth = tsScore === 0 ? 0 : Math.max(4, Math.min(barMaxWidth, Math.round((barMaxWidth * tsScore) / 100)));
+        const rvWidth = rvScore === 0 ? 0 : Math.max(4, Math.min(barMaxWidth, Math.round((barMaxWidth * rvScore) / 100)));
+        const axisText = `${axis.order}. ${pick(axis.shortLabel, locale)}`;
+        const axisLines = wrapSvgText(axisText, {
+          maxWidth: labelWidth - 18,
+          fontSize: 11,
+          maxLines: 2,
+          bold: true,
+        });
+        const labelLineHeight = 13;
+        const labelStartY = y + 18 - ((axisLines.length - 1) * labelLineHeight) / 2;
 
         return (
           <g key={axis.id} data-testid={`bar-row-${axis.id}`}>
             <text
-              x={labelWidth - 10}
-              y={y + 15}
+              x={labelWidth - 12}
+              y={labelStartY}
               fill="currentColor"
-              fillOpacity={0.88}
+              fillOpacity={0.9}
               fontSize="11"
               fontWeight="600"
               textAnchor="end"
               dominantBaseline="middle"
             >
-              {axis.order}. {pick(axis.shortLabel, locale)}
+              {axisLines.map((line, lineIdx) => (
+                <tspan
+                  key={`${axis.id}-bar-label-${lineIdx}`}
+                  x={labelWidth - 12}
+                  dy={lineIdx === 0 ? 0 : labelLineHeight}
+                >
+                  {line}
+                </tspan>
+              ))}
             </text>
+            {/* ToonStudio 트랙 + 막대 + 우측 정렬 수치 */}
             <rect
               x={labelWidth}
-              y={y + 4}
-              width={tsWidth}
-              height={10}
+              y={y + 5}
+              width={barMaxWidth}
+              height={11}
               rx={3}
-              fill={BENCHMARK_SVG_PIGMENTS.toonstudioStroke}
+              fill="var(--color-raised)"
             />
+            {tsWidth > 0 ? (
+              <rect
+                x={labelWidth}
+                y={y + 5}
+                width={tsWidth}
+                height={11}
+                rx={3}
+                fill={BENCHMARK_SVG_PIGMENTS.toonstudioStroke}
+              />
+            ) : null}
             <text
-              x={labelWidth + barMaxWidth + 12}
-              y={y + 11}
+              x={scoreColX}
+              y={y + 10.5}
               fill={BENCHMARK_SVG_PIGMENTS.toonstudioStroke}
-              fontSize="10"
+              fontSize="10.5"
               fontWeight="700"
+              dominantBaseline="middle"
             >
-              {tsScore}
+              ● {tsScore}
             </text>
+            {/* 경쟁 툴 트랙 + 막대 + 동일 열 우측 정렬 수치 */}
             <rect
               x={labelWidth}
-              y={y + 18}
-              width={rvWidth}
-              height={10}
+              y={y + 20}
+              width={barMaxWidth}
+              height={11}
               rx={3}
-              fill={BENCHMARK_SVG_PIGMENTS.competitorFill}
-              stroke={BENCHMARK_SVG_PIGMENTS.competitorStroke}
-              strokeWidth={1.5}
-              strokeDasharray="4 2"
+              fill="var(--color-raised)"
             />
+            {rvWidth > 0 ? (
+              <rect
+                x={labelWidth}
+                y={y + 20}
+                width={rvWidth}
+                height={11}
+                rx={3}
+                fill={BENCHMARK_SVG_PIGMENTS.competitorFill}
+                stroke={BENCHMARK_SVG_PIGMENTS.competitorStroke}
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
+              />
+            ) : null}
             <text
-              x={labelWidth + barMaxWidth + 46}
-              y={y + 25}
+              x={scoreColX}
+              y={y + 25.5}
               fill={BENCHMARK_SVG_PIGMENTS.competitorStroke}
-              fontSize="10"
+              fontSize="10.5"
               fontWeight="700"
+              dominantBaseline="middle"
             >
-              {rvScore}
+              ■ {rvScore}
             </text>
           </g>
         );
@@ -525,11 +648,11 @@ export function BenchmarkCoverageAndWorkflowPanels(
 
         <p className="mt-4 text-sm font-medium text-fg-2">{pick(workflow.tagline, locale)}</p>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid items-stretch gap-4 lg:grid-cols-2">
           <div
             data-testid="workflow-track-legacy"
             data-step-count={workflow.legacySteps.length}
-            className="rounded-2xl border border-line bg-card p-4"
+            className="flex h-full flex-col rounded-2xl border border-line bg-card p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-3">
               <h3 className="text-sm font-bold text-fg">{copy.workflowLegacyHeading}</h3>

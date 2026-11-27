@@ -14,6 +14,8 @@ import {
   type UnitEconomicsInput,
 } from "./ir-bizplan-km7-math";
 
+import { wrapSvgText } from "@/shared/lib/svg-text-wrap";
+
 export type MoatShowcaseMode = "full" | "spectral" | "economics";
 export type MoatSurface = "site" | "present";
 
@@ -213,12 +215,14 @@ function SpectralPigmentLivePanel({
           </div>
           <svg
             viewBox="0 0 280 96"
-            className="h-24 w-full"
+            className="block h-auto max-h-28 w-full max-w-full"
             role="img"
             aria-label={ko ? "7밴드 가시광선 파장별 반사율 그래프" : "7-band visible wavelength reflectance chart"}
           >
+            <line x1={6} y1={74} x2={274} y2={74} stroke="var(--irm-line)" strokeWidth="1" />
             {comparison.km7Bands.map((refl, idx) => {
-              const barHeight = Math.max(4, Math.round(refl * 66));
+              const clampedRefl = Math.max(0, Math.min(1, refl));
+              const barHeight = Math.max(4, Math.min(66, Math.round(clampedRefl * 66)));
               const x = 10 + idx * 38;
               const y = 74 - barHeight;
               return (
@@ -233,8 +237,9 @@ function SpectralPigmentLivePanel({
                   />
                   <text
                     x={x + 13}
-                    y={90}
+                    y={87}
                     textAnchor="middle"
+                    dominantBaseline="middle"
                     fontSize="10"
                     fill="var(--irm-fg-3)"
                   >
@@ -337,35 +342,42 @@ function InfraAndUnitEconomicsPanel({
         </div>
 
         <svg
-          viewBox="0 0 640 162"
-          className="w-full"
+          viewBox="0 0 660 176"
+          className="block h-auto w-full max-w-full"
           role="img"
           aria-label={ko ? "일반 클라우드 SaaS 추정치와 ToonStudio 베타 0원 실측 비교 막대 차트" : "Bar chart comparing generic cloud SaaS estimates against ToonStudio KRW 0 beta actual"}
         >
           {INFRA_COST_COMPARISON.map((row, idx) => {
-            const y = 8 + idx * 52;
-            const barMaxWidth = 360;
+            const y = 10 + idx * 56;
+            const barX = 6;
+            const barMaxWidth = 372;
             const barWidth =
               row.monthlyCostKrw === 0
                 ? 8
-                : Math.max(24, Math.round((row.monthlyCostKrw / maxCost) * barMaxWidth));
+                : Math.min(barMaxWidth, Math.max(24, Math.round((row.monthlyCostKrw / maxCost) * barMaxWidth)));
             const isActual = row.tier === "current";
+            const labelLines = wrapSvgText(ko ? row.labelKo : row.labelEn, {
+              maxWidth: 646,
+              fontSize: 12,
+              maxLines: 1,
+              bold: true,
+            });
             return (
               <g key={row.id}>
-                <text x={0} y={y + 13} fontSize="12" fontWeight="700" fill="var(--irm-fg)">
-                  {ko ? row.labelKo : row.labelEn}
+                <text x={barX} y={y + 11} dominantBaseline="middle" fontSize="12" fontWeight="700" fill="var(--irm-fg)">
+                  {labelLines[0] ?? ""}
                 </text>
                 <rect
-                  x={0}
-                  y={y + 21}
+                  x={barX}
+                  y={y + 23}
                   width={barMaxWidth}
                   height={16}
                   rx={5}
                   fill="var(--irm-raised)"
                 />
                 <rect
-                  x={0}
-                  y={y + 21}
+                  x={barX}
+                  y={y + 23}
                   width={barWidth}
                   height={16}
                   rx={5}
@@ -373,8 +385,9 @@ function InfraAndUnitEconomicsPanel({
                   opacity={isActual ? 1 : 0.72}
                 />
                 <text
-                  x={barMaxWidth + 14}
-                  y={y + 33}
+                  x={barX + barMaxWidth + 14}
+                  y={y + 31}
+                  dominantBaseline="middle"
                   fontSize="12"
                   fontWeight="700"
                   fill={isActual ? "var(--irm-good)" : "var(--irm-fg-2)"}

@@ -3,6 +3,13 @@
   --workspace-illustrated-panel: var(--color-panel);
   --workspace-illustrated-line: color-mix(in srgb, var(--color-accent) 20%, var(--color-line));
 }
+@media (min-width: 768px) and (min-height: 640px) {
+  .workspace-library-shell {
+    height: auto;
+    min-height: calc(100dvh - 28px);
+    max-height: calc(100dvh - 23px);
+  }
+}
 :root[data-design-theme="starlight"] [data-studio-illustrated-workspace] {
   --workspace-illustrated-panel: #080d1b;
   --workspace-illustrated-line: #35355c;

@@ -12658,7 +12658,7 @@ const puppetWarpArmed =
       activatePrimaryCanvasTool("draw", "pen", false, initialToolDecision.requestedPrimaryTool ? "launch" : "command");
       if (!isMobile && uiDensityMode !== "focus") openInspectorRoute({ primary: "properties" }, null);
     },
-    uiBooleanPreferencesReady, workHydrated,
+    uiBooleanPreferencesReady, workHydrated: workHydrated || workHydrationFailed || initialToolDecision.requestedPrimaryTool !== null,
   });
 
   // 내 로컬 에셋을 커뮤니티에 공유(로그인 필요)

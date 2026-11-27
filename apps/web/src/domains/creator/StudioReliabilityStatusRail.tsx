@@ -33,6 +33,11 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useStudioDrawingClarity } from "./studio-cuttoon-editor/StudioDrawingClarityContext";
 import { StudioDrawingClarityTaskDialog } from "./studio-cuttoon-editor/StudioDrawingClarityTaskDialog";
 import { subscribeStudioDrawingReliability } from "./studio-cuttoon-editor/studio-drawing-assistance-channel";
+import {
+  formatStudioDrawingStabilitySummary,
+  getStudioDrawingStabilityTelemetrySnapshot,
+  subscribeStudioDrawingStabilityTelemetry,
+} from "./studio-cuttoon-editor/studio-cuttoon-drawing-stability-telemetry";
 
 import {
   dismissStudioDestructiveActionRecord,
@@ -162,6 +167,16 @@ export function StudioReliabilityStatusRail({ strokeReadNoticeInCanvas = false }
   const rejectedStrokeStorageError = useStudioRejectedStrokeStorageError();
   const [detailOpen, setDetailOpen] = useState(false);
   const [rejectedStrokeNotice, setRejectedStrokeNotice] = useState<string | null>(null);
+  const [, setDrawingStabilityTick] = useState(0);
+  useEffect(() => {
+    if (!detailOpen) return;
+    return subscribeStudioDrawingStabilityTelemetry(() => {
+      setDrawingStabilityTick((tick) => tick + 1);
+    });
+  }, [detailOpen]);
+  const drawingStabilitySummary = detailOpen
+    ? formatStudioDrawingStabilitySummary(getStudioDrawingStabilityTelemetrySnapshot())
+    : "보호 가동 중";
   useEffect(() => {
     const root = rootRef.current;
     if (!drawing || !root) return;
@@ -222,6 +237,13 @@ export function StudioReliabilityStatusRail({ strokeReadNoticeInCanvas = false }
                 {safeMode.active
                   ? safeMode.reasons.map(describeStudioSafeModeReason).join(" · ")
                   : "꺼짐"}
+              </dd>
+              <dt className="font-semibold text-fg-3">드로잉 보호</dt>
+              <dd
+                data-studio-reliability-detail-channel="drawing-stability"
+                className="min-w-0 font-medium tabular-nums text-fg-2"
+              >
+                {drawingStabilitySummary}
               </dd>
             </dl>
           </div>

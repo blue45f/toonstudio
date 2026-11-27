@@ -282,7 +282,7 @@ export function StudioDrawingQuickErgonomicsBar({
     const handleGlobalQuickWheelKey = (event: KeyboardEvent) => {
       if (blocked || event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key !== "q" && event.key !== "Q") return;
-      const target = event.target as HTMLElement | null;
+      const target = event.target instanceof HTMLElement ? event.target : null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
       event.preventDefault();
       setQuickWheelAnchor(null);
