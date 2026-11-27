@@ -79,7 +79,7 @@ export function buildStudioDownDrawBackdropBoundaryInput(
           id: "incoming-retained-probe",
           type: "draw",
           kind: strokeDrawMode === "shape" ? drawShape : "freehand",
-          mode: strokeDrawMode === "eraser" ? "eraser" : "pen",
+          mode: "pen",
           brush: strokeDrawMode === "pen" ? brush : undefined,
           points: [0, 0],
           stroke: color,

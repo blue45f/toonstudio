@@ -197,7 +197,7 @@ describe("studio-cuttoon-stroke-tail-stabilizer", () => {
       points: [10, 10, 20, 10, 30, 10, 40, 10, 50, 10],
       pressures: [0.4, 0.4, 0.02, 0.95, 1],
       sampleTimeOffsets: [0, 8, 16, 24, 32],
-      brushEnginePrograms: materialBrush.enginePrograms,
+      brushEnginePrograms: materialBrush.enginePrograms ?? undefined,
     });
     const materialResult = stabilizeStudioStrokeLiftTail(materialStroke, {
       pointerType: "pen",

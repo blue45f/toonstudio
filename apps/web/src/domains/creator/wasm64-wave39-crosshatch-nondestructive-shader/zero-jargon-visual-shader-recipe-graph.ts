@@ -515,7 +515,7 @@ export function evaluateNonDestructiveLookStack(
   }
 
   const compiled = compileVisualLookRecipeGraph(graph, options);
-  let currentBuffer = new Float32Array(input.linearRgba.subarray(0, expectedLen));
+  let currentBuffer: Float32Array = new Float32Array(input.linearRgba.subarray(0, expectedLen));
   for (const pass of compiled.activePasses) {
     currentBuffer = executeSingleLookPass(currentBuffer, width, height, pass, input.zDepthMeters, input.lineartMask01);
   }

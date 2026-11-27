@@ -23,6 +23,7 @@ import {
   STUDIO_WASM64_EXTENDED_SUITE_MEMORY64_URL,
   STUDIO_WASM64_EXTENDED_SUITE_URL,
   StudioWasm64HotpathPanel,
+  type StudioWasm64HotpathPanelProps,
   WASM_MEMORY64_FLAG,
   WASM_MEMORY64_PROBE_BYTES,
   WASM_RELAXED_SIMD_PROBE_BYTES,
@@ -400,12 +401,12 @@ describe("실물 wasm64-unknown-unknown (memory64, flags=0x04) 바이너리 계�
     extFallback.dispose();
 
     // 4) UI 배지 정직 표기 검증: WASM64 (memory64 · i64) vs WASM32 폴백 (i32)
-    const view64 = render(createElement(StudioWasm64HotpathPanel, { preloadedRuntime: rtPrimary }));
+    const view64 = render(createElement<StudioWasm64HotpathPanelProps>(StudioWasm64HotpathPanel, { preloadedRuntime: rtPrimary }));
     expect(screen.getByTestId("wasm64-hotpath-backend-badge").textContent).toContain("WASM64 (memory64 · i64)");
     expect(screen.getByTestId("wasm64-hotpath-address-mode").textContent).toContain("WASM64 (memory64 · i64)");
     view64.unmount();
 
-    const view32 = render(createElement(StudioWasm64HotpathPanel, { preloadedRuntime: rtFallback32 }));
+    const view32 = render(createElement<StudioWasm64HotpathPanelProps>(StudioWasm64HotpathPanel, { preloadedRuntime: rtFallback32 }));
     expect(screen.getByTestId("wasm64-hotpath-backend-badge").textContent).toContain("WASM32 폴백 (i32)");
     expect(screen.getByTestId("wasm64-hotpath-address-mode").textContent).toContain("WASM32 폴백 (i32)");
     view32.unmount();
