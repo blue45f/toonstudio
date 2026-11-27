@@ -1,0 +1,19 @@
+[package]
+name = "studio-wasm64-fast-kernels"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "ToonStudio Wave-54 fast-anything 외곽 루프 4종 순수 Rust WASM64(memory64) + WASM32 가속 커널"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
