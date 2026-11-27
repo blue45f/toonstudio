@@ -555,14 +555,12 @@ const WEIGHTED_MAX_VELOCITY_PX_PER_MS = 50;
  *
  * 강도를 ramp 추종 지연 시간(lagMs)으로 환산해 ω=2/lag, k=ω², c=2ω(ζ=1)로 두면
  * 정상 상태 후행 거리가 lagMs × 속도와 같아져 강도의 체감이 속도와 무관하게 일정하다.
- * 적분은 ω·dt가 커져도 발산하지 않도록 서브스텝으로 나눈다(결정적·순수).
+ * 두 펜 좌표 사이를 직선으로 이동하는 목표에 대한 연속시간 해를 사용한다. 같은 경로를
+ * 몇 번에 나눠 전달하든 필적과 속도 필압이 같고 샘플당 연산량도 일정하다.
  * derivedPressure는 추의 화면 속도에서 도출한다: 빠를수록 얇게, 멈추면 1로 복귀.
  */
 function weightedPoint(
-  previousVelocityX: number,
-  previousVelocityY: number,
-  outputX: number,
-  outputY: number,
+  previous: StudioStrokeStabilizerState,
   rawX: number,
   rawY: number,
   strength: number,
@@ -577,28 +575,29 @@ function weightedPoint(
   if (strength <= 0) {
     return { point: [rawX, rawY], velocityX: 0, velocityY: 0, derivedPressure: 1 };
   }
-  const lagMs = 6 + strength * 2.2;
-  const omega = 2 / lagMs;
-  const stiffness = omega * omega;
-  const damping = 2 * omega;
-  const substeps = Math.max(
-    1,
-    Math.min(64, Math.ceil(Math.max(elapsedMs / 4, (elapsedMs * omega) / 0.5)))
-  );
-  const dt = elapsedMs / substeps;
-  let x = outputX;
-  let y = outputY;
-  let vx = clamp(finiteNumber(previousVelocityX, 0), -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
-  let vy = clamp(finiteNumber(previousVelocityY, 0), -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
-  for (let step = 0; step < substeps; step += 1) {
-    vx += ((rawX - x) * stiffness - vx * damping) * dt;
-    vy += ((rawY - y) * stiffness - vy * damping) * dt;
-    vx = clamp(vx, -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
-    vy = clamp(vy, -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
-    x += vx * dt;
-    y += vy * dt;
-  }
-  const speedCss = Math.hypot(vx, vy) * coordinateScale;
+  const omega = 2 / (6 + strength * 2.2);
+  const phase = omega * elapsedMs;
+  const decay = Math.exp(-phase);
+  const stepGain = 1 - (1 + phase) * decay;
+  const rampGain = 1 + decay - 2 * (1 - decay) / phase;
+  const speedLimit = WEIGHTED_MAX_VELOCITY_PX_PER_MS;
+  const maxTravel = speedLimit * elapsedMs;
+
+  const advanceAxis = (output: number, from: number, to: number, previousVelocity?: number) => {
+    const velocity = clamp(finiteNumber(previousVelocity, 0), -speedLimit, speedLimit);
+    const gap = from - output;
+    const travel = to - from;
+    const displacement = gap * stepGain + velocity * elapsedMs * decay + travel * rampGain;
+    const finalVelocity = gap * omega * phase * decay + velocity * (1 - phase) * decay
+      + (travel / elapsedMs) * stepGain;
+    return {
+      position: output + clamp(displacement, -maxTravel, maxTravel),
+      velocity: clamp(finalVelocity, -speedLimit, speedLimit),
+    };
+  };
+  const xAxis = advanceAxis(previous.outputX, previous.rawX, rawX, previous.velocityX);
+  const yAxis = advanceAxis(previous.outputY, previous.rawY, rawY, previous.velocityY);
+  const speedCss = Math.hypot(xAxis.velocity, yAxis.velocity) * coordinateScale;
   const derivedPressure = clamp(
     1
       - (speedCss / STUDIO_WEIGHTED_PRESSURE_FLOOR_SPEED_PX_PER_MS)
@@ -606,7 +605,12 @@ function weightedPoint(
     STUDIO_WEIGHTED_MIN_DERIVED_PRESSURE,
     1
   );
-  return { point: [x, y], velocityX: vx, velocityY: vy, derivedPressure };
+  return {
+    point: [xAxis.position, yAxis.position],
+    velocityX: xAxis.velocity,
+    velocityY: yAxis.velocity,
+    derivedPressure,
+  };
 }
 
 function timeNormalizedEmaPoint(
@@ -616,13 +620,10 @@ function timeNormalizedEmaPoint(
   previousRawY: number,
   rawX: number,
   rawY: number,
-  strength: number,
+  timeConstantMs: number,
   elapsedMs: number
 ): readonly [number, number] {
-  if (strength <= 0) return [rawX, rawY];
-  const timeConstantMs =
-    STUDIO_STABILIZER_MIN_TIME_CONSTANT_MS
-    + strength * STUDIO_STABILIZER_TIME_CONSTANT_PER_STRENGTH_MS;
+  if (timeConstantMs <= 0) return [rawX, rawY];
   const decay = Math.exp(-elapsedMs / timeConstantMs);
   // 샘플 사이 원시 포인터가 직선으로 이동했다고 보고 1차 저역통과 필터의 해를 정확히 적분한다.
   // 단순히 현재 점에 dt 보정 alpha를 곱하면 zero-order hold가 되어 선형 스트로크가 60/120/240Hz
@@ -653,6 +654,8 @@ export function stabilizeStudioStrokeSample(
     outputY: fallbackY,
     timeStamp: previousTimeStamp,
     sampleIntervalMs: safeSampleInterval(previous.sampleIntervalMs),
+    velocityX: previous.velocityX,
+    velocityY: previous.velocityY,
   };
   const strength = clampStrength(options.strength);
   const mode = normalizeStudioStabilizerMode(options.mode);
@@ -673,17 +676,7 @@ export function stabilizeStudioStrokeSample(
   let velocityX: number | undefined;
   let velocityY: number | undefined;
   if (mode === "weighted") {
-    const weighted = weightedPoint(
-      finiteNumber(previous.velocityX, 0),
-      finiteNumber(previous.velocityY, 0),
-      fallbackX,
-      fallbackY,
-      rawX,
-      rawY,
-      gatedStrength,
-      elapsedMs,
-      coordinateScale
-    );
+    const weighted = weightedPoint(safePrevious, rawX, rawY, gatedStrength, elapsedMs, coordinateScale);
     point = weighted.point;
     derivedPressure = weighted.derivedPressure;
     velocityX = weighted.velocityX;
@@ -692,6 +685,12 @@ export function stabilizeStudioStrokeSample(
     point = precisionPoint(fallbackX, fallbackY, rawX, rawY, gatedStrength, coordinateScale);
   } else {
     if (mode === "adaptive") effectiveStrength = adaptiveStrength(gatedStrength, speed);
+    // 적응 보정이 빠른 속도에서 0으로 내려갈 때 기본 시정수 8ms도 함께 줄여
+    // 경계 양옆의 거의 같은 입력이 서로 다른 위치로 튀지 않게 한다.
+    const baseResponse = mode === "adaptive" ? Math.min(1, effectiveStrength) : 1;
+    const timeConstantMs = effectiveStrength <= 0 ? 0
+      : STUDIO_STABILIZER_MIN_TIME_CONSTANT_MS * baseResponse
+        + STUDIO_STABILIZER_TIME_CONSTANT_PER_STRENGTH_MS * effectiveStrength;
     point = timeNormalizedEmaPoint(
       fallbackX,
       fallbackY,
@@ -699,7 +698,7 @@ export function stabilizeStudioStrokeSample(
       safePrevious.rawY,
       rawX,
       rawY,
-      effectiveStrength,
+      timeConstantMs,
       elapsedMs
     );
   }

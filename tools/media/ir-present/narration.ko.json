@@ -104,7 +104,7 @@
     {
       "scene": 19,
       "title": "기술 구조",
-      "markupSha256": "001f32f8cd60f028f67cc7d84ac4b38fee29057dd99e75b6d793e3a641d7ae9e"
+      "markupSha256": "3facfb33384bae2b7e18577b538b23482c68a257519119d5be6edd851803e4e2"
     },
     {
       "scene": 20,
@@ -114,7 +114,7 @@
     {
       "scene": 21,
       "title": "비즈니스 모델",
-      "markupSha256": "9aad4c24a99bcf3d0744ca851880c746446eeb96be12103ce3a41b61e8cab8e6"
+      "markupSha256": "c5f69acdac581575c02c68d9486658ae77280cb371539121dfbd24228a7da3d0"
     },
     {
       "scene": 22,
@@ -162,7 +162,7 @@
       "sha256": "a52a3ac18c5b6af7a5f76099a071a57188eec5d9577c2420c945ffdafc4db980"
     }
   ],
-  "sourceSha256": "67a363bf72f5159f6b3b5bdba67d74aed374bfdebfd95bf2a352e13d7e81636f",
+  "sourceSha256": "77e844fdd77d479311460d50caef2d28ac693a93ebb2696832c0dc772f1c844f",
   "scenes": [
     {
       "scene": 1,

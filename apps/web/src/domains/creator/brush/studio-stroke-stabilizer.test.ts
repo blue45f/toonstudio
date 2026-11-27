@@ -247,6 +247,16 @@ describe("studio stroke stabilizer", () => {
     expect(fast.point[0] / 64).toBeGreaterThan(slow.point[0]);
   });
 
+  it("속도 적응 보정과 직접 추적 사이에서 펜 끝이 튀지 않는다", () => {
+    const start = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+    // 강도 8의 지연 예산은 8 CSS px로, 1px/ms에서 직접 추적으로 넘어간다.
+    const positionAt = (speed: number) => stabilizeStudioStrokeSample(
+      start, { x: 16 * speed, y: 0, timeStamp: 16 },
+      { strength: 8, mode: "adaptive" }
+    ).point[0];
+    expect(Math.abs(positionAt(1.0001) - positionAt(0.9999))).toBeLessThan(0.01);
+  });
+
   it("bounds adaptive steady-state trail in CSS pixels at ordinary and fast drawing speeds", () => {
     const strength = 8;
     const lagBudget =
@@ -656,6 +666,54 @@ describe("studio stroke stabilizer", () => {
     }
     expect(stoppedPoint[0]).toBeCloseTo(384, 0);
     expect(stoppedPressure).toBeGreaterThan(0.95);
+  });
+
+  it("같은 펜 궤적에서 무게 추의 위치와 필압은 입력 주기와 무관하다", () => {
+    function trace(samplesPerLeg: number) {
+      let state = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+      const checkpoints: number[][] = [];
+      // 1/15초마다 방향이나 속도가 바뀐다. 마지막에는 접촉한 채로 멈춘다.
+      const targets = [[64, 20], [42, 64], [42, 64]] as const;
+      for (const [targetX, targetY] of targets) {
+        const start = state;
+        for (let index = 1; index <= samplesPerLeg; index += 1) {
+          const fraction = index / samplesPerLeg;
+          const result = stabilizeStudioStrokeSample(state, {
+            x: start.rawX + (targetX - start.rawX) * fraction,
+            y: start.rawY + (targetY - start.rawY) * fraction,
+            timeStamp: start.timeStamp + (1000 / 15) * fraction,
+          }, { mode: "weighted", strength: 6 });
+          state = result.state;
+          if (index === samplesPerLeg) {
+            checkpoints.push([result.point[0], result.point[1], result.derivedPressure ?? Number.NaN]);
+          }
+        }
+      }
+      return checkpoints;
+    }
+
+    const at60Hz = trace(4);
+    for (const rate of [120, 240]) {
+      const checkpoints = trace(rate / 15);
+      checkpoints.forEach((sample, leg) => {
+        sample.forEach((value, channel) => {
+          expect(value).toBeCloseTo(at60Hz[leg]?.[channel] ?? Number.NaN, 9);
+        });
+      });
+    }
+  });
+
+  it("좌표가 순간적으로 튀어도 무게 추의 이동량과 속도는 제한된다", () => {
+    const start = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+    const result = stabilizeStudioStrokeSample(
+      start,
+      { x: 1_000_000, y: -1_000_000, timeStamp: 4 },
+      { strength: 5, mode: "weighted" }
+    );
+    expect(Math.abs(result.point[0])).toBeLessThanOrEqual(200);
+    expect(Math.abs(result.point[1])).toBeLessThanOrEqual(200);
+    expect(Math.abs(result.state.velocityX ?? Number.NaN)).toBeLessThanOrEqual(50);
+    expect(Math.abs(result.state.velocityY ?? Number.NaN)).toBeLessThanOrEqual(50);
   });
 
   it("keeps weighted derived pressure near full for slow strokes", () => {

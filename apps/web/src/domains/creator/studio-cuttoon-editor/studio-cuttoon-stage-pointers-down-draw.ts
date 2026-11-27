@@ -362,7 +362,11 @@ export function bindStudioCuttoonStagePointersDownDraw(
         liveFoleyBridge.studioLiveStrokeFoley.onStrokeStart(foleyStart);
       } else {
         void import("./studio-live-stroke-foley-bridge")
-          .then((mod) => mod.studioLiveStrokeFoley.onStrokeStart(foleyStart))
+          .then((mod) => {
+            if (drawingRef.current?.id === next.id && requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession()) {
+              mod.studioLiveStrokeFoley.onStrokeStart(foleyStart);
+            }
+          })
           .catch(() => {});
       }
       if (strokeDrawMode === "pen" && quickShapeActive) startQuickShapeTracking(strokeOrigin);
