@@ -152,6 +152,7 @@ jobs:
             .artifacts/studio-hair-stack/screenshots/*.png
             .artifacts/studio-hair-stack/preview-*.webp
             .artifacts/studio-hair-stack-baseline/review.json
+            .artifacts/studio-hair-stack-baseline/contact-sheet-*.jpg
             .artifacts/studio-hair-stack-baseline/screenshots/*.png
           retention-days: 7
           include-hidden-files: true
