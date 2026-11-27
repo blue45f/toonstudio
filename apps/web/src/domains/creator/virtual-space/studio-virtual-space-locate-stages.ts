@@ -2,7 +2,7 @@ import { CAMPUS_GATES } from "./studio-virtual-space-campus-blueprint";
 import { isStudioVirtualCampusRoom } from "./studio-virtual-space-campus-world";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import { studioVirtualPlaceIdFromPortalHref } from "./studio-virtual-space-place-world";
-import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-world-manifest";
+import type { StudioVirtualSpaceWorldManifest, StudioWorldRoomDefinition } from "./studio-virtual-space-world-manifest";
 
 /**
  * 바로 가기 목적지와 Locate 2단계 안내 (W-2 공간 연결성).
@@ -15,15 +15,17 @@ import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-wor
  */
 
 /** 방 바로 가기·안내 목적지: 방 스폰 → 구역 상호작용 지점 → 방 중심 순으로 고른다. */
+export function studioQuickTravelPointForRoom(manifest: StudioVirtualSpaceWorldManifest, room: StudioWorldRoomDefinition): StudioVirtualSpacePoint;
+export function studioQuickTravelPointForRoom(manifest: StudioVirtualSpaceWorldManifest, roomId: string): StudioVirtualSpacePoint | null;
 export function studioQuickTravelPointForRoom(
   manifest: StudioVirtualSpaceWorldManifest,
-  roomId: string,
+  target: string | StudioWorldRoomDefinition,
 ): StudioVirtualSpacePoint | null {
-  const room = manifest.rooms.find((candidate) => candidate.id === roomId);
+  const room = typeof target === "string" ? manifest.rooms.find(candidate => candidate.id === target) : target;
   if (!room) return null;
-  const spawn = manifest.spawns.find((candidate) => candidate.id === roomId)?.point;
+  const spawn = manifest.spawns.find((candidate) => candidate.id === room.id)?.point;
   if (spawn) return spawn;
-  const interaction = manifest.interactions.find((candidate) => candidate.zoneId === roomId)?.point;
+  const interaction = manifest.interactions.find((candidate) => candidate.zoneId === room.id)?.point;
   if (interaction) return interaction;
   return { x: room.x + room.width / 2, y: room.y + room.height / 2 };
 }

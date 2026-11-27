@@ -1,5 +1,5 @@
-import { Map as MapIcon, Maximize2, Zap } from "lucide-react";
-import { memo, useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
+import { List, LocateFixed, Map as MapIcon, Maximize2, Zap } from "lucide-react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -9,7 +9,8 @@ import { createMinimapViewport, minimapToWorld } from "../studio-virtual-space-m
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { studioVirtualPlaceById, studioVirtualPlaceIdFromPortalHref } from "../studio-virtual-space-place-world";
 import { clampStudioWorldPoint } from "../studio-virtual-space-world-pathfinding";
-import { studioWorldSpawn, type StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
+import { studioQuickTravelPointForRoom } from "../studio-virtual-space-locate-stages";
+import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { toonHqRoomShortLabel } from "../office2d/hq/toon-hq-blueprint";
 import { SPACE_ZONE_FALLBACK_TONE, SPACE_ZONE_TONE_TOKENS } from "./space-zone-visuals";
 import { spaceKoParticle } from "./space-korean";
@@ -21,15 +22,16 @@ import {
 } from "./space-minimap-labels";
 import { useStudioMapIllustration } from "./space-minimap-illustration";
 
+import { SpaceMapDestinations, type SpaceMapRoom } from "./SpaceMapDestinations";
+import "./space-map-directory.css";
+
 export interface SpaceMinimapPerson {
   readonly id: string;
   readonly name: string;
   readonly point: StudioVirtualSpacePoint;
 }
 
-interface MinimapZone {
-  readonly id: string;
-  readonly label: string;
+interface MinimapZone extends SpaceMapRoom {
   readonly sign: string;
   /** 좁은 미니맵에서 전체 이름이 들어가지 않을 때 쓰는 짧은 이름. */
   readonly shortSign: string | null;
@@ -38,7 +40,6 @@ interface MinimapZone {
   readonly y: number;
   readonly width: number;
   readonly height: number;
-  readonly spawn: StudioVirtualSpacePoint;
 }
 
 interface MinimapGate {
@@ -64,7 +65,7 @@ function minimapZones(manifest: StudioVirtualSpaceWorldManifest, bt: (ko: string
       shortSign: short ? bt(short.ko, short.en) : spaceMinimapFallbackShortLabel(sign),
       tone: meta ? SPACE_ZONE_TONE_TOKENS[meta.tone] : SPACE_ZONE_FALLBACK_TONE,
       x: room.x, y: room.y, width: room.width, height: room.height,
-      spawn: manifest.spawns.find((spawn) => spawn.id === room.id)?.point ?? studioWorldSpawn(manifest, room.id).point,
+      spawn: studioQuickTravelPointForRoom(manifest, room),
     };
   });
 }
@@ -106,11 +107,14 @@ export const SpaceMinimap = memo(function SpaceMinimap({
   const bt = useBilingual("SpaceMinimap");
   const zones = useMemo(() => minimapZones(manifest, bt), [manifest, bt]);
   const gates = useMemo(() => minimapGates(manifest, bt), [manifest, bt]);
-  // 실제 월드 아트·기하를 실제 좌표에 합성한 일러스트 지도 (준비 전에는 평면 SVG 폴백).
-  const illustrationPlan = useMemo(() => buildStudioMapIllustrationPlan(manifest), [manifest]);
-  const illustrationUrl = useStudioMapIllustration(illustrationPlan);
+
   const highlightRooms = useMemo(() => new Set(highlightRoomIds), [highlightRoomIds]);
   const full = variant === "full";
+  const [listView, setListView] = useState(false);
+  const listToggle = useRef<HTMLButtonElement>(null);
+  const showMap = full ? !listView : expanded;
+  // 접힌 미니맵과 목록 보기에서는 지도 이미지를 요청하지 않는다.
+  const illustrationUrl = useStudioMapIllustration(showMap ? buildStudioMapIllustrationPlan(manifest) : null);
   const [armedGateId, setArmedGateId] = useState<string | null>(null);
   useEffect(() => {
     if (!armedGateId) return undefined;
@@ -121,7 +125,14 @@ export const SpaceMinimap = memo(function SpaceMinimap({
   const moveFromClick = (event: MouseEvent<HTMLElement>) => {
     // 키보드 Enter·Space가 만드는 합성 클릭은 detail이 0이고 좌표가 없어
     // 지도 왼쪽 위로 걷기 시작한다. 키보드는 큰 지도의 구역 버튼으로 이동한다.
-    if (event.detail === 0) return;
+    if (event.detail === 0) {
+      if (full) {
+        setListView(true);
+        listToggle.current?.focus();
+      }
+      else onOpenFull?.();
+      return;
+    }
     const rect = event.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const viewport = createMinimapViewport(manifest.width, manifest.height, rect.width, rect.height, 0);
@@ -144,8 +155,8 @@ export const SpaceMinimap = memo(function SpaceMinimap({
     () => clusterSpaceMinimapPeople(people, full ? 48 : 84),
     [people, full],
   );
-  const stage = <div className="space-minimap__stage" data-variant={variant}
-    style={{ aspectRatio: `${manifest.width} / ${manifest.height}` } as CSSProperties}>
+  const stage = !showMap ? null : <div className="space-minimap__stage" data-variant={variant}
+    style={{ aspectRatio: `${manifest.width} / ${manifest.height}`, "--map-ratio": manifest.width / manifest.height } as CSSProperties}>
     <button type="button" className="space-minimap__surface" onClick={moveFromClick}
       aria-label={bt("지도에서 걸어갈 곳 선택", "Choose where to walk on the map")} />
     <svg className="space-minimap__svg" viewBox={`0 0 ${manifest.width} ${manifest.height}`} preserveAspectRatio="xMidYMid meet" aria-hidden focusable="false">
@@ -220,8 +231,22 @@ export const SpaceMinimap = memo(function SpaceMinimap({
 
   if (full) {
     return <div className="space-minimap space-minimap--full" data-illustrated={illustrationUrl ? true : undefined} data-space-interactive="true">
-      {stage}
-      {gates.length ? <div className="space-minimap__gates" role="group" aria-label={bt("다른 장소 게이트", "Gates to other places")}>
+      <div className="space-map-toolbar">
+        <div className="space-map-toolbar__views" role="group" aria-label={bt("지도 보기 방식", "Map view")}>
+          <button type="button" aria-pressed={!listView} onClick={() => setListView(false)}>
+            <MapIcon size={16} aria-hidden />{bt("공간 지도", "Floor map")}
+          </button>
+          <button ref={listToggle} type="button" aria-pressed={listView} onClick={() => setListView(true)}>
+            <List size={16} aria-hidden />{bt("목적지 목록", "Destinations")}
+          </button>
+        </div>
+        {currentZone ? <span className="space-map-toolbar__location"><LocateFixed size={15} aria-hidden />
+          <span className="sr-only">{bt("현재 위치", "Current location")} </span>{currentZone.label}
+        </span> : null}
+      </div>
+      {listView ? <SpaceMapDestinations key={manifest.id} manifest={manifest} rooms={zones} currentRoomId={currentRoomId}
+        recommended={highlightRooms} onMoveTo={onMoveTo} onJumpTo={onJumpTo} /> : stage}
+      {!listView && gates.length ? <div className="space-minimap__gates" role="group" aria-label={bt("다른 장소 게이트", "Gates to other places")}>
         {gates.map((gate) => {
           const armed = armedGateId === gate.id;
           const visibleGateText = `${gate.label}${armed ? bt(" · 한 번 더 눌러 이동", " · tap again to go") : ""}`;
@@ -241,14 +266,14 @@ export const SpaceMinimap = memo(function SpaceMinimap({
           </button>;
         })}
       </div> : null}
-      <ul className="space-minimap__legend" aria-label={bt("지도 범례", "Map legend")}>
+      {!listView ? <ul className="space-minimap__legend" aria-label={bt("지도 범례", "Map legend")}>
         <li><span className="space-minimap__legend-self" aria-hidden />{bt("나", "You")}</li>
         <li><span className="space-minimap__legend-peer" aria-hidden />{bt("다른 사람", "Others")}</li>
         <li><span className="space-minimap__legend-destination" aria-hidden />{bt("목적지", "Destination")}</li>
         {zones.some((zone) => highlightRooms.has(zone.id)) ? <li><span className="space-minimap__legend-role" aria-hidden />{bt("내 직군 추천 구역", "Recommended for your role")}</li> : null}
         {gates.length ? <li><span className="space-minimap__legend-gate" aria-hidden />{bt("하위 맵 게이트", "Sub-map gate")}</li> : null}
         {illustrationUrl ? <li><span className="space-minimap__legend-path" aria-hidden />{bt("광장으로 가는 길", "Path to the commons")}</li> : null}
-      </ul>
+      </ul> : null}
     </div>;
   }
   const toggleTitle = bt("지도", "Map");

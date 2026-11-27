@@ -33,6 +33,13 @@ describe("renderStudioMapIllustration", () => {
     await expect(renderStudioMapIllustration(plan)).resolves.toBeNull();
   });
 
+  it("미니맵과 큰 지도는 같은 계획을 쓰고 버전이 같은 편집 초안은 별도로 합성한다", () => {
+    const manifest = studioVirtualCampusManifest(false);
+    expect(buildStudioMapIllustrationPlan(manifest)).toBe(buildStudioMapIllustrationPlan(manifest));
+    const draft = buildStudioMapIllustrationPlan({ ...manifest, props: [] });
+    expect(renderStudioMapIllustration(draft)).not.toBe(renderStudioMapIllustration(plan));
+  });
+
   it("같은 계획은 같은 합성 프라미스를 공유한다", () => {
     expect(renderStudioMapIllustration(plan)).toBe(renderStudioMapIllustration(plan));
   });

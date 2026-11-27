@@ -4,7 +4,7 @@
  * 순수 계획 모듈 `studio-virtual-space-map-illustration`가 만든 합성 계획을
  * 오프스크린 캔버스에 실제 아트로 그려 데이터 URL로 돌려준다. 배경 아트와
  * 프롭은 실제 에셋을 실제 좌표에 얹으므로 결과는 게임 화면의 레이아웃과
- * 어긋나지 않는다. 합성 결과는 계획 키로 캐시해 미니맵·큰 지도가 공유한다.
+ * 어긋나지 않는다. 합성 결과는 불변 계획 객체에 캐시해 미니맵·큰 지도가 공유한다.
  * 캔버스를 쓸 수 없는 환경(jsdom 등)에서는 null을 돌려주고, 호출부는
  * 기존 SVG 지도로 자연스럽게 폴백한다.
  */
@@ -242,33 +242,32 @@ async function renderUncached(plan: StudioMapIllustrationPlan): Promise<string |
   }
 }
 
-const illustrationCache = new Map<string, Promise<string | null>>();
+const illustrationCache = new WeakMap<StudioMapIllustrationPlan, Promise<string | null>>();
 
 /** 합성 계획 → 일러스트 데이터 URL. 같은 계획은 한 번만 합성한다. */
 export function renderStudioMapIllustration(plan: StudioMapIllustrationPlan): Promise<string | null> {
-  const hit = illustrationCache.get(plan.key);
+  const hit = illustrationCache.get(plan);
   if (hit) return hit;
-  const pending = renderUncached(plan).catch(() => null);
-  illustrationCache.set(plan.key, pending);
+  const pending = renderUncached(plan).catch(() => null).then(result => {
+    if (result === null) illustrationCache.delete(plan);
+    return result;
+  });
+  illustrationCache.set(plan, pending);
   return pending;
 }
 
 /** 계획이 바뀌면 다시 합성하고, 준비 전에는 null(기존 SVG 지도 폴백)을 돌려준다. */
 export function useStudioMapIllustration(plan: StudioMapIllustrationPlan | null): string | null {
-  const [url, setUrl] = useState<string | null>(null);
+  const [ready, setReady] = useState<{ plan: StudioMapIllustrationPlan; url: string | null } | null>(null);
   useEffect(() => {
-    if (!plan) {
-      setUrl(null);
-      return undefined;
-    }
+    if (!plan) return;
     let alive = true;
-    setUrl(null);
     void renderStudioMapIllustration(plan).then((result) => {
-      if (alive) setUrl(result);
+      if (alive) setReady({ plan, url: result });
     });
     return () => {
       alive = false;
     };
   }, [plan]);
-  return url;
+  return ready?.plan === plan ? ready.url : null;
 }

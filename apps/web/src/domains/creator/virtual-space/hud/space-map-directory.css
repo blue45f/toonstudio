@@ -1,0 +1,99 @@
+/* Generated using AppDeploy UI skill */
+.space-map-toolbar,
+.space-map-toolbar__views,
+.space-map-toolbar__location,
+.space-map-directory__room,
+.space-map-directory__tag,
+.space-map-directory__stations,
+.space-map-directory__search {
+  display: flex;
+  align-items: center;
+}
+.space-map-toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-block-end: 4px;
+}
+.space-map-toolbar__views {
+  padding: 3px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-canvas);
+}
+.space-map-toolbar button,
+.space-map-directory button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 6px 11px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 9px;
+  color: var(--color-fg-2);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.space-map-toolbar button[aria-pressed="true"] {
+  color: var(--color-fg);
+  border-color: var(--color-line-strong);
+  background: var(--color-card);
+}
+.space-map-toolbar button:hover,
+.space-map-directory button:hover { background: var(--space-surface-raised); color: var(--color-fg); }
+.space-map-toolbar__location { gap: 5px; color: var(--color-fg-2); }
+.space-map-directory { display: grid; gap: 7px; min-width: 0; }
+.space-map-directory__search {
+  gap: 10px;
+  padding-inline: 12px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 10px;
+  background: var(--color-canvas);
+  color: var(--color-fg-2);
+}
+.space-map-directory__search:focus-within { outline: 2px solid var(--color-accent); }
+.space-map-directory__search input {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-fg);
+  font: inherit;
+}
+.space-hud .space-map-directory__search input:focus-visible { outline: none; }
+.space-map-directory__count { margin: 0; color: var(--color-fg-2); font-size: 12px; }
+.space-map-directory ul { margin: 0; padding: 0; list-style: none; }
+.space-map-directory__rooms { display: grid; gap: 6px; }
+.space-map-directory__rooms > li {
+  border: 1px solid var(--color-line);
+  border-radius: 11px;
+  background: var(--color-card);
+}
+.space-map-directory__room { padding: 3px; gap: 4px; }
+.space-map-directory button.space-map-directory__walk {
+  flex: 1;
+  justify-content: flex-start;
+  min-width: 0;
+  text-align: start;
+}
+.space-map-directory__detail { display: grid; gap: 2px; }
+.space-map-directory__action { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.space-map-directory__pin { display: grid; place-items: center; color: var(--color-accent); }
+.space-map-directory__name { display: grid; flex: 1; gap: 2px; overflow-wrap: anywhere; }
+.space-map-directory__name strong { color: var(--color-fg); font-size: 14px; }
+.space-map-directory__name small { font-size: 12px; font-weight: 500; }
+.space-map-directory__tag { gap: 4px; color: var(--color-accent); }
+.space-map-directory__jump { flex: none; }
+.space-map-directory .space-map-directory__stations {
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--color-line);
+}
+.space-map-directory__stations button { color: var(--color-fg); }
+.space-map-directory svg { flex: none; }

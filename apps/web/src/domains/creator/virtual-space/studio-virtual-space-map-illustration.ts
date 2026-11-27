@@ -125,6 +125,8 @@ function pointInRect(x: number, y: number, rect: { x: number; y: number; width: 
   return x >= rect.x - margin && x <= rect.x + rect.width + margin && y >= rect.y - margin && y <= rect.y + rect.height + margin;
 }
 
+const planCache = new WeakMap<StudioVirtualSpaceWorldManifest, StudioMapIllustrationPlan>();
+
 /**
  * 매니페스트에서 지도 일러스트 합성 계획을 만든다.
  * 같은 매니페스트 입력에는 항상 같은 계획을 돌려준다(시드 고정).
@@ -132,6 +134,8 @@ function pointInRect(x: number, y: number, rect: { x: number; y: number; width: 
 export function buildStudioMapIllustrationPlan(
   manifest: StudioVirtualSpaceWorldManifest,
 ): StudioMapIllustrationPlan {
+  const cached = planCache.get(manifest);
+  if (cached) return cached;
   const random = studioMapIllustrationRandom(studioMapIllustrationSeed(`${manifest.id}@${manifest.version}`));
 
   const rooms: StudioMapIllustrationRoom[] = manifest.rooms.map((room) => {
@@ -211,7 +215,7 @@ export function buildStudioMapIllustrationPlan(
       alpha: clamp(prop.alpha ?? 1, 0, 1),
     }));
 
-  return Object.freeze({
+  const plan = Object.freeze({
     key: `${manifest.id}@${manifest.version}:${manifest.width}x${manifest.height}:${manifest.backgroundUrl}`,
     worldWidth: manifest.width,
     worldHeight: manifest.height,
@@ -222,6 +226,8 @@ export function buildStudioMapIllustrationPlan(
     speckles: Object.freeze(speckles),
     props: Object.freeze(props),
   });
+  planCache.set(manifest, plan);
+  return plan;
 }
 
 /**
