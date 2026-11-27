@@ -66,8 +66,20 @@ export function planCharacterPoseAuthoringInput(input: CharacterPoseAuthoringInp
   if (input.yOffset !== undefined) isolated.scene.position.y = input.yOffset;
   const captured = captureCharacterPoseRuntimeV3({ source: isolated,
     poseId: `${input.kind}:${input.previous.generationId + 1}`, generationId: input.previous.generationId + 1, includeFingers: true });
+  const fingerOnly = input.kind === "manual" && !plan.appliedBodyBones.length;
+  let bones = captured.bones;
+  if (fingerOnly) {
+    // Runtime fingers can come from idle animation or an equipped prop. Only edited joints
+    // become authored overrides, preserving sparse poses and any locked or opposite fingers.
+    const authored = { ...input.previous.bones };
+    for (const name of plan.appliedFingerBones) {
+      const rotation = captured.bones[name];
+      if (rotation) authored[name] = rotation;
+    }
+    bones = authored;
+  }
   const result = validateCharacterPoseDocumentV3({
-    ...input.previous, root: captured.root, bones: captured.bones,
+    ...input.previous, root: fingerOnly && input.yOffset === undefined ? input.previous.root : captured.root, bones,
     poseId: captured.poseId, generationId: captured.generationId, source: input.kind,
     confidence: { ...input.previous.confidence, overall: input.confidence ?? input.previous.confidence.overall },
     sourceWarnings: [

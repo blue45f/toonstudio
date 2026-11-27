@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
-import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, readLinkedCutPngSize } from "./studio-vrm-linked-cut-frame";
+import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, preserveUneditedCutPose, readEditableCutFrame, readLinkedCutPngSize, resolveVrmCaptureCameraForFrame } from "./studio-vrm-linked-cut-frame";
 import { vrmInsertCaptureSize } from "./studio-vrm-poser-helpers";
 import { createDefaultStudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
@@ -20,6 +20,63 @@ describe("linked placement recapture", () => {
     expect(linkedCutContextMatches(scene, { ...changedLook, expressions: { ...scene.expressions, happy: 0.75 } })).toBe(false);
     expect(linkedCutContextMatches(scene, { ...changedLook, render: { ...scene.render, transparentBackground: !scene.render.transparentBackground } })).toBe(false);
     expect(linkedCutCameraMatches(scene.camera, { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 1 })).toBe(false);
+  });
+  it("retains original framing and body precision during a local finger edit, while accepting intentional body edits", () => {
+    const fingers = { rightIndexProximal: [0, 0, .5] as const };
+    const captured = { ...scene, pose: { ...scene.pose, bodyRotationY: scene.pose.bodyRotationY + 2e-15, fingerOverrides: fingers },
+      camera: { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 1e-13 } };
+    const edit = preserveUneditedCutPose(scene, captured);
+    expect(edit.pose).toEqual({ ...scene.pose, fingerOverrides: fingers });
+    expect(edit.camera).toBe(scene.camera);
+    const moved = { ...captured, pose: { ...captured.pose, bodyRotationY: .5 }, camera: { ...scene.camera, fovDegrees: 27 } };
+    expect(preserveUneditedCutPose(scene, moved)).toEqual(moved);
+  });
+  it("identifies the first differing field in each shot setting before pixel capture", () => {
+    const frame = { source: scene, pixels: { width: 200, height: 100 } };
+    const altered = { ...scene, pose: { ...scene.pose, bodyRotationY: scene.pose.bodyRotationY + 0.3 },
+      camera: { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 4 } };
+    expect(() => resolveVrmCaptureCameraForFrame(new PerspectiveCamera(), altered, frame))
+      .toThrow(/자세 \(bodyRotationY\).*카메라 \(fovDegrees\).*기존 이미지를 보존/u);
+  });
+  it("preserves unaffected joints down to their saved precision when the artist intentionally rotates another joint", () => {
+    const saved = { ...scene, pose: { ...scene.pose, bones: {
+      leftEye: { rotation: [.02, -.0010363440663709866, 0] as const },
+      rightHand: { rotation: [-.5, 0, 0] as const },
+    } } };
+    const live = { ...saved, pose: { ...saved.pose, bones: {
+      leftEye: { rotation: [.02, -.0010363440663692103, 0] as const },
+      rightHand: { rotation: [-.7, 0, 0] as const },
+    } } };
+    const result = preserveUneditedCutPose(saved, live);
+    expect(result.pose.bones.leftEye).toBe(saved.pose.bones.leftEye);
+    expect(result.pose.bones.rightHand).toBe(live.pose.bones.rightHand);
+  });
+  it("retains the exact authored angles of untouched fingers while changing a different hand", () => {
+    const originalFinger = [0, .02222222222222222, .13] as const;
+    const saved = { ...scene, pose: { ...scene.pose, fingerOverrides: { leftIndexProximal: originalFinger } } };
+    const captured = { ...saved, pose: { ...saved.pose, fingerOverrides: {
+      leftIndexProximal: [0, .022222222222222223, .13] as const,
+      rightIndexProximal: [0, 0, .5] as const,
+    } } };
+    const edited = preserveUneditedCutPose(saved, captured);
+    expect(edited.pose.fingerOverrides.leftIndexProximal).toBe(originalFinger);
+    expect(edited.pose.fingerOverrides.rightIndexProximal).toEqual([0, 0, .5]);
+  });
+  it("keeps an existing cut's PNG resolution and aspect when editing its pose or camera from a wider pane", () => {
+    const original = { ...scene, characterDocumentId: "character:page/a", render: { ...scene.render, width: 128, height: 64 } };
+    const frame = readEditableCutFrame(original, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAEA");
+    expect(frame?.pixels).toEqual({ width: 512, height: 256 });
+    expect(readEditableCutFrame(scene, "blob:unlinked")).toBeUndefined();
+    const viewport = new PerspectiveCamera(57, 3, .01, 100);
+    viewport.position.set(1, 2, 3);
+    const edited = { ...original, camera: { ...original.camera, fovDegrees: 57 }, pose: { ...original.pose, bodyRotationY: .7 } };
+    const rendered = resolveVrmCaptureCameraForFrame(viewport, edited, undefined, frame) as PerspectiveCamera;
+    expect(rendered.fov).toBe(57);
+    expect(rendered.aspect).toBe(2);
+    expect(rendered.position.toArray()).toEqual([1, 2, 3]);
+    expect(viewport.aspect).toBe(3);
+    expect(() => resolveVrmCaptureCameraForFrame(viewport, edited, frame)).toThrow();
+    expect(resolveVrmCaptureCameraForFrame(viewport, edited, undefined)).toBe(viewport);
   });
   it("captures with the stored shot aspect even when the current window is landscape", () => {
     const camera = new PerspectiveCamera(35, 2, .01, 100);

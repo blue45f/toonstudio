@@ -16,12 +16,13 @@ import { createAuthoringPoseVrm } from "../runtime/__fixtures__/character-author
 import { useCharacterAuthoringAuthority } from "./use-character-authoring-authority";
 import { useCharacterAuthoringInputs } from "./use-character-authoring-inputs";
 
+import type { FingerRotationMap } from "../../vrm/studio-vrm-poser-utils";
 import type { StudioVrmPhotoPoseApplyPayload } from "../../vrm/StudioVrmPhotoPoseScanner";
 import type { StudioVrmPoserHost } from "../../vrm/StudioVrmPoserHost";
 
 afterEach(cleanup);
 
-function fixture(legacyFingers = false) {
+function fixture(legacyFingers = false, originalCutFingers?: FingerRotationMap) {
   const vrm = createAuthoringPoseVrm();
   const nativeFingers = legacyFingers ? { leftIndexProximal: [0, 0, -0.2] as const } : {};
   applyFingerRotations(vrm, nativeFingers);
@@ -42,7 +43,7 @@ function fixture(legacyFingers = false) {
     const [fingerEdits, setFingerEdits] = useState(nativeFingers);
     const native: StudioVrmPoserHost = legacyFingers ? { ...h, fingerEdits, setFingerEdits } : h;
     const authoring = useCharacterAuthoringAuthority(initial, "input-test", { repository, autosave: false, synchronizeProjection: false });
-    return { authoring, native, input: useCharacterAuthoringInputs(native, authoring, true) };
+    return { authoring, native, input: useCharacterAuthoringInputs(native, authoring, true, originalCutFingers) };
   }, { initialProps: { h: host } });
   return { hook, host, vrm, rows, repository, initial };
 }
@@ -71,6 +72,13 @@ describe("손가락·사진·웹캠 UI 입력의 V3 연결", () => {
     } finally {
       act(() => { useI18n.setState({ lang: previous }); });
     }
+  });
+  it("연결 컷의 손가락은 처음 그려진 임시 포즈 대신 저장한 원고에서 읽는다", async () => {
+    const saved: FingerRotationMap = { leftIndexProximal: [0, .12, .42] };
+    const f = fixture(true, saved); await ready(f);
+    await waitFor(() => expect(f.hook.result.current.native.fingerEdits).toEqual(saved));
+    expect(f.hook.result.current.input.fingerEdits.leftIndexProximal).toEqual(saved.leftIndexProximal);
+    expect(f.hook.result.current.input.fingerEdits.rightIndexProximal).toBeUndefined();
   });
   it("손가락 원본이 생략된 이전 문서도 undo·redo에서 호환 저장값까지 복원한다", async () => {
     const f = fixture(true); await ready(f);

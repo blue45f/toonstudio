@@ -20,7 +20,10 @@ import type { StudioVrmFingerName } from "../../vrm/studio-vrm-finger-curl";
 import type { FingerRotationMap } from "../../vrm/studio-vrm-poser-utils";
 
 /** 손가락·사진·추적 확정은 호스트를 먼저 변경하지 않고 V3 명령으로 들어온다. */
-export function useCharacterAuthoringInputs(h: StudioVrmPoserHost, authoring: CharacterAuthoringAuthorityHookResult, enabled: boolean): StudioVrmPoserHost {
+export function useCharacterAuthoringInputs(
+  h: StudioVrmPoserHost, authoring: CharacterAuthoringAuthorityHookResult, enabled: boolean,
+  originalCutFingers?: FingerRotationMap,
+): StudioVrmPoserHost {
   const bt = useBilingual("CharacterAuthoringInputs");
   const latest = useRef({ h, authoring, enabled });
   latest.current = { h, authoring, enabled };
@@ -138,7 +141,7 @@ export function useCharacterAuthoringInputs(h: StudioVrmPoserHost, authoring: Ch
   // 슬라이더도 같은 원본을 읽어야 undo·redo가 실제 뼈대와 표시값을 함께 복원한다.
   const pose = (authoring.snapshot.previewDocument ?? authoring.snapshot.document).pose;
   const source = h.vrm;
-  const fallback = baseline.current.fingers;
+  const fallback = originalCutFingers ?? baseline.current.fingers;
   const tracking = Boolean(h.webcamActive);
   const projection = useMemo(() => {
     try {

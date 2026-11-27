@@ -39,7 +39,7 @@ import {
   captureStudioVrmRgba,
   encodeStudioVrmCapturePngDataUrl,
 } from "./studio-vrm-raster-capture";
-import { resolveVrmCaptureCameraForFrame, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
+import { readEditableCutFrame, resolveVrmCaptureCameraForFrame, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
 import { createStudioVrmRigProfileSelection } from "./studio-vrm-rig-profile";
 import {
   STUDIO_VRM_HUMANOID_BONES,
@@ -725,7 +725,8 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
               );
             }
           }
-          const { displayWidth, displayHeight, width, height } = vrmInsertCaptureSize(gl.domElement, frame);
+          const editableFrame = frame ? undefined : readEditableCutFrame(h.initialScene, h.initialDataUrl);
+          const { displayWidth, displayHeight, width, height } = vrmInsertCaptureSize(gl.domElement, frame ?? editableFrame);
           const bakedPose = bakeStudioVrmRuntimePose(currentVrm);
           if (!bakedPose) {
             throw new Error("삽입할 VRM 자세를 회전 기반 데이터로 변환하지 못했습니다.");
@@ -746,7 +747,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
           if (!sceneDocument) {
             throw new Error("재편집 가능한 3D 데생 인형 장면을 만들지 못했습니다.");
           }
-          const camera = resolveVrmCaptureCameraForFrame(viewportCamera, sceneDocument, frame);
+          const camera = resolveVrmCaptureCameraForFrame(viewportCamera, sceneDocument, frame, editableFrame);
           releaseCaptureHelpers = acquireVrmCaptureHelperLease({
             subjectOnly: insertBackground.plan.subjectOnly,
           });

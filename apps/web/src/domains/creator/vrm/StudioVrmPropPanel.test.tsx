@@ -101,6 +101,14 @@ describe("StudioVrmPropPanel 정밀 검수", () => {
 });
 
 describe("StudioVrmPropPanel 자동 그립", () => {
+  it.each([["primary", "palm-grip"], ["palm-grip", "primary"]])("마이크의 %s 장착점만 %s로 바꾼다", (previous, next) => {
+    const item = createPropInstance("mic", "saved-mic")!;
+    const rig = { ...item.rig!, anchorId: previous, autoFingerPose: false, deltaPosition: [0.01, 0.02, 0] as Vec3 };
+    const { onUpdate } = renderPanel(completeRightGripMetrics(), vi.fn(), [{ ...item, rig }]);
+    fireEvent.click(screen.getByRole("switch", { name: "마이크 손바닥 맞춤" }));
+    expect(onUpdate).toHaveBeenCalledExactlyOnceWith(item.uid, { rig: { ...rig, anchorId: next } });
+  });
+
   it("실측 리그에서는 ON 권한을 설명하고 70–130% 맞춤값을 저장한다", () => {
     const { item, onUpdate } = renderPanel(completeRightGripMetrics());
     const toggle = screen.getByRole("switch", { name: "손가락 자동 그립" });

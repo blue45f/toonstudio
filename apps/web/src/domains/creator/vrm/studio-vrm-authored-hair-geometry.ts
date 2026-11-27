@@ -28,6 +28,8 @@ export type StudioVrmAuthoredHairSpine = Readonly<{
 export type StudioVrmAuthoredHairInstance = Readonly<{
   part: AvatarForgeHairPart;
   matrix: THREE.Matrix4;
+  /** 매듭에 묶인 뿌리의 폭·두께 배율. 가닥 아래쪽은 작가가 정한 굵기를 유지한다. */
+  rootGirthScale?: number;
   /** 있으면 `matrix` 대신 이 중심선을 따라 가닥을 굽혀 깐다(가닥 프리미티브 전용). */
   spine?: StudioVrmAuthoredHairSpine;
 }>;
@@ -127,6 +129,23 @@ function safeAspect(longAxis: number, crossAxis: number): number {
   return Math.sqrt(Math.min(5, Math.max(1, ratio)));
 }
 
+function ponytailCenter(
+  part: AvatarForgeHairPart, progress: number, curl: number, waveAmount: number, waveFrequency: number,
+): readonly [number, number] {
+  // 묶은 긴 가닥의 굽힘은 길이의 비율이다. 폭·두께로 나누어 단면을 머리에
+  // 맞춰 배율 조정한 뒤에도 모발 굵기 슬라이더가 컬까지 바꾸지 않게 한다.
+  if (progress === 1 || (curl === 0 && waveAmount === 0)) return [0, 0];
+  const span = 2 * Math.abs(part.scale[1]);
+  const width = Math.abs(part.scale[0]);
+  const depth = Math.abs(part.scale[2]);
+  if (![span, width, depth].every(Number.isFinite) || Math.min(width, depth) < 1e-4) return [0, 0];
+  const envelope = Math.sin(Math.PI * progress) ** 2;
+  const side = 0.12 * curl * Math.sin(Math.PI * progress)
+    + 0.09 * waveAmount * Math.sin(Math.PI * waveFrequency * progress);
+  const rear = 0.18 * Math.abs(curl) + 0.05 * Math.abs(waveAmount);
+  return [envelope * side * span / width, -envelope * rear * span / depth];
+}
+
 /**
  * Head-local clump centre line. The root is pinned to the authored transform and wave amplitude is
  * bounded independently of a very thin/tall part's raw aspect ratio. This keeps style switches from
@@ -143,6 +162,9 @@ export function resolveStudioVrmAuthoredHairClumpCenter(
   const waveFrequency = Math.min(6, Math.max(0.5, Number.isFinite(part.waveFrequency)
     ? (part.waveFrequency ?? 2.4)
     : 2.4));
+  if (part.id === "pony-tail" && part.role === "tail") {
+    return ponytailCenter(part, progress, curl, waveAmount, waveFrequency);
+  }
   const aspectX = safeAspect(part.scale[1], part.scale[0]);
   const aspectZ = safeAspect(part.scale[1], part.scale[2]);
   const rootEase = smoothstep(0, 0.22, progress);
@@ -211,6 +233,7 @@ function clumpWidth(t: number, taper: number): number {
  */
 export function createStudioVrmAuthoredHairClumpGeometry(
   part: AvatarForgeHairPart,
+  rootGirthScale = 1,
 ): THREE.BufferGeometry {
   const columns = CLUMP_CROSS_SEGMENTS + 1;
   const rows = CLUMP_LENGTH_SEGMENTS + 1;
@@ -225,7 +248,7 @@ export function createStudioVrmAuthoredHairClumpGeometry(
     for (let row = 0; row < rows; row += 1) {
       const t = row / CLUMP_LENGTH_SEGMENTS;
       const y = 1 - t * 2;
-      const width = clumpWidth(t, part.taper);
+      const width = clumpWidth(t, part.taper) * THREE.MathUtils.lerp(rootGirthScale, 1, smoothstep(0, 0.2, t));
       const depth = clumpDepth(part, t, width);
       const [centerX, centerZ] = resolveStudioVrmAuthoredHairClumpCenter(part, t);
       for (let column = 0; column < columns; column += 1) {
@@ -497,9 +520,10 @@ function createShellGeometry(
 export function createStudioVrmAuthoredHairGeometry(
   part: AvatarForgeHairPart,
   options?: StudioVrmHairScalpFitOptions,
+  rootGirthScale?: number,
 ): THREE.BufferGeometry {
   return part.primitive === "tapered-capsule"
-    ? createStudioVrmAuthoredHairClumpGeometry(part)
+    ? createStudioVrmAuthoredHairClumpGeometry(part, rootGirthScale)
     : createShellGeometry(part, options);
 }
 
@@ -584,8 +608,8 @@ export function mergeStudioVrmAuthoredHairGeometry(
   instances: readonly StudioVrmAuthoredHairInstance[],
   options?: StudioVrmHairScalpFitOptions,
 ): THREE.BufferGeometry | null {
-  const geometries = instances.map(({ part, matrix, spine }) => {
-    const geometry = createStudioVrmAuthoredHairGeometry(part, options);
+  const geometries = instances.map(({ part, matrix, spine, rootGirthScale }) => {
+    const geometry = createStudioVrmAuthoredHairGeometry(part, options, rootGirthScale);
     if (spine && part.primitive === "tapered-capsule") bendStudioVrmAuthoredHairAlongSpine(geometry, spine);
     else geometry.applyMatrix4(matrix);
     return geometry;

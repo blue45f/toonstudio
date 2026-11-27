@@ -45,11 +45,25 @@ describe("사진·손 입력의 문서 선계산", () => {
     expect(() => planCharacterPoseAuthoringInput({ ...input, bones: { missing: [1, 2, 3] } })).toThrow("잠금 해제 관절");
     expect(capture(source)).toEqual(previous);
   });
-  it("일부 손가락만 있던 이전 V3에서도 명시한 회전과 나머지 손을 보존한다", () => {
-    const source = createAuthoringPoseVrm(); const previous = capture(source);
-    const partial = { ...previous, bones: Object.fromEntries(Object.entries(previous.bones).filter(([name]) => !name.includes("Index"))) };
-    const next = planCharacterPoseAuthoringInput({ source, previous: partial, kind: "manual", bones: {}, fingers: { leftIndexProximal: [0, 0, 0.4] } });
-    expect(next.bones.rightIndexProximal).toEqual(previous.bones.rightIndexProximal);
-    expect(next.bones.leftIndexProximal).not.toEqual(previous.bones.leftIndexProximal);
+  it("한 손가락 편집은 반대손의 저작 값과 생략된 관절을 그대로 보존한다", () => {
+    const source = createAuthoringPoseVrm();
+    source.humanoid.getNormalizedBoneNode("leftIndexProximal")!.rotation.z = 0.37;
+    source.humanoid.getNormalizedBoneNode("leftMiddleProximal")!.rotation.y = 0.2;
+    const full = capture(source);
+    const previous = {
+      ...full,
+      bones: Object.fromEntries(Object.entries(full.bones).filter(([name]) => !name.includes("Index"))),
+    };
+    const next = planCharacterPoseAuthoringInput({
+      source, previous, kind: "manual", bones: {},
+      fingers: { rightIndexProximal: [0, 0, 0.4], rightIndexIntermediate: [0, 0, 0.7] },
+      lockedBones: ["rightIndexIntermediate"],
+    });
+    const { rightIndexProximal, ...untouched } = next.bones;
+    expect(rightIndexProximal).toBeDefined();
+    expect(rightIndexProximal).not.toEqual(full.bones.rightIndexProximal);
+    expect(untouched).toEqual(previous.bones);
+    expect(next.root).toEqual(previous.root);
+    expect(capture(source)).toEqual(full);
   });
 });

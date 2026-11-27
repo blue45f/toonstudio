@@ -1,4 +1,4 @@
-/** pnpm exec tsx scripts/verify-studio-wearable-v5.mts [--assets-only] [--headwear-only] */
+/** pnpm exec tsx scripts/verify-studio-wearable-v5.mts [--assets-only | --headwear-only | --motion-only] */
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { copyFile, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -20,11 +20,14 @@ const source=[
   "export {createRoot} from 'react-dom/client';",
   "export {Canvas,useFrame,useThree} from '@react-three/fiber';",
   ...["studio-vrm-wardrobe","studio-vrm-garment-fit","studio-vrm-props","studio-vrm-prop-rig","studio-vrm-poser-utils","studio-vrm-costume-runtime","StudioVrmWardrobePropsProjection"].map((name)=>`export * from ${JSON.stringify(join(domain,"vrm",name))};`),
+  `export { StudioVrmGripContactRefine } from ${JSON.stringify(join(domain,"vrm","StudioVrmGripContactRefine"))};`,
+  `export { resolveStudioVrmFingerAuthority } from ${JSON.stringify(join(domain,"vrm","studio-vrm-auto-grip-authority"))};`,
   `export * from ${JSON.stringify(join(domain,"studio-pose-presets"))};`,
 ].join("\n");
 await writeFile(entry,source);
 await build({configFile:false,publicDir:false,resolve:{alias:{"@":process.cwd()}},define:{"process.env.NODE_ENV":JSON.stringify("production")},build:{outDir:join(directory,"runtime"),lib:{entry,formats:["es"],fileName:()=>"runtime.mjs"},minify:false,sourcemap:false}});
 await copyFile("scripts/studio-wearable-review-page.mjs",join(directory,"page.mjs"));
+await copyFile("scripts/studio-wearable-motion-grip.mjs",join(directory,"studio-wearable-motion-grip.mjs"));
 await copyFile("scripts/studio-wearable-frame-evidence.mjs",join(directory,"runtime/frame-evidence.mjs"));
 await writeFile(join(directory,"index.html"),'<!doctype html><html lang="en"><meta charset="utf-8"><title>Wearable production-renderer review</title><style>html,body,#root{margin:0;width:100%;height:100%;overflow:hidden}canvas{display:block}</style><div id="root"></div><script type="module" src="/page.mjs"></script></html>');
 await symlink(resolve("apps/web/public/assets"),join(directory,"assets"),"dir");
@@ -47,7 +50,18 @@ const frames:Frame[]=[];
 const assets=JSON.parse(readFileSync("apps/web/public/assets/3d/wearable-v5-manifest.json","utf8")) as {assets:{id:string;file:string;sha256:string}[]};
 const headwearIds = new Set(["cap", "beret", "sunglasses", "headphones", "ribbon", "beanie", "blender_wizard_hat"]);
 const headwearOnly = process.argv.includes("--headwear-only");
-const reviewAssets = headwearOnly ? assets.assets.filter((asset) => headwearIds.has(asset.id)) : assets.assets;
+const motionOnly = process.argv.includes("--motion-only");
+const motionCases = [
+  { id: "mic", bone: "rightHand", crop: "hand" },
+  { id: "sunglasses", bone: "head", crop: "head" },
+] as const;
+const reviewAssets = assets.assets.filter((asset) =>
+  motionOnly ? motionCases.some(({ id }) => id === asset.id) : !headwearOnly || headwearIds.has(asset.id));
+type GripDigit = { digit: string; skinVertices: number; minGapMm: number; maxPenetrationMm: number; jointBendDeg: number };
+type MotionReceipt = { grip?: GripDigit[]; bone: string; vrmVersion: string; actualTurnDeg: number; socketGapMm: number; anchorDriftMm: number; vertexDriftMm: number; angularDriftDeg: number };
+type MotionApi = { status: string; frames: number; catalogue: { models: string[] }; beginAttachmentMotion: (bone: string) => void;
+  turnAttachment: (angle: number) => void; measureAttachment: () => MotionReceipt };
+const motionResults: Array<{ frame: string; commandedTurnDeg: number; verified: boolean; measured: MotionReceipt }> = [];
 let fatal:unknown=null;
 async function inspect(){return page.evaluate(async()=>{
   // Keep pixel analysis in the browser: sending 102,400 numeric values per frame through
@@ -84,16 +98,59 @@ async function select(options:Record<string,unknown>){await page.evaluate(async 
 async function view(angle:number,crop:string){await page.evaluate(({angle,crop})=>{
   (window as unknown as {studioWearableQA:{view:(angle:number,crop:string)=>void}}).studioWearableQA.view(angle,crop);
 },{angle,crop});}
+async function verifyMotion() {
+  const models = await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.catalogue.models);
+  for (const model of models) {
+    for (const { id, bone, crop } of motionCases) {
+      await select({ type: "prop", id, model, angle: 30, crop });
+      // 현 포즈는 같은 카메라로 비교한다. 로딩 중간의 unavailable 상태는 영점으로 쓰지 않는다.
+      await page.waitForFunction(() => {
+        const qa = (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA;
+        return qa.frames >= 4 && qa.status === "ready";
+      }, undefined, { timeout: 45_000 });
+      await page.evaluate((name) => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.beginAttachmentMotion(name), bone);
+      try {
+        for (const angle of [0, 35, -35]) {
+          await page.evaluate((degrees) => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.turnAttachment(degrees), angle);
+          const frame = `${model}-prop-${id}-motion-${angle}`;
+          await capture(frame);
+          const measured = await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.measureAttachment());
+          const verified = measured.bone === bone && Math.abs(measured.actualTurnDeg - Math.abs(angle)) <= 1
+            && measured.socketGapMm <= 1 && measured.anchorDriftMm <= 1 && measured.vertexDriftMm <= 1 && measured.angularDriftDeg <= 0.5;
+          // 12 mm handle radius. Demand skin contact within 3 mm for every digit and reject
+          // deep intersections even when a different vertex on that digit touches the surface.
+          const gripVerified = id !== "mic" || (measured.grip?.length === 5 && measured.grip.every((digit) =>
+            digit.skinVertices > 0 && Number.isFinite(digit.jointBendDeg) && digit.minGapMm <= 3
+            && digit.maxPenetrationMm <= (digit.digit === "Thumb" ? 2.5 : 3.5)));
+          motionResults.push({ frame, commandedTurnDeg: angle, verified: verified && gripVerified, measured });
+          console.log("MOTION", frame, JSON.stringify(measured));
+        }
+        if (id === "mic") {
+          // One unchanged camera from the outside of the right hand (away from the torso).
+          await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.turnAttachment(0));
+          await view(-65, "grip");
+          for (const angle of [0, 35]) {
+            await page.evaluate((degrees) => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.turnAttachment(degrees), angle);
+            await capture(`${model}-prop-mic-grip-${angle}`);
+          }
+        }
+      } finally {
+        await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.turnAttachment(0));
+      }
+    }
+  }
+}
 try{
   await page.goto("http://127.0.0.1:5278",{waitUntil:"networkidle"});
   await page.waitForFunction(()=>(window as unknown as {studioWearableQA?:{status:string}}).studioWearableQA?.status==="idle",{},{timeout:60_000});
-  for(const asset of reviewAssets){
+  if (motionOnly) await verifyMotion();
+  for(const asset of motionOnly ? [] : reviewAssets){
     try{
       await select({type:"asset",id:asset.id,assetUrl:`/assets/3d/${asset.file}`,angle:30});
       for(const angle of [30,90,180]){await view(angle,"full");await capture(`asset-${asset.id}-${angle}`);}
     }catch(error){frames.push({title:`asset-${asset.id}`,file:"",status:"error",receipt:null,error:String(error)});}
   }
-  if(!process.argv.includes("--assets-only")){
+  if(!motionOnly && !process.argv.includes("--assets-only")){
     const { models, wardrobe } = await page.evaluate(() => (
       window as unknown as { studioWearableQA: { catalogue: { models: string[]; wardrobe: { id: string; slot: string }[] } } }
     ).studioWearableQA.catalogue);
@@ -137,9 +194,11 @@ try{
     await writeFile(join(directory,`contact-sheet-${String(start/12+1).padStart(2,"0")}.jpg`),Buffer.from(data,"base64"));
   }
 }finally{
-  await writeFile(join(directory,"review.json"),JSON.stringify({sourceCommit:process.env.GITHUB_SHA??"local",assets:reviewAssets,frames,pageErrors,fatal,note:"Ready means loaded/rendered, not human aesthetic approval. Inspect the PNGs, worn views and deformation frames."},null,2));
+  await writeFile(join(directory,"review.json"),JSON.stringify({sourceCommit:process.env.GITHUB_SHA??"local",assets:reviewAssets,frames,motionResults,pageErrors,fatal,note:"Ready means loaded/rendered, not human aesthetic approval. Inspect the PNGs, worn views and deformation frames."},null,2));
   await browser.close();await new Promise<void>((done)=>server.close(()=>done()));
 }
 const failingAssets=frames.filter((frame)=>(frame.title.startsWith("asset-")||frame.title.includes("-prop-"))&&(frame.status!=="ready"||!frame.nonblank));
-if(fatal||pageErrors.length||failingAssets.length)throw new Error(JSON.stringify({fatal,pageErrors,failingAssets},null,2));
+const failingMotion = motionResults.filter(({ verified }) => !verified);
+const missingVersions = motionOnly ? ["0", "1"].filter(version => !motionResults.some(({ measured }) => measured.vrmVersion === version)) : [];
+if(fatal||pageErrors.length||failingAssets.length||failingMotion.length||missingVersions.length)throw new Error(JSON.stringify({fatal,pageErrors,failingAssets,failingMotion,missingVersions},null,2));
 console.log(`Saved ${frames.filter((frame)=>frame.file).length} real rendered frames in ${directory}`);

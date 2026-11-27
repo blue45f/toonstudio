@@ -6,6 +6,7 @@
 //  - 부착 본은 VRM humanoid 표준 본 이름만 사용(StudioVrmPoser의 본 집합과 호환).
 //  - 직렬화는 옵셔널·버전 필드 → 기존 스튜디오 문서 하위호환.
 
+import { anchor, handAnchor, primaryPropAnchor } from "./studio-vrm-prop-anchors";
 import { geometrySourceForPropId } from "./studio-vrm-prop-assets";
 
 export { BLENDER_PROP_GLTF_URLS } from "./studio-vrm-prop-assets";
@@ -262,24 +263,7 @@ type PropProfile = Pick<PropDef, "anchors" | "fit"> & {
   wearSocket?: PropWearSocket;
 };
 
-const FORWARD: Vec3 = [0, 0, 1];
 const NEGATIVE_Z_FORWARD: Vec3 = [0, 0, -1];
-const UP: Vec3 = [0, 1, 0];
-
-function anchor(id: string, role: PropAnchorRole, position: Vec3, forward: Vec3 = FORWARD, up: Vec3 = UP): PropAnchorDef {
-  return { id, role, position, forward, up };
-}
-
-function handAnchor(
-  id: string,
-  role: "primary" | "secondary",
-  position: Vec3,
-  gripRadius: number,
-  forward: Vec3 = FORWARD,
-  up: Vec3 = UP,
-): PropAnchorDef {
-  return { ...anchor(id, role, position, forward, up), gripRadius };
-}
 
 function grip(kind: PropGripKind, radius: number, fingerCurlDeg: number, thumbOppositionDeg: number): PropGripProfile {
   return { kind, radius, fingerCurlDeg, thumbOppositionDeg };
@@ -327,7 +311,11 @@ const PROP_PROFILES: Record<OriginalVrmPropId, PropProfile> = {
     secondaryGripInfluence: 0.8,
   },
   mic: {
-    anchors: [handAnchor("primary", "primary", [0, -0.025, 0], 0.012)],
+    // 이전 컷의 primary는 원래 좌표를 유지한다. 신규 장착/맞춤 초기화만 손가락 너비 방향을 사용한다.
+    anchors: [
+      handAnchor("palm-grip", "primary", [0, -0.025, 0], 0.012),
+      handAnchor("primary", "primary", [0, -0.025, 0], 0.012),
+    ],
     grip: grip("cylinder", 0.012, 58, 44),
     fit: fit("hand", 0.075, 0.72, 1.4),
   },
@@ -877,7 +865,7 @@ function defaultSecondaryGripForInstance(def: PropDef): PropRigSecondary | undef
 export function createPropInstance(propId: string, uid?: string): PropInstance | null {
   const def = propDefById(propId);
   if (!def) return null;
-  const primaryAnchor = def.anchors.find((candidate) => candidate.role === "primary" || candidate.role === "surface")!;
+  const primaryAnchor = primaryPropAnchor(def);
   const secondary = defaultSecondaryGripForInstance(def);
   const instanceUid = uid ?? nextPropUid(propId);
   if (isValidPropUid(instanceUid)) issuedPropUids.add(instanceUid);
@@ -941,19 +929,14 @@ function clamp(value: unknown, fallback: number, min: number, max: number): numb
   return Math.min(max, Math.max(min, n));
 }
 
-function primaryAnchorOf(def: PropDef): PropAnchorDef {
-  return def.anchors.find((candidate) => candidate.role === "primary" || candidate.role === "surface") ?? def.anchors[0];
-}
-
 function parseV2Rig(raw: unknown, def: PropDef, primaryBone: PropAttachBone): PropRigV2 | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const value = raw as Partial<Record<keyof PropRigV2, unknown>>;
   if (value.version !== VRM_PROPS_VERSION) return undefined;
 
-  const fallbackAnchor = primaryAnchorOf(def);
-  const requestedAnchor = typeof value.anchorId === "string"
-    ? def.anchors.find((candidate) => candidate.id === value.anchorId && candidate.role !== "secondary")
-    : undefined;
+  const requestedId = typeof value.anchorId === "string" ? value.anchorId : undefined;
+  // A historical V2 microphone could omit its anchor. Repair it at its original coordinates.
+  const selectedAnchor = primaryPropAnchor(def, requestedId, def.id === "mic" ? "primary" : undefined);
   const secondaryAnchor = def.anchors.find((candidate) => candidate.role === "secondary");
 
   let secondary: PropRigSecondary | undefined;
@@ -978,7 +961,7 @@ function parseV2Rig(raw: unknown, def: PropDef, primaryBone: PropAttachBone): Pr
   return {
     version: VRM_PROPS_VERSION,
     mode: value.mode === "custom" ? "custom" : "auto",
-    anchorId: (requestedAnchor ?? fallbackAnchor).id,
+    anchorId: selectedAnchor.id,
     autoScale: bool(value.autoScale, true),
     autoFingerPose: bool(value.autoFingerPose, Boolean(def.grip)),
     gripFit: clamp(value.gripFit, 1, VRM_PROP_GRIP_FIT_MIN, VRM_PROP_GRIP_FIT_MAX),

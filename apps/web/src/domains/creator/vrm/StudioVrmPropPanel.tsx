@@ -19,6 +19,7 @@ import {
 import { StudioThreeDToggleControl } from "../StudioThreeDToggle";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
+import { primaryPropAnchor } from "./studio-vrm-prop-anchors";
 import { isStudioVrmPropSelectable, studioVrmPropQualityNotice } from "./studio-vrm-prop-quality-policy";
 import {
   inspectAutoGripReadiness,
@@ -130,22 +131,12 @@ function replaceAxis(value: Vec3, axis: 0 | 1 | 2, next: number): Vec3 {
   ];
 }
 
-function primaryAnchorId(definition: PropDef): string | null {
-  return (
-    definition.anchors.find(
-      (anchor) => anchor.role === "primary" || anchor.role === "surface"
-    )?.id ??
-    definition.anchors[0]?.id ??
-    null
-  );
-}
-
 function secondaryAnchorOf(definition: PropDef) {
   return definition.anchors.find((anchor) => anchor.role === "secondary") ?? null;
 }
 
 function createSmartRig(definition: PropDef): PropRigV2 | null {
-  const anchorId = primaryAnchorId(definition);
+  const anchorId = primaryPropAnchor(definition)?.id;
   if (!anchorId) return null;
   return {
     version: VRM_PROPS_VERSION,
@@ -518,7 +509,7 @@ function SelectedEditor({
   const position = rig?.deltaPosition ?? item.position;
   const rotation = rig?.deltaRotationDeg ?? item.rotationDeg;
   const scale = rig?.deltaScale ?? item.scale;
-  const smartAvailable = Boolean(definition && primaryAnchorId(definition));
+  const smartAvailable = Boolean(definition && primaryPropAnchor(definition));
   const gripReadiness = inspectAutoGripReadiness(
     item,
     allItems,
@@ -749,6 +740,15 @@ function SelectedEditor({
             description={`${fitReferenceLabel(definition)} 실측값을 기준으로 안전 범위 안에서 배율을 맞춥니다.`}
             onChange={(autoScale) => updateRig({ autoScale })}
           />
+          {item.propId === "mic" && isHandBone(item.bone) && (
+            <ToggleRow
+              label="마이크 손바닥 맞춤"
+              description="손잡이를 손가락 너비 방향으로 놓습니다. 위치·회전 보정값은 유지됩니다."
+              checked={rig.anchorId === "palm-grip"}
+              disabled={disabled || (rig.anchorId !== "palm-grip" && rigMetrics.handSockets[item.bone].source !== "measured")}
+              onChange={(fitted) => updateRig({ anchorId: fitted ? "palm-grip" : "primary" })}
+            />
+          )}
           <ToggleRow
             checked={rig.autoFingerPose}
             disabled={disabled || (!rig.autoFingerPose && !gripAvailable)}

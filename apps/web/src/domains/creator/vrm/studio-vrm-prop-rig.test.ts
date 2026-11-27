@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
+import { usesDefaultMicrophoneThumbGrip } from "./studio-vrm-microphone-grip";
 import {
   DEFAULT_VRM_PROP_RIG_METRICS,
   PROP_RIG_FIT_MAX,
@@ -21,7 +22,9 @@ import {
 import {
   VRM_PROPS,
   createPropInstance,
+  parseVrmProps,
   propDefById,
+  serializeVrmProps,
   type PropInstance,
   type Vec3,
 } from "./studio-vrm-props";
@@ -761,5 +764,56 @@ describe("자동 손 그립과 양손 보조 target", () => {
       propDefById,
       createCompleteGripMetrics()
     )).toEqual({});
+  });
+});
+
+describe("마이크 손잡이와 손바닥", () => {
+  const metrics = createCompleteGripMetrics();
+  const mic = createPropInstance("mic", "measured-handheld-mic")!;
+  const definition = propDefById("mic")!;
+
+  it.each(["rightHand", "leftHand"] as const)("손잡이를 %s 엄지 쪽으로 향하게 하고 수동 이동량을 더한다", (bone) => {
+    const fitted = resolvePropAttachment(definition, { ...mic, bone }, metrics);
+    const basis = new THREE.Quaternion(...metrics.handSockets[bone].rotationQuaternion);
+    const axis = new THREE.Vector3(0, 1, 0).applyEuler(new THREE.Euler(
+      THREE.MathUtils.degToRad(fitted.rotationDeg[0]), THREE.MathUtils.degToRad(fitted.rotationDeg[1]), THREE.MathUtils.degToRad(fitted.rotationDeg[2]),
+    ));
+    const localShaft = axis.applyQuaternion(basis.clone().invert());
+    expect(localShaft.x).toBeGreaterThan(0.97);
+    expect(localShaft.y * (bone === "rightHand" ? -1 : 1)).toBeGreaterThan(0.1);
+    expect(localShaft.z).toBeLessThan(-0.1);
+    const custom = { ...mic, bone, rig: { ...mic.rig!, mode: "custom" as const, deltaPosition: [0.01, 0.02, 0] as Vec3 } };
+    const saved = parseVrmProps(serializeVrmProps([custom])).items[0]!;
+    expectVecClose(resolvePropAttachment(definition, saved, metrics).socketPosition, [
+      fitted.socketPosition[0] + (bone === "leftHand" ? -0.01 : 0.01), fitted.socketPosition[1] + 0.02, fitted.socketPosition[2],
+    ]);
+  });
+
+  it("새 마이크의 기본 자동 장착에서만 엄지 마디를 보정한다", () => {
+    expect(usesDefaultMicrophoneThumbGrip(mic, metrics)).toBe(true);
+    const rig = mic.rig!;
+    for (const patch of [
+      { mode: "custom" as const }, { autoFingerPose: false }, { autoScale: false }, { anchorId: "primary" },
+      { deltaScale: 1.1 }, { gripFit: 1.2 }, { deltaPosition: [0.01, 0, 0] as Vec3 }, { deltaRotationDeg: [0, 1, 0] as Vec3 },
+    ]) expect(usesDefaultMicrophoneThumbGrip({ ...mic, rig: { ...rig, ...patch } }, metrics)).toBe(false);
+    expect(usesDefaultMicrophoneThumbGrip({ ...mic, rig: undefined }, metrics)).toBe(false);
+    expect(usesDefaultMicrophoneThumbGrip({ ...mic, propId: "mug" }, metrics)).toBe(false);
+  });
+
+  it.each([undefined, "retired-contact"])("이전 V2 마이크의 누락/손상 접점 %s를 원래 위치로 복구한다", (anchorId) => {
+    const uid = "repaired-v2-microphone";
+    const rig = { ...mic.rig!, mode: "custom", anchorId, deltaPosition: [0.02, 0.01, 0], autoFingerPose: false };
+    const restored = parseVrmProps({ version: 2, items: [{ ...mic, uid, rig }] }).items[0]!;
+    expect(restored.uid).toBe(uid);
+    expect(restored.rig).toMatchObject({ ...rig, anchorId: "primary" });
+    expect(createPropInstance("mic")!.rig?.anchorId).toBe("palm-grip");
+  });
+
+  it("저장된 구형 소켓과 자동 그립을 끈 손가락 저작값을 보존한다", () => {
+    const old = { ...mic, rig: { ...mic.rig!, anchorId: "primary", autoFingerPose: false } };
+    const saved = parseVrmProps(serializeVrmProps([old])).items[0]!;
+    expect(resolvePropAttachment(definition, saved, metrics).socketPosition).toEqual(metrics.handSockets.rightHand.position);
+    expect(createAutoGripFingerOverrides([saved], propDefById, metrics)).toEqual({});
+    expect(createAutoGripFingerOverrides([{ ...mic, rig: { ...mic.rig!, autoFingerPose: false } }], propDefById, metrics)).toEqual({});
   });
 });

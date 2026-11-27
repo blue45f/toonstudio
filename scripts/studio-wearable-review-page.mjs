@@ -1,5 +1,6 @@
 /** Review-only page. runtime.mjs is built from the exact checkout's production components. */
 import * as R from "./runtime/runtime.mjs";
+import { createMicGripMeasurement } from "./studio-wearable-motion-grip.mjs";
 
 const { THREE: T, React, createRoot, Canvas, useFrame, useThree } = R;
 const h = React.createElement;
@@ -9,6 +10,7 @@ const reviewModels = new Map([
   ["shion", { url: "/vrm/Sendagaya_Shibu.vrm", poseId: "shion" }],
 ]);
 const cache = new Map();
+const reviewPropGroup = React.createRef();
 let selectState = null;
 let generation = 0;
 let active = null;
@@ -31,14 +33,10 @@ async function avatar(url) {
   cache.set(url, value); return value;
 }
 const tick = ()=>new Promise((resolve)=>requestAnimationFrame(resolve));
-function propInstance(def, color) {
-  const anchor = def.anchors.find((item)=>item.role==="primary") ?? def.anchors.find((item)=>item.role==="surface") ?? def.anchors[0];
-  return { uid:`review-${generation}-${def.id}`, propId:def.id, bone:def.defaultBone, position:[...def.defaultPosition], rotationDeg:[...def.defaultRotationDeg], scale:def.defaultScale, color:color??def.defaultColor,
-    rig:{version:2,mode:"auto",anchorId:anchor.id,autoScale:true,autoFingerPose:Boolean(def.grip),gripFit:1,deltaPosition:[0,0,0],deltaRotationDeg:[0,0,0],deltaScale:1} };
-}
-
 api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full", color=null, assetUrl=null }={})=>{ // NOSONAR javascript:S3776
   if (!selectState) throw new Error("Review root not ready");
+  api.turnAttachment = null;
+  api.measureAttachment = null;
   const token = ++generation; api.status="loading"; api.frames=0; api.receipt=null;
   selectState(null); await tick(); await tick();
   if(type==="asset") {
@@ -58,9 +56,12 @@ api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full"
   let instance=null; let equip=null; let slot=null; let effectiveFit=1;
   if(type==="prop") {
     const def=R.propDefById(id); if(!def)throw new Error(`Unknown prop ${id}`);
-    instance=propInstance(def,color);
+    instance=R.createPropInstance(id, "review-" + token + "-" + id);
+    if(color)instance={...instance,color};
     const fingers=R.createAutoGripFingerOverrides([instance],R.propDefById,metrics);
-    R.applyFingerRotations(vrm,fingers);
+    const authored=Object.fromEntries(R.POSER_FINGER_BONES.filter((name)=>idle.bones[name]?.rotation)
+      .map((name)=>[name,idle.bones[name].rotation]));
+    R.applyFingerRotations(vrm,R.resolveStudioVrmFingerAuthority(authored,fingers));
   } else if(type==="wardrobe") {
     const def=R.wardrobeItemById(id); if(!def)throw new Error(`Unknown garment ${id}`);
     equip=R.createWardrobeEquip(id);slot=def.slot;
@@ -101,6 +102,57 @@ api.pose = (kind)=>{
   api.frames = 0;
 };
 
+// 화면에 장착된 GLB를 독립적인 변형(raw) 본 좌표에서 계측한다.
+api.beginAttachmentMotion = (expectedBone) => {
+  const { vrm, instance, metrics } = active ?? {};
+  const asset = reviewPropGroup.current?.children[0]?.children[0];
+  const definition = instance && R.propDefById(instance.propId);
+  const bone = vrm?.humanoid.getNormalizedBoneNode(expectedBone);
+  const rawBone = vrm?.humanoid.getRawBoneNode(expectedBone);
+  if (api.status !== "ready" || instance?.bone !== expectedBone || definition?.geometrySource.kind !== "gltf" ||
+      !bone || !rawBone || !asset) throw new Error(`실제 GLB 또는 장착 본을 찾지 못했습니다: ${expectedBone}`);
+  const fit = R.resolvePropAttachment(definition, instance, metrics);
+  if (!fit.usesSmartRig) throw new Error("소켓으로 장착한 모델만 동작을 비교할 수 있습니다.");
+  let markerMesh;
+  asset.traverse((node) => {
+    if (!markerMesh && node.isMesh && node.geometry?.getAttribute("position")?.count) markerMesh = node;
+  });
+  if (!markerMesh) throw new Error("장착한 GLB에서 비교할 메시 정점을 찾지 못했습니다.");
+  const measureGrip = instance.propId === "mic" ? createMicGripMeasurement(vrm, asset) : null;
+  const anchorWorld = () => asset.localToWorld(new T.Vector3(...fit.anchor.position));
+  const markerWorld = () => markerMesh.localToWorld(markerMesh.getVertexPosition(0, new T.Vector3()));
+  const relativeRotation = () => rawBone.getWorldQuaternion(new T.Quaternion()).normalize().invert()
+    .multiply(asset.getWorldQuaternion(new T.Quaternion()).normalize()).normalize();
+  const baselineAnchor = rawBone.worldToLocal(anchorWorld());
+  const baselineMarker = rawBone.worldToLocal(markerWorld());
+  const baselineRotation = relativeRotation();
+  const baselineBoneRotation = rawBone.getWorldQuaternion(new T.Quaternion()).normalize();
+  const startingPose = bone.quaternion.clone();
+  const axis = expectedBone === "head" ? new T.Vector3(0, 1, 0) : new T.Vector3(0, 0, 1);
+  api.turnAttachment = (degrees) => {
+    bone.quaternion.copy(startingPose).multiply(new T.Quaternion().setFromAxisAngle(axis, T.MathUtils.degToRad(degrees)));
+    vrm.update(0);
+    vrm.scene.updateMatrixWorld(true);
+    api.frames = 0;
+  };
+  api.measureAttachment = () => {
+    if (api.status !== "ready" || asset.parent?.parent !== reviewPropGroup.current) {
+      throw new Error("측정 중 장착한 GLB가 교체되거나 분리되었습니다.");
+    }
+    const anchor = anchorWorld();
+    return {
+      bone: expectedBone,
+      ...(measureGrip ? { grip: measureGrip() } : {}),
+      vrmVersion: vrm.meta.metaVersion,
+      actualTurnDeg: T.MathUtils.radToDeg(baselineBoneRotation.angleTo(rawBone.getWorldQuaternion(new T.Quaternion()).normalize())),
+      socketGapMm: anchor.distanceTo(bone.localToWorld(new T.Vector3(...fit.socketPosition))) * 1000,
+      anchorDriftMm: anchor.distanceTo(rawBone.localToWorld(baselineAnchor.clone())) * 1000,
+      vertexDriftMm: markerWorld().distanceTo(rawBone.localToWorld(baselineMarker.clone())) * 1000,
+      angularDriftDeg: T.MathUtils.radToDeg(baselineRotation.angleTo(relativeRotation())),
+    };
+  };
+};
+
 function Camera({selection}) {
   const {camera,scene,gl}=useThree();
   React.useLayoutEffect(()=>{
@@ -116,6 +168,12 @@ function Camera({selection}) {
       if(selection.crop==="head"){center.copy(head).add(new T.Vector3(0,.05,0));radius=.25;}
       if(selection.crop==="torso"){center.copy(hips).lerp(head,.55);radius=.39;}
       if(selection.crop==="shoes"){const foot=humanoid.getNormalizedBoneNode("leftFoot").getWorldPosition(new T.Vector3());center.set(0,foot.y+.035,foot.z);radius=.25;}
+      if(selection.crop==="grip"){
+        const wrist=humanoid.getNormalizedBoneNode("rightHand");
+        const knuckle=humanoid.getNormalizedBoneNode("rightMiddleProximal");
+        center.copy(wrist.getWorldPosition(new T.Vector3())).lerp(knuckle.getWorldPosition(new T.Vector3()),.85);
+        radius=Math.max(.08,selection.metrics.rightHand*1.35);
+      }
       if(selection.crop==="hand"){
         const bone=selection.instance?.bone??"rightHand";
         center.copy(humanoid.getNormalizedBoneNode(bone).getWorldPosition(new T.Vector3()));radius=.23;
@@ -138,7 +196,8 @@ function Subject({selection}) {
   React.useEffect(()=>{if(selection.type==="asset"||selection.type==="native")api.status="ready";},[selection]);
   const children=[h("primitive",{key:"model",object:selection.vrm?.scene??selection.object,dispose:null})];
   if(selection.type==="wardrobe")children.push(h(R.StudioVrmWardrobeAttachment,{key:`garment-${token}`,vrm:selection.vrm,slot:selection.slot,equip:selection.equip,metrics:selection.wardrobeMetrics,effectiveFit:selection.effectiveFit,onSurfaceReceipt:receipt,onAttachmentStatus:status}));
-  if(selection.type==="prop")children.push(h(R.StudioVrmPropAttachment,{key:`prop-${token}`,vrm:selection.vrm,instance:selection.instance,metrics:selection.metrics,onAttachmentStatus:status}));
+  if(selection.type==="prop")children.push(h("group",{key:`prop-${token}`,ref:reviewPropGroup},
+    h(R.StudioVrmPropAttachment,{vrm:selection.vrm,instance:selection.instance,metrics:selection.metrics,onAttachmentStatus:status})));
   if(selection.instance)children.push(h(R.StudioVrmGripContactRefine,{key:`grip-${token}`,vrm:selection.vrm,items:[selection.instance],metrics:selection.metrics}));
   if(selection.vrm)children.push(h(R.StudioVrmRuntimeCommit,{key:"commit",vrm:selection.vrm,physicsPreview:false,webcamActive:false}));
   children.push(h(Camera,{key:"camera",selection}));

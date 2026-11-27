@@ -193,7 +193,22 @@ describe("studio 3D insert controller", () => {
       expect(appendImage).not.toHaveBeenCalled();
     });
 
-    it("patches a valid image with its existing width and exact capture aspect ratio", () => {
+    it("replaces only the pixels and scene of a resized and transformed manuscript cut", () => {
+      const cut = { type: "image", x: 350, y: 110, width: 116, height: 137, rotation: 17,
+        flipped: true, flippedY: true, skewX: 0.1 };
+      const patchTarget = vi.fn(() => true);
+      const appendImage = vi.fn(() => true);
+      expect(applyStudioVrmInsertResult(vrmInput({
+        targetElementId: "cut-3",
+        resolveTarget: () => cut,
+        patchTarget,
+        appendImage,
+      }))).toBe(true);
+      expect(patchTarget).toHaveBeenCalledWith("cut-3", { src: vrmResult.pngDataUrl, vrmScene });
+      expect(appendImage).not.toHaveBeenCalled();
+    });
+
+    it("recovers the natural height for an older width-only target", () => {
       const patchTarget = vi.fn(() => true);
       const appendImage = vi.fn(() => true);
 

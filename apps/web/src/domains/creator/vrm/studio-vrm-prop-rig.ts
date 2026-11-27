@@ -6,6 +6,8 @@ import {
 } from "./studio-vrm-hair-hand-equip-refiner";
 import { measureStudioVrmHeadSurface, studioVrmHeadwearSurfaceSocket } from "./studio-vrm-head-surface";
 import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
+import { microphoneGripSocket } from "./studio-vrm-microphone-grip";
+import { primaryPropAnchor } from "./studio-vrm-prop-anchors";
 import {
   VRM_PROP_GRIP_FIT_MAX,
   VRM_PROP_GRIP_FIT_MIN,
@@ -748,15 +750,6 @@ function anchorBasisQuaternion(anchor: PropAnchorDef): THREE.Quaternion {
   return new THREE.Quaternion().setFromRotationMatrix(basis).normalize();
 }
 
-function primaryAnchor(def: PropDef, instance: PropInstance): PropAnchorDef {
-  const requested = instance.rig?.anchorId
-    ? def.anchors.find((anchor) => anchor.id === instance.rig?.anchorId && anchor.role !== "secondary")
-    : undefined;
-  return requested
-    ?? def.anchors.find((anchor) => anchor.role === "primary" || anchor.role === "surface")
-    ?? def.anchors[0];
-}
-
 /** Definition-only placement contract; persisted instances remain schema-compatible. */
 export function usesVrmPropFaceSocket(def: PropDef, bone: PropAttachBone): boolean {
   return bone === "head" && def.wearSocket === "face";
@@ -797,7 +790,7 @@ export function resolvePropAttachment(
   rawMetrics: VrmPropRigMetrics
 ): ResolvedPropAttachment {
   const metrics = sanitizeVrmPropRigMetrics(rawMetrics);
-  const anchor = primaryAnchor(def, instance);
+  const anchor = primaryPropAnchor(def, instance.rig?.anchorId);
   const rig = instance.rig;
 
   // V1 문서는 top-level transform이 이미 geometry 원점 기준으로 저작되어 있다.
@@ -839,21 +832,21 @@ export function resolvePropAttachment(
   const faceSocket = faceWear ? metrics.faceSocket : null;
   const headwearSocket = rig.mode === "auto"
     ? studioVrmHeadwearSurfaceSocket(def.id, instance.bone, metrics.faceSocket) : null;
-  const activeSocket = handSocket ?? headwearSocket ?? faceSocket;
+  const fit = getPropFitStatus(def, instance, metrics);
+  const baseScale = clamp(finite(def.defaultScale) ?? 1, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
+  const scale = clamp(baseScale * fit.fitScale * deltaScale, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
+  const micSocket = microphoneGripSocket(def.id, anchor, targetHand, metrics, scale);
+  const activeSocket = micSocket ?? handSocket ?? headwearSocket ?? faceSocket;
   const socketBasis = activeSocket
     ? new THREE.Quaternion(...activeSocket.rotationQuaternion).normalize()
     : new THREE.Quaternion();
   let adjustedDeltaPosition: Vec3 = [...deltaPosition];
-  let userRotationDeg = addVec3(def.smartRotationDeg ?? def.defaultRotationDeg, deltaRotation);
+  let userRotationDeg: Vec3 = micSocket ? [...deltaRotation] : addVec3(def.smartRotationDeg ?? def.defaultRotationDeg, deltaRotation);
   if (mirrored) {
     adjustedDeltaPosition = mirrorPosition(adjustedDeltaPosition);
     userRotationDeg = mirrorEulerDeg(userRotationDeg);
   }
   const socketPosition = addVec3(activeSocket?.position ?? def.defaultPosition, adjustedDeltaPosition);
-
-  const fit = getPropFitStatus(def, instance, metrics);
-  const baseScale = clamp(finite(def.defaultScale) ?? 1, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
-  const scale = clamp(baseScale * fit.fitScale * deltaScale, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
 
   const userRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
     THREE.MathUtils.degToRad(userRotationDeg[0]),

@@ -313,6 +313,43 @@ export function avatarForgeHairInstance(part: AvatarForgeHairPart, fit: StudioVr
   return Object.freeze(layout.spine ? { part, matrix, spine: layout.spine } : { part, matrix });
 }
 
+/** 매듭과 꼬리를 한 두상 좌표계에서 맞춘 뒤 병합한다. */
+export function fitAvatarForgeHairParts(
+  parts: readonly AvatarForgeHairPart[],
+  fit: StudioVrmHeadFit,
+): StudioVrmAuthoredHairInstance[] {
+  const instances = parts.map((part) => avatarForgeHairInstance(part, fit));
+  const knot = instances.find(({ part }) => part.id === "pony-root");
+  const tailIndex = instances.findIndex(({ part }) => part.id === "pony-tail");
+  const tail = instances[tailIndex];
+  if (!knot || !tail) return instances;
+
+  // 매듭 뒤쪽 안에 가닥의 뿌리(local y = 1)를 심는다. 두상 피팅 뒤의 매듭을 써야
+  // 묶음 높이·모델 정면 축이 바뀌어도 머리카락이 매듭에서 떨어지지 않는다.
+  const root = new THREE.Vector3(0, 0, -0.35).applyMatrix4(knot.matrix);
+  const position = new THREE.Vector3();
+  const rotation = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  tail.matrix.decompose(position, rotation, scale);
+  const down = new THREE.Vector3(0, -1, 0).applyQuaternion(rotation);
+  const forward = new THREE.Vector3(0, 0, 1).transformDirection(knot.matrix);
+  const towardFace = down.dot(forward);
+  if (towardFace > 0) {
+    // 같은 기울기와 길이를 유지하며 목 안쪽으로 향하던 꼬리를 뒤로 내린다.
+    const outward = down.clone().addScaledVector(forward, -2 * towardFace);
+    rotation.premultiply(new THREE.Quaternion().setFromUnitVectors(down, outward));
+    down.copy(outward);
+  }
+  position.copy(root).addScaledVector(down, scale.y);
+  const knotScale = new THREE.Vector3().setFromMatrixScale(knot.matrix);
+  instances[tailIndex] = {
+    part: tail.part,
+    matrix: tail.matrix.compose(position, rotation, scale),
+    rootGirthScale: Math.min(1, knotScale.x / scale.x, knotScale.y / scale.z, knotScale.z / scale.z),
+  };
+  return instances;
+}
+
 const FLOWING_BACK_SHELL_IDS = new Set(["back", "wavy-back", "hime-back", "halfup-back"]);
 const SOFTENED_SIDE_PILLAR_IDS = new Set([
   "side-left",
@@ -697,7 +734,7 @@ export function addAvatarForgeHairParts(
 ): void {
   const parts = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(state), state.hair);
   const merged = mergeStudioVrmAuthoredHairGeometry(
-    parts.map((part) => avatarForgeHairInstance(part, fit)),
+    fitAvatarForgeHairParts(parts, fit),
     { minScalpMargin: 0.004, crownCompression: 0.24, crownLatitudeMin: 0.36, earArchRelief: 0.25 },
   );
   if (!merged) return;

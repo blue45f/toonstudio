@@ -1,6 +1,40 @@
+import { STUDIO_VRM_HUMANOID_BONES } from "@toonstudio/contracts/studio-vrm-scene-fields";
+import { Euler, Quaternion } from "three";
+
 import { serializeCharacterDocumentV3, type CharacterDocumentV3 } from "./character-document-v3";
 
+import type { StudioVrmSceneDocument } from "../../vrm/studio-vrm-scene-document";
 import type { CharacterDocumentV3Repository } from "./character-document-v3-repository";
+
+export type CharacterPlacementScene = Pick<StudioVrmSceneDocument, "characterDocumentId"> &
+  Partial<Pick<StudioVrmSceneDocument, "pose" | "expressions">>;
+
+/** A saved cut contains XYZ rotations baked from the rendered VRM. The live editor may still be loading. */
+export function readCharacterPlacementContext(
+  projection: CharacterDocumentV3,
+  scene: CharacterPlacementScene,
+  modelBaseYaw: number,
+): CharacterDocumentV3 {
+  if (!scene.pose) return projection;
+  const shot = scene.pose;
+  const bones: Record<string, readonly [number, number, number, number]> = {};
+  for (const name of STUDIO_VRM_HUMANOID_BONES) {
+    const saved = shot.bones[name];
+    // Fingers use the cut's separately stored authored overrides in the VRM host.
+    if (!saved) continue;
+    const { x, y, z, w } = new Quaternion().setFromEuler(new Euler(...saved.rotation, "XYZ"));
+    bones[name] = [x, y, z, w];
+  }
+  const yaw = new Quaternion().setFromEuler(new Euler(0, modelBaseYaw + shot.bodyRotationY, 0));
+  return {
+    ...projection,
+    pose: { ...projection.pose, bones, root: {
+      position: [shot.translations.root[0], shot.yOffset, shot.translations.root[2]],
+      rotation: [yaw.x, yaw.y, yaw.z, yaw.w],
+    } },
+    expression: scene.expressions ? { ...projection.expression, weights: scene.expressions } : projection.expression,
+  };
+}
 
 /** 같은 저작 캐릭터의 외형과 한 컷에만 속하는 연기·촬영 상태를 합친다. */
 function withCutContext(character: CharacterDocumentV3, cut: CharacterDocumentV3): CharacterDocumentV3 {

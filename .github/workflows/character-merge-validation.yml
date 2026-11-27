@@ -19,10 +19,15 @@ on:
       - "apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts*"
       - "apps/web/src/domains/creator/studio-router/studio-route-manifest*"
       - "scripts/verify-character-contact-naturalness.mjs"
+      - "e2e/studio-drawing-character-selection.spec.ts"
+      - "e2e/helpers/studio-eight-cut-character-task.ts"
+      - "apps/web/public/assets/3d/everyday_glasses.glb"
       - "scripts/verify-studio-vrm-cooperative-capture.mjs"
       - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
       - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
       - "apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority*"
+      - "apps/web/src/domains/creator/character-platform/presets/legacy-character-*"
+      - "apps/web/src/domains/creator/character-platform/ui/LegacyCharacter*"
   push:
     branches: ["main", "release/salvage-integration-20260908"]
     paths:
@@ -40,10 +45,15 @@ on:
       - "apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts*"
       - "apps/web/src/domains/creator/studio-router/studio-route-manifest*"
       - "scripts/verify-character-contact-naturalness.mjs"
+      - "e2e/studio-drawing-character-selection.spec.ts"
+      - "e2e/helpers/studio-eight-cut-character-task.ts"
+      - "apps/web/public/assets/3d/everyday_glasses.glb"
       - "scripts/verify-studio-vrm-cooperative-capture.mjs"
       - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
       - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
       - "apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority*"
+      - "apps/web/src/domains/creator/character-platform/presets/legacy-character-*"
+      - "apps/web/src/domains/creator/character-platform/ui/LegacyCharacter*"
 
   workflow_dispatch:
 permissions:
@@ -127,12 +137,19 @@ jobs:
             apps/web/src/domains/creator/vrm/studio-vrm-prop-rig.test.ts \
             apps/web/src/domains/creator/vrm/studio-vrm-prop-grip-contact.test.ts \
             apps/web/src/domains/creator/vrm/studio-vrm-linked-cut-frame.test.ts \
+            apps/web/src/domains/creator/vrm/studio-vrm-pose-bake.test.ts \
+            apps/web/src/domains/creator/vrm/studio-vrm-hand-palm-orientation.test.ts \
             apps/web/src/domains/creator/character-shaper/StudioCharacterCutRefreshRunner.test.tsx \
+            apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.test.ts \
             apps/web/src/domains/creator/character-shaper/studio-character-linked-cut-refresh.test.ts \
             apps/web/src/domains/creator/character-shaper/use-linked-cut-capture.test.tsx \
+            apps/web/src/domains/creator/vrm/StudioVrmPropAttachment.capture.test.tsx \
             apps/web/src/domains/creator/character-shaper/StudioCharacterShaper.capture.test.tsx \
             apps/web/src/domains/creator/canvas/StudioCanvasContextMenu.test.tsx \
+            apps/web/src/domains/creator/character-platform/presets/legacy-character-recovery.test.ts \
             apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority.persistence.test.tsx \
+            apps/web/src/domains/creator/character-platform/runtime/character-pose-authoring-input.test.ts \
+            apps/web/src/domains/creator/character-platform/ui/use-character-authoring-inputs.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteCollaborationGateway.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts.test.tsx \
             apps/web/src/domains/creator/studio-router/studio-route-manifest.test.ts
@@ -140,3 +157,81 @@ jobs:
         run: pnpm run build:bundle
       - name: Verify Studio bundle budget
         run: pnpm run check:studio-bundle
+
+  eight-cut-task:
+    name: Studio eight-cut character task
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/apps/web/public/**/*.vrm
+            !/apps/web/public/**/*.glb
+            !/apps/web/public/**/*.mp4
+            /apps/web/public/vrm/sample.vrm
+            /apps/web/public/assets/3d/everyday_glasses.glb
+      - name: Determine whether the measured user task changed
+        id: scope
+        env:
+          DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [[ "$DISPATCH" == "true" ]] || ! git diff --quiet HEAD^1 HEAD -- \
+              .github/workflows/character-merge-validation.yml apps/web/public/assets/3d/everyday_glasses.glb \
+              apps/web/src/domains/creator/character-shaper/StudioCharacterShaper.tsx \
+              apps/web/src/domains/creator/character-shaper/StudioCharacterCutRefreshRunner.tsx \
+              apps/web/src/domains/creator/character-shaper/studio-character-linked-cut-refresh.ts \
+              apps/web/src/domains/creator/character-shaper/use-linked-cut-capture.ts \
+              apps/web/src/domains/creator/vrm/StudioVrmWardrobePropsProjection.tsx \
+              apps/web/src/domains/creator/vrm/studio-vrm-linked-cut-frame.ts \
+              e2e/studio-drawing-character-selection.spec.ts e2e/helpers/studio-eight-cut-character-task.ts; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Verify the public VRM and glasses GLB loaded by the task
+        if: steps.scope.outputs.run == 'true'
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import struct
+          import subprocess
+          from pathlib import Path
+
+          for path in map(Path, ("apps/web/public/vrm/sample.vrm", "apps/web/public/assets/3d/everyday_glasses.glb")):
+              data = path.read_bytes()
+              magic, version, length = struct.unpack_from("<4sII", data)
+              tracked = subprocess.check_output(["git", "rev-parse", f"HEAD:{path}"], text=True).strip()
+              digest = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+              if (magic, version, length) != (b"glTF", 2, len(data)) or digest != tracked:
+                  raise SystemExit(f"Invalid GLB fixture: {path}")
+              print(f"{path}: {len(data)} bytes, git blob {digest}")
+          PY
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+        if: steps.scope.outputs.run == 'true'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        if: steps.scope.outputs.run == 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Run the authored character task in normal Studio
+        if: steps.scope.outputs.run == 'true'
+        env:
+          STUDIO_EIGHT_CUT_TASK: "1"
+          PLAYWRIGHT_CHANNEL: ""
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: |
+          pnpm install --frozen-lockfile --prefer-offline
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test e2e/studio-drawing-character-selection.spec.ts --grep '같은 등장인물 여덟 컷' --workers=1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always() && steps.scope.outputs.run == 'true'
+        with:
+          name: studio-eight-cut-task
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 7
