@@ -191,6 +191,7 @@ describe("attachStudioBg3dEditorRecipeHost — 성공 경로", () => {
     if (!viewport) throw new Error("카메라가 필요합니다.");
     const before = viewport.readView();
     const originalLighting = live.document.lighting;
+    const lighting = vi.spyOn(await import("./studio-bg3d-hdri-lighting-presets"), "getStudioBg3dHdriLightingPreset");
     await expect(host.placeCustomModelWithRecipe(modelId, "floor", { frameEmptyScene: true, indoorLighting: true })).resolves.toBe(true);
     const firstView = live.document.camera;
     expect(live.customModels[0].name).toBe("현대 오피스 1");
@@ -200,18 +201,33 @@ describe("attachStudioBg3dEditorRecipeHost — 성공 경로", () => {
     expect(calls.commit.mock.lastCall?.[4]).toMatchObject({ preserveBeforeCamera: true });
     expect(stepStudioBg3dCommandHistory(refs, "undo")?.state).toMatchObject({ customModels: [], document: { camera: before, lighting: originalLighting } });
     expect(stepStudioBg3dCommandHistory(refs, "redo")?.state).toMatchObject({ customModels: live.customModels, document: { camera: firstView, lighting: live.document.lighting } });
-    await expect(host.placeCustomModelWithRecipe(modelId, "floor", { frameEmptyScene: true })).resolves.toBe(true);
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", { frameEmptyScene: true, indoorLighting: true })).resolves.toBe(true);
+    expect(lighting).toHaveBeenCalledExactlyOnceWith("studio");
     expect(viewport.applyView).toHaveBeenCalledOnce();
     expect(live.document.camera).toEqual(firstView);
   });
 
   it("빈 실내의 사용자 조명과 노출은 첫 공간 배치 후에도 보존한다", async () => {
     const { host, live, modelId } = createHost({ modelId: "ts-bg3d-office" });
+    const readPreset = vi.spyOn(await import("./studio-bg3d-hdri-lighting-presets"), "getStudioBg3dHdriLightingPreset");
     const lighting = { ...live.document.lighting, ambientIntensity: 1.37 };
     live.document = { ...live.document, lighting, render: { ...live.document.render, exposure: 1.22 } };
     await expect(host.placeCustomModelWithRecipe(modelId, "floor", { frameEmptyScene: true, indoorLighting: true })).resolves.toBe(true);
+    expect(readPreset).not.toHaveBeenCalled();
     expect(live.document.lighting).toEqual(lighting);
     expect(live.document.render.exposure).toBe(1.22);
+  });
+
+  it("실내 조명 로드가 실패하면 빈 장면과 이력을 보존하고 다시 배치할 수 있다", async () => {
+    const { host, live, calls, modelId } = createHost({ modelId: "ts-bg3d-office" });
+    vi.spyOn(await import("./studio-bg3d-hdri-lighting-presets"), "getStudioBg3dHdriLightingPreset")
+      .mockImplementationOnce(() => { throw new Error("조명 모듈 초기화 실패"); });
+    const options = { frameEmptyScene: true, indoorLighting: true };
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", options)).resolves.toBe(false);
+    expect(calls.commit).not.toHaveBeenCalled();
+    expect(live.customModels).toHaveLength(0);
+    expect(calls.status).toHaveBeenLastCalledWith({ tone: "error", message: expect.stringContaining("실내 조명 프리셋") });
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", options)).resolves.toBe(true);
   });
 
   it("기존 편집 이력에 명령 하나로 들어가 실행 취소 한 번으로 되돌아가고 다시 실행할 수 있다", async () => {

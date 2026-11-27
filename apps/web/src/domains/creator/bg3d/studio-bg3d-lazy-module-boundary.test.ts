@@ -48,6 +48,8 @@ function moduleImports(fileName: string) {
 
 /** 편집기 활성화 그래프에 있어서 지연 모듈이 값으로 가져오면 안 되는 모듈(이 기능이 쓰던 것들). */
 const ACTIVATION_GRAPH_MODULES = [
+  "./studio-bg3d-environment-camera",
+  "./studio-bg3d-scene-document",
   "./studio-bg3d-import-ai-use",
   "./studio-bg3d-physics-ui",
   "./studio-bg3d-scene-edit-readiness",
@@ -78,7 +80,7 @@ const LAZY_MODULES: readonly LazyModuleContract[] = [
       "./studio-bg3d-wall-probe",
       "./studio-bg3d-model-material-variant",
     ],
-    dynamicImports: [],
+    dynamicImports: ["./studio-bg3d-hdri-lighting-presets"],
   },
   { file: "studio-bg3d-asset-placement-recipes.ts", valueImports: ["./studio-bg3d-asset-placement-catalog"], dynamicImports: [] },
   { file: "studio-bg3d-asset-placement-catalog.ts", valueImports: [], dynamicImports: [] },
@@ -152,6 +154,8 @@ describe("편집기 활성화 그래프에 올라가는 접합부", () => {
   it("편집기 정적 그래프에 올라가는 접합부의 값 import 는 이미 활성화 그래프에 있는 모듈뿐이다", () => {
     const imports = moduleImports("studio-bg3d-editor-recipe-host.ts");
     expect(imports.valueImports).toEqual([
+      "./studio-bg3d-environment-camera",
+      "./studio-bg3d-scene-document",
       "./studio-bg3d-editor-derivations",
       "./studio-bg3d-model-placement-admission",
       "./studio-bg3d-modal-operation-coordinator",
@@ -164,6 +168,16 @@ describe("편집기 활성화 그래프에 올라가는 접합부", () => {
     expect(imports.valueImports.every((source) => (ACTIVATION_GRAPH_MODULES as readonly string[]).includes(source))).toBe(true);
     expect(imports.typeImports).toEqual(["./studio-bg3d-editor-recipe-run"]);
     expect(imports.dynamicImports).toEqual(["./studio-bg3d-editor-recipe-run"]);
+  });
+
+  it("배치에 주입하는 카메라와 기본 문서는 원래 뷰포트가 이미 정적으로 사용한다", () => {
+    const modal = moduleImports("StudioBg3dEditorModal.tsx").valueImports;
+    expect(moduleImports("StudioBackground3D.tsx").valueImports).toContain("./StudioBg3dEditorModal");
+    expect(modal).toContain("./StudioBg3dEditorViewport");
+    expect(modal).toContain("./studio-bg3d-scene-document");
+    expect(moduleImports("StudioBg3dEditorViewport.tsx").valueImports).toContain("./StudioBg3dEnvironmentCameraButton");
+    expect(moduleImports("StudioBg3dEnvironmentCameraButton.tsx").valueImports).toContain("./studio-bg3d-environment-camera");
+    expect(moduleImports("studio-bg3d-environment-camera.ts").valueImports).toEqual(["three"]);
   });
 
   it("AI 표기 읽기·안내 모듈은 활성화 그래프의 잎이라 값 import 가 없다", () => {

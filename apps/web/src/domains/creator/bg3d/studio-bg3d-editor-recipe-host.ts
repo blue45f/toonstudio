@@ -18,6 +18,8 @@
  * (값 import 목록은 studio-bg3d-lazy-module-boundary.test.ts 가 고정한다.)
  */
 
+import { frameStudioBg3dPlacedEnvironmentCamera } from "./studio-bg3d-environment-camera";
+import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 import { createStudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
 import {
   StudioBg3dModelPlacementAdmissionError,
@@ -50,6 +52,8 @@ export const STUDIO_BG3D_RECIPE_UNEXPECTED_MESSAGE =
 
 /** 본문에 넘기는 값. 모듈이 불러와질 때 한 번 만든 객체 리터럴이며 호출을 하지 않는다. */
 const RECIPE_RUN_DEPS: StudioBg3dRecipeRunDeps = {
+  frameEnvironmentCamera: frameStudioBg3dPlacedEnvironmentCamera,
+  defaultScene: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   isSceneEditReady: isStudioBg3dSceneEditReady,
   isPhysicsTransientPhase: isStudioBg3dPhysicsTransientPhase,
   createHistorySnapshot: createStudioBg3dHistorySnapshot,

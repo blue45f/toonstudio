@@ -1,5 +1,5 @@
-import { Matrix4, Vector3 } from "three";
-import type { Object3D } from "three";
+import { Matrix4, Object3D, Vector3 } from "three";
+import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { StudioBg3dEnvironmentAsset } from "./studio-bg3d-environment-catalog";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document";
 
@@ -37,4 +37,18 @@ export function frameStudioBg3dEnvironmentCamera(
       ? { orthographicHeight: 2 * distance * Math.tan(camera.fovDegrees * Math.PI / 360) }
       : {}),
   };
+}
+
+/** 막 배치될 모델도 렌더 트리에 붙은 인스턴스와 같은 변환으로 추천 구도를 잡는다. */
+export function frameStudioBg3dPlacedEnvironmentCamera(
+  camera: EnvironmentCamera,
+  before: StudioBg3dCameraSettings,
+  model: Pick<BgCustomModelInstance, "position" | "rotation" | "scale">,
+  sourceRoot: Object3D,
+): StudioBg3dCameraSettings | null {
+  const instance = new Object3D();
+  instance.position.set(...model.position);
+  instance.rotation.set(...model.rotation);
+  instance.scale.set(...model.scale);
+  return frameStudioBg3dEnvironmentCamera(camera, before, instance, sourceRoot);
 }

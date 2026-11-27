@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { frameStudioBg3dPlacedEnvironmentCamera } from "./studio-bg3d-environment-camera";
+import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 import { createStudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
 import {
   StudioBg3dModelPlacementAdmissionError,
@@ -64,6 +66,8 @@ describe("attachStudioBg3dEditorRecipeHost — 가벼운 접합부", () => {
       "StaleModalOperationError",
       "assertAttachmentAdmission",
       "createHistorySnapshot",
+      "defaultScene",
+      "frameEnvironmentCamera",
       "isPhysicsTransientPhase",
       "isSceneEditReady",
       "maxAttachments",
@@ -71,6 +75,8 @@ describe("attachStudioBg3dEditorRecipeHost — 가벼운 접합부", () => {
       "nameNewCustomModel",
       "placementMath",
     ]);
+    expect(deps.defaultScene).toBe(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT);
+    expect(deps.frameEnvironmentCamera).toBe(frameStudioBg3dPlacedEnvironmentCamera);
     expect(deps.isSceneEditReady).toBe(isStudioBg3dSceneEditReady);
     expect(deps.isPhysicsTransientPhase).toBe(isStudioBg3dPhysicsTransientPhase);
     expect(deps.createHistorySnapshot).toBe(createStudioBg3dHistorySnapshot);
@@ -120,6 +126,8 @@ describe("편집기 정적 그래프에 올라가는 파일의 경계", () => {
     const imports = [...source.matchAll(/^import\s+(type\s+)?[^;]*?from\s+"([^"]+)";/gmu)];
     // 값 import 는 이미 편집기 활성화 그래프에 있는 모듈뿐이고(본문에 주입한다), 본문은 타입으로만 가져온다.
     expect(imports.map((match) => [Boolean(match[1]), match[2]])).toEqual([
+      [false, "./studio-bg3d-environment-camera"],
+      [false, "./studio-bg3d-scene-document"],
       [false, "./studio-bg3d-editor-derivations"],
       [false, "./studio-bg3d-model-placement-admission"],
       [false, "./studio-bg3d-modal-operation-coordinator"],
