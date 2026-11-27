@@ -51,6 +51,17 @@ describe("linked placement recapture", () => {
     expect(result.pose.bones.leftEye).toBe(saved.pose.bones.leftEye);
     expect(result.pose.bones.rightHand).toBe(live.pose.bones.rightHand);
   });
+  it("retains the exact authored angles of untouched fingers while changing a different hand", () => {
+    const originalFinger = [0, .02222222222222222, .13] as const;
+    const saved = { ...scene, pose: { ...scene.pose, fingerOverrides: { leftIndexProximal: originalFinger } } };
+    const captured = { ...saved, pose: { ...saved.pose, fingerOverrides: {
+      leftIndexProximal: [0, .022222222222222223, .13] as const,
+      rightIndexProximal: [0, 0, .5] as const,
+    } } };
+    const edited = preserveUneditedCutPose(saved, captured);
+    expect(edited.pose.fingerOverrides.leftIndexProximal).toBe(originalFinger);
+    expect(edited.pose.fingerOverrides.rightIndexProximal).toEqual([0, 0, .5]);
+  });
   it("keeps an existing cut's PNG resolution and aspect when editing its pose or camera from a wider pane", () => {
     const original = { ...scene, characterDocumentId: "character:page/a", render: { ...scene.render, width: 128, height: 64 } };
     const frame = readEditableCutFrame(original, "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAEA");

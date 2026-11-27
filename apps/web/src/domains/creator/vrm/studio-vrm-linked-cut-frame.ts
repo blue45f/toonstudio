@@ -1,7 +1,7 @@
 import type { Camera, PerspectiveCamera } from "three";
 import type { StudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
-import { STUDIO_VRM_HUMANOID_BONES } from "@toonstudio/contracts/studio-vrm-scene-fields";
+import { STUDIO_VRM_FINGER_BONES, STUDIO_VRM_HUMANOID_BONES } from "@toonstudio/contracts/studio-vrm-scene-fields";
 
 import { readPngDimensions } from "@/platform/creator-asset-response-validation";
 import { STUDIO_BG3D_SHOT_BATCH_MAX_DIMENSION } from "../bg3d/studio-bg3d-shot-batch-limits";
@@ -71,6 +71,17 @@ export function linkedCutContextMatches(source: StudioVrmSceneDocument, rendered
   return cutContextKeys.every(key => firstCutDifference(source[key], rendered[key]) === null);
 }
 
+function retainUnchangedJoints<Key extends string, Value>(
+  names: readonly Key[], saved: Partial<Record<Key, Value>>, live: Partial<Record<Key, Value>>,
+): Partial<Record<Key, Value>> {
+  const result = { ...live };
+  for (const name of names) {
+    const original = saved[name];
+    if (original !== undefined && firstCutDifference(original, live[name], 1e-12) === null) result[name] = original;
+  }
+  return result;
+}
+
 /** An interactive edit can change acting. Retain its exact original numbers when only Euler round-off occurred. */
 export function preserveUneditedCutPose(
   saved: StudioVrmSceneDocument,
@@ -78,17 +89,13 @@ export function preserveUneditedCutPose(
 ): StudioVrmSceneDocument {
   const { bones: savedBones, fingerOverrides: savedFingers, ...originalBody } = saved.pose;
   const { bones: currentBones, fingerOverrides, ...currentBody } = captured.pose;
-  const bones = { ...currentBones };
-  for (const name of STUDIO_VRM_HUMANOID_BONES) {
-    const original = savedBones[name];
-    if (original && firstCutDifference(original, currentBones[name], 1e-12) === null) bones[name] = original;
-  }
+  const bones = retainUnchangedJoints(STUDIO_VRM_HUMANOID_BONES, savedBones, currentBones);
+  const fingers = retainUnchangedJoints(STUDIO_VRM_FINGER_BONES, savedFingers, fingerOverrides);
   const unchangedBody = firstCutDifference(originalBody, currentBody, 1e-12) === null;
-  const unchangedFingers = firstCutDifference(savedFingers, fingerOverrides, 1e-12) === null;
   const unchangedCamera = firstCutDifference(saved.camera, captured.camera, 1e-12) === null;
   return {
     ...captured,
-    pose: { ...(unchangedBody ? originalBody : currentBody), bones, fingerOverrides: unchangedFingers ? savedFingers : fingerOverrides },
+    pose: { ...(unchangedBody ? originalBody : currentBody), bones, fingerOverrides: fingers },
     camera: unchangedCamera ? saved.camera : captured.camera,
   };
 }

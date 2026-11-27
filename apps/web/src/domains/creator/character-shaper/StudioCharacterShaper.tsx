@@ -181,7 +181,9 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
     return () => { place.current = null; };
   }, [admitOutput, assets, captureScope, deliver, documentId, linkedCutCapture, placement]);
   const binding = controller.binding;
-  const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced);
+  const cutFingers = placement && documentId && placement.characterDocumentId === documentId
+    ? placement.pose.fingerOverrides : undefined;
+  const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced, cutFingers);
   const variantHost = {
     ...inputHost,
     loadModelFromLibraryEntry: (entry: VrmLibraryEntry) => {
