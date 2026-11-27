@@ -1,5 +1,7 @@
 import { MathUtils, Matrix4, Quaternion, Vector3 } from "three";
 
+import { measurePonytailContact } from "./ponytail-contact.mjs";
+
 const threshold = 12;
 function differs(a, b, i) {
   return Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])) >= threshold;
@@ -49,8 +51,11 @@ function headLocalProbes(root, head) {
 export function captureHairStack({ fixture, gl, scene, camera }) {
   const previousViews = new Map();
   const restProbes = new Map();
+  const contacts = new WeakMap();
   const context = gl.getContext();
   const { vrm, head, fit } = fixture;
+  const rendererInfo = context.getExtension("WEBGL_debug_renderer_info");
+  const renderer = context.getParameter(rendererInfo?.UNMASKED_RENDERER_WEBGL ?? context.RENDERER);
   const read = () => {
     gl.render(scene, camera);
     const rgba = new Uint8Array(context.drawingBufferWidth * context.drawingBufferHeight * 4);
@@ -62,7 +67,7 @@ export function captureHairStack({ fixture, gl, scene, camera }) {
     try { object.visible = false; return operation(); }
     finally { object.visible = visible; }
   };
-  return ({ variant, view, turned }) => {
+  return ({ variant, view, turned }, state) => {
     scene.updateMatrixWorld(true);
     const forge = [];
     vrm.scene.traverse(node => { if (node.userData.toonSpectrumAvatarForge) forge.push(node); });
@@ -72,6 +77,10 @@ export function captureHairStack({ fixture, gl, scene, camera }) {
     const cap = scene.getObjectByName("review-cap");
     const sunglasses = scene.getObjectByName("review-sunglasses");
     if (!mainHair || !cap || !sunglasses) throw new Error("Incomplete hair/hat/glasses composition");
+    if (!contacts.has(mainHair.geometry)) {
+      const fittedHead = hair.userData.toonSpectrumAvatarForgeHeadFit;
+      contacts.set(mainHair.geometry, measurePonytailContact(mainHair.geometry, state, fittedHead));
+    }
     const full = read();
     const hairOff = without(hair, read);
     const capOff = without(cap, read);
@@ -105,6 +114,7 @@ export function captureHairStack({ fixture, gl, scene, camera }) {
       png: gl.domElement.toDataURL("image/png"),
       stats: {
         hairPixels: difference(full, hairOff), cap: capEvidence, sunglasses: glassesEvidence,
+        ponytailContact: contacts.get(mainHair.geometry), renderer,
         comparedStyle: prior?.variant ?? null, changedPixels: prior ? difference(full, prior.pixels) : null,
         driftMm, headTurnDegrees: MathUtils.radToDeg(headRotation.angleTo(rest.rotation)),
         sampleCounts: Object.fromEntries(Object.entries(probes).map(([id, points]) => [id, points.length])),

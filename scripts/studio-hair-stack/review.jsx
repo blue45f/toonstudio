@@ -1,6 +1,6 @@
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -23,6 +23,8 @@ function Subject({ fixture }) {
   const { vrm, head, neck } = fixture;
   const { camera, gl, scene } = useThree();
   const [state, setState] = useState(() => createAvatarForgeState());
+  const committed = useRef(state);
+  useLayoutEffect(() => { committed.current = state; }, [state]);
   const metrics = useMemo(() => measureVrmPropRigMetrics(vrm), [vrm]);
   const faceController = useMemo(createStudioVrmAvatarForgeFaceController, []);
   const items = useMemo(() => ["cap", "sunglasses"].map(id => createPropInstance(id)), []);
@@ -62,7 +64,7 @@ function Subject({ fixture }) {
       camera.updateMatrixWorld();
       api.frames = 0;
     };
-    api.inspect = inspect;
+    api.inspect = spec => inspect(spec, committed.current);
     api.settled = () => {
       const forge = vrm.scene.getObjectByName("ToonStudioAvatarForge");
       return api.frames >= 3 && forge?.userData.toonSpectrumAvatarForgeHairIdentity === api.identity

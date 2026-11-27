@@ -11,7 +11,8 @@ type View = typeof views[number];
 type Model = typeof models[number];
 type FrameSpec = { variant: string; view: View; turned: boolean };
 type Evidence = {
-  hairPixels: number;
+  hairPixels: number; renderer: string;
+  ponytailContact: { rootVertices: number; insideKnot: number; nearestRadius: number; farthestRadius: number } | null;
   cap: { visible: number; visibleWithoutHair: number; coveredByHair: number };
   sunglasses: { visible: number; visibleWithoutHair: number; coveredByHair: number };
   comparedStyle: string | null; changedPixels: number | null;
@@ -91,6 +92,11 @@ function validate(frames: Frame[], baseline: boolean) {
     if (stats.nativeHairCandidates > 0 && stats.nativeMeshesHidden === 0) failures.push(`${frame.file}: original hair still visible`);
     if (frame.turned && stats.headTurnDegrees < 20) failures.push(`${frame.file}: head did not rotate`);
     if (Object.values(stats.driftMm).some(mm => !Number.isFinite(mm) || mm > 1)) failures.push(`${frame.file}: rigid head-relative drift over 1 mm`);
+    if (frame.variant.startsWith("ponytail")) {
+      const tie = stats.ponytailContact;
+      if (!tie || tie.rootVertices < 1) failures.push(`${frame.file}: missing visible geometry root-ring evidence`);
+      else if (!baseline && tie.insideKnot !== tie.rootVertices) failures.push(`${frame.file}: tail root exits tie`);
+    }
     if (frame.variant.startsWith("ponytail-") && stats.hairPixels < 20) failures.push(`${frame.file}: no visible hair in tie closeup`);
   }
   for (const model of models) {
@@ -142,7 +148,8 @@ async function compareBaseline(page: Page, directory: string, baseline: Frame[])
         }
         return changed;
       }, sources);
-      pairs.push({ file: before.file, sameCamera, changedPixels });
+      pairs.push({ file: before.file, sameCamera, changedPixels,
+        beforeContact: before.stats.ponytailContact, afterContact: after.stats.ponytailContact });
       sheetFrames.push(before, { ...after, file: join("../studio-hair-stack", after.file) });
       labels.push(`Base ${before.variant} ${before.view}`, `Current ${after.variant} ${after.view}`);
     }
@@ -169,6 +176,7 @@ async function run(baselineRef?: string) {
   let comparison: Awaited<ReturnType<typeof compareBaseline>> = [];
   const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
     ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {}) });
+  const chromiumVersion = browser.version();
   try {
     const page = await browser.newPage({ viewport: { width: 512, height: 512 }, deviceScaleFactor: 1 });
     page.on("pageerror", error => errors.push(error.message));
@@ -212,7 +220,7 @@ async function run(baselineRef?: string) {
   const sources = Object.fromEntries(sourcePaths.map(path => [path, git("rev-parse", `${sourceRef}:${path}`)]));
   await writeFile(join(directory, "review.json"), JSON.stringify({ currentRef, geometrySourceRef: sourceRef, sources,
     fixture: { models, styles: ["short", "long", "ponytail"], props: ["cap", "sunglasses"], width: 512, height: 512,
-      renderer: "Chromium ANGLE SwiftShader", minRgbDifference: 12, driftUnits: "millimetres", rigidDriftLimitMm: 1 },
+      chromiumVersion, requestedRenderer: "ANGLE SwiftShader", actualRenderer: frames[0]?.stats.renderer, minRgbDifference: 12, driftUnits: "millimetres", rigidDriftLimitMm: 1 },
     frames, comparison, failures }, null, 2));
   return failures;
 }
