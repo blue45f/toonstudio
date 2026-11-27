@@ -301,6 +301,7 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(await screen.findByText(/점선 테두리 안쪽을 삽입합니다/)).toBeTruthy();
     expect(aspect).toHaveProperty("value", "9-16");
     expect(writeAspectRatio).toHaveBeenLastCalledWith(9 / 16);
+    expect(screen.getByTestId("studio-bg3d-scene-assistant").dataset.sheetState).toBe("half");
     fireEvent.change(aspect, { target: { value: "viewport" } });
     expect(writeAspectRatio).toHaveBeenLastCalledWith(null);
     expect(await screen.findByText(/화면 크기에 따라 삽입 비율이 달라집니다/)).toBeTruthy();
@@ -318,6 +319,40 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
       type: "grayscale",
     }));
     expect(host.handleInsert).toHaveBeenCalledOnce();
+  });
+
+  it.each(["half", "full"] as const)("views the crop and restores %s insert settings, focus, and scroll", (sheet) => {
+    const host = createHost({ primitives: [{ id: "scene" }], ltExportAspectRatio: 16 / 9 });
+    const { container } = render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    const assistant = screen.getByTestId("studio-bg3d-scene-assistant");
+    fireEvent.click(within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" }));
+    if (sheet === "full") fireEvent.click(screen.getByRole("button", { name: "도구 패널 펼치기" }));
+    expect(assistant.dataset.sheetState).toBe(sheet);
+
+    const scrollArea = container.querySelector(".scene-assistant__panel-scroll");
+    if (!(scrollArea instanceof HTMLElement)) throw new Error("Expected the assistant settings scroll area");
+    const tone = screen.getByRole("button", { name: /톤 배경/ });
+    fireEvent.click(tone);
+    scrollArea.scrollTop = 160;
+    const preview = screen.getByRole("button", { name: "컷 범위 보기" });
+    preview.focus();
+    fireEvent.click(preview);
+
+    const restore = screen.getByRole("button", { name: "삽입 설정 열기" });
+    expect(assistant.dataset.sheetState).toBe("peek");
+    expect(restore.textContent).toBe("삽입 설정 열기");
+    expect(document.activeElement).toBe(restore);
+    scrollArea.scrollTop = 0;
+    fireEvent.click(restore);
+
+    const aspect = screen.getByRole("combobox", { name: "삽입 비율" });
+    expect(assistant.dataset.sheetState).toBe(sheet);
+    expect(document.activeElement).toBe(aspect);
+    expect(scrollArea.scrollTop).toBe(160);
+    expect(aspect).toHaveProperty("value", "16-9");
+    expect(tone.getAttribute("aria-pressed")).toBe("true");
+    expect(host.updateLtExportAspectRatio).not.toHaveBeenCalled();
+    expect(host.handleInsert).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -346,6 +381,8 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
       const aspect = screen.getByRole("combobox", { name: "Insert aspect ratio" });
       expect(within(aspect).getByRole("option", { name: "Fit to view" })).toHaveProperty("selected", true);
       expect(screen.getByText("Uses the full 3D view, so the insert ratio follows the view size.")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "View crop" }));
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Open insert settings" }));
     } finally {
       act(() => setLang(lang));
     }

@@ -1,5 +1,5 @@
 import { Check, Save, SunMedium } from "lucide-react";
-import { useId } from "react";
+import { useId, type Ref } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -24,7 +24,9 @@ interface StudioBg3dAssistantFinishStepProps {
   readonly onOutputStyle: (style: StudioBg3dAssistantOutputStyle) => void;
   readonly aspectRatio: number | null;
   readonly aspectRatioDisabled: boolean;
+  readonly aspectSelectRef: Ref<HTMLSelectElement>;
   readonly onAspectRatio: ((aspectRatio: number | null) => void) | undefined;
+  readonly onViewCrop: (() => void) | undefined;
   readonly onSaveToLibrary: () => void;
 }
 
@@ -35,7 +37,9 @@ export function StudioBg3dAssistantFinishStep({
   onOutputStyle,
   aspectRatio,
   aspectRatioDisabled,
+  aspectSelectRef,
   onAspectRatio,
+  onViewCrop,
   onSaveToLibrary,
 }: StudioBg3dAssistantFinishStepProps) {
   const bt = useBilingual("StudioBg3dAssistantFinishStep");
@@ -92,6 +96,7 @@ export function StudioBg3dAssistantFinishStep({
             {bt("삽입 비율", "Insert aspect ratio")}
           </label>
           <select
+            ref={aspectSelectRef}
             id={aspectId}
             aria-describedby={aspectHintId}
             className="min-h-11 max-w-full min-w-0 rounded-lg border border-line bg-panel px-2.5 text-xs font-semibold text-fg focus-visible:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
@@ -118,6 +123,10 @@ export function StudioBg3dAssistantFinishStep({
             ? bt("3D 화면 전체를 사용해 화면 크기에 따라 삽입 비율이 달라집니다.", "Uses the full 3D view, so the insert ratio follows the view size.")
             : bt("3D 화면의 점선 테두리 안쪽을 삽입합니다.", "Inserts the area inside the dashed frame in the 3D view.")}
         </p>
+        <button type="button" className="scene-assistant__crop-preview-action"
+          disabled={busy || !hasScene || !onViewCrop} onClick={onViewCrop}>
+          {bt("컷 범위 보기", "View crop")}
+        </button>
         <div><Check size={14} aria-hidden /><span>원본 3D 장면을 함께 보존</span></div>
         <div><Check size={14} aria-hidden /><span>캔버스에서 다시 편집 가능</span></div>
       </section>

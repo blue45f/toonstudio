@@ -6,7 +6,7 @@ import {
   Copy, Cuboid, Focus, ImagePlus, Layers3, Loader2, Maximize2, Move3d, Rotate3d,
   Scaling, ScanLine, SlidersHorizontal, Trash2, Upload, UserPlus,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 
 import type { ReactNode } from "react";
 
@@ -471,6 +471,10 @@ export function StudioBg3dSceneAssistantWorkspace({
   const [sceneFramingRequest, requestSceneFraming] = useReducer((revision: number) => revision + 1, 0);
   const hydratedRef = useRef(false);
   const completedSceneFramingRequestRef = useRef(0);
+  const sheetHandleRef = useRef<HTMLButtonElement>(null);
+  const panelScrollRef = useRef<HTMLDivElement>(null);
+  const aspectSelectRef = useRef<HTMLSelectElement>(null);
+  const cropPreviewReturnRef = useRef<{ sheet: "half" | "full"; scrollTop: number } | null>(null);
 
   useEffect(() => {
     if (!h.open) return undefined;
@@ -489,6 +493,20 @@ export function StudioBg3dSceneAssistantWorkspace({
     + (h.sharedCharacterCaptureElementIds?.length ?? 0);
   const hasScene = objectCount > 0;
   const modalOpen = h.open;
+  useLayoutEffect(() => {
+    const previous = cropPreviewReturnRef.current;
+    if (!previous) return;
+    if (!modalOpen || step !== "finish") {
+      cropPreviewReturnRef.current = null;
+    } else if (sheetState === "peek") {
+      sheetHandleRef.current?.focus({ preventScroll: true });
+    } else {
+      cropPreviewReturnRef.current = null;
+      const select = aspectSelectRef.current;
+      if (select && !select.disabled) select.focus({ preventScroll: true });
+      if (panelScrollRef.current) panelScrollRef.current.scrollTop = previous.scrollTop;
+    }
+  }, [modalOpen, sheetState, step]);
   const readinessPhase = h.readinessState?.phase ?? (h.isRestoringScene ? "initializing" : "ready");
   const restoringScene = Boolean(h.isRestoringScene) && readinessPhase !== "error";
   const selectedCount = h.selectedIds?.size ?? 0;
@@ -621,6 +639,12 @@ export function StudioBg3dSceneAssistantWorkspace({
     h.updateLtExportAspectRatio?.(aspectRatio);
     (onHostChange ?? refreshMutableHost)();
   };
+  const viewCrop = () => {
+    if (sheetState === "peek") return;
+    cropPreviewReturnRef.current = { sheet: sheetState, scrollTop: panelScrollRef.current?.scrollTop ?? 0 };
+    setSheetState("peek");
+  };
+  const openInsertSettings = () => setSheetState(cropPreviewReturnRef.current?.sheet ?? "half");
   const advance = () => {
     if (step === "finish") {
       if (!insertDisabled) void h.handleInsert();
@@ -689,7 +713,9 @@ export function StudioBg3dSceneAssistantWorkspace({
         onOutputStyle={selectOutputStyle}
         aspectRatio={h.ltExportAspectRatio ?? null}
         aspectRatioDisabled={insertDisabled || placementActive}
+        aspectSelectRef={aspectSelectRef}
         onAspectRatio={h.updateLtExportAspectRatio ? selectAspectRatio : undefined}
+        onViewCrop={placementActive || sheetState === "peek" ? undefined : viewCrop}
         onSaveToLibrary={h.handleSaveToLibrary}
       />
     );
@@ -741,7 +767,8 @@ export function StudioBg3dSceneAssistantWorkspace({
       </div>
 
       <aside className="scene-assistant__panel" aria-label="장면 도우미">
-        <SheetHandle state={sheetState} onChange={setSheetState} />
+        <SheetHandle state={sheetState} onChange={setSheetState} buttonRef={sheetHandleRef}
+          onOpenInsertSettings={step === "finish" && sheetState === "peek" ? openInsertSettings : undefined} />
         <div className="scene-assistant__panel-head">
           <div className="scene-assistant__panel-title">
             <span><Compass size={15} aria-hidden /></span>
@@ -753,7 +780,7 @@ export function StudioBg3dSceneAssistantWorkspace({
         </div>
 
         <AssistantStepper step={step} onStepChange={changeStep} />
-        <div className="scene-assistant__panel-scroll">
+        <div className="scene-assistant__panel-scroll" ref={panelScrollRef}>
           <StudioBg3dAssistantHostReadinessBanner host={h} hasDraftScene={hasScene} />
           <StudioScene3dBg3dCutPanel host={h} preferredExpanded={false} />
           <SceneAssistantTouchGuide />
