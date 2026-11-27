@@ -28,12 +28,6 @@ const panels = mode === "motion" ? {
   ],
 };
 if (mode === "motion") {
-  panels.probe = [
-    frame("Lumi | default", "sample-prop-mic-grip-0"),
-    frame("Lumi | trial position", "sample-prop-mic-shared-probe"),
-    frame("Shion | default", "shion-prop-mic-grip-0"),
-    frame("Shion | trial position", "shion-prop-mic-shared-probe"),
-  ];
   panels.grip = [
     frame("Lumi | palm, neutral", "sample-prop-mic-grip-0"),
     frame("Lumi | palm, +35 deg", "sample-prop-mic-grip-35"),

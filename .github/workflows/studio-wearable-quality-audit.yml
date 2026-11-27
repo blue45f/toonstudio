@@ -9,6 +9,7 @@ on:
       - 'apps/web/src/domains/creator/vrm/studio-vrm-head-surface.ts'
       - 'apps/web/src/domains/creator/vrm/studio-vrm-prop-rig.ts'
       - 'apps/web/src/domains/creator/vrm/studio-vrm-microphone-grip.ts'
+      - 'apps/web/src/domains/creator/vrm/studio-vrm-microphone-thumb-contact*'
       - 'apps/web/src/domains/creator/vrm/studio-vrm-prop-anchors.ts'
       - 'apps/web/src/domains/creator/vrm/studio-vrm-props.ts'
       - 'apps/web/src/domains/creator/vrm/StudioVrmGripContactRefine.tsx'
@@ -109,6 +110,9 @@ jobs:
             .artifacts/studio-wearable-v5/index.html
           retention-days: 7
           include-hidden-files: true
+      - name: Check microphone contact and authored thumb controls
+        if: matrix.mode == 'motion'
+        run: pnpm exec vitest run apps/web/src/domains/creator/vrm/studio-vrm-microphone-thumb-contact.test.ts
       - name: Measure worn prop motion on both VRM rigs
         if: matrix.mode == 'motion'
         run: pnpm exec tsx scripts/verify-studio-wearable-v5.mts --motion-only
