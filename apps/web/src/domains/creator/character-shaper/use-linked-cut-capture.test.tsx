@@ -76,10 +76,32 @@ describe("mounted sequential linked-cut capture", () => {
     expect(await late).toBe(false);
     expect(request.onFailure).not.toHaveBeenCalled();
   });
+  it("waits through a temporarily unavailable one-point glasses attachment and admits its applied frame", async () => {
+    const { view, h, mountAttachments, request } = fixture();
+    mountAttachments();
+    view.result.current.onLinkedCutPropStatus("p1", "glasses", "unavailable");
+    act(() => { vi.advanceTimersByTime(64); });
+    expect(h.handleLinkedCutInsert).not.toHaveBeenCalled();
+    view.result.current.onLinkedCutPropStatus("p1", "glasses", "ready");
+    act(() => { vi.advanceTimersByTime(32); });
+    expect(h.handleLinkedCutInsert).toHaveBeenCalledTimes(1);
+    expect(await view.result.current.admitOutput()).toBe(true);
+    expect(request.onFailure).not.toHaveBeenCalled();
+  });
+  it("preserves pixels when an expected GLB cannot load and names the failed instance", async () => {
+    const { view, h, request } = fixture();
+    view.result.current.onLinkedCutPropStatus("p1", "glasses", "unavailable", "asset-load-failed");
+    act(() => { vi.advanceTimersByTime(64); });
+    expect(request.onFailure).toHaveBeenCalledTimes(1);
+    expect(request.onFailure).toHaveBeenCalledWith("소품 glasses (p1) 3D 파일을 불러오지 못해 기존 컷을 보존했습니다.");
+    expect(h.handleLinkedCutInsert).not.toHaveBeenCalled();
+    expect(await view.result.current.admitOutput()).toBe(false);
+  });
   it("keeps a cut with missing attachments and reports failure only once", () => {
     const { h, request } = fixture();
     act(() => { vi.advanceTimersByTime(60_016); });
     expect(h.handleLinkedCutInsert).not.toHaveBeenCalled();
     expect(request.onFailure).toHaveBeenCalledTimes(1);
+    expect(request.onFailure).toHaveBeenCalledWith(expect.stringContaining("소품 glasses (p1) 장착 확인 대기"));
   });
 });

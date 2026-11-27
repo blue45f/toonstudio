@@ -229,6 +229,7 @@ export function StudioVrmPropAttachment({
     uid: string,
     propId: string,
     status: StudioVrmProjectionAttachmentStatus,
+    detail?: "asset-load-failed",
   ) => void;
 }) {
   const boneNode = useMemo(
@@ -259,7 +260,7 @@ export function StudioVrmPropAttachment({
   const [loadedGltfProp, setLoadedGltfProp] = useState<{
     readonly propId: string;
     readonly url: string;
-    readonly lease: StudioVrmPropAssetLease;
+    readonly lease: StudioVrmPropAssetLease | null;
   } | null>(null);
   const definition = propDefById(instance.propId);
 
@@ -277,9 +278,10 @@ export function StudioVrmPropAttachment({
     : null;
   const gltfObject = loadedGltfProp?.propId === instance.propId
     && loadedGltfProp.url === gltfUrl
-    && !loadedGltfProp.lease.released
+    && loadedGltfProp.lease && !loadedGltfProp.lease.released
     ? loadedGltfProp.lease.object
     : null;
+  const loadFailed = loadedGltfProp?.propId === instance.propId && loadedGltfProp.url === gltfUrl && loadedGltfProp.lease === null;
   const object = proceduralObject ?? gltfObject;
   const resolved = definition ? resolvePropAttachment(definition, instance, metrics) : null;
   const secondary = definition ? resolveSecondaryPropTarget(definition, instance) : null;
@@ -320,7 +322,7 @@ export function StudioVrmPropAttachment({
         setLoadedGltfProp({ propId: instance.propId, url: source.url, lease: loadedLease });
       })
       .catch(() => {
-        // GLB 항목은 절차형 큐브로 위장하지 않는다. object=null이 attachment unavailable을 보고한다.
+        if (active) setLoadedGltfProp({ propId: instance.propId, url: source.url, lease: null });
       });
 
     return () => {
@@ -331,19 +333,12 @@ export function StudioVrmPropAttachment({
 
   useLayoutEffect(() => {
     if (!onAttachmentStatus) return;
-    const primaryReady = Boolean(
-      boneNode
-      && object
-      && (!instance.rig || resolved?.usesSmartRig === true),
-    );
-    const initialStatus = !primaryReady
-      ? "unavailable" as const
-      : !secondaryActive
-        ? "ready" as const
-        : null;
+    const primaryReady = boneNode && object && (!instance.rig || resolved?.usesSmartRig);
+    // Smart followers report only after the actual socket transform and any two-hand constraint.
+    const initialStatus = !primaryReady ? "unavailable" : instance.rig ? null : "ready";
     if (initialStatus && attachmentStatusRef.current !== initialStatus) {
       attachmentStatusRef.current = initialStatus;
-      onAttachmentStatus(instance.uid, instance.propId, initialStatus);
+      onAttachmentStatus(instance.uid, instance.propId, initialStatus, loadFailed ? "asset-load-failed" : undefined);
     }
     return () => {
       onAttachmentStatus(instance.uid, instance.propId, "detached");
@@ -357,7 +352,7 @@ export function StudioVrmPropAttachment({
     object,
     onAttachmentStatus,
     resolved?.usesSmartRig,
-    secondaryActive,
+    loadFailed,
   ]);
 
   useEffect(() => {
@@ -398,7 +393,7 @@ export function StudioVrmPropAttachment({
   useFrame((_, rawDelta) => {
     if (capturePaused) return;
     const group = smartGroupRef.current;
-    if (!group || !boneNode || !resolved?.usesSmartRig) {
+    if (!group?.parent || object?.parent !== group || !boneNode || !resolved?.usesSmartRig) {
       if (instance.rig) reportAttachmentStatus("unavailable");
       return;
     }
@@ -499,6 +494,8 @@ export function StudioVrmPropAttachment({
         { targetQuaternion, state: secondaryGripState }
       );
       reportAttachmentStatus(applied ? "ready" : "unavailable");
+    } else {
+      reportAttachmentStatus("ready");
     }
   }, VRM_FRAME_PROP_PRIORITY);
 

@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { getCharacterDocumentV3Repository } from "../character-platform/document/character-document-v3-repository";
 import { linkedCutCameraMatches, readLinkedCutPngSize } from "../vrm/studio-vrm-linked-cut-frame";
+import { createLinkedCutAttachmentReceipts } from "./linked-cut-attachment-receipts";
 
 import type { useCharacterPlatformWorkbench } from "../character-platform/ui/use-character-platform-workbench";
 import type { StudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
-import type { StudioVrmProjectionAttachmentStatus } from "../vrm/StudioVrmWardrobePropsProjection";
 
 export interface LinkedCutCaptureRequest {
   readonly documentId: string;
@@ -27,20 +27,9 @@ type Props = {
 export function useLinkedCutCapture(props: Props) {
   const latest = useRef(props);
   useLayoutEffect(() => { latest.current = props; });
-  const propReceipts = useRef(new Map<string, string>());
-  const wardrobeReceipts = useRef(new Map<string, string>());
-  const onLinkedCutPropStatus = useCallback((uid: string, propId: string, status: StudioVrmProjectionAttachmentStatus) => {
-    if (status === "ready") propReceipts.current.set(uid, propId);
-    else propReceipts.current.delete(uid);
-  }, []);
-  const onLinkedCutWardrobeStatus = useCallback((slot: string, itemId: string, status: StudioVrmProjectionAttachmentStatus) => {
-    if (status === "ready") wardrobeReceipts.current.set(slot, itemId);
-    else wardrobeReceipts.current.delete(slot);
-  }, []);
-  const attachmentsReady = useCallback((h: StudioVrmPoserHost) =>
-    (h.vrmPropItems ?? []).every((item: { uid: string; propId: string }) => propReceipts.current.get(item.uid) === item.propId)
-    && Object.entries(h.wardrobeState ?? {}).every(([slot, value]) =>
-      !value || wardrobeReceipts.current.get(slot) === (value as { itemId: string }).itemId), []);
+  const [receipts] = useState(createLinkedCutAttachmentReceipts);
+  const attachmentIssue = useCallback((h: StudioVrmPoserHost) =>
+    receipts.issue(h.vrmPropItems ?? [], h.wardrobeState ?? {}), [receipts]);
 
   const active = useRef<{ started: boolean } | null>(null);
   const documentId = props.request?.documentId;
@@ -87,12 +76,17 @@ export function useLinkedCutCapture(props: Props) {
           fail(problem || "현재 3D 화면에서 표면 펜선 또는 외부 아틀라스 복원을 확인할 수 없습니다.");
           return;
         }
-        const complete = restored && !controller.binding.busyReason && !authoring.snapshot.previewDocument
+        const attachment = attachmentIssue(h);
+        const frameRestored = restored && !controller.binding.busyReason && !authoring.snapshot.previewDocument
           && !h.vrmContextLost && h.status === "ready" && attached && capture.gl && capture.camera
           && h.pendingCameraRestoreFrameRef?.current == null && !h.pendingPoseDataRef?.current
-          && linkedCutCameraMatches(scene.camera, h.viewportApiRef?.current?.readCamera() ?? null)
-          && attachmentsReady(h);
-        waitingFor = controller.binding.busyReason || (!attachmentsReady(h) ? "헤어·의상·소품 장착" : "캐릭터와 컷 카메라 복원");
+          && linkedCutCameraMatches(scene.camera, h.viewportApiRef?.current?.readCamera() ?? null);
+        if (frameRestored && attachment?.failed) {
+          fail(attachment.reason);
+          return;
+        }
+        const complete = frameRestored && !attachment;
+        waitingFor = controller.binding.busyReason || attachment?.reason || "캐릭터와 컷 카메라 복원";
         stableFrames = complete ? stableFrames + 1 : 0;
         if (stableFrames >= 2) {
           ticket.started = true;
@@ -112,7 +106,7 @@ export function useLinkedCutCapture(props: Props) {
       cancelAnimationFrame(frame);
       window.clearTimeout(deadline);
     };
-  }, [attachmentsReady, documentId, revision, scene, src]);
+  }, [attachmentIssue, documentId, revision, scene, src]);
 
   const admitOutput = useCallback(async () => {
     const ticket = active.current;
@@ -125,8 +119,8 @@ export function useLinkedCutCapture(props: Props) {
       && now.request?.revision === request.revision && now.h.vrm === h.vrm && now.controller.authoring.authority === controller.authoring.authority
       && stored?.revision === request.revision && stored.documentId === request.documentId && stored.model.assetId === current.document.model.assetId
       && current.document.documentId === request.documentId && current.document.revision === request.revision
-      && !current.previewDocument && attachmentsReady(now.h);
-  }, [attachmentsReady, scene]);
+      && !current.previewDocument && !attachmentIssue(now.h);
+  }, [attachmentIssue, scene]);
 
-  return { admitOutput, onLinkedCutPropStatus, onLinkedCutWardrobeStatus };
+  return { admitOutput, onLinkedCutPropStatus: receipts.prop, onLinkedCutWardrobeStatus: receipts.garment };
 }
