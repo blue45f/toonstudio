@@ -34,7 +34,7 @@
     },
     {
       "path": "tools/media/ir-present/narration.ko.json",
-      "sha256": "4693273ca77cd2ebe51ee25f1e336be728ad03994d17f6e0c25499928160baef"
+      "sha256": "436580275262a2dc2bc6058006a1e9047a8fa4db17a452b5e19be510fe9d19a3"
     },
     {
       "path": "apps/web/public/brand/product-tour/03-draw.png",
@@ -65,7 +65,7 @@
     },
     {
       "file": "toonstudio-ir-deck.pdf",
-      "sha256": "0209d3d1d1ca6cfebda80882e20642649472fc5a23c2877b520ff3bacf30859d",
+      "sha256": "2d88b4412f0329361436e8d80de42c8ef368d06f6564491628c455db32329cf5",
       "bytes": 1115156
     }
   ],
