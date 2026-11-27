@@ -37,6 +37,7 @@ export function StudioBg3dEnvironmentCameraButton({
   };
   const shotButton = (camera: StudioBg3dEnvironmentCamera, text: string, description: string, subject?: string) => (
     <button type="button" aria-label={description} title={blockedReason || description}
+      data-bg3d-environment-camera-action="true"
       disabled={Boolean(blockedReason)} onClick={() => apply(camera)}
       className="inline-flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 rounded-lg border border-line bg-card px-2 text-xs font-semibold text-fg shadow-sm hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
       {text}
