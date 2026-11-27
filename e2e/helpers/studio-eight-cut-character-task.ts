@@ -3,9 +3,10 @@ import { buffer } from "node:stream/consumers";
 
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 
-import type { StudioVrmSceneDocument } from "../../apps/web/src/domains/creator/contracts/studio-vrm-scene-document-schema";
 import { openStudioAllTools } from "../../scripts/lib/studio-bg3d-ui-interactions";
 import { openStudioMainMenu, selectStudioLayerThroughNavigator } from "../../scripts/lib/studio-shell-interactions";
+
+import type { StudioVrmSceneDocument } from "../../apps/web/src/domains/creator/contracts/studio-vrm-scene-document-schema";
 
 interface Cut {
   id: string; type: "image"; name: string; src: string; x: number; y: number;
@@ -29,6 +30,8 @@ const shaperRoot = '[data-character-shaper="true"]';
 const placed = (project: Manuscript) => project.payload.data.pagesList[0].elements;
 async function saveShot(shaper: Locator) {
   const insert = shaper.locator('[data-character-dock-action="insert"]').filter({ visible: true }).first();
+  // Move off the preset card as a user does before saving, to end hover audition.
+  await insert.hover();
   await expect(insert).toBeEnabled({ timeout: 150000 });
   await insert.click();
   await expect(shaper).toBeHidden({ timeout: 120000 });
@@ -163,15 +166,26 @@ async function cutMenu(page: Page, cut: Cut) {
   return menu;
 }
 
-async function selectSlot(shaper: Locator, group: string, slot: string) {
-  console.log("[studio-eight-cut] Choosing editor group and slot", group, slot);
-  await shaper.getByRole("combobox", { name: "캐릭터 편집 분류" }).filter({ visible: true }).first().selectOption(group);
-  await shaper.locator('[data-character-slot="' + slot + '"]').filter({ visible: true }).first().click();
+async function selectDesktopShelf(shaper: Locator, category: string, slot: string) {
+  console.log("[studio-eight-cut] Choosing desktop category and slot", category, slot);
+  const categoryButton = shaper.locator('[data-character-category-rail="desktop"] [data-character-category="' + category + '"]');
+  await expect(categoryButton).toBeVisible();
+  await categoryButton.click();
+  await expect(categoryButton).toHaveAttribute("aria-pressed", "true");
+  // Hair and props have one shelf each. Pose has separate body and hand subslots.
+  if (slot === "hand-pose") {
+    const tab = shaper.locator('[data-character-subslot-tabs="pose"] [data-character-slot="hand-pose"]');
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-pressed", "true");
+  }
+  const shelf = shaper.locator('[data-character-shaper-shelf="' + slot + '"]');
+  await expect(shelf).toBeVisible({ timeout: 120000 });
+  return shelf;
 }
 
-async function chooseCard(shaper: Locator, id: string) {
+async function chooseCard(shelf: Locator, id: string) {
   console.log("[studio-eight-cut] Waiting for preset card", id);
-  const card = shaper.locator('[data-character-slot-card="' + id + '"]').filter({ visible: true }).first();
+  const card = shelf.locator('[data-character-slot-card="' + id + '"]');
   await expect(card).toBeVisible({ timeout: 60000 });
   await expect(card).not.toHaveAttribute("aria-disabled", "true");
   await card.click();
@@ -215,17 +229,18 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   const shaper = page.locator(shaperRoot).filter({visible:true}).first();
   await expect(shaper).toBeVisible({ timeout: 120000 });
   console.log("[studio-eight-cut] Selected cut editor opened", local.id);
-  await selectSlot(shaper, "identity", "hair");
-  await chooseCard(shaper, "hair:ponytail");
+  const hair = await selectDesktopShelf(shaper, "hair", "hair");
+  await chooseCard(hair, "hair:ponytail");
   console.log("[studio-eight-cut] Hairstyle applied");
-  await selectSlot(shaper, "figure", "accessory");
-  await chooseCard(shaper, "accessory:glasses");
+  const accessories = await selectDesktopShelf(shaper, "props", "accessory");
+  await chooseCard(accessories, "accessory:glasses");
   console.log("[studio-eight-cut] Glasses applied");
-  await selectSlot(shaper, "performance", "hand-pose");
-  const hand = shaper.getByRole("group", {name:"적용할 손", exact:true}).filter({visible:true}).first();
-  if (!(await hand.isVisible())) await shaper.getByTitle("정밀 조절 패널 열기", { exact:true }).filter({visible:true}).first().click();
-  await hand.getByRole("button", {name:"오른손", exact:true}).click();
-  await chooseCard(shaper, "hand-pose:fist");
+  const handPoses = await selectDesktopShelf(shaper, "pose", "hand-pose");
+  const rightHand = handPoses.getByRole("group", { name: "적용할 손", exact: true })
+    .getByRole("button", { name: "오른손", exact: true });
+  await rightHand.click();
+  await expect(rightHand).toHaveAttribute("aria-pressed", "true");
+  await chooseCard(handPoses, "hand-pose:fist");
   console.log("[studio-eight-cut] Right-hand pose applied");
   await saveShot(shaper);
   const editMs = performance.now() - start;
