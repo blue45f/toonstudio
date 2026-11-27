@@ -17,7 +17,9 @@ import {
   Zap,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
 
+import "./ai-status-i18n";
 import {
   connectionFromFreeAiPreset,
   FREE_AI_PRESETS,
@@ -29,7 +31,6 @@ import {
   STUDIO_AI_BYOK_PROVIDER_PRESETS,
 } from "./studio-ai-byok-wizard-adapter";
 import { AiCapabilityStatusBoard } from "./AiCapabilityStatusBoard";
-import { aiSharedStatusText } from "./ai-status-i18n";
 import { AiQuickKeyPanel } from "./AiQuickKeyPanel";
 import { getFreeAiPoolStatus, type FreeAiPoolStatus } from "./free-ai-pool-status";
 import { SERVER_PROVIDER_LABELS } from "./unified-ai-provider-labels";
@@ -58,7 +59,6 @@ import {
   type UserAiRoutingMode,
   type UserAiServerProviderId,
 } from "./user-ai-types";
-
 
 const UnifiedAiAdvancedSettings = lazy(async () => {
   const module = await import("./UnifiedAiAdvancedSettings");
@@ -937,6 +937,7 @@ interface ConnectionWizardProps {
 }
 
 function ConnectionWizard(props: ConnectionWizardProps) {
+  const t = useT();
   return (
     <section className="rounded-3xl border border-accent/30 bg-panel/80 p-4 shadow-sm sm:p-6" aria-labelledby="ai-connection-wizard-title">
       <div className="flex items-start justify-between gap-3">
@@ -1076,9 +1077,8 @@ function ConnectionWizard(props: ConnectionWizardProps) {
           <label className="flex min-h-11 items-start gap-3 rounded-xl border border-line p-3 text-sm leading-6">
             <input type="checkbox" checked={props.consent} onChange={(event) => props.onConsentChange(event.target.checked)} className="mt-1.5" />
             <span>{props.selectedPreset?.costPolicy === "openrouter-free"
-              ? <>
-                {aiSharedStatusText("shared.aiStatus.settings.openRouterTransfer", "프롬프트와 선택한 작업물이 OpenRouter로 전송됩니다.")}{" "}
-                {aiSharedStatusText("shared.aiStatus.settings.openRouterFreeConfirmation", "이 키 계정에서 추가 청구를 차단하고 계정이 강제하는 유료 플러그인을 모두 껐습니다.")}</>
+              ? <>{t("shared.aiStatus.settings.openRouterTransfer", "프롬프트와 선택한 작업물이 OpenRouter로 전송됩니다.")}{" "}
+                {t("shared.aiStatus.settings.openRouterFreeConfirmation", "OpenRouter 계정에서 이 키의 추가 과금이 차단되고 조직이 강제하는 유료 플러그인이 모두 꺼져 있는지 확인했어요.")}</>
               : "프롬프트와 선택한 작업물이 이 AI 서비스로 전송되며, 무료 한도 또는 내 공급자 계정의 비용 조건이 적용될 수 있음을 확인했어요."}</span>
           </label>
 

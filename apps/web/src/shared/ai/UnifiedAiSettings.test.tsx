@@ -204,7 +204,10 @@ describe("UnifiedAiSettings guided setup", () => {
     fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));
     fireEvent.click(screen.getByRole("button", { name: /OpenRouter/ }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-or-test-key" } });
-    fireEvent.click(screen.getByRole("checkbox"));
+    expect(screen.getByRole("checkbox", { name: /작업물이 OpenRouter로 전송.*유료 플러그인/u })).toBeTruthy();
+    act(() => useI18n.setState({ lang: "en" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /sent to OpenRouter.*additional charges.*paid plugins/u }));
+    act(() => useI18n.setState({ lang: "ko" }));
     fireEvent.click(screen.getByRole("button", { name: "연결하기" }));
 
     expect(await screen.findByText("OpenRouter 연결 완료")).toBeTruthy();
@@ -220,6 +223,24 @@ describe("UnifiedAiSettings guided setup", () => {
     expect(providerCalls).toHaveLength(1);
     expect(String(providerCalls[0]?.[0])).toBe("https://openrouter.ai/api/v1/key");
     expect(snapshot.configuration.connections[0]?.apiKeys?.[0]?.openRouterFreeBillingConfirmed).toBe(true);
+  });
+
+  it("빠른 등록과 고급 설정의 기존 키 안내는 열린 화면에서 언어를 바꾸면 갱신된다", async () => {
+    const free = textConnection("free", "기존 OpenRouter", 10);
+    setUserAiConfiguration({
+      version: 1, assignments: { text: "free", image: null, inference: null, "three-d": null },
+      connections: [{ ...free, apiKeys: free.apiKeys?.map((key) => ({ ...key, openRouterFreeBillingConfirmed: false })) }],
+    });
+    render(<UnifiedAiSettings />);
+    expect(screen.getByText("고급 설정에서 이 키의 무료 계정 조건을 확인해 주세요.")).toBeTruthy();
+    act(() => useI18n.setState({ lang: "en" }));
+    expect(screen.getByText("Confirm the free account settings for this key in advanced settings.")).toBeTruthy();
+    act(() => useI18n.setState({ lang: "ko" }));
+    fireEvent.click(screen.getByRole("tab", { name: "고급 설정" }));
+    fireEvent.click(await screen.findByRole("button", { name: "수정·키 교체" }));
+    expect(screen.getByRole("checkbox", { name: /기본 키 · .*추가 과금.*유료 플러그인/u })).toBeTruthy();
+    act(() => useI18n.setState({ lang: "en-GB" }));
+    expect(screen.getByRole("checkbox", { name: /기본 키 · .*additional charges.*paid plugins/u })).toBeTruthy();
   });
 
   it("기존 키를 다시 입력하지 않고 선택한 키만 무료로 확인하고 키 교체 시 확인을 해제한다", async () => {

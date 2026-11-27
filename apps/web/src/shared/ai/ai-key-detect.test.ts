@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { i18nDict, useI18n } from "@/shared/lib/i18n";
+
 import { detectAiKeyProvider, maskAiKey, normalizePastedAiKey, splitPastedAiKeys } from "./ai-key-detect";
 import { addQuickKey, chooseQuickKeyModel, findQuickKeyConnection, isQuickKeyRegistered, quickKeyProviderOf, removeQuickKey } from "./ai-quick-key";
 import { userAiConnectionsForCapability, userAiPersonalFirstConnectionsForCapability } from "./user-ai-store";
@@ -194,6 +196,28 @@ describe("addQuickKey / removeQuickKey", () => {
     });
     expect(() => addQuickKey(paid, "openrouter", OPENROUTER, confirmedOpenRouterKey)).toThrow(/BYOK/u);
     expect(paid.connections[0]?.enabled).toBe(false);
+  });
+
+  it.each(["ko", "en", "fr-CA"])("OpenRouter 빠른 등록은 %s에서 실패 원인에 맞는 번역을 반환한다", (lang) => {
+    const previous = useI18n.getState().lang;
+    const messages = i18nDict[lang === "ko" ? "ko" : "en"];
+    const add = (model: string) => addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER, { ...confirmedOpenRouterKey, model });
+    try {
+      useI18n.setState({ lang });
+      expect(() => addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER))
+        .toThrow(new Error(messages["shared.aiStatus.settings.openRouterFreeCheckRequired"]));
+      expect(() => add("vendor/paid"))
+        .toThrow(new Error(messages["shared.aiStatus.settings.openRouterFreeModelRequired"]));
+      const original = add("openrouter/free").configuration;
+      const paid = normalizeUserAiConfiguration({
+        ...original,
+        connections: original.connections.map((entry) => ({ ...entry, enabled: false, costPolicy: "user-funded-byok" as const })),
+      });
+      expect(() => addQuickKey(paid, "openrouter", OPENROUTER, confirmedOpenRouterKey))
+        .toThrow(new Error(messages["shared.aiStatus.settings.openRouterPaidConnection"]));
+    } finally {
+      useI18n.setState({ lang: previous });
+    }
   });
 
   it("텍스트에 쓰이는 기존 배정은 다른 서비스 키를 더해도 그대로 둔다", () => {

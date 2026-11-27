@@ -6,7 +6,7 @@
  * 비컴포넌트 생산자용 생산 시점 해석 헬퍼 `aiSharedStatusText(key, fallback)`
  * (creator의 panelStatusText 선례)로 호출한다. 키가 사전에 없으면
  * koFallback을 그대로 돌려준다.
- * 대상 표면: AiCapabilityStatusBoard·AiRecoveryNotice·UnifiedAiAdvancedSettings.
+ * 기능 상태판·복구 안내·OpenRouter 빠른 키 등록·연결 마법사·고급 설정에서 사용한다.
  */
 import {
   FALLBACK_CHAIN,

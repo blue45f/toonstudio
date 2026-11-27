@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -176,6 +177,7 @@ function AiSettingsEditor({
   configuration: UserAiConfiguration;
   poolStatus: FreeAiPoolStatus | null;
 }) {
+  const t = useT();
   const auxSnapshot = useUnifiedAiAuxSettings();
   const routing = userAiRoutingSettings(configuration);
   const [draft, setDraft] = useState<UserAiConnection>(structuredClone(EMPTY_AI_CONNECTION));
@@ -599,7 +601,7 @@ function AiSettingsEditor({
                     disabled={!key.apiKey.trim() && !previousConnection?.apiKeys?.some((item) => item.id === key.id && previousConnection.baseUrl === draft.baseUrl)}
                     onChange={(event) => patch({ apiKeys: draftKeys.map((item) => item.id === key.id
                       ? { ...item, openRouterFreeBillingConfirmed: event.target.checked } : item) })} />
-                  {key.label} · {aiSharedStatusText("shared.aiStatus.settings.openRouterFreeConfirmation", "이 키 계정의 추가 청구 차단과 유료 플러그인 해제를 확인했습니다.")}
+                  {key.label} · {t("shared.aiStatus.settings.openRouterFreeConfirmation", "OpenRouter 계정에서 이 키의 추가 과금이 차단되고 조직이 강제하는 유료 플러그인이 모두 꺼져 있는지 확인했어요.")}
                 </label>
               )}
             </div>
