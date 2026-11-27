@@ -148,6 +148,8 @@ jobs:
             apps/web/src/domains/creator/canvas/StudioCanvasContextMenu.test.tsx \
             apps/web/src/domains/creator/character-platform/presets/legacy-character-recovery.test.ts \
             apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority.persistence.test.tsx \
+            apps/web/src/domains/creator/character-platform/runtime/character-pose-authoring-input.test.ts \
+            apps/web/src/domains/creator/character-platform/ui/use-character-authoring-inputs.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteCollaborationGateway.test.tsx \
             apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts.test.tsx \
             apps/web/src/domains/creator/studio-router/studio-route-manifest.test.ts

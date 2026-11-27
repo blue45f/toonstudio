@@ -280,44 +280,48 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   const batch = { updated: Number(counts[1]), skipped: Number(counts[2]), failed: Number(counts[3]) };
   // The individually saved cut may already match its batch render. The decoded
   // images below still have to change from the original on every one of the six cuts.
-  expect(batch.failed).toBe(0);
-  expect(batch.updated + batch.skipped).toBe(6);
-  expect(batch.skipped).toBeLessThanOrEqual(1);
+  expect.soft(batch.failed, "failed refreshes").toBe(0);
+  expect.soft(batch.updated + batch.skipped, "linked refresh candidates").toBe(6);
+  expect.soft(batch.skipped, "already-current cuts").toBeLessThanOrEqual(1);
   await receipt.getByRole("button", {name:"닫기", exact:true}).click();
   const after = placed(await exportManuscript(page));
   expect(after.map(c => c.id)).toEqual(before.map(c => c.id));
   const report = [];
   for (const [i, cut] of after.entries()) {
     const original = before[i], a = cut.vrmScene, b = original.vrmScene;
-    expect(a.model).toEqual(b.model);
-    expect(a.characterDocumentId).toBe(b.characterDocumentId);
-    expect(a.camera).toEqual(b.camera);
-    expect(a.expressions).toEqual(b.expressions);
-    expect([cut.x,cut.y,cut.width,cut.height,cut.rotation]).toEqual([original.x,original.y,original.width,original.height,original.rotation]);
+    expect.soft(a.model, cut.id + " base model").toEqual(b.model);
+    expect.soft(a.characterDocumentId, cut.id + " authored identity").toBe(b.characterDocumentId);
+    expect.soft(a.camera, cut.id + " camera").toEqual(b.camera);
+    expect.soft(a.expressions, cut.id + " expressions").toEqual(b.expressions);
+    expect.soft([cut.x,cut.y,cut.width,cut.height,cut.rotation], cut.id + " canvas placement").toEqual([original.x,original.y,original.width,original.height,original.rotation]);
     const output = await pixels(page, cut.src);
-    expect([output.width, output.height], cut.id + " PNG dimensions").toEqual([beforePixels[i].width, beforePixels[i].height]);
+    expect.soft([output.width, output.height], cut.id + " PNG dimensions").toEqual([beforePixels[i].width, beforePixels[i].height]);
     if (i >= 6) {
-      expect(cut).toEqual(original);
-      expect(output).toEqual(beforePixels[i]);
+      expect.soft(cut, cut.id + " full control-cut document").toEqual(original);
+      expect.soft(output, cut.id + " unchanged control pixels").toEqual(beforePixels[i]);
     } else {
-      expect(JSON.stringify(a.appearance.avatarForge)).toContain('"style":"ponytail"');
-      expect(JSON.stringify(a.props)).toContain('"propId":"glasses"');
-      expect(output.sha256).not.toBe(beforePixels[i].sha256);
-      if (cut.id !== local.id) expect(a.pose).toEqual(b.pose);
+      expect.soft(JSON.stringify(a.appearance.avatarForge), cut.id + " ponytail").toContain('"style":"ponytail"');
+      expect.soft(JSON.stringify(a.props), cut.id + " glasses").toContain('"propId":"glasses"');
+      expect.soft(output.sha256, cut.id + " updated pixels").not.toBe(beforePixels[i].sha256);
+      if (cut.id !== local.id) expect.soft(a.pose, cut.id + " original pose").toEqual(b.pose);
       else {
         const { fingerOverrides: oldFingers, ...oldBody } = b.pose, { fingerOverrides: newFingers, ...newBody } = a.pose;
-        expect(newBody).toEqual(oldBody);
+        expect.soft(newBody, cut.id + " body outside edited fingers").toEqual(oldBody);
         const keys = [...new Set([...Object.keys(oldFingers),...Object.keys(newFingers)])] as (keyof typeof oldFingers)[];
         const changed = keys.filter(key => JSON.stringify(oldFingers[key]) !== JSON.stringify(newFingers[key]));
-        expect(changed.length).toBeGreaterThan(0);
-        expect(changed.every(key => key.startsWith("right"))).toBe(true);
+        expect.soft(changed.filter(key => key.startsWith("right")), cut.id + " edited right fingers").not.toHaveLength(0);
+        const unintended = changed.filter(key => !key.startsWith("right")).map(key => ({
+          joint: key, before: oldFingers[key] ?? null, after: newFingers[key] ?? null,
+        }));
+        expect.soft(unintended, cut.id + " unchanged opposite fingers").toEqual([]);
       }
     }
     report.push({ id:cut.id, authoredId:a.characterDocumentId, camera:a.camera, before:beforePixels[i], after:output });
   }
   const changedRasters = report.filter(cut => cut.before.sha256 !== cut.after.sha256);
   const controlId = before[6].vrmScene.characterDocumentId;
-  const recorded = { scope:"automated Studio task from context-menu entry to completed user-visible refresh receipt; fixture setup and postcondition export excluded",
+  const verified = info.errors.length === 0;
+  const recorded = { verified, scope:"automated Studio task from context-menu entry to completed user-visible refresh receipt; fixture setup and postcondition export excluded",
     browser:page.context().browser()?.version(), viewport:page.viewportSize(), editMs, settledMs, batch,
     individualEdits:individuallyOpened, additionalIndividualRepairs:Math.max(0,individuallyOpened.length - 1),
     changedCharacterCuts:changedRasters.length, unaffectedControls:report.filter(cut=>cut.authoredId===controlId && cut.before.sha256===cut.after.sha256).length,
@@ -325,5 +329,5 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   await writeFile(info.outputPath("eight-cut-task.json"), JSON.stringify(recorded,null,2));
   await writeFile(info.outputPath("hero-before.png"),Buffer.from(local.src.split(",")[1],"base64"));
   await writeFile(info.outputPath("hero-after.png"),Buffer.from(after[2].src.split(",")[1],"base64"));
-  console.log("[studio-eight-cut-task]", JSON.stringify(recorded));
+  console.log(verified ? "[studio-eight-cut-task]" : "[studio-eight-cut-unverified]", JSON.stringify(recorded));
 }
