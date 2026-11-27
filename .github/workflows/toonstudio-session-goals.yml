@@ -55,6 +55,7 @@ jobs:
             /apps/web/public/assets/atelier/
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/ai-starter-pack/' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/*.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/wearable-v5-manifest.json' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/refined-v8/*.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/refined-v8/thumbnails/*.png' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/kitbash-v9/*.glb' || '' }}
@@ -75,6 +76,7 @@ jobs:
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/boatyard-v1/harbor_boat_repair_shed.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/boatyard-v1/harbor_boat_repair_shed.png' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.png' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/LICENSES.md' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/hdri/*.hdr' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/virtual-studio/office-themes-v1/' || '' }}
