@@ -2456,7 +2456,7 @@ describe("StudioCrdtService", () => {
       expect(persistedDynamics.dryMediaKernelProgram, brush).toEqual({
         version: "dry-media-kernel-sheet-contact-v2",
         programDigest:
-          "fe356b665b799b3e61af867fb6bddb9804df4e64018106ee1c7e796a27a0ad27",
+          "2c2d5bc830e015f5a9db39e609983f2c1db56fb0d464f7f301b16390a2840686",
       });
       const browserContract = {
         paintModel: "bounded-flow-v2" as const,

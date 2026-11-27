@@ -489,16 +489,16 @@ export function studioDryMediaKernelStrokeToothMultiplier(
     return 1 - tooth.depth * pore;
   }
   // 가루가 붙는 미세 요철은 종이 좌표에 고정한다. 획의 시작점이나 다른 색의 시드가
-  // 달라도 같은 골이 드러난다. 접촉량이 커지면 골 가장자리부터 메워진다.
+  // 달라도 같은 골이 드러난다. 종이 섬유는 가로로 길고, 안료가 차오르면 골 가장자리부터 메워진다.
   const sheetContact = sheetSeed !== undefined && tooth.space === "stroke-world";
   const noise = sheetContact
-    ? studioOssValueNoise2d(dab.x / 2.4, dab.y / 2.4, sheetSeed)
+    ? studioOssValueNoise2d(dab.x / 3.2, dab.y / 1.85, sheetSeed)
     : studioOssValueNoise2d(
         (dab.x - strokeOriginX) / tooth.scale,
         (dab.y - strokeOriginY) / tooth.scale,
         seed,
       );
-  const fill = sheetContact ? clamp01(depositionAlpha) : 0;
+  const fill = sheetContact ? clamp01(depositionAlpha) ** 2 : 0;
   const threshold = tooth.threshold - fill * 0.10;
   const pore = clamp01((threshold - noise) / tooth.width + 0.5);
   const contact = 1 - tooth.depth * (1 - 0.28 * fill) * pore;

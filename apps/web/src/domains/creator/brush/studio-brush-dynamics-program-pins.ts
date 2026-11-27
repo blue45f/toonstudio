@@ -34,7 +34,7 @@ const DRY_MEDIA_KERNEL_V1 = {
 export const STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION =
   "dry-media-kernel-sheet-contact-v2" as const;
 export const STUDIO_DRY_MEDIA_KERNEL_PROGRAM_DIGEST =
-  "fe356b665b799b3e61af867fb6bddb9804df4e64018106ee1c7e796a27a0ad27" as const;
+  "2c2d5bc830e015f5a9db39e609983f2c1db56fb0d464f7f301b16390a2840686" as const;
 
 export type StudioDryMediaKernelProgramPin =
   | typeof DRY_MEDIA_KERNEL_V1
