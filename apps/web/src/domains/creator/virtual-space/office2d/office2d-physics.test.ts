@@ -29,6 +29,23 @@ it("렌더 위치는 마지막 고정 스텝만 보간하고 순간이동한 자
   expect(physics.presentationPoint(body)).toEqual({ x: 240, y: 280 });
 });
 
+it("소품은 180도 경계를 지날 때도 위치와 같은 시각의 회전·구름 각도로 그린다", () => {
+  const physics = world();
+  const cart = physics.addBody({ id: "cart", kind: "dynamic", shape: { type: "box", halfWidth: 12, halfHeight: 8 },
+    x: 100, y: 200, linearDamping: 0, angularDamping: 0, quadraticDrag: 0 });
+  cart.angle = Math.PI - 0.02;
+  cart.angularVelocity = 6;
+  physics.setVelocity(cart.id, 120, 0);
+  physics.step(1.5 / 120);
+  expect(cart.angle).toBeLessThan(0);
+  const shown = physics.presentationProp(cart);
+  expect(shown.angle).toBeCloseTo(Math.PI + 0.005);
+  expect(shown.spin).toBeCloseTo(cart.spin / 2);
+  expect(shown.x).toBeCloseTo(100.5);
+  physics.teleport(cart.id, 425, 180);
+  expect(physics.presentationProp(cart)).toEqual({ x: 425, y: 180, angle: cart.angle, spin: cart.spin });
+});
+
 describe("office2dCollide", () => {
   it("원-원 겹침 법선은 a에서 b를 향한다", () => {
     const a = new Office2dBody({ id: "a", kind: "dynamic", shape: { type: "circle", radius: 10 }, x: 0, y: 0 });
@@ -158,6 +175,42 @@ describe("Office2dPhysicsWorld", () => {
     expect(box.x).toBeGreaterThan(220);
   });
 
+  it("동료의 빠른 위치 보정도 중간 소품을 통과하지 않고 목표 지점에 도착한다", () => {
+    const physics = world();
+    const peer = physics.addBody({ id: "peer", kind: "kinematic", shape: { type: "circle", radius: 5 }, x: 100, y: 200 });
+    const prop = physics.addBody({ id: "prop", kind: "dynamic", shape: { type: "circle", radius: 5 }, x: 119, y: 200 });
+    physics.setKinematicTarget(peer.id, 140, 200);
+    const report = physics.step(1 / 120);
+    expect(peer.x).toBe(140);
+    expect(prop.x).toBeGreaterThan(119);
+    expect(report.impacts).toHaveLength(1);
+  });
+
+  it("같은 고스트 마스크를 매 프레임 적용해도 정지한 아바타가 잠들고, 마스크가 바뀌면 깨어난다", () => {
+    const physics = world();
+    const actor = physics.addBody({ id: "self", kind: "dynamic", shape: { type: "circle", radius: 12 }, x: 200, y: 300 });
+    for (let frame = 0; frame < 90; frame++) {
+      physics.setCollisionMask(actor.id, OFFICE2D_CATEGORY.world);
+      physics.step(1 / 60);
+    }
+    expect(actor.sleeping).toBe(true);
+    physics.setCollisionMask(actor.id, OFFICE2D_CATEGORY.world | OFFICE2D_CATEGORY.actor);
+    expect(actor.sleeping).toBe(false);
+  });
+
+  it("같은 질량의 공이 운동량을 넘기고 거의 멈춰도 잠들었던 공이 굴러간다", () => {
+    const physics = world();
+    const ball = { kind: "dynamic", shape: { type: "circle", radius: 10 }, y: 300, restitution: 1, linearDamping: 0, quadraticDrag: 0 } as const;
+    const resting = physics.addBody({ ...ball, id: "resting", x: 250 });
+    const striker = physics.addBody({ ...ball, id: "striker", x: 200 });
+    runFor(physics, 1);
+    expect(resting.sleeping).toBe(true);
+    physics.setVelocity(striker.id, 100, 0);
+    runFor(physics, 0.65);
+    expect(resting.x).toBeGreaterThan(275);
+    expect(resting.sleeping).toBe(false);
+  });
+
   it("마스크가 맞지 않으면 통과한다(고스트 모드)", () => {
     const physics = world();
     physics.addBody({ id: "chair", kind: "dynamic", shape: { type: "circle", radius: 12 }, x: 260, y: 300, category: OFFICE2D_CATEGORY.prop });
@@ -188,6 +241,22 @@ describe("Office2dPhysicsWorld", () => {
     expect(actor.x).toBeGreaterThan(550);
     expect(enters).toEqual(["booth"]);
     expect(exits).toEqual(["booth"]);
+  });
+
+  it("동료가 퇴장하거나 센서를 제거한 뒤 같은 ID로 추가해도 제거된 몸체가 충돌 후보에 남지 않는다", () => {
+    const physics = world();
+    const shape = { type: "circle", radius: 12 } as const;
+    const addSensor = () => physics.addBody({ id: "sensor", kind: "static", sensor: true, shape, x: 100, y: 100 });
+    addSensor();
+    physics.addBody({ id: "peer", kind: "kinematic", shape, x: 100, y: 100 });
+    expect(physics.step(1 / 60).sensorEnters).toEqual([{ sensor: "sensor", body: "peer" }]);
+    physics.removeBody("peer");
+    physics.removeBody("sensor");
+    physics.addBody({ id: "peer", kind: "kinematic", shape, x: 700, y: 500 });
+    addSensor();
+    expect(physics.step(1 / 60).sensorEnters).toEqual([]);
+    physics.teleport("peer", 100, 100);
+    expect(physics.step(1 / 60).sensorEnters).toEqual([{ sensor: "sensor", body: "peer" }]);
   });
 
   it("고정 간격 누산기로 프레임 분할과 무관하게 같은 결과를 낸다", () => {

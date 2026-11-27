@@ -113,6 +113,8 @@ export class Office2dPhysicsWorld {
   private readonly solverIterations: number;
   private readonly bodyMap = new Map<string, Office2dBody>();
   private readonly ordered: Office2dBody[] = [];
+  private readonly movingBodies = new Set<Office2dBody>();
+  private readonly sensors = new Set<Office2dBody>();
   private readonly joints = new Map<string, Office2dSpringJoint>();
   private surfaceRegions: readonly Office2dSurfaceRegion[] = [];
   private readonly staticHash: Office2dSpatialHash;
@@ -170,6 +172,8 @@ export class Office2dPhysicsWorld {
     this.bodyMap.set(body.id, body);
     this.ordered.push(body);
     if (body.kind === "static") this.staticDirty = true;
+    else this.movingBodies.add(body);
+    if (body.sensor) this.sensors.add(body);
     return body;
   }
 
@@ -177,6 +181,8 @@ export class Office2dPhysicsWorld {
     const body = this.bodyMap.get(id);
     if (!body) return false;
     this.bodyMap.delete(id);
+    this.movingBodies.delete(body);
+    this.sensors.delete(body);
     const index = this.ordered.indexOf(body);
     if (index >= 0) this.ordered.splice(index, 1);
     if (body.kind === "static") this.staticDirty = true;
@@ -227,7 +233,7 @@ export class Office2dPhysicsWorld {
   /** 충돌 마스크를 바꾼다(고스트 모드: 벽만 막고 사람·소품은 통과). */
   setCollisionMask(id: string, mask: number): void {
     const body = this.bodyMap.get(id);
-    if (!body || !Number.isInteger(mask)) return;
+    if (!body || !Number.isInteger(mask) || body.mask === mask) return;
     body.mask = mask;
     body.wake();
   }
@@ -238,6 +244,8 @@ export class Office2dPhysicsWorld {
     if (!body || !Number.isFinite(x) || !Number.isFinite(y)) return;
     body.x = body.previousX = x;
     body.y = body.previousY = y;
+    body.previousAngle = body.angle;
+    body.previousSpin = body.spin;
     body.targetX = x;
     body.targetY = y;
     body.vx = 0;
@@ -294,8 +302,8 @@ export class Office2dPhysicsWorld {
     const impacts = new Map<string, Office2dContactEvent>();
     let subSteps = 0;
     const frameSteps = Math.floor(this.accumulator / this.fixedStep + 1e-9);
-    while (this.accumulator + 1e-9 >= this.fixedStep && subSteps < this.maxSubSteps) {
-      const ccdSplits = this.requiredCcdSplits(this.fixedStep);
+    while (subSteps < frameSteps && subSteps < this.maxSubSteps) {
+      const ccdSplits = this.requiredCcdSplits(frameSteps - subSteps);
       const splitStep = this.fixedStep / ccdSplits;
       for (let split = 0; split < ccdSplits; split += 1) {
         const remaining = (frameSteps - subSteps - 1) * ccdSplits + (ccdSplits - split);
@@ -310,16 +318,34 @@ export class Office2dPhysicsWorld {
 
   /** 마지막으로 해결된 두 물리 위치 사이에서 화면의 현재 시각을 샘플한다. 충돌 경계를 넘어 예측하지 않는다. */
   presentationPoint(body: Office2dBody): { readonly x: number; readonly y: number } {
-    const alpha = office2dClamp(this.accumulator / this.fixedStep, 0, 1);
+    const alpha = this.presentationFraction;
     return { x: body.previousX + (body.x - body.previousX) * alpha, y: body.previousY + (body.y - body.previousY) * alpha };
   }
 
-  private requiredCcdSplits(h: number): number {
+  /** 굴러가는 소품의 위치와 회전을 같은 렌더 시각에 맞춘다. */
+  presentationProp(body: Office2dBody) {
+    const alpha = this.presentationFraction;
+    return {
+      ...this.presentationPoint(body),
+      angle: body.previousAngle + office2dWrapAngle(body.angle - body.previousAngle) * alpha,
+      spin: body.previousSpin + (body.spin - body.previousSpin) * alpha,
+    };
+  }
+
+  private get presentationFraction(): number {
+    return office2dClamp(this.accumulator / this.fixedStep, 0, 1);
+  }
+
+  private requiredCcdSplits(remainingSteps: number): number {
     let maxRatio = 1;
-    for (const body of this.ordered) {
-      if (body.kind !== "dynamic" || body.sleeping) continue;
+    for (const body of this.movingBodies) {
+      if (body.sleeping) continue;
+      // 동료의 네트워크 보정과 NPC도 이번 고정 스텝에서 실제로 이동할 거리로 분할한다.
+      const distance = body.kind === "kinematic"
+        ? Math.hypot(body.targetX - body.x, body.targetY - body.y) / remainingSteps
+        : Math.min(body.speed, body.maxSpeed) * this.fixedStep;
       const safeStep = Math.max(4, body.minRadius() * 0.45);
-      const ratio = (body.speed * h) / safeStep;
+      const ratio = distance / safeStep;
       if (ratio > maxRatio) maxRatio = ratio;
     }
     return Math.min(4, Math.max(1, Math.ceil(maxRatio)));
@@ -367,10 +393,12 @@ export class Office2dPhysicsWorld {
     this.rebuildStaticHash();
     this.applySpringJoints(h);
 
-    for (const body of this.ordered) {
-      if (capturePrevious && body.kind !== "static") {
+    for (const body of this.movingBodies) {
+      if (capturePrevious) {
         body.previousX = body.x;
         body.previousY = body.y;
+        body.previousAngle = body.angle;
+        body.previousSpin = body.spin;
       }
       if (body.kind === "kinematic") {
         const steps = Math.max(1, remainingSteps);
@@ -387,7 +415,6 @@ export class Office2dPhysicsWorld {
         }
         continue;
       }
-      if (body.kind !== "dynamic") continue;
       body.impactSquash *= Math.exp(-14 * h);
       if (body.sleeping) {
         if (!body.returnHome) continue;
@@ -459,7 +486,7 @@ export class Office2dPhysicsWorld {
     }
     for (const manifold of manifolds) this.correctPosition(manifold);
 
-    for (const body of this.ordered) {
+    for (const body of this.movingBodies) {
       if (body.kind !== "dynamic") continue;
       this.keepInsideWorld(body);
       if (body.sleeping) continue;
@@ -480,29 +507,24 @@ export class Office2dPhysicsWorld {
 
   private collectManifolds(): Office2dManifold[] {
     this.movingHash.clear();
-    const movers: Office2dBody[] = [];
-    for (const body of this.ordered) {
-      if (body.kind === "static" || body.sensor) continue;
-      this.movingHash.insert(body);
-      movers.push(body);
+    for (const body of this.movingBodies) {
+      if (!body.sensor) this.movingHash.insert(body);
     }
     const manifolds: Office2dManifold[] = [];
-    const seen = new Set<string>();
-    for (const body of movers) {
-      if (body.kind === "kinematic" && body.speed < 1e-3) continue;
+    const visited = new Set<Office2dBody>();
+    for (const body of this.movingBodies) {
+      if (body.sensor || (body.kind === "kinematic" && body.speed < 1e-3)) continue;
       const box = body.bounds();
       const consider = (other: Office2dBody) => {
-        if (other === body || other.sensor || !office2dLayersCollide(body, other)) return;
+        if (visited.has(other) || other.sensor || !office2dLayersCollide(body, other)) return;
         if (other.kind !== "dynamic" && body.kind !== "dynamic") return;
-        const key = pairKey(body.id, other.id);
-        if (seen.has(key)) return;
-        seen.add(key);
-        if (body.sleeping && (other.kind === "static" || other.sleeping)) return;
+        if (body.sleeping && other.sleeping) return;
         const manifold = office2dCollide(body, other);
         if (manifold) manifolds.push(manifold);
       };
+      visited.add(body);
       this.movingHash.query(box.minX, box.minY, box.maxX, box.maxY, consider);
-      if (body.kind === "dynamic") this.staticHash.query(box.minX, box.minY, box.maxX, box.maxY, consider);
+      if (body.kind === "dynamic" && !body.sleeping) this.staticHash.query(box.minX, box.minY, box.maxX, box.maxY, consider);
     }
     return manifolds;
   }
@@ -594,7 +616,8 @@ export class Office2dPhysicsWorld {
       if (body.kind !== "dynamic") continue;
       if (squashDelta > 0.02) body.impactSquash = Math.min(0.22, Math.max(body.impactSquash, squashDelta));
       if (other.kind !== "static") body.idleTime = 0;
-      if (body.sleeping && (other.speed > WAKE_SPEED || Math.abs(other.angularVelocity) > 0.25)) body.wake();
+      if (body.sleeping && (body.speed > WAKE_SPEED || other.speed > WAKE_SPEED ||
+        Math.abs(body.angularVelocity) > 0.25 || Math.abs(other.angularVelocity) > 0.25)) body.wake();
     }
   }
 
@@ -634,11 +657,10 @@ export class Office2dPhysicsWorld {
   }
 
   private updateSensors(): { readonly enters: Office2dSensorEvent[]; readonly exits: Office2dSensorEvent[] } {
-    const sensors = this.ordered.filter((body) => body.sensor);
-    if (!sensors.length) return { enters: [], exits: [] };
+    if (!this.sensors.size) return { enters: [], exits: [] };
     const current = new Set<string>();
     const enters: Office2dSensorEvent[] = [];
-    for (const sensor of sensors) {
+    for (const sensor of this.sensors) {
       const box = sensor.bounds();
       this.movingHash.query(box.minX, box.minY, box.maxX, box.maxY, (body) => {
         if (body === sensor || body.sensor || !office2dLayersCollide(sensor, body)) return;

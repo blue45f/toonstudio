@@ -1,4 +1,3 @@
-import { studioSpaceThemeArtworkUrls } from "../studio-virtual-space-theme-artwork";
 /**
  * ToonOffice 2D 고품질 이미지 배경(룸 아트 뮤럴·테마 카펫), 실시간 공간 이펙트,
  * 가구 가림 반투명화(Occlusion Fade), 만화적 의성어(VFX Burst), 평면도(Schematic) 오버뷰 렌더러.
@@ -179,9 +178,10 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
 
 
 
-/** 지연 로딩할 고해상도 룸 배경·소품 이미지 URL 목록. */
-export function office2dBackdropAssetUrls(): readonly string[] {
-  const urls = new Set<string>(studioSpaceThemeArtworkUrls());
+/** 벽화와 방 연출을 그리는 본사에만 해당 원화를 적재한다. */
+export function office2dBackdropAssetUrls(kind: Office2dScene["kind"]): readonly string[] {
+  if (kind !== "toon-hq") return [];
+  const urls = new Set<string>();
   for (const spec of Object.values(OFFICE2D_ROOM_ART_SPECS)) {
     urls.add(spec.backdropUrl);
     if (spec.propUrl) urls.add(spec.propUrl);
