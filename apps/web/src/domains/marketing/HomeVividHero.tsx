@@ -1,4 +1,4 @@
-import { ArrowRight, FolderKanban, Pause, Play, Brush } from "lucide-react";
+import { ArrowRight, Compass, Pause, Play, Brush } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
@@ -15,24 +15,20 @@ export function HomeVividHero() {
     <div ref={hostRef} data-hero-motion="true" data-motion={running ? "playing" : "paused"}>
     <section className="rd-clarity-hero vivid-hero" aria-labelledby="creator-hero-title">
       <div className="vivid-hero-copy">
-        <span className="vivid-eyebrow"><Brush size={15} aria-hidden="true" />{bi("당신의 다음 이야기는 여기서", "Your next story starts here")}</span>
+        <span className="vivid-eyebrow"><Brush size={15} aria-hidden="true" />{bi("웹툰을 만들고 감상하는 곳", "Create and read webtoons")}</span>
         <h1 id="creator-hero-title">
           {bi("상상한 장면을,", "Imagine a scene.")}
           <br />
           <span>{bi("나의 작품으로.", "Make it your story.")}</span>
         </h1>
-        <p>{bi("떠오른 아이디어를 그리고, 다듬고, 함께 완성해요. 나만의 창작 공간, 툰스튜디오.", "Draw an idea, shape the story, and bring it to life together. Your creative space, ToonStudio.")}</p>
+        <p>{bi("콘티를 짜고, 원고를 그리고, 함께 완성하세요.", "Storyboard, draw, and finish your work together.")}</p>
         <div className="vivid-hero-actions">
           <Link className="vivid-primary min-h-11" href="/create">
             {bi("작품 시작하기", "Start a work")}<ArrowRight size={19} aria-hidden="true" />
           </Link>
-          <Link className="vivid-secondary min-h-11" href="/studio">
-            <FolderKanban size={17} aria-hidden="true" />{bi("내 작업 이어가기", "Continue my work")}
+          <Link className="vivid-secondary min-h-11" href="/discover">
+            <Compass size={17} aria-hidden="true" />{bi("작품 둘러보기", "Browse webtoons")}
           </Link>
-        </div>
-        <div className="vivid-hero-note">
-          <span aria-hidden="true" className="vivid-color-dots"><i /><i /><i /></span>
-          {bi("작은 아이디어 하나면 충분해요.", "One little idea is all it takes.")}
         </div>
       </div>
       <figure className="rd-clarity-art vivid-art" aria-label={bi("선화에서 완성작으로 이어지는 브랜드 예시 원고", "Brand artwork: from line art to a finished scene")}>

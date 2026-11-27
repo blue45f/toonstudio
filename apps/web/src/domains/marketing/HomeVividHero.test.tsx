@@ -72,6 +72,7 @@ describe("홈 히어로의 실제 모션 설정과 가시성", () => {
     expect(motionState()).toBe("paused");
     expect(screen.getByRole("button", { name: "움직임 재생", pressed: true })).toBeTruthy();
     expect(screen.getByRole("link", { name: "작품 시작하기" }).getAttribute("href")).toBe("/create");
+    expect(screen.getByRole("link", { name: "작품 둘러보기" }).getAttribute("href")).toBe("/discover");
     result.unmount();
     expect(disconnect).toHaveBeenCalledOnce();
   });
