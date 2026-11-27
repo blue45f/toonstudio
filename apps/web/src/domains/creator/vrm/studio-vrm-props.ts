@@ -934,7 +934,9 @@ function parseV2Rig(raw: unknown, def: PropDef, primaryBone: PropAttachBone): Pr
   const value = raw as Partial<Record<keyof PropRigV2, unknown>>;
   if (value.version !== VRM_PROPS_VERSION) return undefined;
 
-  const selectedAnchor = primaryPropAnchor(def, typeof value.anchorId === "string" ? value.anchorId : undefined);
+  const requestedId = typeof value.anchorId === "string" ? value.anchorId : undefined;
+  // A historical V2 microphone could omit its anchor. Repair it at its original coordinates.
+  const selectedAnchor = primaryPropAnchor(def, requestedId, def.id === "mic" ? "primary" : undefined);
   const secondaryAnchor = def.anchors.find((candidate) => candidate.role === "secondary");
 
   let secondary: PropRigSecondary | undefined;

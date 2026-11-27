@@ -18,7 +18,8 @@ export function handAnchor(
   return { ...anchor(id, role, position, forward, up), gripRadius };
 }
 
-export function primaryPropAnchor(def: PropDef, requestedId?: string): PropAnchorDef {
-  const requested = requestedId && def.anchors.find((item) => item.id === requestedId && item.role !== "secondary");
-  return requested || def.anchors.find((item) => item.role === "primary" || item.role === "surface") || def.anchors[0];
+export function primaryPropAnchor(def: PropDef, requestedId?: string, repairId?: string): PropAnchorDef {
+  const lookup = (id?: string) => id && def.anchors.find(item => item.id === id && item.role !== "secondary");
+  return lookup(requestedId) || lookup(repairId)
+    || def.anchors.find(item => item.role === "primary" || item.role === "surface") || def.anchors[0];
 }

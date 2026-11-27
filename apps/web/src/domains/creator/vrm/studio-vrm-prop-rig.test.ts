@@ -800,6 +800,15 @@ describe("마이크 손잡이와 손바닥", () => {
     expect(usesDefaultMicrophoneThumbGrip({ ...mic, propId: "mug" }, metrics)).toBe(false);
   });
 
+  it.each([undefined, "retired-contact"])("이전 V2 마이크의 누락/손상 접점 %s를 원래 위치로 복구한다", (anchorId) => {
+    const uid = "repaired-v2-microphone";
+    const rig = { ...mic.rig!, mode: "custom", anchorId, deltaPosition: [0.02, 0.01, 0], autoFingerPose: false };
+    const restored = parseVrmProps({ version: 2, items: [{ ...mic, uid, rig }] }).items[0]!;
+    expect(restored.uid).toBe(uid);
+    expect(restored.rig).toMatchObject({ ...rig, anchorId: "primary" });
+    expect(createPropInstance("mic")!.rig?.anchorId).toBe("palm-grip");
+  });
+
   it("저장된 구형 소켓과 자동 그립을 끈 손가락 저작값을 보존한다", () => {
     const old = { ...mic, rig: { ...mic.rig!, anchorId: "primary", autoFingerPose: false } };
     const saved = parseVrmProps(serializeVrmProps([old])).items[0]!;
