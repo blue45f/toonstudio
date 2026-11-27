@@ -118,7 +118,7 @@ api.beginAttachmentMotion = (expectedBone) => {
     if (!markerMesh && node.isMesh && node.geometry?.getAttribute("position")?.count) markerMesh = node;
   });
   if (!markerMesh) throw new Error("장착한 GLB에서 비교할 메시 정점을 찾지 못했습니다.");
-  const measureGrip = instance.propId === "mic" ? createMicGripMeasurement(vrm, asset) : null;
+  const measureGrip = instance.propId === "mic" ? createMicGripMeasurement(vrm, asset, fit.anchor.position[1]) : null;
   const anchorWorld = () => asset.localToWorld(new T.Vector3(...fit.anchor.position));
   const markerWorld = () => markerMesh.localToWorld(markerMesh.getVertexPosition(0, new T.Vector3()));
   const relativeRotation = () => rawBone.getWorldQuaternion(new T.Quaternion()).normalize().invert()
@@ -135,14 +135,28 @@ api.beginAttachmentMotion = (expectedBone) => {
     vrm.scene.updateMatrixWorld(true);
     api.frames = 0;
   };
+  api.tryGripPlacement = (candidate) => {
+    if (!measureGrip) throw new Error("실제 마이크 손잡이가 필요합니다.");
+    const rotation = asset.getWorldQuaternion(new T.Quaternion()).normalize();
+    const anchor = anchorWorld();
+    const displacement = new T.Vector3(candidate.dx / 1000, 0, candidate.dz / 1000).applyQuaternion(rotation);
+    const localDelta = bone.worldToLocal(anchor.clone().add(displacement)).sub(bone.worldToLocal(anchor));
+    const dir = new T.Vector3(Math.tan(T.MathUtils.degToRad(candidate.tiltX)), 1, Math.tan(T.MathUtils.degToRad(candidate.tiltZ))).normalize();
+    const euler = new T.Euler().setFromQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0,1,0), dir));
+    const rig = { ...instance.rig, deltaPosition: localDelta.toArray(), deltaRotationDeg: [euler.x,euler.y,euler.z].map(T.MathUtils.radToDeg) };
+    active = { ...active, instance: { ...instance, rig } };
+    api.frames = 0;
+    selectState(active);
+  };
   api.measureAttachment = () => {
     if (api.status !== "ready" || asset.parent?.parent !== reviewPropGroup.current) {
       throw new Error("측정 중 장착한 GLB가 교체되거나 분리되었습니다.");
     }
     const anchor = anchorWorld();
+    const grip = measureGrip?.();
     return {
       bone: expectedBone,
-      ...(measureGrip ? { grip: measureGrip() } : {}),
+      ...(grip ? { grip: grip.digits, ...(grip.probe ? { staticGripAxisProbe: grip.probe } : {}) } : {}),
       vrmVersion: vrm.meta.metaVersion,
       actualTurnDeg: T.MathUtils.radToDeg(baselineBoneRotation.angleTo(rawBone.getWorldQuaternion(new T.Quaternion()).normalize())),
       socketGapMm: anchor.distanceTo(bone.localToWorld(new T.Vector3(...fit.socketPosition))) * 1000,

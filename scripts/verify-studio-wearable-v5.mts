@@ -58,10 +58,13 @@ const motionCases = [
 const reviewAssets = assets.assets.filter((asset) =>
   motionOnly ? motionCases.some(({ id }) => id === asset.id) : !headwearOnly || headwearIds.has(asset.id));
 type GripDigit = { digit: string; skinVertices: number; minGapMm: number; maxPenetrationMm: number; jointBendDeg: number };
-type MotionReceipt = { grip?: GripDigit[]; bone: string; vrmVersion: string; actualTurnDeg: number; socketGapMm: number; anchorDriftMm: number; vertexDriftMm: number; angularDriftDeg: number };
+type AxisPlacement = { dx: number; dz: number; tiltX: number; tiltZ: number };
+type MicProbe = { nominal: AxisPlacement; best: AxisPlacement; propScale: number };
+type MotionReceipt = { staticGripAxisProbe?: MicProbe; grip?: GripDigit[]; bone: string; vrmVersion: string; actualTurnDeg: number; socketGapMm: number; anchorDriftMm: number; vertexDriftMm: number; angularDriftDeg: number };
 type MotionApi = { status: string; frames: number; catalogue: { models: string[] }; beginAttachmentMotion: (bone: string) => void;
-  turnAttachment: (angle: number) => void; measureAttachment: () => MotionReceipt };
+  turnAttachment: (angle: number) => void; tryGripPlacement: (placement: AxisPlacement) => void; measureAttachment: () => MotionReceipt };
 const motionResults: Array<{ frame: string; commandedTurnDeg: number; verified: boolean; measured: MotionReceipt }> = [];
+const gripTrials: Array<{ model: string; candidate: AxisPlacement; measured: MotionReceipt }> = [];
 let fatal:unknown=null;
 async function inspect(){return page.evaluate(async()=>{
   // Keep pixel analysis in the browser: sending 102,400 numeric values per frame through
@@ -98,6 +101,43 @@ async function select(options:Record<string,unknown>){await page.evaluate(async 
 async function view(angle:number,crop:string){await page.evaluate(({angle,crop})=>{
   (window as unknown as {studioWearableQA:{view:(angle:number,crop:string)=>void}}).studioWearableQA.view(angle,crop);
 },{angle,crop});}
+async function renderSharedMicProbe(models: string[]) {
+  const probes = models.map(model => {
+    const sample = motionResults.find(result => result.frame === `${model}-prop-mic-motion-0`);
+    if (!sample?.measured.staticGripAxisProbe) throw new Error("마이크 기본 피부 표면 진단값이 없습니다: " + model);
+    return sample.measured.staticGripAxisProbe;
+  });
+  const average = (fn: (probe: MicProbe) => number) => probes.reduce((sum, probe) => sum + fn(probe), 0) / probes.length;
+  for (const [index, model] of models.entries()) {
+    const scale = probes[index]!.propScale;
+    const candidate = {
+      dx: average(probe => probe.best.dx / probe.propScale) * scale,
+      dz: average(probe => probe.best.dz / probe.propScale) * scale,
+      tiltX: average(probe => probe.best.tiltX),
+      tiltZ: average(probe => probe.best.tiltZ),
+    };
+    await select({ type: "prop", id: "mic", model, angle: -65, crop: "grip" });
+    const waitForSkin = () => page.waitForFunction(() => {
+      const qa = (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA;
+      return qa.frames >= 4 && qa.status === "ready";
+    });
+    await waitForSkin();
+    await page.evaluate((placement) => {
+      const qa = (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA;
+      qa.beginAttachmentMotion("rightHand");
+      qa.tryGripPlacement(placement);
+    }, candidate);
+    await waitForSkin();
+    await capture(`${model}-prop-mic-shared-probe`);
+    const measured = await page.evaluate(() => {
+      const qa = (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA;
+      qa.beginAttachmentMotion("rightHand");
+      return qa.measureAttachment();
+    });
+    gripTrials.push({ model, candidate, measured });
+    console.log("GRIP_SHARED_PROBE", model, JSON.stringify({ candidate, measured }));
+  }
+}
 async function verifyMotion() {
   const models = await page.evaluate(() => (window as unknown as { studioWearableQA: MotionApi }).studioWearableQA.catalogue.models);
   for (const model of models) {
@@ -136,6 +176,7 @@ async function verifyMotion() {
       }
     }
   }
+  await renderSharedMicProbe(models);
 }
 try{
   await page.goto("http://127.0.0.1:5278",{waitUntil:"networkidle"});
@@ -191,7 +232,7 @@ try{
     await writeFile(join(directory,`contact-sheet-${String(start/12+1).padStart(2,"0")}.jpg`),Buffer.from(data,"base64"));
   }
 }finally{
-  await writeFile(join(directory,"review.json"),JSON.stringify({sourceCommit:process.env.GITHUB_SHA??"local",assets:reviewAssets,frames,motionResults,pageErrors,fatal,note:"Ready means loaded/rendered, not human aesthetic approval. Inspect the PNGs, worn views and deformation frames."},null,2));
+  await writeFile(join(directory,"review.json"),JSON.stringify({sourceCommit:process.env.GITHUB_SHA??"local",assets:reviewAssets,frames,motionResults,gripTrials,pageErrors,fatal,note:"Ready means loaded/rendered, not human aesthetic approval. Inspect the PNGs, worn views and deformation frames."},null,2));
   await browser.close();await new Promise<void>((done)=>server.close(()=>done()));
 }
 const failingAssets=frames.filter((frame)=>(frame.title.startsWith("asset-")||frame.title.includes("-prop-"))&&(frame.status!=="ready"||!frame.nonblank));
