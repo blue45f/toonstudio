@@ -1,6 +1,9 @@
 import { studioOilMapPoint, studioOilReadbackPlan, studioOilWetSettings } from "./studio-oil-readback-plan";
 
-import { STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR } from "./studio-oil-ribbon-impasto-relief";
+import {
+  STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR,
+  STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR,
+} from "./studio-oil-ribbon-impasto-relief";
 import { applyStudioOilWetIntoWetStroke } from "./studio-oil-wet-into-wet";
 
 import type {
@@ -208,7 +211,7 @@ export function paintStudioOilRibbonCarrierOverlay(
       context.globalCompositeOperation = highlight ? "screen" : "multiply";
       context.strokeStyle = highlight
         ? STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR
-        : input.stroke;
+        : STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR;
       context.globalAlpha = clampUnit(lane.opacity * input.opacity);
       context.lineWidth = Math.max(0.12, lane.lineWidth);
       context.beginPath();

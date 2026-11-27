@@ -207,6 +207,15 @@ function kernelTipSeed(key: string): number {
   return hash >>> 0;
 }
 
+// 룩업 상수는 재질마다 한 번만 계산한다. 획 안쪽에서 매 자국마다 문자열을 해시하지 않는다.
+const STROKE_TOOTH_SALT: Readonly<Record<StudioDryMediaCoreId, number>> = {
+  crayon: kernelTipSeed("stroke-tooth:crayon"),
+  chalk: kernelTipSeed("stroke-tooth:chalk"),
+  charcoal: kernelTipSeed("stroke-tooth:charcoal"),
+  pastel: kernelTipSeed("stroke-tooth:pastel"),
+  "oil-pastel": kernelTipSeed("stroke-tooth:oil-pastel"),
+};
+
 /** Fixed tip-local stroke axis — same convention as the stamp engine's cached OSS tips. */
 const KERNEL_TIP_DIRECTION_RADIANS = -Math.PI / 5;
 
@@ -370,30 +379,14 @@ export function linearizeStudioDryMediaKernelDepositionAlpha(
 }
 
 interface KernelStrokeTooth {
-  /** Pore depth: 1 leaves paper fully visible inside a pore, 0 disables the field. */
   readonly depth: number;
-  /** Noise threshold below which a pore opens (≈ pore area fraction). */
   readonly threshold: number;
-  /** Threshold transition width; keeps pore rims from aliasing into single-texel dust. */
   readonly width: number;
-  /** Pore cell size (document px in world space; arc px along the spine in arc-lane space). */
   readonly scale: number;
-  /**
-   * Pore anchoring space. Powder media use stroke-fixed world space. Wax sticks use the stroke's
-   * own (arc length × fibre lane) parameterization — the union carrier seeded its slit pores per
-   * causal lane segment, which is exactly this space — so pores stay elongated along travel and
-   * fully survive dab overlap inside one lane.
-   */
+  /** 밀랍의 긁힘은 섬유의 이동 거리에, 가루의 기공은 표면 좌표에 놓인다. */
   readonly space: "stroke-world" | "arc-lane";
-  /** Pore-threshold ratio on the lateral edge lanes (1 = full pore density, 0 = solid rails). */
   readonly railThresholdRatio?: number;
-  /**
-   * Low-frequency deposit patchiness (powder media only). Real sticks do not lay down ink
-   * uniformly: the surface catches and skips in broad patches as paper roughness varies under
-   * the stroke. One extra value-noise evaluation per DAB (never per texel), zero-mean so the
-   * stroke's mean density is preserved. Wax sticks are excluded — their identity is the
-   * continuous dragged bed.
-   */
+  /** 탄봉에 묻은 안료가 고르지 않아 남는 큰 얼룩은 획에 고정한다. */
   readonly patch?: Readonly<{ scale: number; depth: number; saltX: number; saltY: number }>;
 }
 
@@ -452,14 +445,8 @@ const KERNEL_NATIVE_LANE_COUNT = Object.freeze({
 } as const satisfies Readonly<Record<StudioDryMediaCoreId, number>>);
 
 /**
- * Stroke-anchored paper-tooth multiplier for kernel-lane dabs.
- *
- * Tip-local pores cannot survive dab overlap: five to seven fibres cover every pixel and their
- * grain never lines up, so aggregated coverage flattens. This field lives in the stroke's own
- * coordinates (stroke-fixed world space, or arc-length × lane space for wax sticks — matching the
- * union carrier's per-lane slit seeding), so every overlapping dab dips at the same paper valley
- * and the bed keeps full-contrast tooth. Built on the verified Klecks-substitute value noise;
- * fully deterministic in (material, stroke seed, dab identity).
+ * v1은 획 원점과 시드를 그대로 재생한다. 새 가루 획은 같은 종이의 같은 기공에서 함께
+ * 끊기고, 탄봉의 큰 안료 얼룩과 밀랍의 방향성 홈은 각 획의 자국으로 남는다.
  */
 export function studioDryMediaKernelStrokeToothMultiplier(
   materialId: StudioDryMediaCoreId,
@@ -472,9 +459,11 @@ export function studioDryMediaKernelStrokeToothMultiplier(
   strokeOriginX: number,
   strokeOriginY: number,
   strokeSeed: number,
+  sheetSeed?: number,
+  depositionAlpha = 0,
 ): number {
   const tooth = KERNEL_STROKE_TOOTH[materialId];
-  const seed = (strokeSeed ^ kernelTipSeed(`stroke-tooth:${materialId}`)) >>> 0;
+  const seed = (strokeSeed ^ STROKE_TOOTH_SALT[materialId]) >>> 0;
   if (
     tooth.space === "arc-lane"
     && typeof dab.distanceFromStrokeStart === "number"
@@ -499,14 +488,22 @@ export function studioDryMediaKernelStrokeToothMultiplier(
     const pore = clamp01((laneThreshold - noise) / tooth.width + 0.5);
     return 1 - tooth.depth * pore;
   }
-  const noise = studioOssValueNoise2d(
-    (dab.x - strokeOriginX) / tooth.scale,
-    (dab.y - strokeOriginY) / tooth.scale,
-    seed,
-  );
-  const pore = clamp01((tooth.threshold - noise) / tooth.width + 0.5);
+  // 가루가 붙는 미세 요철은 종이 좌표에 고정한다. 획의 시작점이나 다른 색의 시드가
+  // 달라도 같은 골이 드러난다. 종이 섬유는 가로로 길고, 안료가 차오르면 골 가장자리부터 메워진다.
+  const sheetContact = sheetSeed !== undefined && tooth.space === "stroke-world";
+  const noise = sheetContact
+    ? studioOssValueNoise2d(dab.x / 3.2, dab.y / 1.85, sheetSeed)
+    : studioOssValueNoise2d(
+        (dab.x - strokeOriginX) / tooth.scale,
+        (dab.y - strokeOriginY) / tooth.scale,
+        seed,
+      );
+  const fill = sheetContact ? clamp01(depositionAlpha) ** 2 : 0;
+  const threshold = tooth.threshold - fill * 0.10;
+  const pore = clamp01((threshold - noise) / tooth.width + 0.5);
+  const contact = 1 - tooth.depth * (1 - 0.28 * fill) * pore;
   const patch = tooth.patch;
-  if (!patch) return 1 - tooth.depth * pore;
+  if (!patch) return contact;
   // Zero-mean broad deposit modulation: pigment thins where the smooth paper "skips" and
   // thickens where the rough patches "catch". Same value-noise budget class as the pore term
   // (one lattice evaluation per dab), fully deterministic in (material, x, y, seed).
@@ -516,7 +513,7 @@ export function studioDryMediaKernelStrokeToothMultiplier(
     seed ^ 0x51c4_e9d5,
   );
   const patchMultiplier = clamp01(1 + (patchNoise - 0.5) * 2 * patch.depth);
-  return (1 - tooth.depth * pore) * patchMultiplier;
+  return contact * patchMultiplier;
 }
 
 export const STUDIO_DRY_MEDIA_KERNEL_TIP_WIDTH_STEPS = 8;

@@ -56,6 +56,8 @@ export interface StudioPaperTipCompositionInput {
   readonly medium?: StudioPaperMediumV1 | null;
   /** v2 전용 — 이 dab의 필압. 접촉면 깊이를 정한다. */
   readonly pressure?: number;
+  /** 원본 팁 기준 최소 안료량. 커널 탭은 종이 골에서도 흔적을 남긴다. */
+  readonly gainFloor?: number;
 }
 
 /**
@@ -79,9 +81,10 @@ function compositionRevision(input: StudioPaperTipCompositionInput): string {
   ].join("|");
   // 레거시 dab은 접미사가 붙지 않아 리비전 문자열이 예전과 **문자 단위로 같다** —
   // 텍스처 스탬프 캐시가 기존 표면을 계속 재사용한다.
-  return input.medium
+  const revision = input.medium
     ? `${base}|contact-tooth-v2|${input.medium}|${input.pressure ?? ""}`
     : base;
+  return input.gainFloor ? `${revision}|floor|${input.gainFloor}` : revision;
 }
 
 /**
@@ -115,6 +118,7 @@ export function composeStudioPaperTipAlphaMap(
   const cosine = Math.cos(input.angleRadians);
   const sine = Math.sin(input.angleRadians);
   const source = input.tip.alphas;
+  const gainFloor = input.gainFloor ?? 0;
   const gain = input.tile.gain;
   const tileSize = input.tile.size;
   const scale = input.scale;
@@ -166,7 +170,7 @@ export function composeStudioPaperTipAlphaMap(
             input.medium,
             pressure,
           );
-          const value = tipAlpha * multiplier;
+          const value = tipAlpha * Math.max(multiplier, gainFloor);
           alphas[row + x] = value >= 1 ? 1 : value;
         }
         px += documentStepXx;
@@ -211,7 +215,7 @@ export function composeStudioPaperTipAlphaMap(
         const n11 = gain[rowB + xb]!;
         const top = n00 + (n10 - n00) * tx;
         const multiplier = 1 + top + (n01 + (n11 - n01) * tx - top) * ty;
-        const value = tipAlpha * (multiplier > 0 ? multiplier : 0);
+        const value = tipAlpha * Math.max(multiplier, gainFloor);
         alphas[row + x] = value >= 1 ? 1 : value;
       }
       u += stepUx;

@@ -2444,19 +2444,19 @@ describe("StudioCrdtService", () => {
   });
 
   it("admits the fresh-authoring dry-media kernel marker in brushDynamics, matching the browser oracle", () => {
-    // The `dryMediaKernelProgram` marker is minted by the authored core dry-media preset
-    // snapshots and travels inside the persisted brushDynamics JSON. Admission is bounded-JSON
-    // (no key whitelist), so the mirror must accept exactly what the browser accepts — a
-    // rejection here would drop the stroke server-side while the author keeps seeing it.
+    // 새 획을 저장하고 예전에 저장한 획을 열 때 모두 같은 문서 스키마를 통과해야 한다.
+    const historicalKernel = {
+      version: "dry-media-kernel-dab-path-v1", programDigest: "30c48947ab54ce7efde21a4935d7d5e278e08510e061fc5fbefb7056de818860",
+    };
     for (const brush of ["crayon", "chalk", "charcoal", "pastel", "oil-pastel"] as const) {
       const authored = studioBrushDynamicsSettingsForBrushId(brush);
       expect(authored?.dryMediaKernelProgram, brush).toBeDefined();
       const persistedDynamics =
         JSON.parse(JSON.stringify(authored)) as Record<string, unknown>;
       expect(persistedDynamics.dryMediaKernelProgram, brush).toEqual({
-        version: "dry-media-kernel-dab-path-v1",
+        version: "dry-media-kernel-sheet-contact-v2",
         programDigest:
-          "30c48947ab54ce7efde21a4935d7d5e278e08510e061fc5fbefb7056de818860",
+          "2c2d5bc830e015f5a9db39e609983f2c1db56fb0d464f7f301b16390a2840686",
       });
       const browserContract = {
         paintModel: "bounded-flow-v2" as const,
@@ -2468,8 +2468,6 @@ describe("StudioCrdtService", () => {
       };
       const expected = hasValidBrowserStrokePaintContract(browserContract);
       expect(expected, brush).toBe(true);
-      // Newly authored snapshots use taper-aware spacing on wire v5. Older envelopes
-      // stay rejected regardless of the independent kernel marker.
       expect(
         hasValidStudioCrdtStrokePaintContract({ payloadVersion: 5, ...browserContract }),
         brush,
@@ -2488,6 +2486,8 @@ describe("StudioCrdtService", () => {
       stroke.set("sampleSpacing", 0);
       stroke.set("brushDynamics", persistedDynamics);
       stroke.set("extensions", { paintModel: "bounded-flow-v2" });
+      expect(hasValidStudioCrdtRootSchema(document), brush).toBe(true);
+      stroke.set("brushDynamics", { ...persistedDynamics, dryMediaKernelProgram: historicalKernel });
       expect(hasValidStudioCrdtRootSchema(document), brush).toBe(true);
       document.destroy();
     }
