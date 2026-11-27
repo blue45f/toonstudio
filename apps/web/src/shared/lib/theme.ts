@@ -117,7 +117,7 @@ export const useTheme = create<ThemeState>((set, get) => {
     storageAvailable: true,
     setTheme: (theme) => update({ preference: theme }),
     toggle: () => {
-      // 빠른 밝기 전환은 밝은 페이퍼와 브랜드 기본 어두운 테마(스타라이트) 사이를 오간다.
+      // 빠른 밝기 전환은 페이퍼와 잉크 사이를 오간다.
       const next = get().theme === "dark" ? "light" : BRAND_DARK_THEME;
       update(activeScope === "studio" ? { studioPreference: next } : { preference: next });
     },

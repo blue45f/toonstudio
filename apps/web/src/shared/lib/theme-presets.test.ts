@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_APPEARANCE, THEME_IDS, THEME_PRESETS, getThemePreset, normalizeAppearance, parseAppearance, resolveDesignTheme } from "./theme-presets";
 
 const bootstrap = readFileSync(new URL("../../../public/bootstrap-theme.js", import.meta.url), "utf8");
+const html = readFileSync(new URL("../../../index.html", import.meta.url), "utf8");
 const css = readFileSync(new URL("../../app/styles/design-themes.css", import.meta.url), "utf8");
 
 function resolvePaletteTokens(raw: ReadonlyMap<string, string>): Record<string, string> {
@@ -41,7 +42,12 @@ function bootstrapFromStorage(serialized: string | null, pathname: string, dark:
   runInNewContext(bootstrap, {
     localStorage: { getItem: () => { if (blocked) throw new Error("blocked"); return serialized; } },
     location: { pathname }, window: { matchMedia: (query: string) => ({ matches: query.includes("color-scheme") ? dark : contrast }) },
-    document: { documentElement: { setAttribute: (key: string, value: string) => { attributes[key] = value; }, style: {} }, querySelector: () => null },
+    document: {
+      documentElement: { setAttribute: (key: string, value: string) => { attributes[key] = value; }, style: {} },
+      querySelector: (selector: string) => selector === 'meta[name="theme-color"]'
+        ? { setAttribute: (_key: string, value: string) => { attributes["theme-color"] = value; } }
+        : null,
+    },
   });
   return attributes;
 }
@@ -51,16 +57,25 @@ function bootstrapResult(state: unknown, pathname: string, dark: boolean, blocke
 }
 
 describe("appearance preferences and first paint", () => {
-  it("기본 테마의 제품 계약은 브랜드 정본인 starlight이며 Studio는 이를 상속한다", () => {
-    expect(DEFAULT_APPEARANCE).toEqual({ preference: "starlight", studioPreference: "inherit" });
+  it("첫 방문은 페이퍼이고 스튜디오는 사이트 테마를 상속한다", () => {
+    expect(DEFAULT_APPEARANCE).toEqual({ preference: "light", studioPreference: "inherit" });
+    expect(html.match(/<meta name="theme-color"[^>]*>/gu)).toEqual([
+      '<meta name="theme-color" content="#f7f5ef" />',
+    ]);
   });
   it.each([null, "not-json", "{}", '{"state":null}', '{"state":false}', '{"state":{"preference":"invalid"}}'])(
-    "저장값 %s가 없거나 손상되어도 첫 화면과 런타임 모두 starlight로 복구한다",
+    "저장값 %s가 없거나 손상되어도 첫 화면과 런타임 모두 페이퍼를 표시한다",
     (serialized) => {
-      expect(parseAppearance(serialized)).toEqual({ preference: "starlight", studioPreference: "inherit" });
-      for (const pathname of ["/settings", "/studio/project/123"]) {
+      expect(parseAppearance(serialized)).toEqual({ preference: "light", studioPreference: "inherit" });
+      for (const [pathname, scope, source] of [["/", "site", "manual"], ["/studio/draft/guest", "studio", "inherit"]]) {
         for (const systemDark of [false, true]) {
-          expect(bootstrapFromStorage(serialized, pathname, systemDark)["data-design-theme"]).toBe("starlight");
+          expect(bootstrapFromStorage(serialized, pathname, systemDark)).toMatchObject({
+            "data-design-theme": "light",
+            "data-theme": "light",
+            "data-theme-scope": scope,
+            "data-theme-source": source,
+            "theme-color": "#f7f5ef",
+          });
         }
       }
     },
@@ -100,7 +115,7 @@ describe("appearance preferences and first paint", () => {
     expect(bootstrapResult({ preference: "light", studioPreference: "midnight" }, "/studio-guide", true)["data-design-theme"]).toBe("light");
   });
   it("boots safely with unavailable storage", () => {
-    expect(bootstrapResult(null, "/studio", true, true)["data-design-theme"]).toBe("starlight");
+    expect(bootstrapResult(null, "/studio", true, true)["data-design-theme"]).toBe("light");
   });
   it("lets system appearance prioritize OS high contrast at first paint and runtime", () => {
     const state = { preference: "system", studioPreference: "inherit" } as const;
