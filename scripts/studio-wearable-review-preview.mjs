@@ -27,7 +27,21 @@ const panels = mode === "motion" ? {
     frame("Shion | ponytail, rear", "shion-ponytail-turned-back"),
   ],
 };
+if (mode === "motion") {
+  panels.grip = [
+    frame("Lumi | palm, neutral", "sample-prop-mic-grip-0"),
+    frame("Lumi | palm, +35 deg", "sample-prop-mic-grip-35"),
+    frame("Shion | palm, neutral", "shion-prop-mic-grip-0"),
+    frame("Shion | palm, +35 deg", "shion-prop-mic-grip-35"),
+  ];
+}
 if (mode === "hair" && process.argv.includes("--baseline")) {
+  panels.tail = [
+    frame("Lumi | before, side", "sample-ponytail-neutral-side", reference),
+    frame("Lumi | after, side", "sample-ponytail-neutral-side"),
+    frame("Shion | before, turned rear", "shion-ponytail-turned-back", reference),
+    frame("Shion | after, turned rear", "shion-ponytail-turned-back"),
+  ];
   panels.ponytail = [
     frame("Lumi | before, high knot", "sample-ponytail-high-neutral-side", reference),
     frame("Lumi | after, high knot", "sample-ponytail-high-neutral-side"),
