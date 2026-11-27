@@ -21,7 +21,9 @@ import {
 import {
   VRM_PROPS,
   createPropInstance,
+  parseVrmProps,
   propDefById,
+  serializeVrmProps,
   type PropInstance,
   type Vec3,
 } from "./studio-vrm-props";
@@ -761,5 +763,33 @@ describe("자동 손 그립과 양손 보조 target", () => {
       propDefById,
       createCompleteGripMetrics()
     )).toEqual({});
+  });
+});
+
+describe("마이크 손잡이와 손바닥", () => {
+  const metrics = createCompleteGripMetrics();
+  const mic = createPropInstance("mic", "measured-handheld-mic")!;
+  const definition = propDefById("mic")!;
+
+  it.each(["rightHand", "leftHand"] as const)("손잡이를 %s 엄지 쪽으로 향하게 하고 수동 이동량을 더한다", (bone) => {
+    const fitted = resolvePropAttachment(definition, { ...mic, bone }, metrics);
+    const basis = new THREE.Quaternion(...metrics.handSockets[bone].rotationQuaternion);
+    const axis = new THREE.Vector3(0, 1, 0).applyEuler(new THREE.Euler(
+      THREE.MathUtils.degToRad(fitted.rotationDeg[0]), THREE.MathUtils.degToRad(fitted.rotationDeg[1]), THREE.MathUtils.degToRad(fitted.rotationDeg[2]),
+    ));
+    expect(axis.dot(new THREE.Vector3(1, 0, 0).applyQuaternion(basis))).toBeCloseTo(1);
+    const custom = { ...mic, bone, rig: { ...mic.rig!, mode: "custom" as const, deltaPosition: [0.01, 0.02, 0] as Vec3 } };
+    const saved = parseVrmProps(serializeVrmProps([custom])).items[0]!;
+    expectVecClose(resolvePropAttachment(definition, saved, metrics).socketPosition, [
+      fitted.socketPosition[0] + (bone === "leftHand" ? -0.01 : 0.01), fitted.socketPosition[1] + 0.02, fitted.socketPosition[2],
+    ]);
+  });
+
+  it("저장된 구형 소켓과 자동 그립을 끈 손가락 저작값을 보존한다", () => {
+    const old = { ...mic, rig: { ...mic.rig!, anchorId: "primary", autoFingerPose: false } };
+    const saved = parseVrmProps(serializeVrmProps([old])).items[0]!;
+    expect(resolvePropAttachment(definition, saved, metrics).socketPosition).toEqual(metrics.handSockets.rightHand.position);
+    expect(createAutoGripFingerOverrides([saved], propDefById, metrics)).toEqual({});
+    expect(createAutoGripFingerOverrides([{ ...mic, rig: { ...mic.rig!, autoFingerPose: false } }], propDefById, metrics)).toEqual({});
   });
 });

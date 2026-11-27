@@ -61,6 +61,7 @@ export function createMicGripMeasurement(vrm, asset) {
     }
     const localToMm = scale.x * 1000;
     return surfaces.map(({ digit, patches, joints }) => {
+      const closestSkinPoint = new T.Vector3();
       let minGapMm = Infinity;
       let maxPenetrationMm = 0;
       let skinVertices = 0;
@@ -78,14 +79,19 @@ export function createMicGripMeasurement(vrm, asset) {
             inside = offset.subVectors(point, closest).dot(normal) < 0;
           }
           const distanceMm = Math.sqrt(minSquare) * localToMm;
-          minGapMm = Math.min(minGapMm, distanceMm);
+          if (distanceMm < minGapMm) {
+            minGapMm = distanceMm;
+            closestSkinPoint.copy(point);
+          }
           if (inside) maxPenetrationMm = Math.max(maxPenetrationMm, distanceMm);
           skinVertices++;
         }
       }
       const [base, middle, distal] = joints.map((joint) => joint.getWorldPosition(new T.Vector3()));
       const jointBendDeg = T.MathUtils.radToDeg(distal.sub(middle).angleTo(middle.sub(base)));
-      return { digit, skinVertices, minGapMm, maxPenetrationMm, jointBendDeg };
+      return { digit, skinVertices, minGapMm, maxPenetrationMm, jointBendDeg,
+        closestSkinLocalMm: closestSkinPoint.multiplyScalar(localToMm).toArray(),
+      };
     });
   };
 }
