@@ -31,6 +31,23 @@ export function canonicalizeStudioVrmPoseAngle(value: number): number {
   return Object.is(normalized, -0) ? 0 : normalized;
 }
 
+/** Control order used by the poser when applying a directly edited normalized bone. */
+export function studioVrmPoseControlOrder(bone: VRMHumanBoneName): "YXZ" | "XYZ" {
+  return /Hand|Arm|Finger/u.test(bone) ? "YXZ" : "XYZ";
+}
+
+/** V6 stores baked XYZ radians even when the wrist/arm control uses YXZ. */
+export function restoreStudioVrmBakedRotation(bone: VRMHumanBoneName, rotation: Vec3): Vec3 {
+  if (studioVrmPoseControlOrder(bone) === "XYZ" || rotation[0] === 0 || rotation[1] === 0) return [...rotation];
+  const matrix = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(...rotation, "XYZ")).elements;
+  // Keep yaw and roll independent until the true YXZ singularity. Euler.reorder snaps them
+  // together earlier, which would alter a near-vertical wrist every time the cut is reopened.
+  const cosPitch = Math.hypot(matrix[1], matrix[5]);
+  const pitch = Math.atan2(-matrix[9], cosPitch);
+  if (cosPitch <= 1e-12) return [pitch, Math.atan2(-matrix[2], matrix[0]), 0];
+  return [pitch, Math.atan2(matrix[8], matrix[10]), Math.atan2(matrix[1], matrix[5])];
+}
+
 function finiteQuaternion(node: THREE.Object3D): THREE.Quaternion | null {
   const quaternion = node.quaternion;
   if (

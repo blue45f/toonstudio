@@ -25,6 +25,7 @@ import {
 import {
   cloneStudioVrmIkConstraints,
 } from "./studio-vrm-ik-constraints";
+import { restoreStudioVrmBakedRotation } from "./studio-vrm-pose-bake";
 import {
   cloneStudioVrmPoseTranslations,
 } from "./studio-vrm-pose-translations";
@@ -472,9 +473,7 @@ export function useStudioVrmPoserRuntimeC(h: StudioVrmPoserHost): void {
       for (const boneName of STUDIO_VRM_HUMANOID_BONES) {
         const bone = initialScene.pose.bones[boneName];
         if (!bone) continue;
-        poseBones[boneName] = {
-          rotation: [bone.rotation[0], bone.rotation[1], bone.rotation[2]],
-        };
+        poseBones[boneName] = { rotation: restoreStudioVrmBakedRotation(boneName, bone.rotation) };
       }
       const fingerOverrides: FingerRotationMap = {};
       for (const boneName of STUDIO_VRM_FINGER_BONES) {

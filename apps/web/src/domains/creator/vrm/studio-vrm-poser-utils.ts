@@ -32,6 +32,7 @@ import {
   EMPTY_STUDIO_VRM_POSE_TRANSLATIONS,
   normalizeStudioVrmPoseTranslations,
 } from "./studio-vrm-pose-translations";
+import { studioVrmPoseControlOrder } from "./studio-vrm-pose-bake";
 import { parseVrmProps, type PropInstance } from "./studio-vrm-props";
 import {
   DEFAULT_STUDIO_VRM_LIGHTING_TONE,
@@ -779,8 +780,7 @@ export function getPoseBoneRotation(poseBone: PoseBone | undefined) {
 function applyEulerRotation(humanoid: NonNullable<VRM["humanoid"]>, boneName: VRMHumanBoneName, rotation: Vec3) {
   const bone = humanoid.getNormalizedBoneNode(boneName);
   if (!bone) return;
-  const order = boneName.includes("Hand") || boneName.includes("Arm") || boneName.includes("Finger") ? "YXZ" : "XYZ";
-  bone.rotation.set(rotation[0], rotation[1], rotation[2], order);
+  bone.rotation.set(...rotation, studioVrmPoseControlOrder(boneName));
   bone.updateMatrixWorld(true);
 }
 
