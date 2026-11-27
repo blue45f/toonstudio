@@ -171,10 +171,11 @@ describe("linked VRM appearance projection plan", () => {
     expect(leftPlan.signature).toBe(rightPlan.signature);
   });
 
-  it("projects a known hand prop with exact auto-grip and secondary-hand requirements", () => {
+  it.each([true, false])("새 책의 표지 접점과 보조 손을 투영하고 자동 그립 설정 %s를 보존한다", (autoFingerPose) => {
     const book = createPropInstance("book", "book-shared")!;
     book.rig = {
       ...book.rig!,
+      autoFingerPose,
       gripFit: 1.15,
       secondary: {
         enabled: true,
@@ -195,10 +196,10 @@ describe("linked VRM appearance projection plan", () => {
         propId: "book",
         bone: "leftHand",
         attachmentMode: "smart-rig-v2",
-        primaryAnchorId: "primary",
+        primaryAnchorId: "cover-grip",
         autoScale: true,
-        autoGripHand: "leftHand",
-        gripFit: 1.15,
+        autoGripHand: autoFingerPose ? "leftHand" : null,
+        gripFit: autoFingerPose ? 1.15 : null,
         secondaryHand: {
           bone: "rightHand",
           anchorId: "secondary",
@@ -212,6 +213,7 @@ describe("linked VRM appearance projection plan", () => {
     const legacyBook = createPropInstance("book", "legacy-book")!;
     legacyBook.rig = {
       ...legacyBook.rig!,
+      anchorId: "primary",
       secondary: {
         enabled: true,
         anchorId: "secondary",
@@ -239,7 +241,7 @@ describe("linked VRM appearance projection plan", () => {
 
     expect(legacyPlan.handProps).toMatchObject({
       status: "supported",
-      props: [{ gripFit: 1, secondaryHand: { influence: 0.65 } }],
+      props: [{ primaryAnchorId: "primary", autoGripHand: "leftHand", gripFit: 1, secondaryHand: { influence: 0.65 } }],
     });
     expect(legacyPlan.signature).toBe(explicitPlan.signature);
   });

@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { QUATERNIUS_FANTASY_VRMS } from "./quaternius-fantasy-catalog";
-import { SAMPLE_VRMS } from "./vrm-library";
+import { SAMPLE_VRM_ENTRIES, SAMPLE_VRMS, selectableSampleVrmUrl } from "./vrm-library";
 
 const publicRoot = resolve(process.cwd(), "apps/web/public");
 const readJsonChunk = (file: string) => {
@@ -21,8 +21,10 @@ describe("Quaternius free Standard character assemblies", () => {
     expect(new Set(QUATERNIUS_FANTASY_VRMS.map((entry) => entry.id)).size).toBe(4);
   });
 
-  it.each(QUATERNIUS_FANTASY_VRMS)("registers $id with real skin, honest capabilities and embedded textures", (entry) => {
-    expect(SAMPLE_VRMS.find((model) => model.id === entry.id)).toEqual(entry);
+  it.each(QUATERNIUS_FANTASY_VRMS)("표정이 없는 $id를 신규 원고에서 숨기고 기존 원본과 스킨을 보존한다", (entry) => {
+    expect(SAMPLE_VRMS.find((model) => model.id === entry.id)).toEqual({ ...entry, visibility: "legacy" });
+    expect(SAMPLE_VRM_ENTRIES.some((model) => model.id === entry.id)).toBe(false);
+    expect(selectableSampleVrmUrl(entry.id)).toBe(entry.url);
     expect(entry.limitations).toEqual(["no-expressions"]);
     const { bytes, json } = readJsonChunk(resolve(publicRoot, entry.url.slice(1)));
     expect(bytes.length).toBeLessThanOrEqual(15 * 1024 * 1024);

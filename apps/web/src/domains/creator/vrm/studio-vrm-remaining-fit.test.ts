@@ -23,7 +23,7 @@ function lateralSpineParts(parts: readonly GarmentPart[]): GarmentPart[] {
 }
 
 describe("remaining procedural garment fit defects", () => {
-  it.each(["tshirt", "shirt", "sweater", "hoodie", "blazer"])("uses two tapered shoulder bridges instead of one cross-body tube for %s", (itemId) => {
+  it.each(["tshirt", "shirt", "sweater", "hoodie"])("uses two tapered shoulder bridges instead of one cross-body tube for %s", (itemId) => {
     const shoulder = lateralSpineParts(buildGarmentParts(itemId, measuredMetrics(), 1));
     expect(shoulder).toHaveLength(2);
     expect(new Set(shoulder.map((part) => part.shoulderBone))).toEqual(
@@ -39,6 +39,24 @@ describe("remaining procedural garment fit defects", () => {
       const capTop = dot(part.offset, FALLBACK_WARDROBE_METRICS.up)
         + part.shape.profile[0].radius * verticalScale;
       expect(Math.abs(capTop - FALLBACK_WARDROBE_METRICS.spineToNeck * 0.86)).toBeLessThan(1e-6);
+    }
+  });
+
+  it("블레이저는 몸판 안쪽에서 시작하는 양쪽 셋인 소매가 팔꿈치까지 이어진다", () => {
+    const metrics = measuredMetrics();
+    const parts = buildGarmentParts("blazer", metrics, 1);
+    const body = parts.find((part) => part.shape.kind === "lathe" && part.shape.tailoring === "blazer-body");
+    expect(body?.bone).toBe("spine");
+    expect(lateralSpineParts(parts)).toHaveLength(0);
+    const sleeves = parts.filter((part) => part.skinMode === "set-in-sleeve");
+    expect(sleeves.map((part) => part.bone).sort()).toEqual(["leftUpperArm", "rightUpperArm"]);
+    for (const sleeve of sleeves) {
+      if (sleeve.shape.kind !== "cylinder" || !sleeve.align) throw new Error("블레이저 상완 소매 누락");
+      const arm = metrics.upperArm[sleeve.bone === "leftUpperArm" ? "left" : "right"];
+      const along = dot(sleeve.offset, arm.axis);
+      expect(dot(sleeve.align, arm.axis)).toBeCloseTo(1);
+      expect(along - sleeve.shape.h / 2).toBeLessThan(0);
+      expect(along + sleeve.shape.h / 2).toBeGreaterThanOrEqual(arm.len);
     }
   });
 

@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { QUATERNIUS_MODULAR_VRMS } from "./quaternius-modular-catalog";
-import { SAMPLE_VRMS } from "./vrm-library";
+import { SAMPLE_VRM_ENTRIES, SAMPLE_VRMS, selectableSampleVrmUrl } from "./vrm-library";
 
 const publicRoot = resolve(process.cwd(), "apps/web/public");
 const manifest = JSON.parse(readFileSync(resolve(publicRoot, "vrm/quaternius-modular-v1/manifest.json"), "utf8"));
@@ -19,8 +19,10 @@ describe("Quaternius modular humanoid candidates", () => {
     expect(runtime.entries).toHaveLength(21);
   });
 
-  it.each(QUATERNIUS_MODULAR_VRMS)("loads $id as a visible skinned VRM with production-pose evidence", (entry) => {
-    expect(SAMPLE_VRMS.find((model) => model.id === entry.id)).toEqual(entry);
+  it.each(QUATERNIUS_MODULAR_VRMS)("표정이 없는 $id를 신규 원고에서 숨기고 기존 원본과 포즈 렌더 기록을 보존한다", (entry) => {
+    expect(SAMPLE_VRMS.find((model) => model.id === entry.id)).toEqual({ ...entry, visibility: "legacy" });
+    expect(SAMPLE_VRM_ENTRIES.some((model) => model.id === entry.id)).toBe(false);
+    expect(selectableSampleVrmUrl(entry.id)).toBe(entry.url);
     expect(entry.limitations).toContain("no-expressions");
     if (entry.id.includes("-male-")) expect(entry.limitations).toContain("limited-hand-rig");
     const bytes = readFileSync(resolve(publicRoot, entry.url.slice(1)));
