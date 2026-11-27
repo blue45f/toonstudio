@@ -178,7 +178,7 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
             people={minimapPeople}
             currentRoomId={locationZoneRoomId}
             variant="full"
-            destination={moveDestination ?? overlays.moveDestination}
+            destination={moveDestination ?? null}
             highlightRoomIds={highlightRoomIds}
             onMoveTo={(pt) => { overlays.setMapOpen(false); queuePathTo(pt); }}
             onJumpTo={(pt) => { overlays.setMapOpen(false); quickTravelTo(pt); }}

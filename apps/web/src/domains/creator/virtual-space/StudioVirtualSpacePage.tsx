@@ -290,7 +290,7 @@ export function VirtualSpaceExperience({
     markMoved: () => markCoachProxyRef.current("moved"),
     setPanel: (p) => setPanelProxyRef.current(p),
     setMapOpen: (o) => setMapOpenProxyRef.current(o),
-    moveDestination: moveDestinationState, setMoveDestination: setMoveDestinationState,
+    moveDestination: moveDestinationState, setMoveDestination: setMoveDestinationState, engineReportsDestination: stageKind === "office2d",
     selectedPeerId, socialFocused: activity === "focused" || activity === "away" || atmosphere === "focus",
     cancelFollowing: () => cancelFollowingProxyRef.current(),
     locationPathname: location.pathname, locationSearch: location.search, navigate, notify, bt,

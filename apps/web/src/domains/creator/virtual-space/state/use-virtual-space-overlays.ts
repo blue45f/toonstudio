@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
 import type { StudioVirtualSpaceMiniTourProgress } from "../StudioVirtualSpaceGuide";
 import { readStudioVirtualSpaceTourSeen, writeStudioVirtualSpaceTourSeen } from "../studio-virtual-space-entry-preference";
-import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { studioVirtualWorkspacePanelForScope, type StudioVirtualWorkspacePanel } from "../studio-virtual-space-panel-scope";
 import { initialPanel } from "../studio-virtual-space-page-helpers";
 import type { StudioWorldInteractionDefinition, StudioWorldNpcDefinition } from "../studio-virtual-space-world-manifest";
@@ -79,7 +78,6 @@ export function useVirtualSpaceOverlays({
   const [coworkOpen, setCoworkOpen] = useState(false);
   const [coworkTargetId, setCoworkTargetId] = useState<string | null>(null);
   const [cameraMode, setCameraMode] = useState<StudioThreeCameraMode>("quarter");
-  const [moveDestination, setMoveDestination] = useState<StudioVirtualSpacePoint | null>(null);
   const spaceSearchRef = useRef<HTMLInputElement>(null);
 
   const [tourOpen, setTourOpen] = useState(() => entryJustConfirmed && !readStudioVirtualSpaceTourSeen());
@@ -258,8 +256,6 @@ export function useVirtualSpaceOverlays({
     cameraMode,
     setCameraMode,
     cycleCameraMode,
-    moveDestination,
-    setMoveDestination,
     tourOpen,
     tourProgress,
     markCoach,
