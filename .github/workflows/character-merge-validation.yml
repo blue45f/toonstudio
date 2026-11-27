@@ -19,6 +19,8 @@ on:
       - "apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts*"
       - "apps/web/src/domains/creator/studio-router/studio-route-manifest*"
       - "scripts/verify-character-contact-naturalness.mjs"
+      - "e2e/studio-drawing-character-selection.spec.ts"
+      - "e2e/helpers/studio-eight-cut-character-task.ts"
       - "scripts/verify-studio-vrm-cooperative-capture.mjs"
       - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
       - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
@@ -40,6 +42,8 @@ on:
       - "apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts*"
       - "apps/web/src/domains/creator/studio-router/studio-route-manifest*"
       - "scripts/verify-character-contact-naturalness.mjs"
+      - "e2e/studio-drawing-character-selection.spec.ts"
+      - "e2e/helpers/studio-eight-cut-character-task.ts"
       - "scripts/verify-studio-vrm-cooperative-capture.mjs"
       - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
       - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
@@ -140,3 +144,55 @@ jobs:
         run: pnpm run build:bundle
       - name: Verify Studio bundle budget
         run: pnpm run check:studio-bundle
+
+  eight-cut-task:
+    name: Studio eight-cut character task
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/apps/web/public/**/*.vrm
+            !/apps/web/public/**/*.glb
+            !/apps/web/public/**/*.mp4
+            /apps/web/public/vrm/sample.vrm
+      - name: Determine whether the measured user task changed
+        id: scope
+        env:
+          DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [[ "$DISPATCH" == "true" ]] || ! git diff --quiet HEAD^1 HEAD -- \
+              e2e/studio-drawing-character-selection.spec.ts e2e/helpers/studio-eight-cut-character-task.ts; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+        if: steps.scope.outputs.run == 'true'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        if: steps.scope.outputs.run == 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Run the authored character task in normal Studio
+        if: steps.scope.outputs.run == 'true'
+        env:
+          STUDIO_EIGHT_CUT_TASK: "1"
+          PLAYWRIGHT_CHANNEL: ""
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: |
+          pnpm install --frozen-lockfile --prefer-offline
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test e2e/studio-drawing-character-selection.spec.ts --grep '같은 등장인물 여덟 컷' --workers=1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always() && steps.scope.outputs.run == 'true'
+        with:
+          name: studio-eight-cut-task
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 7

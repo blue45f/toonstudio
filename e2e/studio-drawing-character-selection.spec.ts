@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 import { openStudioAllTools } from "../scripts/lib/studio-bg3d-ui-interactions";
 import { openStudioLayerNavigator, runStudioClarityAction } from "../scripts/lib/studio-shell-interactions";
 
+import { runStudioEightCutTask } from "./helpers/studio-eight-cut-character-task";
+
 for (const width of [1440, 390]) {
   test(`${width}px 원고에서 다른 3D 캐릭터를 선택하고 취소·삽입·복원한다`, async ({ page }) => {
     test.setTimeout(360_000);
@@ -129,4 +131,17 @@ test("WebGL 준비 직후 포저를 닫고 다시 열 때 이전 캔버스에 �
     await expect(header).toBeVisible();
   }
   expect(errors).toEqual([]);
+});
+
+test("같은 등장인물 여덟 컷의 외형과 한 컷 손 포즈를 원고에서 검증한다", async ({ page }, info) => {
+  test.skip(process.env.STUDIO_EIGHT_CUT_TASK !== "1", "실제 GPU 컷 작업 시간은 전용 레인에서 측정한다.");
+  test.setTimeout(34 * 60_000);
+  try {
+    await runStudioEightCutTask(page, info);
+  } catch (error) {
+    console.error("[studio-eight-cut-failure]", error,
+      (await page.locator("body").innerText({ timeout: 3000 }).catch(() => "")).slice(-5500));
+    await page.screenshot({ path: info.outputPath("eight-cut-failure.png"), timeout: 10000 }).catch(() => {});
+    throw error;
+  }
 });
