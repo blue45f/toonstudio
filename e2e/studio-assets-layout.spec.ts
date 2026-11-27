@@ -82,11 +82,14 @@ for (const language of ["ko", "en"] as const) {
   });
 }
 
-test("전문 제작 도구는 작은 화면과 강제색에서도 이름·선택·작품 경로를 유지한다", async ({ page }) => {
+test("전문 제작 도구는 작은 화면과 강제색에서도 이름·선택·작품 경로를 유지한다", async ({ page }, testInfo) => {
   await page.goto("/studio/assets?project=tool-art-review", { waitUntil: "domcontentloaded" });
   const suite = page.getByTestId("studio-specialist-suite-bar");
   const model = suite.locator('a[href="/studio/3d/dcc/model?project=tool-art-review"]');
   const space = suite.locator('a[href="/studio/p/tool-art-review/space"]');
+  const artwork = space.locator('[data-studio-tool-art="space"]');
+  const atlas = artwork.locator('img[data-ready]');
+  const glyph = artwork.locator('svg');
   await expect(model).toHaveAccessibleName(/정밀 3D 모델러|Precision 3D Modeler/u);
   await expect(space).toHaveAccessibleName(/가상 스튜디오|Virtual studio/u);
   const drawings = suite.locator("[data-studio-tool-art]");
@@ -109,10 +112,19 @@ test("전문 제작 도구는 작은 화면과 강제색에서도 이름·선택
       expect(bounds.left).toBeGreaterThanOrEqual((bounds.start ?? width) - 1);
       expect(bounds.right).toBeLessThanOrEqual((bounds.end ?? 0) + 1);
     }
-    await expect(space.locator('[data-studio-tool-art="space"] img[data-ready]')).toBeVisible();
+    await expect(atlas).toHaveCount(1);
+    await expect(atlas).toBeHidden();
+    await expect(glyph).toBeVisible();
+    await page.evaluate(() => { document.documentElement.dataset.studioIconStyle = "illustrated"; });
+    await expect(atlas).toBeVisible();
+    await expect(glyph).toBeHidden();
+    await testInfo.attach(`specialist-tools-illustrated-${width}`, { body: await suite.screenshot(), contentType: "image/png" });
+    await page.emulateMedia({ forcedColors: "active" });
+    await expect(atlas).toBeHidden();
+    await expect(glyph).toBeVisible();
+    await expect(space).toBeFocused();
+    await testInfo.attach(`specialist-tools-forced-colors-${width}`, { body: await suite.screenshot(), contentType: "image/png" });
+    await page.evaluate(() => { delete document.documentElement.dataset.studioIconStyle; });
+    await page.emulateMedia({ forcedColors: "none" });
   }
-  await page.emulateMedia({ forcedColors: "active" });
-  await expect(space.locator("img")).toBeHidden();
-  await expect(space.locator("svg")).toBeVisible();
-  await expect(space).toBeFocused();
 });
