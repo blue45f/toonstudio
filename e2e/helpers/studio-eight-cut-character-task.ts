@@ -1,8 +1,9 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { buffer } from "node:stream/consumers";
 
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 
+import { BLENDER_PROP_GLTF_URLS } from "../../apps/web/src/domains/creator/vrm/studio-vrm-prop-assets";
 import { openStudioAllTools } from "../../scripts/lib/studio-bg3d-ui-interactions";
 import { openStudioMainMenu, selectStudioLayerThroughNavigator } from "../../scripts/lib/studio-shell-interactions";
 
@@ -216,6 +217,16 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/studio/draft/eight-cut-task?language=ko", { waitUntil: "domcontentloaded" });
   await expect(page.locator("[data-studio-canvas-viewport]").first()).toHaveAttribute("data-studio-canvas-input-state", "ready", { timeout: 180000 });
+  const glassesUrl = BLENDER_PROP_GLTF_URLS.glasses;
+  const glasses = await page.request.get(new URL(glassesUrl, page.url()).href);
+  expect(glasses.ok(), "The public Studio glasses GLB must be served").toBe(true);
+  const served = await glasses.body();
+  const tracked = await readFile("apps/web/public" + glassesUrl);
+  expect(served.subarray(0, 4).toString("ascii")).toBe("glTF");
+  expect(served.readUInt32LE(4)).toBe(2);
+  expect(served.readUInt32LE(8)).toBe(served.length);
+  expect(served.equals(tracked), "The browser URL must return the checked-out GLB bytes").toBe(true);
+  console.log("[studio-eight-cut] Verified public glasses GLB", glassesUrl, served.length);
   const before = await seedManuscript(page);
   console.log("[studio-eight-cut] Eight cuts imported and exported");
   const local = before[2];
@@ -278,6 +289,7 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
     expect(a.expressions).toEqual(b.expressions);
     expect([cut.x,cut.y,cut.width,cut.height,cut.rotation]).toEqual([original.x,original.y,original.width,original.height,original.rotation]);
     const output = await pixels(page, cut.src);
+    expect([output.width, output.height], cut.id + " PNG dimensions").toEqual([beforePixels[i].width, beforePixels[i].height]);
     if (i >= 6) {
       expect(cut).toEqual(original);
       expect(output).toEqual(beforePixels[i]);
