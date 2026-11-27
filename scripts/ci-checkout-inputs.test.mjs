@@ -276,10 +276,16 @@ test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 �
     const require = createRequire(import.meta.url);
     const { SAMPLE_VRMS, selectableSampleVrmUrl } = require("./apps/web/src/domains/creator/vrm/vrm-library.ts");
     const { STUDIO_VRM_HERO_V1_SAMPLES } = require("./apps/web/src/domains/creator/vrm/studio-vrm-hero-v1-catalog-entries.ts");
+    const { STUDIO_BG3D_HERO_V1_ENTRIES } = require("./apps/web/src/domains/creator/bg3d/studio-bg3d-hero-v1-catalog-entries.ts");
+    const { listStudioObjectInsertItems } = require("./apps/web/src/domains/creator/studio-object-insert-catalog.ts");
     process.stdout.write(JSON.stringify({
       models: SAMPLE_VRMS.map(({ id }) => selectableSampleVrmUrl(id)).filter(Boolean),
       hero: STUDIO_VRM_HERO_V1_SAMPLES.map(({ url }) => url),
       thumbnails: STUDIO_VRM_HERO_V1_SAMPLES.map(({ thumbnailUrl }) => thumbnailUrl),
+      heroScenes: STUDIO_BG3D_HERO_V1_ENTRIES.flatMap(({ desktopAsset, mobileAsset }) => [
+        desktopAsset.url, mobileAsset.url, desktopAsset.thumbnailUrl,
+      ]),
+      insertAssets: listStudioObjectInsertItems().flatMap(({ assetUrl, thumbnailUrl }) => [assetUrl, thumbnailUrl].filter(Boolean)),
     }));
   `], { cwd: root, encoding: "utf8", env: fixtureGitEnvironment(root) }));
   assert.equal(catalog.models.length, 117);
@@ -296,13 +302,20 @@ test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 �
   const pavilion = environments.match(/"(\/assets\/3d\/environments\/riverside-v2\/[^"\n]+\.glb)"/u)?.[1];
   assert(pavilion, "새 한강 쉼터의 실제 GLB 경로가 필요합니다.");
   backgrounds.push(pavilion);
-  const retained = [...catalog.models, ...catalog.thumbnails, ...backgrounds].map((url) => `apps/web/public${url}`);
+  const insertPreviews = catalog.insertAssets.filter((url) =>
+    url.startsWith("/assets/3d/environments/hero-v2/") || url.startsWith("/assets/studio/scene-template-previews/"));
+  const prOnly = [...catalog.hero, ...backgrounds, ...catalog.heroScenes, ...insertPreviews];
+  const retained = [...new Set([...catalog.models, ...catalog.thumbnails, ...backgrounds, ...catalog.heroScenes, ...catalog.insertAssets])]
+    .map((url) => `apps/web/public${url}`);
   assertTrackedDocumentInputs(retained.map((file) => `/${file}`), { cwd: root });
   const omitted = [
     "apps/web/public/vrm/unrelated.vrm",
     "apps/web/public/vrm/toonstudio-hero-v1/unrelated.vrm",
     "apps/web/public/assets/3d/environments/glasshouse-v1/unrelated.glb",
     "apps/web/public/assets/3d/environments/glasshouse-v1/unrelated.png",
+    "apps/web/public/assets/3d/environments/hero-v1/lineart/kr_atelier_cafe_interior-lineart.svg",
+    "apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/mobile.glb",
+    "apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/contact_sheet.png",
     "apps/web/public/assets/unrelated/large.glb",
     "artifacts/large.bin",
   ];
@@ -332,7 +345,7 @@ test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 �
         }
         assert.deepEqual(missing, [], "PR related 검사가 읽는 정본을 최초 checkout에 포함해야 합니다.");
       } else {
-        for (const url of [...catalog.hero, ...backgrounds]) {
+        for (const url of prOnly) {
           await assert.rejects(fs.access(path.join(directory, `apps/web/public${url}`)), { code: "ENOENT" });
         }
       }
