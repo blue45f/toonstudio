@@ -38,6 +38,9 @@ registerI18nLocaleEntries("ko", {
   "studio.editorShellStatus.workspace.brushLibraryOpening": "브러시 라이브러리를 여는 중…",
   "studio.editorShellStatus.importHandoff.handoffExpired": "가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다. 파일을 다시 선택해 주세요.",
   "studio.editorShellStatus.importHandoff.importStartFailed": "파일 가져오기를 시작하지 못했습니다.",
+  "studio.editorShellStatus.importHandoff.workspaceChecking": "작업공간을 확인한 뒤 파일을 열어요.",
+  "studio.editorShellStatus.importHandoff.operationWaiting": "기존 가져오기 작업이 끝나면 파일을 열어요.",
+  "studio.editorShellStatus.importHandoff.scopeChanged": "작업공간이 바뀌어 파일을 열지 못했어요. 파일을 다시 선택해 주세요.",
   "studio.editorShellStatus.floatingLayout.storageChecking": "설정 저장소 확인 중",
 });
 
@@ -61,6 +64,9 @@ registerI18nLocaleEntries("en", {
   "studio.editorShellStatus.workspace.brushLibraryOpening": "Opening the brush library…",
   "studio.editorShellStatus.importHandoff.handoffExpired": "The import file handoff expired or was lost on refresh. Please choose the file again.",
   "studio.editorShellStatus.importHandoff.importStartFailed": "Could not start the file import.",
+  "studio.editorShellStatus.importHandoff.workspaceChecking": "The file will open once the workspace is confirmed.",
+  "studio.editorShellStatus.importHandoff.operationWaiting": "The file will open once the current import finishes.",
+  "studio.editorShellStatus.importHandoff.scopeChanged": "The workspace changed while opening the file. Choose the file again.",
   "studio.editorShellStatus.floatingLayout.storageChecking": "Checking the settings storage",
 });
 

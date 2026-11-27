@@ -10,7 +10,7 @@ import { STUDIO_BRUSH_PACK_ACCEPT } from "../brush/studio-brush-pack-format";
 import { STUDIO_CANVAS_IMAGE_ACCEPT } from "../studio-legacy-editor-runtime-helpers";
 import { StudioDestructiveConfirmHost } from "../StudioDestructiveConfirmHost";
 import { StudioVrmProjectArchiveAttestationHost } from "../runtime-leaves/studio-vrm-archive-attestation-lazy";
-import { StudioImportHandoffHost } from "./StudioImportHandoffHost";
+import { StudioImportHandoffEntry } from "./StudioImportHandoffEntry";
 import { StudioMobileBackStackHost } from "./StudioMobileBackStackHost";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
@@ -26,6 +26,7 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
     handleImportProject,
     handleImportProjectArchive,
     handleImportPsd,
+    importWorkspaceReady,
     interchangeImportBusy,
     interchangeImportInputRef,
     onPickImage,
@@ -56,7 +57,8 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
     {/* AI 보조 대화상자. 열림 상태가 저장소에 있어 AI 허브(도구 팝오버)가 닫혀도 대화상자는 남는다. */}
     <AiAssistDialogHostEntry />
     <StudioVrmProjectArchiveAttestationHost />
-    <StudioImportHandoffHost
+    <StudioImportHandoffEntry
+      workspaceReady={importWorkspaceReady}
       brushPackImporting={brushPackImporting}
       collaborationDocumentLocked={collaborationDocumentLocked}
       interchangeImportBusy={interchangeImportBusy}
