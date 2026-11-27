@@ -323,7 +323,7 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         return {source["id"]: source for source in block["sources"]}
 
     def test_real_sources_file_loads_and_every_entry_is_valid(self) -> None:
-        self.assertEqual(self.sources.record_doc, "apps/character-lab/docs/hyper3d-terms-record.md")
+        self.assertEqual(self.sources.record_doc, "docs/archive/character-lab/hyper3d-terms-record.md")
         self.assertTrue((REPO_ROOT / self.sources.record_doc).is_file())
         # 파일럿 Hyper3D 파생 3종(의상·신발)은 기록으로 남아 있고, 그 밖의 항목은 프리셋 표(garment_presets.PRESETS)에 있는 프리셋이어야 한다.
         self.assertLessEqual({"bottom/jeans", "shoes/sneakers", "top/tee"}, set(self.sources.sources))
@@ -393,7 +393,7 @@ class Hyper3dProvenanceTest(unittest.TestCase):
                 self.assertIs(source["derivative"], True)
                 self.assertRegex(source["generationId"], self.UUID)
                 evidence = source["evidenceDoc"]
-                self.assertTrue(evidence.startswith("apps/character-lab/docs/") and ".." not in evidence)
+                self.assertTrue(evidence.startswith("docs/archive/character-lab/") and ".." not in evidence)
                 self.assertTrue((REPO_ROOT / evidence).is_file())
             else:
                 self.assertNotIn("generationId", source)  # 다른 출처에는 쓸 수 없다
@@ -428,21 +428,21 @@ class Hyper3dProvenanceTest(unittest.TestCase):
     def test_loader_rejects_a_bad_file_schema_or_record_doc(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "apps/character-lab/docs").mkdir(parents=True)
-            (root / "apps/character-lab/docs/hyper3d-terms-record.md").write_text("기록", encoding="utf-8")
+            (root / "docs/archive/character-lab").mkdir(parents=True)
+            (root / "docs/archive/character-lab/hyper3d-terms-record.md").write_text("기록", encoding="utf-8")
 
             def write(document: dict) -> Path:
                 path = root / "sources.json"
                 path.write_text(json.dumps(document), encoding="utf-8")
                 return path
 
-            valid = {"schema": km.HYPER3D_SOURCES_SCHEMA, "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md", "sources": {}}
+            valid = {"schema": km.HYPER3D_SOURCES_SCHEMA, "recordDoc": "docs/archive/character-lab/hyper3d-terms-record.md", "sources": {}}
             self.assertEqual(km.load_hyper3d_sources(write(valid), root).sources, {})
             for label, mutation in {
                 "다른 schema": {"schema": "other/1"},
                 "docs 밖 경로": {"recordDoc": "README.md"},
-                "상위 경로": {"recordDoc": "apps/character-lab/docs/../secret.md"},
-                "없는 문서": {"recordDoc": "apps/character-lab/docs/missing.md"},
+                "상위 경로": {"recordDoc": "docs/archive/character-lab/../secret.md"},
+                "없는 문서": {"recordDoc": "docs/archive/character-lab/missing.md"},
                 "sources 없음": {"sources": []},
             }.items():
                 with self.subTest(label):
@@ -529,7 +529,7 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         # 반입 기록 문서 경로를 망가뜨리면 V4가 오류를 낸다(검증기가 실제로 이 항목을 검사하고 있음을 확인)
         for source in manifest["provenance"]["sources"]:
             if source["license"] == "hyper3d-rodin-output":
-                source["evidenceDoc"] = "apps/character-lab/docs/does-not-exist.md"
+                source["evidenceDoc"] = "docs/archive/character-lab/does-not-exist.md"
         km.write_manifest(manifest, kit / km.MANIFEST_FILE)
         broken = subprocess.run([str(TSX), "scripts/verify-character-kit.mjs", "--root", str(kit), "--base", "female", "--only", "V4"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=300)
         self.assertIn("[실패] V4", broken.stdout, broken.stdout + broken.stderr)
@@ -538,7 +538,7 @@ class Hyper3dProvenanceTest(unittest.TestCase):
 class PreservedRecordsTest(unittest.TestCase):
     """재생성해도 손으로 남긴 기록(제외 경위·미제공 사유·hides)이 사라지지 않고, 원본 파츠 설명은 키트 내용에서 다시 만들어진다(2026-10-23)."""
 
-    OLD_SUMMARY = "Blender … 원본 디자인, Hyper3D 파생 파츠 33종은 2026-10-14 이 키트에서 제외했습니다. 제외 기록은 apps/character-lab/docs/hyper3d-terms-record.md §9에 남겼습니다."
+    OLD_SUMMARY = "Blender … 원본 디자인, Hyper3D 파생 파츠 33종은 2026-10-14 이 키트에서 제외했습니다. 제외 기록은 docs/archive/character-lab/hyper3d-terms-record.md §9에 남겼습니다."
     OLD_NOTICE = (
         "# 고지\n\n## 원천 1 — HBM\n\n- 옛 문장\n\n"
         "## 원천 3 — Hyper3D(Rodin Gen-2.5) 생성물의 파생 파츠 (license: hyper3d-rodin-output) — 2026-10-14 키트에서 제외\n\n"
@@ -621,7 +621,7 @@ class PreservedRecordsTest(unittest.TestCase):
         self.assertLess(notice.index("## 원천 3"), notice.index("## 쓰지 않은 것"))
 
     def test_registry_original_conflicting_with_a_hyper3d_key_stops(self) -> None:
-        table = km.Hyper3dSources(record_doc="apps/character-lab/docs/hyper3d-terms-record.md", sources={"top/tee": km.load_hyper3d_sources(km.HYPER3D_SOURCES_FILE, REPO_ROOT).sources["top/tee"]})
+        table = km.Hyper3dSources(record_doc="docs/archive/character-lab/hyper3d-terms-record.md", sources={"top/tee": km.load_hyper3d_sources(km.HYPER3D_SOURCES_FILE, REPO_ROOT).sources["top/tee"]})
         kit = self.kit("conflict", {"top/tee": ManifestBuildTest.TOP})
         with self.assertRaises(km.ManifestError) as caught:
             self.build(kit, None, hyper3d=table, licenses={"top/tee": "original"})
@@ -644,7 +644,7 @@ class ContractConstantParityTest(unittest.TestCase):
     """
 
     def test_license_vocabulary_and_evidence_prefix_match_the_typescript_contract(self) -> None:
-        contracts = REPO_ROOT / "apps/character-lab/src/contracts"
+        contracts = REPO_ROOT / "packages/studio-project-model/src/character-kit/contracts"
         source = "\n".join((contracts / name).read_text(encoding="utf-8") for name in ("kit-provenance.ts", "character-kit.ts") if (contracts / name).is_file())
         licenses = re.search(r"export const KIT_ALLOWED_LICENSES = \[([^\]]*)\] as const", source)
         prefix = re.search(r'export const KIT_HYPER3D_EVIDENCE_PREFIX = "([^"]+)"', source)

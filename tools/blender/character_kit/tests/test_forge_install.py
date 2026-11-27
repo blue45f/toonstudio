@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from character_kit import forge_install as fi  # noqa: E402
 
 REPO = fi.REPO_ROOT
-CONTRACTS = REPO / "apps" / "character-lab" / "src" / "contracts"
+CONTRACTS = REPO / "packages" / "studio-project-model" / "src" / "character-kit" / "contracts"
 TSX = REPO / "node_modules" / ".bin" / "tsx"
 FORGE_OUT = Path(os.environ.get("FORGE_INSTALL_SOURCE", str(Path.home() / ".cache/toonstudio-kit/out5/shoes")))
 

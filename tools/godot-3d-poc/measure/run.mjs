@@ -41,7 +41,7 @@ const args = {
   build: path.resolve(argValue("--build", path.join(pocRoot, "build"))),
   fixtures: path.resolve(argValue("--fixtures", path.join(pocRoot, ".cache", "fixtures"))),
   room: path.resolve(argValue("--room", path.join(repoRoot, "apps/web/public/godot-space/spaces/studio-room.glb"))),
-  avatar: path.resolve(argValue("--avatar", path.join(repoRoot, "apps/character-lab/public/assets/characters/avatar-orion-authored/avatar-orion-authored.glb"))),
+  avatar: path.resolve(argValue("--avatar", path.join(repoRoot, "data/character-studio-assets/characters/avatar-orion-authored/avatar-orion-authored.glb"))),
   out: path.resolve(argValue("--out", path.join(repoRoot, "docs/evidence/godot-3d-poc", new Date().toISOString().slice(0, 10)))),
   repeat: Number(argValue("--repeat", "5")),
   only: argValue("--only", "sizes,cold,warm,revisit,coi,glb,ext,bridge,capture,twopoint,bench,compare,memory").split(","),

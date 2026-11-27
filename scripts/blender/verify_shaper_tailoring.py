@@ -78,7 +78,7 @@ def check_winks(objects):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--asset", type=Path, default=Path(__file__).resolve().parents[2] /
-                        "apps/character-lab/public/assets/characters/shaper-atelier-protagonist/shaper-atelier-protagonist.glb")
+                        "data/character-studio-assets/characters/shaper-atelier-protagonist/shaper-atelier-protagonist.glb")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     bpy.ops.wm.read_factory_settings(use_empty=True)

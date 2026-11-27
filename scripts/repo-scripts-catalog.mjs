@@ -237,7 +237,7 @@ const LINT_ARCH_KEYS = [
 const DEV_KEYS = ["dev", "predev", "preview", "start", "mobile:doctor", "verify:mobile-native-media", "music:", "varco3d", "tripo3d"];
 const TEST_CORE_EXACT = new Set([
   "test", "test:root", "test:fast", "test:full", "test:perf", "test:coverage", "test:admin", "test:admin:e2e",
-  "test:character-lab", "test:brush-lab", "test:market:e2e", "test:market:live", "test:a11y", "test:a11y:editor",
+  "test:brush-lab", "test:market:e2e", "test:market:live", "test:a11y", "test:a11y:editor",
   "test:collab-stability", "verify:collab-stability", "visual:diff", "test:visual-regression", "ci", "verify",
   "verify:push", "verify:toolchain-coverage", "test:production-toolchain", "verify:ai-provider-status-canary",
 ]);

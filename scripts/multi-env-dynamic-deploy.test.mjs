@@ -8,7 +8,7 @@ import {
 } from "./multi-env-dynamic-deploy.mjs";
 
 describe("multi-env-dynamic-deploy", () => {
-  it("builds a complete parallel matrix across all 4 workspaces and 7 cloud/local targets as an offline plan only", () => {
+  it("builds a complete parallel matrix across all 3 workspaces and 7 cloud/local targets as an offline plan only", () => {
     const plan = buildDynamicDeployMatrix({
       commitSha: "50f8c95d0",
     });
@@ -26,7 +26,7 @@ describe("multi-env-dynamic-deploy", () => {
       expect(target.requiresApprovalSha).toBe(true);
     }
     expect(plan.parallelStrategy.failFast).toBe(false);
-    expect(plan.summaryKo).toContain("병렬 워크스페이스 4종");
+    expect(plan.summaryKo).toContain("병렬 워크스페이스 3종");
     expect(plan.summaryKo).toContain("배포 환경 7종");
     expect(plan.summaryKo).toContain("실제 배포 아님");
 
@@ -39,18 +39,19 @@ describe("multi-env-dynamic-deploy", () => {
     expect(markdown).toContain("aws-ecs-cloudfront");
     expect(markdown).toContain("gcp-cloud-run");
     expect(markdown).toContain("self-hosted-k8s");
-    expect(markdown).toContain("character-lab");
+    expect(markdown).toContain("web");
     expect(markdown).toContain("brush-lab");
+    expect(markdown).toContain("api");
   });
 
   it("filters workspaces and targets dynamically for targeted local or cloud runs", () => {
     const filtered = buildDynamicDeployMatrix({
-      workspaces: ["character-lab", "brush-lab"],
+      workspaces: ["web", "brush-lab"],
       targets: ["local-docker-compose", "gcp-cloud-run"],
     });
 
     expect(filtered.githubActionsMatrix.workspace.map((w) => w.id)).toEqual([
-      "character-lab",
+      "web",
       "brush-lab",
     ]);
     expect(filtered.githubActionsMatrix.target.map((t) => t.id)).toEqual([

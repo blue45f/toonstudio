@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import {
   KIT_BASE_IDS, KIT_DEFAULT_ID, KIT_MANIFEST_FILENAME, KIT_PORTRAIT_VERSION, KIT_SWEPT_HAIR_VERSION, KIT_V2_SCHEMA_ID,
   kitManifestFilename, kitManifestSchema, kitManifestV2Schema,
-} from "../../apps/character-lab/src/contracts/index.ts";
+} from "../../packages/studio-project-model/src/character-kit/contracts/index.ts";
 
 function declaredFiles(manifest) {
   const files = [];

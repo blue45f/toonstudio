@@ -4,7 +4,7 @@
  *
  * 브라우저를 기동하지 않고 <100ms 내에 아래 불변식을 검증한다:
  * 1. 정본 문서(PRODUCT.md, DESIGN.md, UI/UX v2 Blueprint, Quality Gates Policy) 및 프로젝트 내 Starlight Atelier 시안 패키지(docs/design/starlight-atelier-v2-mockups-2026-11-11/*) 존재·동기화
- * 2. 독립 셸(apps/mobile/shell, apps/admin-web, apps/desktop-sync, apps/brush-lab, apps/character-lab)의 스피너 금지(DESIGN.md §4), OKLCH 의미 토큰(§2), 44px 터치 타깃(WCAG 2.5.8) 준수
+ * 2. 독립 셸(apps/mobile/shell, apps/admin-web, apps/desktop-sync, apps/brush-lab)의 스피너 금지(DESIGN.md §4), OKLCH 의미 토큰(§2), 44px 터치 타깃(WCAG 2.5.8) 준수
  * 3. 게스트 3초 비차단 세션(INITIAL_SESSION_READY_DEADLINE_MS <= 3500) 회귀 방지(UX_FLOW_BACKLOG P1)
  * 4. 39대 핵심 화면군·루트 정문·아틀리에 벤토·단일 44px 에디터 바·3D Live Ink 스테이지/쉘프·스펙트럼 리본·어디서 봐 라우터·컷츠 의미 토큰 데이터 앵커 무결성 + 정본 경로(레거시 별칭 금지) + 44px 미만 Tailwind 높이(min-h-6..10) 금지
  */
@@ -135,7 +135,7 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     return { ok: issues.length === 0, issues };
   }
 
-  // 2) 독립 서브앱 셸(admin-web, desktop-sync, brush-lab, character-lab) 및 cuts.css 의미 토큰 검사
+  // 2) 독립 서브앱 셸(admin-web, desktop-sync, brush-lab) 및 cuts.css 의미 토큰 검사
   if (exists("apps/web/src/domains/cuts/cuts.css")) {
     const cutsCss = read("apps/web/src/domains/cuts/cuts.css");
     if (/#17171c|#fafafb/iu.test(cutsCss)) {
@@ -164,12 +164,6 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     }
     if (/min-height:\s*(?:34|36|40)px/u.test(brushLabCss)) {
       issues.push("apps/brush-lab/src/app/styles/brush-lab.css: 44px 미만(34/36/40px) 인터랙티브 컨트롤 잔존");
-    }
-  }
-  if (exists("apps/character-lab/src/app/styles/character-lab.css")) {
-    const characterLabCss = read("apps/character-lab/src/app/styles/character-lab.css");
-    if (!characterLabCss.includes("oklch(")) {
-      issues.push("apps/character-lab/src/app/styles/character-lab.css: Starlight OKLCH 토큰 누락");
     }
   }
 

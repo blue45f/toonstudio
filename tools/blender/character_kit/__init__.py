@@ -1,6 +1,6 @@
 """ToonStudio 캐릭터 키트 빌더 (Blender `bpy` + numpy).
 
-계약 정본은 `apps/character-lab/docs/authored-kit-spec.md`이고 검증기는 `scripts/verify-character-kit.mjs`다.
+계약 정본은 `docs/archive/character-lab/authored-kit-spec.md`이고 검증기는 `scripts/verify-character-kit.mjs`다.
 상수(joint 68개, morph 64개, 예산 등)는 이 패키지에 복제하지 않고 `scripts/blender/dump-kit-contract.mjs`가
 덤프한 `contract.json`을 읽는다.
 

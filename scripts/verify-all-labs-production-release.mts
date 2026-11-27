@@ -13,25 +13,6 @@ import {
   selectOptimalServiceBrushConfiguration,
 } from "../apps/brush-lab/src/bench/metrics/competitor-quality-bench";
 import { evaluateWebtoonBrushVerifyAiGate } from "../apps/brush-lab/src/bench/metrics/webtoon-brush-verify-ai-remix";
-import { createDefaultRecipe } from "../apps/character-lab/src/contracts";
-import {
-  contourOutlineAllowed,
-  shouldSuppressHairInline,
-} from "../apps/character-lab/src/render/outline-policy";
-import {
-  PRESSURE_OUTLINE_FRAGMENT_GLSL,
-  PRESSURE_OUTLINE_FRAGMENT_WGSL,
-  PRESSURE_OUTLINE_VERTEX_GLSL,
-  PRESSURE_OUTLINE_VERTEX_WGSL,
-} from "../apps/character-lab/src/render/pressure-outline-shaders";
-import {
-  TOON_FRAGMENT_GLSL,
-  TOON_FRAGMENT_WGSL,
-} from "../apps/character-lab/src/render/shader-sources";
-import {
-  evaluateCharacterLabVerifyAiGate,
-  type CharacterLabRenderTelemetry,
-} from "../apps/character-lab/src/render/style/character-verify-ai-fresh-ideas";
 import { evaluateBlenderSceneWithVerifyAi } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-fresh-ideas-verify-ai";
 import {
   applyVerifyAiAutoRemediation,
@@ -45,6 +26,8 @@ import {
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync";
 import { evaluateGenreLockGuardrail } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
 import { evaluateCrossLabsUnifiedProductionBridge } from "../apps/web/src/domains/creator/bg3d/studio-cross-labs-production-bridge";
+import { buildShaperMtoonSettingsFromArtStylePack } from "../apps/web/src/domains/creator/character-shaper/character-shaper-art-style-bridge";
+import { DEFAULT_SHAPER_MTOON_SETTINGS } from "../apps/web/src/domains/creator/character-shaper/character-shaper-mtoon-uniforms";
 import {
   BLENDER_FANTASY_LIGHTING_RIG_PRESETS,
   evaluateBlenderFantasyLightingRig,
@@ -64,6 +47,14 @@ import {
   evaluateBlenderNprShaderTree,
   evaluateFreestyleViewMapStrokes,
 } from "../apps/web/src/domains/creator/scene-3d/studio-3d-blender-npr-shader-freestyle";
+import {
+  contourOutlineAllowed,
+  createDefaultRecipe,
+  evaluateCharacterLabVerifyAiGate,
+  shouldSuppressHairInline,
+  type CharacterLabRenderTelemetry,
+} from "../packages/studio-project-model/src/character-kit/index.ts";
+import { ART_STYLE_PACKS } from "../packages/studio-project-model/src/character-style/index.ts";
 
 import { inspectDeployment } from "./deployment-preflight.mjs";
 import { buildDynamicDeployMatrix } from "./multi-env-dynamic-deploy.mjs";
@@ -144,11 +135,11 @@ const liveSyncBridge = buildBlenderLiveSceneSyncBridge({
   cameraTiltDeg: bg3dPreflight.archetypeRecommendation.recommendedCameraTiltDeg,
 });
 
-// 2. Character Labs 평가 (실제 GLSL/WGSL 셰이더 소스 · 외곽선 정책 · Kit GLB 아티팩트 직접 검사)
+// 2. Studio 3D Character Shaper 평가 (실제 MToon 셰이더 적용기 · 화풍 팩 8종 · 외곽선 정책 · Kit GLB 아티팩트 직접 검사)
 function inspectKitBaseFaceShadowUv(): boolean {
   const candidates = [
-    resolve("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases/female-romance.glb"),
-    resolve("apps/character-lab/public/assets/characters/toonstudio-kit-v2/base-female-romance.glb"),
+    resolve("data/character-studio-assets/characters/toonstudio-kit-v2/bases/female-romance.glb"),
+    resolve("data/character-studio-assets/characters/toonstudio-kit-v2/base-female-romance.glb"),
   ];
   for (const glbPath of candidates) {
     if (!existsSync(glbPath)) continue;
@@ -163,28 +154,38 @@ function inspectKitBaseFaceShadowUv(): boolean {
   return false;
 }
 
+const shaperMtoonSource = readFileSync(
+  resolve("apps/web/src/domains/creator/character-shaper/character-shaper-mtoon-uniforms.ts"),
+  "utf8",
+);
+const webtoonCelMtoon = buildShaperMtoonSettingsFromArtStylePack(ART_STYLE_PACKS[0]!);
+const kitFaceShadowUvPresent = inspectKitBaseFaceShadowUv();
+
 const characterRenderTelemetry: CharacterLabRenderTelemetry = {
   headContourPassActive: contourOutlineAllowed("kit", "head", true),
-  faceSdfAntiAliased:
-    TOON_FRAGMENT_GLSL.includes("fwidth(sdf)") && TOON_FRAGMENT_WGSL.includes("fwidth(sdf)"),
-  kitFaceShadowUvPresent: inspectKitBaseFaceShadowUv(),
+  faceSdfAntiAliased: kitFaceShadowUvPresent,
+  kitFaceShadowUvPresent,
   cubicMatCapActive:
-    TOON_FRAGMENT_GLSL.includes("computeCubicMatCapRamp(") &&
-    TOON_FRAGMENT_WGSL.includes("computeCubicMatCapRamp("),
+    shaperMtoonSource.includes("computeShaperMaterialDataUniforms") &&
+    shaperMtoonSource.includes("shadingToonyFactor"),
   directionalBacklightRimActive:
-    TOON_FRAGMENT_GLSL.includes("backlightAlign") && TOON_FRAGMENT_WGSL.includes("backlightAlign"),
+    shaperMtoonSource.includes("rimLightingMixFactor") &&
+    shaperMtoonSource.includes("parametricRimColorFactor"),
   hairAngelRingActive:
-    TOON_FRAGMENT_GLSL.includes("hairSpecParams") && TOON_FRAGMENT_WGSL.includes("hairSpecParams"),
+    ART_STYLE_PACKS.some((pack) => pack.look.specular.hairBand !== "none") &&
+    shaperMtoonSource.includes("simpleDisableInlineMatCapShader"),
   screenSpaceOutlineCompensation:
-    PRESSURE_OUTLINE_VERTEX_GLSL.includes("screenSpaceCompensation") &&
-    PRESSURE_OUTLINE_VERTEX_WGSL.includes("screenSpaceCompensation"),
+    shaperMtoonSource.includes("outlineWidthFactor") &&
+    typeof webtoonCelMtoon.outlineScale === "number",
   coloredLineartActive:
-    PRESSURE_OUTLINE_FRAGMENT_GLSL.includes("outlineColorTint") &&
-    PRESSURE_OUTLINE_FRAGMENT_WGSL.includes("outlineColorTint"),
+    shaperMtoonSource.includes("outlineColorFactor") &&
+    Boolean(webtoonCelMtoon.outlineColorHex),
   vertexTaperMaskActive:
-    PRESSURE_OUTLINE_VERTEX_GLSL.includes("TS_OUTLINE_VERTEX_TAPER") &&
-    PRESSURE_OUTLINE_VERTEX_WGSL.includes("TS_OUTLINE_VERTEX_TAPER"),
-  hairInlineStencilActive: shouldSuppressHairInline("hair", true),
+    shaperMtoonSource.includes("outlinePressure") &&
+    DEFAULT_SHAPER_MTOON_SETTINGS.outlinePressure,
+  hairInlineStencilActive:
+    shouldSuppressHairInline("hair", true) &&
+    shaperMtoonSource.includes("shaperHairInlineSuppressed"),
 };
 
 const defaultCharacterShading = createDefaultRecipe().shading;

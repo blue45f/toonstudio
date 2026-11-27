@@ -1,9 +1,9 @@
 """
 Blender 5.3 Procedural Generator for Wave 9 Webtoon Head Accessories & 3D SFX Stamps (CC0-1.0):
-1) 2 New Head Props appended into `apps/character-lab/public/assets/props/webtoon-head-props-v1/` (4 -> 6):
+1) 2 New Head Props appended into `data/character-studio-assets/props/webtoon-head-props-v1/` (4 -> 6):
    - `studio-headphones.glb` (`TS_HeadProp_studio-headphones`): Youth/Rooftop wireless neck-worn studio headphones.
    - `silver-monocle.glb` (`TS_HeadProp_silver-monocle`): Rofan/Noir sterling-silver monocle with draped bead chain.
-2) 2 New 3D SFX Stamps appended into `apps/character-lab/public/assets/props/webtoon-sfx-stamps-v1/` (4 -> 6):
+2) 2 New 3D SFX Stamps appended into `data/character-studio-assets/props/webtoon-sfx-stamps-v1/` (4 -> 6):
    - `sfx-ssaa.glb` (`TS_SfxStamp_ssaa` — 싸아): Chilling rooftop wind-stream & ice-mist shards.
    - `sfx-beonjjeok.glb` (`TS_SfxStamp_beonjjeok` — 번쩍): Awakening twin lightning & cross-flare relief.
 
@@ -37,8 +37,8 @@ from generate_webtoon_head_and_stage_props import (  # noqa: E402
 from shaper_webtoon_head_and_textures import _hex_to_rgb01, make_textured_pbr_material  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-HEAD_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-head-props-v1"
-SFX_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-sfx-stamps-v1"
+HEAD_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-head-props-v1"
+SFX_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-sfx-stamps-v1"
 
 
 def build_rooftop_and_sfx_expansion(scratch_dir: Path) -> dict[str, Any]:

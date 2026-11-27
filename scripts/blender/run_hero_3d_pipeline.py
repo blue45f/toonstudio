@@ -38,7 +38,7 @@ if str(BLENDER_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(BLENDER_TOOLS_DIR))
 
 DEFAULT_BLENDER_BIN = Path(os.environ.get("BLENDER_BIN", "/Users/hjunkim/.local/bin/blender"))
-KIT_V2_DIR = REPO_ROOT / "apps" / "character-lab" / "public" / "assets" / "characters" / "toonstudio-kit-v2"
+KIT_V2_DIR = REPO_ROOT / "data" / "character-studio-assets" / "characters" / "toonstudio-kit-v2"
 VRM_HERO_DIR = REPO_ROOT / "apps" / "web" / "public" / "vrm" / "toonstudio-hero-v1"
 BG_HERO_DIR = REPO_ROOT / "apps" / "web" / "public" / "assets" / "3d" / "environments" / "hero-v1"
 

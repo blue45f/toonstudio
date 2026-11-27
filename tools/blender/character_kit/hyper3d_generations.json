@@ -1,6 +1,6 @@
 {
   "schema": "toonstudio.hyper3d-generations/1",
-  "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+  "recordDoc": "docs/archive/character-lab/hyper3d-terms-record.md",
   "summaryKo": "2026-10-11 Hyper3D(Rodin Gen-2.5) 생성 기록. 모든 호출은 로컬 Claude Code의 hyper3d MCP(OAuth 인증 계정)로 했다. 원본 GLB(약 6~11 MB)는 저장소에 커밋하지 않고 ~/.cache/toonstudio-kit/hyper3d-raw/<이름>-<generationId>-base_basic_pbr.glb 에 보관한다. 크레딧은 공식 docs 기준 호출당 0.5로 추정하며 MCP에 잔액 조회 도구가 없어 Hyper3D Mine에서 확인해야 한다.",
   "common": {
     "generate": {

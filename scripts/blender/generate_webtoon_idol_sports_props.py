@@ -1,9 +1,9 @@
 """
 Blender 5.3 Procedural Generator for Wave 13 Idol Concert & Varsity Sports Archetype Props (CC0-1.0):
-1) 2 New Hand Props appended into `apps/character-lab/public/assets/props/webtoon-hand-props-v1/` (8 -> 10):
+1) 2 New Hand Props appended into `data/character-studio-assets/props/webtoon-hand-props-v1/` (8 -> 10):
    - `idol-prism-lightstick.glb` (`TS_Prop_idol-prism-lightstick`): Idol concert prism cheering stick / wireless mic with faceted aurora dome, star core emblem, silver collar, and pearl-white grip.
    - `varsity-basketball.glb` (`TS_Prop_varsity-basketball`): Varsity championship basketball with textured burnt-orange leather zones and dark seam bands.
-2) 2 New Stage Props appended into `apps/character-lab/public/assets/props/webtoon-stage-props-v1/` (8 -> 10):
+2) 2 New Stage Props appended into `data/character-studio-assets/props/webtoon-stage-props-v1/` (8 -> 10):
    - `concert-spotlight-mic-stand.glb` (`TS_StageProp_concert-spotlight-mic-stand`): Encore stage neon halo floor ring, weighted chrome base, angled boom stand, and vintage condenser mic.
    - `court-hoop-stanchion.glb` (`TS_StageProp_court-hoop-stanchion`): Gymnasium court base pad, angled steel stanchion post, tempered backboard with target square, and crimson breakaway rim.
 
@@ -38,8 +38,8 @@ from generate_webtoon_head_and_stage_props import (  # noqa: E402
 from shaper_webtoon_head_and_textures import _hex_to_rgb01, make_textured_pbr_material  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-HAND_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-hand-props-v1"
-STAGE_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-stage-props-v1"
+HAND_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-hand-props-v1"
+STAGE_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-stage-props-v1"
 
 
 def _add_uv_sphere(

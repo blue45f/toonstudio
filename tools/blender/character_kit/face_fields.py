@@ -1,6 +1,6 @@
 """얼굴 파라미터 15종·FACS 16 유닛의 해석 변위 필드 (numpy 이식본).
 
-원본은 `apps/character-lab/src/domains/humanoid/morph/face-fields.ts`(이하 TS 원본)다. 이 모듈은 그 필드를 정점 배열
+원본은 `packages/studio-project-model/src/character-kit/humanoid/face-fields.ts`(이하 TS 원본)다. 이 모듈은 그 필드를 정점 배열
 단위로 벡터화해 그대로 옮긴 것이며, Blender 빌더가 HBM 머리 메시 정점에 얼굴 morph 델타를 계산할 때 쓴다.
 TS 원본과의 수치 일치(절대 오차 1e-9)는 `tests/test_face_fields_parity.py`가 TS 평가 결과와 비교해 고정한다.
 

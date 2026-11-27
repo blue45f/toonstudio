@@ -16,7 +16,7 @@ import numpy as np
 from .gltf_read import accessor_array, read_glb
 from .portrait_attachments import bind_line_targets, front_depth
 
-ROOT = Path(__file__).resolve().parents[3] / "apps/character-lab/public/assets/characters/toonstudio-kit-v1"
+ROOT = Path(__file__).resolve().parents[3] / "data/character-studio-assets/characters/toonstudio-kit-v1"
 
 
 def smooth(a, b, values):

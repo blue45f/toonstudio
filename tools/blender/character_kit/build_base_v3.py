@@ -14,13 +14,13 @@ v2 대비 핵심 조형·셰이딩 혁신:
 6. 2048×2048 픽셀-공간 3D 랜드마크 연동 안면 메이크업 알베도 + 1024×1024 보석 홍채 아틀라스.
 
 계약 100% 하위 호환:
-- 출력 경로: `apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases/`
+- 출력 경로: `data/character-studio-assets/characters/toonstudio-kit-v2/bases/`
 - 5종 아키타입 ID·등신비·68본 스켈레톤·5재질 슬롯·64 morph·`KHR_mesh_quantization` 단독·`qa_character_gate.py` 100% 통과.
 
 실행:
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/build_base_v3.py -- \
-        --archetype all --out-dir apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases
+        --archetype all --out-dir data/character-studio-assets/characters/toonstudio-kit-v2/bases
 """
 
 from __future__ import annotations
@@ -2265,7 +2265,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases"),
+        default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases"),
     )
     return parser.parse_args(argv)
 

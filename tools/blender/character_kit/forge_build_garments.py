@@ -35,7 +35,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 REPO_ROOT = HERE.parents[2]
 CACHE = Path.home() / ".cache" / "toonstudio-kit"
-KIT_SRC = REPO_ROOT / "apps" / "character-lab" / "public" / "assets" / "characters" / "toonstudio-kit-v1"
+KIT_SRC = REPO_ROOT / "data" / "character-studio-assets" / "characters" / "toonstudio-kit-v1"
 
 BOTTOMS = ["jeans", "shorts", "pleated-skirt", "long-skirt", "slacks"]
 TOPS = ["tee", "shirt", "sailor"]

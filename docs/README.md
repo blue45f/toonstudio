@@ -66,7 +66,7 @@ Studio는 다음 문서를 추가로 본다.
 3. [`engineering/code-structure-and-bundle-patterns.md`](engineering/code-structure-and-bundle-patterns.md) — 파일 크기·진입 그래프 가드레일과 분해·지연 로딩 패턴
 4. 관련 `docs/adr/` 결정
 
-실험 앱(`apps/character-lab`, `apps/brush-lab`)은 다음 문서를 추가로 본다.
+실험 앱(`apps/brush-lab`, 구 `apps/character-lab`은 2026-11-27 `/studio/character`로 흡수·보관)은 다음 문서를 추가로 본다.
 
 1. [`adr/0026-labs-experimental-apps-engine-selection-and-promotion.md`](adr/0026-labs-experimental-apps-engine-selection-and-promotion.md) — 위치·엔진 선택·라이선스·승격 절차
 2. [`reports/character-lab-engine-alternatives-2026-10-01.md`](reports/character-lab-engine-alternatives-2026-10-01.md) — 엔진 대안 비교(역사 자료)

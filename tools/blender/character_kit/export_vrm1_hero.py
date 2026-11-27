@@ -1661,7 +1661,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         argv = argv[argv.index("--") + 1 :]
     parser = argparse.ArgumentParser(description="ToonStudio VRM 1.0 히어로 아바타 8종 SSOT 익스포터")
     parser.add_argument("--hero", default="all", choices=("all", *HERO_SPECS.keys()))
-    parser.add_argument("--bases-dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases"))
+    parser.add_argument("--bases-dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases"))
     parser.add_argument("--out-dir", type=Path, default=Path("apps/web/public/vrm/toonstudio-hero-v1"))
     parser.add_argument(
         "--public-thumb-dir",

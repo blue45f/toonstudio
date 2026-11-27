@@ -7,8 +7,8 @@
 import { Logger, NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 
-import { KIT_ALLOWED_EXTENSIONS, KIT_FORBIDDEN_EXTENSIONS } from "../../apps/character-lab/src/contracts/index.ts";
-import { stableStringify } from "../../apps/character-lab/src/shared/stable-json.ts";
+import { KIT_ALLOWED_EXTENSIONS, KIT_FORBIDDEN_EXTENSIONS } from "../../packages/studio-project-model/src/character-kit/contracts/index.ts";
+import { stableStringify } from "../../packages/studio-project-model/src/character-kit/shared/stable-json.ts";
 
 // ---------------------------------------------------------------- GLB 읽기
 

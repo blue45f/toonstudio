@@ -29,8 +29,7 @@ apps/
   api/                 NestJS API (PostgreSQL 마이그레이션 0001~0133)
   mobile/              Capacitor Android/iOS wrapper
   desktop-sync/        로컬·클라우드 양방향 동기화
-  character-lab/       캐릭터 파이프라인 실험 앱, 배포 대상 아님
-  brush-lab/           브러시 엔진 실험 앱, 배포 대상 아님
+  brush-lab/           브러시 엔진 실험 앱, 배포 대상 아님 (구 `character-lab`은 2026-11-27 `/studio/character`로 흡수·퇴역)
 services/
   creator-inference/   선택형 GPU 추론 서비스
 packages/
@@ -269,7 +268,6 @@ pnpm dev:admin              # 관리자 UI: http://localhost:4174
 pnpm typecheck              # Web 샤드 타입체크(typecheck-shards 체크포인트 캐시) + API 타입체크
 pnpm typecheck:admin
 pnpm build:admin            # apps/admin-web/dist/
-pnpm dev:character-lab      # 실험 앱: http://localhost:4176
 pnpm dev:brush-lab          # 실험 앱: http://localhost:4178
 pnpm validate:architecture  # 구조 + 문서 + source-layout + 앱 경계 + 파일 크기·Studio 진입 그래프 ratchet
 pnpm harness:verify         # 변경 범위별 빠른 품질 게이트
@@ -369,7 +367,6 @@ apps/
     src/{modules,platform,realtime,runtime,server,config,logging}/
   mobile/                    Capacitor Android/iOS wrapper
   desktop-sync/              로컬·cloud 동기화
-  character-lab/             캐릭터 파이프라인 실험 앱(배포 대상 아님)
   brush-lab/                 브러시 엔진 실험 앱(배포 대상 아님)
 services/
   creator-inference/         선택형 GPU inference worker

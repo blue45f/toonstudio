@@ -149,7 +149,7 @@
 9. **고지 의무**: Separable SSS 문구, Apache-2.0(NOTICE)·BSD(고지 유지) 출처 표기. 의존성 추가는 통합 담당이 `pnpm install`·`pnpm audit:licenses`로 처리한다.
 10. **독점 제품**: SHAPER·VRoid Studio는 공개 가이드의 워크플로만 재현하며 UI·프리셋·에셋 복제와 리버스엔지니어링을 하지 않는다.
 11. **저장소 에셋**: 커밋된 `avatar-orion-authored`(CC0, embedded VRM meta가 유일한 직접 근거)와 `reference-character`(CC0-1.0)만 사용하고 출처는
-    [제작 에셋 파이프라인 문서](../../apps/character-lab/docs/authored-asset-pipeline.md)를 따른다. `apps/web/public/vrm/*`는 앱 소유라 직접 참조하지 않는다.
+    [제작 에셋 파이프라인 문서](../archive/character-lab/authored-asset-pipeline.md)를 따른다. `apps/web/public/vrm/*`는 앱 소유라 직접 참조하지 않는다.
 
 ## 6. 미확인 항목(후속 세션에서 확인)
 
@@ -163,4 +163,4 @@ VRoid 텍스처 해상도 옵션, 원신 캐릭터 셰이더 세부(비공식 �
   [ADR-0019 렌더러 역할 원장](../adr/0019-renderer-role-ledger-single-authority.md), [렌더러 역할 원장(생성)](renderer-roles.md)
 - [SHAPER 품질 격차 감사 2026-09-03](../studio-shaper-quality-gap-audit-2026-09-03.md), [Blender 캐릭터 파이프라인](../studio/blender-character-pipeline.md),
   [toonstudio_blender_kit README](../../tools/blender/toonstudio_blender_kit/README.md)
-- [apps/character-lab README](../../apps/character-lab/README.md)
+- [Character Lab 보관 README](../archive/character-lab/README.md) (2026-11-27 퇴역 · `/studio/character`로 흡수)

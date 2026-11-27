@@ -43,7 +43,7 @@ from shaper_webtoon_head_and_textures import (  # noqa: E402
 )
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-CHAR_ROOT = REPO_ROOT / "apps/character-lab/public/assets/characters"
+CHAR_ROOT = REPO_ROOT / "data/character-studio-assets/characters"
 KIT_ROOT = CHAR_ROOT / "toonstudio-kit-v1"
 PACKAGE_GENERATED_AT = "2026-11-19"
 

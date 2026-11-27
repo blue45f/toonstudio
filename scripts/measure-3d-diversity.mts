@@ -25,9 +25,10 @@ type Module = Record<string, unknown>;
 
 const root = resolve(import.meta.dirname, "..");
 const LEDGER_PATH = join(root, "docs/studio/3d-diversity-ledger.json");
-const KIT_JSON = join(root, "apps/character-lab/public/assets/characters/toonstudio-kit-v1/kit.json");
+const KIT_JSON = join(root, "data/character-studio-assets/characters/toonstudio-kit-v1/kit.json");
 const CREATOR = "apps/web/src/domains/creator";
-const LAB_SRC = "apps/character-lab/src";
+const KIT_MODEL = "packages/studio-project-model/src/character-kit";
+const STYLE_MODEL = "packages/studio-project-model/src/character-style";
 
 async function load(relative: string): Promise<Module> {
   return (await import(pathToFileURL(join(root, relative)).href)) as Module;
@@ -64,27 +65,19 @@ async function section(read: () => Promise<Metrics>): Promise<Section> {
   }
 }
 
-async function measureLabVocabulary(): Promise<Metrics> {
-  const vocabulary = await load(`${LAB_SRC}/contracts/preset-vocabulary.ts`);
+async function measureKitVocabulary(): Promise<Metrics> {
+  const vocabulary = await load(`${KIT_MODEL}/contracts/preset-vocabulary.ts`);
   const ids = vocabulary.SLOT_PRESET_IDS as Record<string, readonly string[]>;
   return Object.fromEntries(Object.entries(ids).map(([slot, names]) => [slot, names.length]));
 }
 
-async function measureLabPresets(): Promise<Metrics> {
-  const appearance = await load(`${LAB_SRC}/presets/appearance-presets.ts`);
-  const acting = await load(`${LAB_SRC}/animation/presets/index.ts`);
-  const params = await load(`${LAB_SRC}/contracts/params.ts`);
-  const pose = await load(`${LAB_SRC}/animation/presets/pose-presets.ts`);
-  const expression = await load(`${LAB_SRC}/animation/presets/expression-presets.ts`);
-  const hand = await load(`${LAB_SRC}/animation/presets/hand-pose-presets.ts`);
+async function measureKitParams(): Promise<Metrics> {
+  const params = await load(`${KIT_MODEL}/contracts/params.ts`);
+  const expression = await load(`${KIT_MODEL}/contracts/expression.ts`);
   return {
-    appearancePresets: size(appearance.APPEARANCE_PRESETS),
-    performancePresets: size(acting.PERFORMANCE_PRESETS),
-    posePresets: size(pose.POSE_PRESETS),
-    expressionPresets: size(expression.EXPRESSION_PRESETS),
-    handPosePresets: size(hand.HAND_POSE_PRESETS),
     bodyParams: size(params.BODY_PARAM_KEYS),
     faceParams: size(params.FACE_PARAM_KEYS),
+    facsUnits: size(expression.FACS_UNITS),
   };
 }
 
@@ -108,49 +101,16 @@ async function measureLabKit(): Promise<Metrics> {
   return result;
 }
 
-/** 화풍 팩 데이터의 개수를 센다(T1 팩 데이터는 2026-10-23 S-1부터 `presets/art-style-packs.ts`). */
-async function measureLabArtStyles(): Promise<Metrics> {
-  const candidates = [`${LAB_SRC}/presets/art-style-packs.ts`, `${LAB_SRC}/contracts/art-style.ts`, `${LAB_SRC}/contracts/art-style-packs.ts`];
-  for (const candidate of candidates) {
-    if (!existsSync(join(root, candidate))) continue;
-    const mod = await load(candidate);
-    for (const name of ["ART_STYLE_PACKS", "ART_STYLE_PACK_IDS", "ART_STYLES"]) {
-      if (mod[name] !== undefined) return { artStylePacks: size(mod[name]) };
-    }
-  }
-  return { artStylePacks: 0 };
-}
-
-/**
- * 구성 공간(성공 지표 Q, 캐릭터 랩 설계 §11 — 2026-10-23 S-1). 측정은 `state/config-space.ts`가 하고 여기서는 입력만 고른다:
- * - `contract.*`: 레시피 v3 계약 상한(27채널·범위당 형태 8·층 3·앵커 14·패턴·헤어 흐름·비례·look) × 외형 카탈로그 × 15슬롯 available.
- * - `noCustom.*`: 커스터마이즈 능력을 보고하지 않는 소스(지금의 v2 엔진·v1 키트) — 실제로 그려지는 공간의 하한 기준.
- * - 데이터 지표: 코디 세트·장르 수, 화풍 얼굴 매핑 수(팩 × 소스, unavailable 제외), 내 룩 범위·섞기 잠금 그룹 수.
- */
-async function measureLabCustomization(): Promise<Metrics> {
-  const contracts = await load(`${LAB_SRC}/contracts/index.ts`);
-  const space = await load(`${LAB_SRC}/state/config-space.ts`);
-  const appearance = await load(`${LAB_SRC}/presets/appearance-presets.ts`);
-  const packs = await load(`${LAB_SRC}/presets/art-style-packs.ts`);
-  const bindings = await load(`${LAB_SRC}/presets/art-style-lab-bindings.ts`);
-  const sets = await load(`${LAB_SRC}/presets/look-sets.ts`);
-  const createPresetCatalog = contracts.createPresetCatalog as (entries: unknown) => unknown;
-  const measureConfigSpace = space.measureConfigSpace as (input: { catalog: unknown; capabilities: unknown; custom: unknown }) => unknown;
-  const configCapabilitiesFromCustom = space.configCapabilitiesFromCustom as (custom: undefined, options: { look: boolean }) => unknown;
-  const ledgerMetrics = space.configSpaceLedgerMetrics as (report: unknown, prefix: string) => Metrics;
-  const countStyleFaceBindings = bindings.countStyleFaceBindings as (packs: unknown) => number;
-  const catalog = createPresetCatalog(appearance.APPEARANCE_PRESETS);
-  const capabilities = contracts.ALL_AVAILABLE_CAPABILITIES;
-  const contract = measureConfigSpace({ catalog, capabilities, custom: space.CONTRACT_MAX_CONFIG_CAPABILITIES });
-  const noCustom = measureConfigSpace({ catalog, capabilities, custom: configCapabilitiesFromCustom(undefined, { look: false }) });
+/** 승격된 화풍 팩·27채널 조화 데이터의 개수를 센다(`@toonstudio/studio-project-model/character-style`). */
+async function measureCharacterArtStyles(): Promise<Metrics> {
+  const packs = await load(`${STYLE_MODEL}/art-style-packs.ts`);
+  const channels = await load(`${STYLE_MODEL}/color-channels.ts`);
+  const look = await load(`${STYLE_MODEL}/character-look.ts`);
   return {
-    ...ledgerMetrics(contract, "contract"),
-    ...ledgerMetrics(noCustom, "noCustom"),
-    lookSets: size(sets.LOOK_SETS),
-    lookSetGenres: size(sets.LOOK_SET_GENRES),
-    styleFaceBindings: countStyleFaceBindings(packs.ART_STYLE_PACKS),
-    lookScopes: size(contracts.LOOK_SCOPES),
-    mixerLockGroups: size(contracts.LOOK_LOCK_GROUPS),
+    artStylePacks: size(packs.ART_STYLE_PACKS),
+    colorChannels: size(channels.COLOR_CHANNEL_KEYS),
+    lookScopes: size(look.LOOK_SCOPES),
+    mixerLockGroups: size(look.LOOK_LOCK_GROUPS),
   };
 }
 
@@ -229,23 +189,21 @@ async function measureBg3d(): Promise<Metrics> {
 }
 
 async function measure(): Promise<Record<string, Section>> {
-  const [vocabulary, presets, kit, artStyles, customization, mannequin, vrm, shaper, bg3d] = await Promise.all([
-    section(measureLabVocabulary),
-    section(measureLabPresets),
+  const [vocabulary, params, kit, artStyles, mannequin, vrm, shaper, bg3d] = await Promise.all([
+    section(measureKitVocabulary),
+    section(measureKitParams),
     section(measureLabKit),
-    section(measureLabArtStyles),
-    section(measureLabCustomization),
+    section(measureCharacterArtStyles),
     section(measureMannequin),
     section(measureVrm),
     section(measureShaper),
     section(measureBg3d),
   ]);
   return {
-    "characterLab.vocabulary": vocabulary,
-    "characterLab.presets": presets,
-    "characterLab.kit": kit,
-    "characterLab.artStyles": artStyles,
-    "characterLab.customization": customization,
+    "characterKit.vocabulary": vocabulary,
+    "characterKit.params": params,
+    "characterKit.kit": kit,
+    "characterStyle.artStyles": artStyles,
     "studio.mannequin": mannequin,
     "studio.vrm": vrm,
     "studio.shaper": shaper,

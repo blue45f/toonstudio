@@ -3,13 +3,13 @@
  *
  * 실행: pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>
  *
- * 출력은 `apps/character-lab/src/contracts/*`의 값 그대로이며, 빌더(`tools/blender/character_kit`)가 읽는다.
+ * 출력은 `packages/studio-project-model/src/character-kit/contracts/*`의 값 그대로이며, 빌더(`tools/blender/character_kit`)가 읽는다.
  * 계약이 바뀌면 이 파일을 다시 실행하면 빌더도 같은 값을 쓴다.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { FACS_UNITS } from "../../apps/character-lab/src/contracts/expression.ts";
+import { FACS_UNITS } from "../../packages/studio-project-model/src/character-kit/contracts/expression.ts";
 import {
   BODY_PARAM_KEYS,
   DEFAULT_RECIPE_COLORS,
@@ -37,7 +37,7 @@ import {
   KIT_SKELETON_JOINTS,
   KIT_SKELETON_PARENTS,
   SLOT_PRESET_IDS,
-} from "../../apps/character-lab/src/contracts/index.ts";
+} from "../../packages/studio-project-model/src/character-kit/contracts/index.ts";
 
 function parseOut(argv) {
   const index = argv.indexOf("--out");

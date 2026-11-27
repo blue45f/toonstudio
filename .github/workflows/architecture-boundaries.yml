@@ -4,12 +4,12 @@ on:
   pull_request:
     paths:
       - "apps/admin-web/**"
-      - "apps/character-lab/**"
       - "apps/brush-lab/**"
       - "apps/web/src/**"
       - "apps/api/src/**"
       - "apps/api/tsconfig.json"
       - "packages/contracts/**"
+      - "packages/studio-project-model/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "config/architecture-boundary-ratchet.json"
@@ -20,12 +20,12 @@ on:
     branches: [main]
     paths:
       - "apps/admin-web/**"
-      - "apps/character-lab/**"
       - "apps/brush-lab/**"
       - "apps/web/src/**"
       - "apps/api/src/**"
       - "apps/api/tsconfig.json"
       - "packages/contracts/**"
+      - "packages/studio-project-model/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "config/architecture-boundary-ratchet.json"
@@ -61,12 +61,8 @@ jobs:
         run: pnpm --filter @toonstudio/admin-web typecheck
       - name: Build Admin boundary
         run: pnpm --filter @toonstudio/admin-web build
-      - name: Type-check Character Lab boundary
-        run: pnpm --filter @toonstudio/character-lab typecheck
-      - name: Build Character Lab boundary
-        run: pnpm --filter @toonstudio/character-lab build
-      - name: Test Character Lab (Node·jsdom, NullEngine)
-        run: pnpm --filter @toonstudio/character-lab test
+      - name: Type-check Studio Project Model (Character Kit & Art-Style contracts)
+        run: pnpm --filter @toonstudio/studio-project-model typecheck
       - name: Type-check Brush Lab boundary
         run: pnpm --filter @toonstudio/brush-lab typecheck
       - name: Build Brush Lab boundary

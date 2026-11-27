@@ -1,7 +1,7 @@
 /**
  * scripts/verify-character-kit.mjs — 키트 v2(`toonstudio.character-kit/2`) 규칙 시험(2026-10-23, WP B-1).
  *
- * 합성 v2 키트 = CORE-1 합성 manifest(`apps/character-lab/src/testing/kit-v2-fixtures.ts`, 여성 베이스만) + 이 파일이 만든 GLB 다섯 개
+ * 합성 v2 키트 = CORE-1 합성 manifest(`packages/studio-project-model/src/character-kit/testing/kit-v2-fixtures.ts`, 여성 베이스만) + 이 파일이 만든 GLB 다섯 개
  * (베이스 몸·머리 표면, 헤어 soft-bob 2프리미티브·형태 키·UV0/UV1, 상의 tee 패턴 UV1, 셔츠 이너 층 변형, 강체 리본). 나머지 파츠 파일은
  * 없으므로 시험마다 `only`로 그 규칙만 돌리고 결과를 파일 경로로 거른다. 규칙마다 "좋은 키트는 통과 → 한 가지를 어기면 그 규칙만 실패"를 본다.
  * 진입점: `node_modules/.bin/vitest run scripts/verify-character-kit-v2.test.mjs` 와 `node --test scripts/verify-character-kit-v2.test.mjs`.
@@ -25,9 +25,9 @@ async function importTs(relative) {
       "./verify-character-kit.mjs": () => import("./verify-character-kit.mjs"),
       "./lib/character-kit-geometry.mjs": () => import("./lib/character-kit-geometry.mjs"),
       "./lib/character-kit-v2-checks.mjs": () => import("./lib/character-kit-v2-checks.mjs"),
-      "../apps/character-lab/src/contracts/index.ts": () => import("../apps/character-lab/src/contracts/index.ts"),
-      "../apps/character-lab/src/testing/kit-v2-fixtures.ts": () => import("../apps/character-lab/src/testing/kit-v2-fixtures.ts"),
-      "../apps/character-lab/src/testing/kit-fixtures.ts": () => import("../apps/character-lab/src/testing/kit-fixtures.ts"),
+      "../packages/studio-project-model/src/character-kit/contracts/index.ts": () => import("../packages/studio-project-model/src/character-kit/contracts/index.ts"),
+      "../packages/studio-project-model/src/character-kit/testing/kit-v2-fixtures.ts": () => import("../packages/studio-project-model/src/character-kit/testing/kit-v2-fixtures.ts"),
+      "../packages/studio-project-model/src/character-kit/testing/kit-fixtures.ts": () => import("../packages/studio-project-model/src/character-kit/testing/kit-fixtures.ts"),
     };
     return table[relative]();
   }
@@ -38,9 +38,9 @@ async function importTs(relative) {
 const { createMemorySource, verifyKit, V2_CHECKS } = await importTs("./verify-character-kit.mjs");
 const { analyzeStrandField, closestOnSurface, createSurface, measureUvDensity } = await importTs("./lib/character-kit-geometry.mjs");
 const { activeWorstV2 } = await importTs("./lib/character-kit-v2-checks.mjs");
-const { KIT_BUDGET, KIT_SKELETON_JOINTS, KIT_SKELETON_PARENTS } = await importTs("../apps/character-lab/src/contracts/index.ts");
-const { kitManifestV2Json } = await importTs("../apps/character-lab/src/testing/kit-v2-fixtures.ts");
-const { kitManifestJson } = await importTs("../apps/character-lab/src/testing/kit-fixtures.ts");
+const { KIT_BUDGET, KIT_SKELETON_JOINTS, KIT_SKELETON_PARENTS } = await importTs("../packages/studio-project-model/src/character-kit/contracts/index.ts");
+const { kitManifestV2Json } = await importTs("../packages/studio-project-model/src/character-kit/testing/kit-v2-fixtures.ts");
+const { kitManifestJson } = await importTs("../packages/studio-project-model/src/character-kit/testing/kit-fixtures.ts");
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 

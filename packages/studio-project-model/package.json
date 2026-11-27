@@ -89,6 +89,11 @@
       "import": "./src/character-style/index.ts",
       "default": "./src/character-style/index.ts"
     },
+    "./character-kit": {
+      "types": "./src/character-kit/index.ts",
+      "import": "./src/character-kit/index.ts",
+      "default": "./src/character-kit/index.ts"
+    },
     "./digest": {
       "types": "./src/ir/digest.ts",
       "import": "./src/ir/digest.ts",
@@ -161,7 +166,8 @@
       "brush": ["src/ir/brush.ts"],
       "review-source-map": ["src/graph/review-source-map.ts"],
       "shaper-slots": ["src/shaper-slots/shaper-15-slot-contract.ts"],
-      "character-art-style": ["src/character-style/index.ts"]
+      "character-art-style": ["src/character-style/index.ts"],
+      "character-kit": ["src/character-kit/index.ts"]
     }
   }
 }

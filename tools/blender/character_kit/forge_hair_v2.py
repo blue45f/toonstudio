@@ -35,7 +35,7 @@
 실행:
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/forge_hair_v2.py -- \
-        --out-dir apps/character-lab/public/assets/characters/toonstudio-kit-v2/parts/hair \
+        --out-dir data/character-studio-assets/characters/toonstudio-kit-v2/parts/hair \
         --preview-sheet loop-stack/competitor-parity/previews/char/hair-12-sheet.png
 """
 
@@ -3630,8 +3630,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     if "--" in argv:
         argv = argv[argv.index("--") + 1 :]
     parser = argparse.ArgumentParser(description="ToonStudio Character Kit v2 12종 3계층 커브 모듈러 웹툰 헤어 생성기")
-    parser.add_argument("--base-dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases"))
-    parser.add_argument("--out-dir", type=Path, default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/parts/hair"))
+    parser.add_argument("--base-dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases"))
+    parser.add_argument("--out-dir", type=Path, default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/parts/hair"))
     parser.add_argument("--preview-sheet", type=Path, default=Path("loop-stack/competitor-parity/previews/char/hair-12-sheet.png"))
     parser.add_argument("--only", default="", help="쉼표로 구분한 스타일 ID(기본: 12종 전체)")
     parser.add_argument("--tile-res", type=int, default=512)

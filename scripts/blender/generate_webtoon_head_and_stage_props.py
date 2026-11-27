@@ -1,12 +1,12 @@
 """
 Blender 5.3 Procedural Generator for:
-1) 4 Korean Webtoon Head Accessories (`apps/character-lab/public/assets/props/webtoon-head-props-v1/`):
+1) 4 Korean Webtoon Head Accessories (`data/character-studio-assets/props/webtoon-head-props-v1/`):
    - `wire-glasses.glb` (`TS_HeadProp_wire-glasses`): Slim gold-titanium round glasses with bridge, nose pads & temples.
    - `rofan-tiara.glb` (`TS_HeadProp_rofan-tiara`): Romance-fantasy royal filigree tiara with sapphire center jewel & pearls.
    - `tactical-headset.glb` (`TS_HeadProp_tactical-headset`): Cyberpunk/Apocalypse glowing cyan tactical visor & boom-mic headset.
    - `pearl-earrings-pin.glb` (`TS_HeadProp_pearl-earrings-pin`): Paired pearl drop earrings + gilded cross hairpins.
 
-2) 5 Korean Webtoon Stage Stand Props (`apps/character-lab/public/assets/props/webtoon-stage-props-v1/`):
+2) 5 Korean Webtoon Stage Stand Props (`data/character-studio-assets/props/webtoon-stage-props-v1/`):
    - `cafe-bistro-table.glb` (`TS_StageProp_cafe-bistro-table`): Warm walnut round cafe bistro table + ceramic espresso cup & saucer.
    - `academy-desk.glb` (`TS_StageProp_academy-desk`): Korean high-school/academy classroom wood-and-steel desk + open notebook.
    - `murim-sword-aura.glb` (`TS_StageProp_murim-sword-aura`): Octagonal stone martial plinth + 6 floating azure-jade spirit blades.
@@ -38,8 +38,8 @@ from shaper_webtoon_head_and_textures import (  # noqa: E402
 )
 
 REPO_ROOT = SCRIPT_DIR.parent.parent
-HEAD_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-head-props-v1"
-STAGE_PROP_ROOT = REPO_ROOT / "apps/character-lab/public/assets/props/webtoon-stage-props-v1"
+HEAD_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-head-props-v1"
+STAGE_PROP_ROOT = REPO_ROOT / "data/character-studio-assets/props/webtoon-stage-props-v1"
 
 
 def _export_glb(mesh_name: str, bm: bmesh.types.BMesh, mat: bpy.types.Material, glb_path: Path, smooth: bool = True) -> dict[str, Any]:

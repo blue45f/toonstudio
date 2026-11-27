@@ -20,7 +20,7 @@
 실행:
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/build_hand_poses_v2.py -- \
-        --out-json apps/character-lab/public/assets/characters/toonstudio-kit-v2/hand-poses.json
+        --out-json data/character-studio-assets/characters/toonstudio-kit-v2/hand-poses.json
 """
 
 from __future__ import annotations
@@ -860,12 +860,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--out-json",
         type=Path,
-        default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/hand-poses.json"),
+        default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/hand-poses.json"),
     )
     parser.add_argument(
         "--base-glb",
         type=Path,
-        default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases/female-romance.glb"),
+        default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases/female-romance.glb"),
     )
     parser.add_argument("--no-vrma", action="store_true", help="VRMA 1.0 파일 생성을 건너뜀")
     parser.add_argument("--no-sheet", action="store_true", help="4x4 컨택트시트 렌더를 건너뜀")

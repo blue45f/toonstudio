@@ -1,5 +1,5 @@
 /**
- * 캐릭터 키트 검증기 — 키트 v2(`toonstudio.character-kit/2`) 전용 규칙(2026-10-23, WP B-1, 설계 `apps/character-lab/docs/art-style-customization-design-20261023.md` §9).
+ * 캐릭터 키트 검증기 — 키트 v2(`toonstudio.character-kit/2`) 전용 규칙(2026-10-23, WP B-1, 설계 `docs/archive/character-lab/art-style-customization-design-20261023.md` §9).
  *
  * `scripts/verify-character-kit.mjs`가 manifest의 `schema`가 v2일 때만 부른다. v1 키트의 결과는 이 모듈과 무관하게 그대로다.
  *
@@ -29,7 +29,7 @@ import {
   WARDROBE_LAYERS,
   layerChannel,
   parseExtendedMorphName,
-} from "../../apps/character-lab/src/contracts/index.ts";
+} from "../../packages/studio-project-model/src/character-kit/contracts/index.ts";
 
 import { analyzeStrandField, closestOnSurface, createSurface, measureUvDensity, quantile, signedDistances } from "./character-kit-geometry.mjs";
 import { primsOf, viewOf } from "./character-kit-glb-model.mjs";

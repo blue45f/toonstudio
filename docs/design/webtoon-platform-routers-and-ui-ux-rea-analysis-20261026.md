@@ -39,8 +39,8 @@
   - [`apps/web/src/domains/integrations/PublishCenterPage.tsx`](../../apps/web/src/domains/integrations/PublishCenterPage.tsx)
   - [`apps/web/src/domains/legal/SitemapPage.tsx`](../../apps/web/src/domains/legal/SitemapPage.tsx)
   - [`apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx`](../../apps/web/src/domains/creator/character-platform/ui/CharacterPlatformWorkbench.tsx)
-  - [`apps/character-lab/src/app/shell/ui-state.ts`](../../apps/character-lab/src/app/shell/ui-state.ts)
-  - [`apps/character-lab/src/app/shell/TopBar.tsx`](../../apps/character-lab/src/app/shell/TopBar.tsx)
+  - `apps/character-lab/src/app/shell/ui-state.ts` (2026-11-27 퇴역 · [Character Lab 보관 기록](../archive/character-lab/README.md))
+  - `apps/character-lab/src/app/shell/TopBar.tsx` (2026-11-27 퇴역 · 스튜디오 `/studio/character` 3D 셰이퍼로 흡수)
 
 ## 1. 목적 및 배경
 

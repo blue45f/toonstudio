@@ -1,6 +1,6 @@
 {
   "schema": "toonstudio.hyper3d-sources/1",
-  "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+  "recordDoc": "docs/archive/character-lab/hyper3d-terms-record.md",
   "summaryKo": "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있고, 생성 기록 전체는 hyper3d_generations.json에 있다. 원본 GLB는 저장소에 커밋하지 않는다.",
   "removedKo": "2026-10-23: hair/* 12키(여성 7 + 남성 5)를 뺐다. 헤어 슬롯은 tools/blender/character_kit/forge_hair가 새로 만든 원본(license original)으로 채웠고, 이 표에 키가 남으면 build_kit_json이 원본 헤어를 Hyper3D 파생으로 잘못 적는다(레지스트리 license가 original이면 충돌로 멈춘다). 옛 생성 id·원본 SHA-256은 recordDoc §9~§12와 hyper3d_generations.json에 남아 있다.",
   "common": {

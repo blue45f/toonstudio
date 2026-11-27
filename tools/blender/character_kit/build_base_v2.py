@@ -23,7 +23,7 @@
 실행:
     /Users/hjunkim/.local/bin/blender --background --factory-startup --python-exit-code 42 \
         --python tools/blender/character_kit/build_base_v2.py -- \
-        --archetype all --out-dir apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases
+        --archetype all --out-dir data/character-studio-assets/characters/toonstudio-kit-v2/bases
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ from character_kit import glbwriter, skin, uvtools  # noqa: E402
 from character_kit.surface import vertex_normals  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# 계약 68본 스켈레톤 및 16개 영역 (apps/character-lab/src/contracts/kit-skeleton.ts 1:1)
+# 계약 68본 스켈레톤 및 16개 영역 (packages/studio-project-model/src/character-kit/contracts/kit-skeleton.ts 1:1)
 # ---------------------------------------------------------------------------
 
 MIXAMO = "mixamorig:"
@@ -3439,7 +3439,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("apps/character-lab/public/assets/characters/toonstudio-kit-v2/bases"),
+        default=Path("data/character-studio-assets/characters/toonstudio-kit-v2/bases"),
     )
     return parser.parse_args(argv)
 

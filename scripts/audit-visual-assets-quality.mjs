@@ -21,9 +21,9 @@ const AUDIT_SCOPE = Object.freeze({
 const EXT_3D = new Set([".glb", ".gltf", ".vrm"]);
 const EXT_2D = new Set([".webp", ".png", ".jpg", ".jpeg", ".svg"]);
 const TEXT_SRC_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".json", ".css", ".html"]);
-const PUBLIC_ROOTS = [{ app: "web", relDir: "apps/web/public" }, { app: "character-lab", relDir: "apps/character-lab/public" }];
-const SRC_ROOTS = ["apps/web/src", "apps/character-lab/src"];
-const EXTRA_REF_FILES = ["apps/web/index.html", "apps/character-lab/index.html", "apps/web/public/manifest.webmanifest"];
+const PUBLIC_ROOTS = [{ app: "web", relDir: "apps/web/public" }];
+const SRC_ROOTS = ["apps/web/src"];
+const EXTRA_REF_FILES = ["apps/web/index.html", "apps/web/public/manifest.webmanifest"];
 
 export const THRESHOLDS = Object.freeze({
   heavy3dBytes: 5 * 1024 * 1024, lowCraft3dBytes: 10 * 1024, lowPolyTriangles: 100,
@@ -470,7 +470,7 @@ export function renderAuditMarkdown(audit) {
   return [
     "# 3D·2D 에셋 헤더·메타데이터 휴리스틱 및 파일 크기 후보 보고서", "",
     `- **감사 기준일**: ${audit.auditDate} | **감사 도구**: \`scripts/audit-visual-assets-quality.mjs\` (바이너리 헤더·glTF/VRM JSON·이미지 치수 선언값·파일 크기 스캔)`,
-    "- **대상 범위**: `apps/web/public/`, `apps/character-lab/public/` 전수 (`apps/web/src/`, `apps/character-lab/src/` 및 public manifest 대조)",
+    "- **대상 범위**는 `apps/web/public/`의 에셋입니다. `apps/web/src/` 경로 문자열, HTML 진입점, 공개 매니페스트와 대조합니다.",
     "- **상태(current)**: 헤더·메타데이터 휴리스틱과 파일 크기 후보를 계산하는 정적 스캔입니다.",
     "- **검증 범위**: 렌더링·위상·권리 검증을 수행하지 않습니다. 이미지 픽셀 디코드, 3D 재가져오기, 기기 실행도 검사하지 않습니다.",
     "- **참조 한계**: 코드 문자열과 일부 매니페스트만 대조합니다. 동적 경로·외부 소비자·실제 런타임 로드 여부는 미확인입니다.",

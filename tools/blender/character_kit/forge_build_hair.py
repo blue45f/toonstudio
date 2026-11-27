@@ -9,7 +9,7 @@
 출력
 - `<out>/v1/parts/<base>/hair/<스타일>.glb` — **현재 계약(v1)** 파츠: LOD 3단(`TS_AuthoredHair_<스타일>_LOD<n>`), 재질 하나(`ts_hair_<스타일>`), morph 8개
   (머리 부착 체형), `COLOR_0` 회색 AO, `TEXCOORD_1` 흐름값·층 부호. 검증기 V1~V20 대상이며 `--kit-dir`(임시 복사본)에 같은 상대 경로로 복사한다.
-  원본 키트 폴더(`apps/character-lab/public/...`)에는 쓰지 않는다.
+  원본 키트 폴더(`data/character-studio-assets/...`)에는 쓰지 않는다.
 - `<out>/v2/parts/<base>/hair/<스타일>.glb` — **커스터마이즈 제안(v2)**: LOD마다 색 영역 프리미티브 3개(hair·hair-tip·hair-accent)와 재질 3개,
   LOD0·LOD1에 형태 슬라이더 `shape:<이름>:±`. 현재 계약 밖(역할·morph 어휘)이라 검증기 대상이 아니고, 계약이 바뀐 뒤 통합한다.
 - `<out>/parts-registry.json` — `build_kit_json.py --parts-json`이 읽는 형식(`{"hair/<스타일>": {"<base>": {"hides": []}}}`, 헤어는 숨김 영역이 없다).

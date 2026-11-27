@@ -8,7 +8,7 @@
 ## 플랫폼
 
 - 주 실행 표면: 반응형 데스크톱·태블릿·모바일 **웹 (`apps/web`)**
-- 보조 실행 표면: 하이브리드 모바일 셸 (`apps/mobile`), 로컬 파일·외부 실행기 동기화 에이전트 (`apps/desktop-sync`, `tools/toonbridge`), 운영자 콘솔 (`apps/admin-web`), 전문 브러시·캐릭터 독립 작업대 (`apps/brush-lab`, `apps/character-lab`)
+- 보조 실행 표면: 하이브리드 모바일 셸 (`apps/mobile`), 로컬 파일·외부 실행기 동기화 에이전트 (`apps/desktop-sync`, `tools/toonbridge`), 운영자 콘솔 (`apps/admin-web`), 전문 브러시 독립 작업대 (`apps/brush-lab`) — 구 캐릭터 랩(`apps/character-lab`)은 2026-11-27 스튜디오 3D 캐릭터 셰이퍼(`/studio/character`)로 흡수·퇴역
 
 ## 제품 체계
 
