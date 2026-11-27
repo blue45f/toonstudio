@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle2, ImagePlus, Loader2, Save, X } from "lucide-react";
 
 import { useT } from "@/shared/lib/i18n";
+import { cn } from "@/shared/lib/utils";
 import "../studio-bg3d-panel-status-i18n";
 
 import {
@@ -217,16 +218,15 @@ export function StudioBg3dActionFooter({
         </div>
         <button
           type="button"
-          className={cx(
+          className={cn(
             CONTROL_BUTTON,
-            "min-w-0 shrink whitespace-nowrap tabular-nums border-accent/60 bg-accent text-on-accent hover:bg-accent/90 min-[360px]:min-w-36",
+            "min-w-0 shrink whitespace-normal break-keep tabular-nums border-accent/60 bg-accent text-on-accent hover:bg-accent/90 min-[360px]:min-w-36 sm:min-h-11 motion-reduce:transition-none",
           )}
-          aria-label={fixedCutLabel ?? undefined}
           disabled={insertDisabled}
           onClick={onInsert}
         >
-          {isPreparing ? <Loader2 className="animate-spin motion-reduce:animate-none" size={14} strokeWidth={1.5} aria-hidden /> : <ImagePlus size={14} strokeWidth={1.5} aria-hidden />}
-          <span className="max-[359px]:hidden">
+          {isPreparing ? <Loader2 className="shrink-0 animate-spin motion-reduce:animate-none" size={14} strokeWidth={1.5} aria-hidden /> : <ImagePlus className="shrink-0" size={14} strokeWidth={1.5} aria-hidden />}
+          <span>
             {fixedCutLabel ?? (mutationKind === "unlink"
               ? materializationKind === "detached-editable-composite"
                 ? "3D 원본 유지 · 한 장으로 정리"
@@ -244,19 +244,6 @@ export function StudioBg3dActionFooter({
                         : toneOutputType === "color"
                           ? "컬러 배경 추가"
                           : "톤 배경 추가")}
-          </span>
-          <span className="hidden max-[359px]:inline">
-            {fixedCutLabel ?? (mutationKind === "unlink"
-              ? materializationKind === "detached-editable-composite"
-                ? "한 장 정리"
-                : "연결 해제"
-              : mutationKind === "relink"
-                ? "다시 연결"
-                : mutationKind === "connect"
-                  ? "연결해 적용"
-                  : simpleMode
-                    ? operation === "update" ? "다시 적용" : "적용"
-                    : operation === "update" ? "업데이트" : "배경 추가")}
           </span>
         </button>
       </footer>
