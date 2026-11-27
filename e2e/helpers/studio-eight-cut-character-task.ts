@@ -198,7 +198,14 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   const settledMs = performance.now() - start;
   const summary = await receipt.innerText();
   console.log("[studio-eight-cut-summary]", summary);
-  expect(summary).toMatch(/갱신\s+6\s*·\s*건너뜀\s+0\s*·\s*실패\s+0/u);
+  const counts = /갱신\s+(\d+)\s*·\s*건너뜀\s+(\d+)\s*·\s*실패\s+(\d+)/u.exec(summary);
+  if (!counts) throw new Error("Missing Studio refresh counts: " + summary);
+  const batch = { updated: Number(counts[1]), skipped: Number(counts[2]), failed: Number(counts[3]) };
+  // The individually saved cut may already match its batch render. The decoded
+  // images below still have to change from the original on every one of the six cuts.
+  expect(batch.failed).toBe(0);
+  expect(batch.updated + batch.skipped).toBe(6);
+  expect(batch.skipped).toBeLessThanOrEqual(1);
   await receipt.getByRole("button", {name:"닫기", exact:true}).click();
   const after = placed(await exportManuscript(page));
   expect(after.map(c => c.id)).toEqual(before.map(c => c.id));
@@ -233,7 +240,7 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   const changedRasters = report.filter(cut => cut.before.sha256 !== cut.after.sha256);
   const controlId = before[6].vrmScene.characterDocumentId;
   const recorded = { scope:"automated Studio task from context-menu entry to completed user-visible refresh receipt; fixture setup and postcondition export excluded",
-    browser:page.context().browser()?.version(), viewport:page.viewportSize(), editMs, settledMs,
+    browser:page.context().browser()?.version(), viewport:page.viewportSize(), editMs, settledMs, batch,
     individualEdits:individuallyOpened, additionalIndividualRepairs:Math.max(0,individuallyOpened.length - 1),
     changedCharacterCuts:changedRasters.length, unaffectedControls:report.filter(cut=>cut.authoredId===controlId && cut.before.sha256===cut.after.sha256).length,
     unintendedRasterChanges:changedRasters.filter(cut=>cut.authoredId===controlId).length, cuts:report };
