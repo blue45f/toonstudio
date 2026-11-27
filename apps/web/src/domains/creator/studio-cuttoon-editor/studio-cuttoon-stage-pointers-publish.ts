@@ -4,234 +4,25 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
-import { flushSync } from "react-dom";
 
-import { resolveStudioCapturedBrushDynamicsPresetId } from "../brush/studio-brush-dynamics";
-import {
-  advanceStudioBrushVelocityPressure,
-  initializeStudioBrushVelocityPressure,
-  resolveStudioBrushReleasePressure,
-} from "../brush/studio-brush-velocity-pressure";
-import { isCompleteStudioDrawOp } from "../brush/studio-draw-completion";
-import { studioLiveRetainedMediaOverlaySupportsElement } from "../live/studio-live-retained-media-overlay";
-import { planStudioDrawPointerRelease } from "../brush/studio-draw-pointer-release-plan";
-import { planStudioDrawPointerStart } from "../brush/studio-draw-pointer-start-plan";
-import {
-  executeStudioDraftPreviewBackdropBoundary,
-  planStudioDraftPreviewBackdropBoundary,
-  studioLiveBrushEffectiveDiameter,
-  studioLiveBrushPressure,
-  studioLiveBrushPressureSamples,
-} from "../brush/studio-draw-rendering";
+import { advanceStudioBrushVelocityPressure } from "../brush/studio-brush-velocity-pressure";
+import { studioLiveBrushPressure } from "../brush/studio-draw-rendering";
 import { requireStudioDrawingPointerTransport } from "../brush/studio-drawing-pointer-transport";
-import {
-  studioInkFallbackPressure,
-} from "../brush/studio-ink-pressure-model";
-import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
-import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
-import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
-import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
-import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
-import { CANVAS_W } from "../studio-assets";
-import {
-  mapStudioDocumentPointToAutoColorSeed,
-  sampleStudioAutoColorStrokeSeeds,
-  shouldKeepStudioAutoColorStrokeSample,
-  STUDIO_AUTO_COLOR_STROKE_MIN_DISTANCE_DOC_DEFAULT,
-} from "../studio-auto-color-hints-canvas-seed";
-import { normalizeCalligraphyStylusInput, strokeSampleDistanceForScale } from "../studio-brush";
-import {
-  hasStudioCanonicalVNextQualityShadowRuntime,
-  submitStudioCanonicalVNextQualityShadowFinalParity,
-} from "../studio-canonical-vnext-quality-shadow";
-import { studioElementIdOf } from "../canvas/studio-canvas-shared-runtime";
-import { shouldAppendStudioCausalInkSample } from "../studio-causal-ink";
-import { shouldOwnStudioCoalescedBatchDraft } from "../studio-coalesced-batch-mutation";
-import { COLOR_WHEEL_LONG_PRESS_MS, shouldCancelLongPress } from "../studio-color-wheel";
-import {
-  studioDrawElementSampleSlice,
-  studioDrawElementToCrdtStroke,
-} from "../live/studio-crdt-draw-bridge";
-import {
-  beginCropDrag,
-  cropAspectRatio,
-  cropHitTolerance,
-  hitTestCropHandle,
-  updateCropDrag,
-} from "../studio-crop";
-import { NODE_SMOOTH_DRAG_RANGE_PX, smoothPointsAroundIndex, updateSmoothStrengthDrag } from "../studio-curve-smoothing";
-import { planStudioDeferredStrokePostprocess } from "../studio-deferred-stroke-postprocess";
-import { containingPanel, elBounds } from "../studio-element-geometry";
-import { attachStudioFilterMaskSurfaceAcrossHistory } from "../filter/studio-filter-mask-surface-admission";
-import {
-  createFixedRateStrokeFilter,
-  quantizeFixedRateStrokeSample,
-  transitionFixedRateStrokeFilter,
-  type FixedRateStrokeFilteredSample,
-} from "../studio-fixed-rate-stroke-filter";
+import { studioInkFallbackPressure } from "../brush/studio-ink-pressure-model";
+import { isStudioBrushCursorMode } from "../canvas/studio-canvas-cursor";
+import { transitionFixedRateStrokeFilter } from "../studio-fixed-rate-stroke-filter";
 import {
   advanceFixedRateStrokeFrameClock,
   advanceFixedRateStrokeSampleClockFloor,
-  normalizeFixedRateStrokeSampleTimeStamps,
 } from "../studio-fixed-rate-stroke-frame-pump";
-import {
-  expandSelectionIdsToGroupUnits,
-  planAtomicSelectionTranslation,
-  selectionShapeForIds,
-} from "../studio-group-selection";
-import { computeHealCloneSourceOffset, healCloneSourcePoint } from "../studio-heal-clone";
-import type { StudioHokusaiLiveCanonicalResult } from "../render/studio-hokusai-live-brush-runtime";
-import {
-  createStudioHokusaiLiveCanonicalTransaction,
-} from "../render/studio-hokusai-live-brush-transaction";
-import {
-  studioHokusaiSourceRevision,
-} from "../render/studio-hokusai-natural-media-contract";
-import { uid } from "../studio-id";
-import {
-  resolveIsometricAxisRay,
-  shouldSnapStrokeToIsometricAxis,
-  snapStrokePointToIsometricGrid,
-} from "../studio-isometric-grid";
-import { studioKonvaRuntime as KonvaRuntime } from "../render/studio-konva-runtime";
-import { isEffectivelyHidden, isEffectivelyLocked } from "../studio-layers";
-import {
-  createStudioPixelEditCanvas,
-  loadStudioPixelEditImage,
-  studioInkGestureTimeOrigin,
-} from "../studio-legacy-editor-runtime-helpers";
-import { studioLinked3dPassDestructiveEditReason } from "../studio-linked-3d-raster-edit-policy";
-import { createStudioLinked3dCorrectionProvenance } from "../studio-linked-3d-render-document";
-import {
-  appendStudioLiquifyPointerPoint,
-  beginStudioLiquifyPointerSession,
-  isStudioLiquifyPointerOwner,
-} from "../studio-liquify-pointer";
-import { studioLiquifyDragMinDistance } from "../studio-liquify-stroke-sampling";
 import type { StudioLowLatencyPredictor as StudioLowLatencyPredictorInstance } from "../studio-lowlatency-predictor";
-import { resolveStudioLivePublishedCursorTool } from "../live/studio-live-canvas-overlay-model";
-import {
-  createStudioLivingInkCanonicalTransaction,
-  studioLivingInkReceiptReplayToken,
-  type StudioLivingInkCanonicalResult,
-} from "../studio-living-ink-document";
-import { studioLivingInkCoverageIntersectsStroke } from "../studio-living-ink-overlay";
-import { studioLivingInkFailureDisposition } from "../studio-living-ink-product-admission";
-import type { StudioLivingInkFinishedWork } from "../studio-living-ink-studio-coordinator";
-import {
-  beginNodeDrag,
-  hitTestNodeHandle,
-  NODE_EDIT_WIDTH_DRAG_RANGE_PX,
-  updateNodeDragMove,
-  updateNodeDragWidth,
-  withPointMoved,
-  withPressureEdited,
-} from "../studio-node-edit";
-import { snapStudioObjectDragPosition } from "../studio-object-drag-snap";
 import { STUDIO_POINTER_PREDICTION_ENABLED } from "../studio-page-shell-runtime";
-import { beginPanelSplitDrag, planPanelSplit, previewPanelSplit, type PanelSplitLine } from "../studio-panel-split";
-import { normalizeStudioPersistedPointerChannels } from "../studio-persisted-pointer-channels";
-import { resolvePerspectiveRay, snapStrokePointToPerspective } from "../studio-perspective-guide";
-import {
-  isStudioPixelPencilRenderMode,
-  shouldAppendStudioPixelPencilSample,
-} from "../studio-pixel-pencil";
-import {
-  beginStudioStrokePointerSession,
-  collectStudioStrokePointerBatch,
-  isStudioStrokePointerEvent,
-  shouldCommitStudioStrokeOnPointerCancel,
-  shouldEndStudioStrokeForReleasedContact,
-  shouldCancelStudioFingerStrokeForAdditionalContact,
-} from "../canvas/studio-pointer-input";
+import { isStudioStrokePointerEvent } from "../canvas/studio-pointer-input";
 import { canCollectStudioPointerPredictionsForActiveTail } from "../canvas/studio-pointer-prediction-capability";
-import {
-  planStudioPointerReleaseEndpoint,
-  type StudioPointerReleaseEndpointSample,
-} from "../canvas/studio-pointer-release-endpoint-plan";
-import { planStudioPredictedInkSuffixDraft } from "../studio-predicted-ink-tail";
-import { addPuppetPin } from "../studio-puppet-warp";
-import { applyMaskStrokeDabs } from "../studio-quick-mask";
-import { canPublishStudioRasterLayer } from "../render/studio-raster-layer-write-guard";
-import { STUDIO_AUTOMATIC_RASTER_PUBLICATION_ENABLED } from "../render/studio-raster-publication-feature";
-import {
-  appendStudioRasterRetouchDragPoint,
-  thinStudioRasterRetouchPointsForApply,
-} from "../render/studio-raster-retouch-stroke-sampling";
-import { QUICKSHAPE_KIND_LABELS } from "../studio-quickshape-labels";
-import { replaceStudioRawPenInkPreview, syncStudioRawPenInkPreviewAuthority } from "../studio-raw-pen-ink-preview";
-import { appendStudioPendingRasterRetouchGesturePoint } from "../studio-retouch-raster-gesture";
-import { normalizeMarqueeRect, selectIdsByMarquee } from "../studio-selection";
-import {
-  appendBrushPointInPlace,
-  appendPolyLassoVertex,
-  beginPolyLassoSession,
-  beginSelectionDrag,
-  canvasPointToNormalized,
-  isSelectionUsable,
-  normalizedPointToCanvas,
-  pointInSelection,
-  polyLassoCloseToStart,
-  resolveSelectionCombineOverride,
-  selectionCombineModeForOperation,
-  shouldMoveSelectionMarquee,
-  snapLassoPointToEdge,
-  translateSelection,
-  updateSelectionDrag,
-  type SelectionFrame,
-  type SelPoint,
-} from "../studio-selection-tools";
-import {
-  EMPTY_FREEHAND_OBJECT_SNAP_LATCH,
-  EMPTY_SMART_GUIDE_OVERLAY,
-  SMART_GUIDE_EPSILON,
-  SMART_SNAP_THRESHOLD,
-  buildPointObjectSnapOverlay,
-  buildSmartGuideOverlay,
-  buildSmartGuideOverlayPreview,
-  computeSmartSnap,
-  planFreehandObjectSnapPoint,
-  shouldApplyStrokeObjectSnap,
-  shouldMutateStrokeWithObjectSnap,
-  snapPointToObjectGuides,
-  type GuideBox,
-} from "../studio-smart-guides";
-import {
-  shouldSynchronizeStudioStagePointerPosition,
-  snapshotStudioStagePointerBatchMapper,
-  type StudioStagePointerBatchMapper,
-} from "../canvas/studio-stage-pointer-coordinate";
-import { resolveShiftFreehandTransition } from "../brush/studio-stroke-constrain";
-import {
-  normalizeStudioStrokeGuideScale,
-  shouldShowStudioStrokeGuide,
-} from "../brush/studio-stroke-guide";
-import { resolveStudioStrokeObjectSnapTargets } from "../brush/studio-stroke-object-snap-cache";
-import {
-  createStudioPointerVelocityState,
-  createStudioStrokeStabilizerBridge,
-  createStudioStrokeStabilizerState,
-  flushStudioStrokeStabilizerEndpoint,
-  sampleStudioPointerVelocity,
-  stabilizeStudioStrokeSample,
-} from "../brush/studio-stroke-stabilizer";
-import { claimStudioStrokeSurfaceLifecycle } from "../brush/studio-stroke-surface-route";
-import {
-  createStudioThinLineInkInputState,
-  filterStudioThinLineInkInput,
-  flushStudioThinLineInkInput,
-  shouldFilterStudioThinLineInkInput,
-} from "../studio-thin-line-ink-input-v1";
-import { studioWorkAssetDestructiveEditReason } from "../studio-work-asset-edit-guard";
-import type { StudioCrdtSceneGraphRuntime } from "../live/StudioLiveCollaborationProvider";
-
-import type { StudioCrdtDocument } from "../live/studio-crdt-document";
-import type { StudioBackground3DMagicFilterMask } from "../scene-3d/studio-3d-insert-contract";
-import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
-import type { PageState } from "../studio-page-state";
-
-import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
-
+import { replaceStudioRawPenInkPreview } from "../studio-raw-pen-ink-preview";
+import type { DrawEl } from "../studio-element-model";
+import { recordStudioDrawingStabilityCounts } from "./studio-cuttoon-drawing-stability-telemetry";
+import { planStudioStrokeCancelOrAbortRecovery } from "./studio-cuttoon-stroke-interruption-guard";
 import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
 import type { StudioLiveStrokeFoleyBridgeRuntime } from "./studio-live-stroke-foley-bridge";
@@ -269,7 +60,6 @@ export function bindStudioCuttoonStagePointersPublish(
     pressureCurve,
     pressureMinSize,
     rawPenInkPreviewStateRef,
-    session,
     stabilizer,
     stagePointerFrameMapperCacheRef,
     stageRef,
@@ -301,6 +91,7 @@ export function bindStudioCuttoonStagePointersPublish(
   const updateStrokeGuide: StudioCuttoonStagePointersApi["updateStrokeGuide"] = (
     ...args
   ) => api.updateStrokeGuide(...args);
+
   function publishAuthoritativeFreehandSuffix(startSample: number): DrawEl | null {
     const authoritativeDrawing = drawingRef.current;
     if (!authoritativeDrawing) return null;
@@ -308,9 +99,6 @@ export function bindStudioCuttoonStagePointersPublish(
       h.pendingStrokeAdmissionRef.current.update(authoritativeDrawing);
       return authoritativeDrawing;
     }
-    // The same coalesced suffix that becomes DrawEl/CRDT authority advances Google Ink's retained
-    // InProgressStroke. Any previously displayed estimate is replaced by this exact prefix before
-    // the normal live surface flushes; no predicted sample enters this call.
     inkMeshLivePreviewRuntimeRef.current?.synchronizeAuthoritative(
       authoritativeDrawing,
       liveBrushPressureSamplesFor(authoritativeDrawing),
@@ -322,21 +110,15 @@ export function bindStudioCuttoonStagePointersPublish(
       if (causalPostCorrectionStateRef.current) {
         appendCausalPostCorrectionState(authoritativeDrawing, startSample);
       } else if (predictedInkTailStateRef.current) {
-        // Every real browser suffix invalidates the previous estimate first. Only the new durable
-        // suffix advances this state; the append-only live surface is never cleared or replaced.
         appendAuthoritativePredictedInkState(authoritativeDrawing, startSample);
       }
-      // The pointer task or frame pump already owns the earliest available presentation slot.
-      // Publish Canvas/WebGPU suffixes now instead of adding another display frame of latency.
       flushDirectLiveDraftNow(authoritativeDrawing);
     }
-    // Local ink is the interaction-critical path. Yjs encoding/broadcast is coalesced behind a
-    // paint opportunity; pointer release flushes the same queue before final CRDT reconciliation.
     appendDrawingCrdtSampleSuffix(authoritativeDrawing, startSample);
     return authoritativeDrawing;
   }
 
-  drawingFixedRatePumpFrameRef.current = (frameTimeStamp: any) => {
+  drawingFixedRatePumpFrameRef.current = (frameTimeStamp: number) => {
     const drawing = drawingRef.current;
     const session = requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession();
     const filter = drawingFixedRateFilterRef.current;
@@ -350,7 +132,9 @@ export function bindStudioCuttoonStagePointersPublish(
       || !pointerSample
       || (drawing.kind ?? "freehand") !== "freehand"
       || !isStudioStrokePointerEvent(session, pointerSample)
-    ) return false;
+    ) {
+      return false;
+    }
 
     const frameClock = advanceFixedRateStrokeFrameClock(clock, frameTimeStamp);
     drawingFixedRatePumpClockRef.current = frameClock.state;
@@ -358,7 +142,7 @@ export function bindStudioCuttoonStagePointersPublish(
     if (sampleClock) {
       drawingFixedRateSampleClockRef.current = advanceFixedRateStrokeSampleClockFloor(
         sampleClock,
-        frameClock.watermark
+        frameClock.watermark,
       );
     }
     const crdtSampleStart = Math.floor(drawing.points.length / 2);
@@ -385,7 +169,6 @@ export function bindStudioCuttoonStagePointersPublish(
     return true;
   };
 
-  // 120Hz 오버슈트 바운드 2차 외삽기(16ms 호라이즌) — 지연 로드로 진입 그래프 +0B 유지.
   let lowLatencyPredictor: StudioLowLatencyPredictorInstance | null = null;
   let lowLatencyPredictorLoadStarted = false;
   const ensureLowLatencyPredictor = (): StudioLowLatencyPredictorInstance | null => {
@@ -405,8 +188,6 @@ export function bindStudioCuttoonStagePointersPublish(
     return null;
   };
 
-  // Native listeners stay mounted for one contact, while these ports always point at this render's
-  // drawing settings, document, draft surfaces and finish coordinator.
   requireStudioDrawingPointerTransport(drawingPointerTransportRef).updatePorts({
     getLastAuthoritativePointer: () => drawingLastAuthoritativePointerRef.current,
     onAuthoritativeMove: (pointerEvent) => {
@@ -418,7 +199,9 @@ export function bindStudioCuttoonStagePointersPublish(
         || !drawing
         || (drawing.kind ?? "freehand") !== "freehand"
         || !isStudioStrokePointerEvent(session, pointerEvent)
-      ) return;
+      ) {
+        return;
+      }
       const stage = stageRef.current;
       if (!stage) return;
       if (!consumeFreehandPointerBatch(
@@ -427,12 +210,11 @@ export function bindStudioCuttoonStagePointersPublish(
         canCollectStudioPointerPredictionsForActiveTail(
           STUDIO_POINTER_PREDICTION_ENABLED,
           session,
-          predictedInkTailStateRef.current !== null
+          predictedInkTailStateRef.current !== null,
         ),
       )) return;
       const pointerMapperCache = stagePointerFrameMapperCacheRef.current;
       if (!pointerMapperCache) return;
-      // Reuse the mapper acquired while consuming the batch.
       const contactPoint = pointerMapperCache.mapperFor(stage).pointFor(pointerEvent);
       if (contactPoint) {
         ensureLowLatencyPredictor()?.push({
@@ -442,8 +224,6 @@ export function bindStudioCuttoonStagePointersPublish(
           pressure: pointerEvent.pressure,
         });
       }
-      // Authoritative ink wins the native pointer task. The cursor keeps only the latest position
-      // and paints once on the next frame, so a high-Hz pen cannot make a cosmetic layer delay ink.
       updateBrushCursor(stage, pointerEvent, contactPoint, true);
       updateStrokeGuide(
         contactPoint?.x ?? Number.NaN,
@@ -452,8 +232,19 @@ export function bindStudioCuttoonStagePointersPublish(
       );
       if (drawMode === "pen" && contactPoint) noteQuickShapePointerMoved(contactPoint);
       if (contactPoint) {
-        const foleyBridge = (globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined;
-        foleyBridge?.studioLiveStrokeFoley.onStrokeMove({ x: contactPoint.x, y: contactPoint.y, pressure: pointerEvent.pressure, tiltX: pointerEvent.tiltX, tiltY: pointerEvent.tiltY, timestampMs: pointerEvent.timeStamp, brushId: drawing.brushCatalogId ?? drawing.brush, drawMode: drawing.mode });
+        const foleyBridge = (globalThis as Record<PropertyKey, unknown>)[
+          Symbol.for("toonstudio.liveStrokeFoleyBridge")
+        ] as StudioLiveStrokeFoleyBridgeRuntime | undefined;
+        foleyBridge?.studioLiveStrokeFoley.onStrokeMove({
+          x: contactPoint.x,
+          y: contactPoint.y,
+          pressure: pointerEvent.pressure,
+          tiltX: pointerEvent.tiltX,
+          tiltY: pointerEvent.tiltY,
+          timestampMs: pointerEvent.timeStamp,
+          brushId: drawing.brushCatalogId ?? drawing.brush,
+          drawMode: drawing.mode,
+        });
       }
     },
     onRawPreviewMove: (pointerEvent) => {
@@ -466,7 +257,9 @@ export function bindStudioCuttoonStagePointersPublish(
         || !drawing
         || (drawing.kind ?? "freehand") !== "freehand"
         || !isStudioStrokePointerEvent(session, pointerEvent)
-      ) return;
+      ) {
+        return;
+      }
       const rawState = rawPenInkPreviewStateRef.current;
       const rawCursorWanted = (
         brushCursorRef.current !== null
@@ -478,8 +271,6 @@ export function bindStudioCuttoonStagePointersPublish(
         && appSettingsRef.current.general.showStrokeGuide
         && (drawingInputSettingsRef.current?.stabilizer ?? stabilizer) > 0
       );
-      // pointerrawupdate may run at 120–240 Hz. If no prediction surface or visible cosmetic
-      // consumer exists, avoid even the stage/layout coordinate snapshot on this native path.
       if (!rawState && !rawCursorWanted && !rawGuideWanted) return;
       const stage = stageRef.current;
       if (!stage) return;
@@ -489,9 +280,6 @@ export function bindStudioCuttoonStagePointersPublish(
       const contactPoint = coordinateMapper.pointFor(pointerEvent);
       if (rawState && contactPoint) {
         const settings = drawingInputSettingsRef.current;
-        // Raw updates are replace-only previews. Branch from (but never publish) the latest
-        // authoritative pressure state so pencil, marker, dry-media and every other family show
-        // the same hardware-pressure curve before the processed pointer event commits it.
         const previewPressure = advanceStudioBrushVelocityPressure(
           drawingVelocityPressureRef.current,
           {
@@ -509,9 +297,8 @@ export function bindStudioCuttoonStagePointersPublish(
             useVelocityPressure: settings?.useVelocityPressure ?? useVelocityPressure,
             velocitySensitivity: settings?.velocitySensitivity ?? velocitySensitivity,
             fallbackPressure: studioInkFallbackPressure(drawing.pressureModel),
-          }
+          },
         ).pressure;
-        // 16ms 호라이즌 바운드 예측 꼬리: 리플레이스 전용 프리뷰 표면에만 반영(영속 스트로크 무변경).
         const predictedLead = STUDIO_POINTER_PREDICTION_ENABLED
           ? ensureLowLatencyPredictor()?.predict(16) ?? null
           : null;
@@ -533,8 +320,6 @@ export function bindStudioCuttoonStagePointersPublish(
           liveInkStyleFor(drawing),
         );
       }
-      // Raw ink is transient and replace-only. Durable geometry, history, CRDT, ruler locks,
-      // QuickShape recognition, and the pointer-session signature still wait for processed input.
       updateBrushCursor(stage, pointerEvent, contactPoint, true);
       updateStrokeGuide(
         contactPoint?.x ?? Number.NaN,
@@ -544,21 +329,58 @@ export function bindStudioCuttoonStagePointersPublish(
     },
     onDiscard: () => {
       lowLatencyPredictor?.reset();
-      ((globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined)?.studioLiveStrokeFoley.onStrokeEnd();
-      if (!drawingRef.current && !requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession()) return;
+      (
+        (globalThis as Record<PropertyKey, unknown>)[
+          Symbol.for("toonstudio.liveStrokeFoleyBridge")
+        ] as StudioLiveStrokeFoleyBridgeRuntime | undefined
+      )?.studioLiveStrokeFoley.onStrokeEnd();
+      const activeSession = requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession();
+      if (!drawingRef.current && !activeSession) return;
+      const recovery = planStudioStrokeCancelOrAbortRecovery({
+        activeSession,
+        activeDrawing: drawingRef.current,
+        lastAuthoritativePointer: drawingLastAuthoritativePointerRef.current,
+      });
+      if (recovery.action === "salvage-commit") {
+        const strokeBackup = drawingRef.current;
+        try {
+          finishDrawingPointer(stageRef.current, recovery.fallbackPointer, {
+            consumeReleaseSample: false,
+          });
+          return;
+        } catch {
+          if (strokeBackup && typeof h.salvageRejectedStroke === "function") {
+            h.salvageRejectedStroke(strokeBackup, "포인터 세션 복구", "transport-interrupted");
+          }
+        }
+      }
       discardDrawingPointerSession();
     },
     onFinish: (pointerEvent, request) => {
       lowLatencyPredictor?.reset();
-      // Snapshot + stop happen inside finishDrawingPointer; clearing QuickShape here would wipe
-      // the hold/lock state used by release promotion.
+      if (
+        request.reason === "transport-abort"
+        || request.reason === "lost-capture"
+        || request.reason === "pointercancel-prefix"
+        || request.reason === "stale-takeover"
+      ) {
+        recordStudioDrawingStabilityCounts({ interruptedStrokesSalvaged: 1 });
+      }
       if (!request.cancelled && colorWheelTimerRef.current) {
         clearTimeout(colorWheelTimerRef.current);
         colorWheelTimerRef.current = null;
       }
-      finishDrawingPointer(stageRef.current, pointerEvent, {
-        consumeReleaseSample: request.consumeReleaseSample,
-      });
+      const strokeBackup = drawingRef.current;
+      try {
+        finishDrawingPointer(stageRef.current, pointerEvent, {
+          consumeReleaseSample: request.consumeReleaseSample,
+        });
+      } catch (cause) {
+        if (strokeBackup && typeof h.salvageRejectedStroke === "function") {
+          h.salvageRejectedStroke(strokeBackup, "포인터 세션 복구", request.reason);
+        }
+        throw cause;
+      }
     },
   });
   api.publishAuthoritativeFreehandSuffix = publishAuthoritativeFreehandSuffix;
