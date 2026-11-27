@@ -746,7 +746,11 @@ export function bindStudioCuttoonStagePointersDownDraw(
       }
       const foleyStart = { x: strokeOrigin.x, y: strokeOrigin.y, pressure, tiltX: stylus.tiltX, tiltY: stylus.tiltY, timestampMs: pointerSample.timeStamp, brushId: activeCatalogBrush.id || brush, drawMode: strokeDrawMode };
       if (liveFoleyBridge) liveFoleyBridge.studioLiveStrokeFoley.onStrokeStart(foleyStart);
-      else void import("./studio-live-stroke-foley-bridge").then((mod) => mod.studioLiveStrokeFoley.onStrokeStart(foleyStart)).catch(() => {});
+      else void import("./studio-live-stroke-foley-bridge").then((mod) => {
+        if (drawingRef.current?.id === next.id && requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession()) {
+          mod.studioLiveStrokeFoley.onStrokeStart(foleyStart);
+        }
+      }).catch(() => {});
       if (strokeDrawMode === "pen" && quickShapeActive) startQuickShapeTracking(strokeOrigin);
       else stopQuickShapeTracking();
       if (h.pendingStrokeAdmissionRef?.current?.has(next.id)) {
