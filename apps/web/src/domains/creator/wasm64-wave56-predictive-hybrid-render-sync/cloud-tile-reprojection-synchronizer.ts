@@ -416,7 +416,7 @@ export class HybridRenderTileSynchronizer {
     const desiredRank = FALLBACK_TIER_LOD_LEVEL[desiredTier];
     let nextTier = this.fallbackState.tier;
     let nextHealthyStreak = this.fallbackState.consecutiveHealthyFrames;
-    let nextReason = reason;
+    let nextReason: RenderFallbackState["reason"] = reason;
 
     if (desiredRank > currentRank) {
       nextTier = desiredTier;
