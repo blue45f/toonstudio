@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { FINAL_SUBMISSION_MAX_BYTES, STATUSES } from "./types";
+import { COORDINATION_ACTIONS, COORDINATION_REQUIRED_FIELDS, COORDINATION_STATUSES, FINAL_SUBMISSION_MAX_BYTES, STATUSES, type CoordinationItem } from "./types";
 
 export function isSafeUrl(value: string): boolean {
   if (!value.trim() || value.length > 4096) return false;
@@ -73,7 +73,33 @@ const task = z.object({
   approvalRequired: z.boolean(), unresolved: z.boolean(), updatedAt: date, provenance: text,
 }).strict();
 const source = z.object({ id, title: text.refine((value) => Boolean(value.trim()), "기준 자료 이름이 필요합니다."), url, type: text, observedAt: date, note: text }).strict();
+const sha256 = z.string().regex(/^(?:[a-f0-9]{64})?$/i, "SHA-256은 64자리 16진수로 입력해 주세요.");
+const proofLinks = z.array(link).max(30);
+const coordinationItem = z.object({
+  id, title: text.trim().min(1), project: text, status: z.enum(COORDINATION_STATUSES),
+  priority: z.union([z.literal(1), z.literal(2), z.literal(3)]), blocking: z.boolean(),
+  sourceTaskId: z.string().max(120), operationId: z.string().max(256), file: text, version: text, approvedVersion: text,
+  digest: sha256, repo: text, branch: text, pr: text, commit: text, merge: text, ci: text, ciCommit: text,
+  deployment: text, deployCommit: text, smoke: text, migration: text, platform: text, mentor: text, owner: text,
+  next: text, evidenceAt: date, checkedAt: date, latestVerified: z.boolean(),
+  action: z.union([z.literal(""), z.enum(COORDINATION_ACTIONS)]), refs: proofLinks, attachments: proofLinks,
+  basisRefs: proofLinks.optional(), candidate: z.boolean(),
+  sourceNote: z.string().max(2000).optional(),
+  related: z.array(id).max(30).refine(items => new Set(items).size === items.length).optional(),
+  required: z.array(z.enum(COORDINATION_REQUIRED_FIELDS)).max(COORDINATION_REQUIRED_FIELDS.length)
+    .refine(items => new Set(items).size === items.length).optional(),
+  comparisons: z.array(z.object({ label: text, file: text, version: text, sha: sha256, note: text }).strict()).max(30).optional(),
+}).strict();
+const coordinationItems = z.array(coordinationItem).max(300).refine(
+  rows => new Set(rows.map(row => row.id)).size === rows.length, "조정 항목 ID가 중복되었습니다.",
+);
+export function parseCoordinationItems(input: unknown): CoordinationItem[] | null {
+  if (checkJsonInput(input)) return null;
+  const result = coordinationItems.safeParse(input);
+  return result.success ? result.data : null;
+}
+
 export const finalSubmissionBoardSchema = z.object({
-  schemaVersion: z.literal(1), documents: z.array(document).max(50), tasks: z.array(task).max(300), sources: z.array(source).max(200),
+  schemaVersion: z.literal(1), coordination: coordinationItems.optional(), documents: z.array(document).max(50), tasks: z.array(task).max(300), sources: z.array(source).max(200),
   revision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER), updatedAt: date,
 }).strict();

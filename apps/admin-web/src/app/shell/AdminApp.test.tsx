@@ -7,7 +7,7 @@ import { AdminApp } from "./AdminApp";
 vi.mock("../../domains/operations/operation-policy/OperationPolicyPanel", () => ({ OperationPolicyPanel: () => <h1>운영 모드와 라이선스</h1> }));
 vi.mock("./CiQualityAccess", () => ({ CiQualityAccess: ({ view }: { view?: string }) => <p role="status" data-view={view}>관리자 권한 확인 중</p> }));
 vi.mock("./OpsOverviewAccess", () => ({ OpsOverviewAccess: () => <p role="status">운영·배포 원장 권한 확인 중</p> }));
-vi.mock("./FinalSubmissionAccess", () => ({ FinalSubmissionAccess: () => <p role="status">최종 제출 점검 권한 확인 중</p> }));
+vi.mock("./FinalSubmissionAccess", () => ({ FinalSubmissionAccess: ({ coordination }: { coordination?: boolean }) => <p role="status">{coordination ? "증빙 조정 권한 확인 중" : "최종 제출 점검 권한 확인 중"}</p> }));
 vi.mock("./BusinessPlanAccess", () => ({ BusinessPlanAccess: () => <p role="status">사업계획서 권한 확인 중</p> }));
 vi.mock("./AiOperationsAccess", () => ({ AiOperationsAccess: () => <p role="status">AI·인프라 관리자 권한 확인 중</p> }));
 vi.mock("./WorkspaceAccess", () => ({ WorkspaceAccess: () => <p role="status">통합 작업실 권한 확인 중</p> }));
@@ -135,4 +135,13 @@ it.each(["/admin/growth/business-plan?view=final-submission", "/admin/growth/bus
   expect(screen.getByRole("link", { name: "1R 최종 제출" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBeNull();
   expect(screen.queryByText("사업계획서 권한 확인 중")).toBeNull();
+});
+
+it.each(["/admin/growth/business-plan?view=evidence-coordination", "/admin/growth/business-plan/?view=evidence-coordination"])("조정 화면 %s 진입 시 기존 점검 화면과 구분해 개인 권한을 확인한다", (pathname) => {
+  window.history.replaceState(null, "", pathname);
+  render(<AdminApp />);
+  expect(screen.getByRole("status").textContent).toBe("증빙 조정 권한 확인 중");
+  expect(screen.getByRole("link", { name: "증빙·승인 조정" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "1R 최종 제출" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBeNull();
 });

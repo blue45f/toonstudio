@@ -40,13 +40,16 @@ afterEach(() => {
 });
 
 describe("AdminShell sidebar preference", () => {
-  it("성장 메뉴의 사업계획서는 독립 관리자 문서로 이동한다", () => {
+  it("성장 메뉴에서 사업계획서와 증빙 조정 화면을 각 독립 관리자 문서로 연다", () => {
     renderShell();
     fireEvent.click(screen.getByRole("button", { name: getAdminShellCopy("ko").groups.growth }));
     const entry = document.querySelector<HTMLAnchorElement>("[data-admin-business-plan-entry]");
     expect(entry?.tagName).toBe("A");
     expect(entry?.getAttribute("href")).toBe("/admin/growth/business-plan/");
     expect(entry?.getAttribute("target")).toBeNull();
+    const coordination = document.querySelector<HTMLAnchorElement>("[data-admin-evidence-coordination-entry]");
+    expect(coordination?.getAttribute("href")).toBe("/admin/growth/business-plan/?view=evidence-coordination");
+    expect(coordination?.getAttribute("target")).toBeNull();
   });
   it("opens and remains usable when localStorage access is denied", () => {
     vi.spyOn(window, "localStorage", "get").mockImplementation(() => {
