@@ -25,6 +25,7 @@ describe("관리자 작업실 화면 경계", () => {
     await screen.findByRole("heading", { name: "사업계획·운영 작업실" });
     expect(within(screen.getByRole("navigation", { name: "업무 모듈" })).getAllByRole("button")).toHaveLength(6);
     expect(screen.getByText("읽기 전용")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "증빙·승인 조정" }).getAttribute("href")).toBe("/admin/growth/business-plan/?view=evidence-coordination");
     expect(screen.queryByRole("button", { name: "JSON 가져오기" })).toBeNull();
     expect(screen.queryByRole("button", { name: "기록 추가" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "합성 검토 작업 상세 보기" }));

@@ -27,6 +27,7 @@ describe("최종 제출 보드의 사용자 관찰 경계", () => {
     render(<FinalSubmissionBoard userIdentity="owner-test" />);
     expect(screen.getByText(/3\/3개 문서의 실제 제출 여부가 미확인/u)).toBeTruthy();
     expect(screen.getByRole("table").textContent).not.toContain("제출 확인");
+    expect(screen.getByRole("link", { name: "증빙·승인 조정" }).getAttribute("href")).toBe("/admin/growth/business-plan/?view=evidence-coordination");
     fireEvent.change(screen.getByRole("combobox", { name: "관리 상태" }), { target: { value: "승인 대기" } });
     expect(screen.getByText("17개 중 4개 표시")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "상태 보드" }));

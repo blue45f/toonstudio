@@ -27,7 +27,12 @@ import {
   type StudioWave3Runtime,
   type Wave3BackendTier,
 } from "./wave3-types";
-import { createWave3WasmRuntimeFromExports, isWave3WasmExports } from "./wave3-wasm-runtime";
+import { createDualAddressWidthWasmAdapter } from "../wasm64-runtime-bridge/wasm64-memory64-abi-adapter";
+import {
+  createWave3WasmRuntimeFromExports,
+  isWave3WasmExports,
+  type RawWave3WasmExports,
+} from "./wave3-wasm-runtime";
 
 export * from "./wave3-types";
 export * from "./wave3-js-reference";
@@ -99,7 +104,10 @@ export async function createStudioWave3RuntimeFromBytes(
   if (!isWave3WasmExports(instance.exports)) {
     throw new Error("studio-wasm64-extended-suite.wasm에 필수 Wave-3 export가 누락되었습니다");
   }
-  return createWave3WasmRuntimeFromExports(instance.exports, {
+  const dual = createDualAddressWidthWasmAdapter<RawWave3WasmExports>(instance.exports, {
+    binaryBytes: new Uint8Array(buffer),
+  });
+  return createWave3WasmRuntimeFromExports(dual.adaptedExports, {
     backend: options.backendHint ?? "wasm-relaxed-simd",
     resolvedUrl: options.wasmUrl ?? null,
     wasmByteLength: buffer.byteLength,

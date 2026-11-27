@@ -256,7 +256,7 @@ export function StudioCanvasViewportDomOverlays({
               aria-live="assertive"
               aria-atomic="true"
               data-studio-vello-unavailable="true"
-              className="absolute inset-x-4 top-4 z-[30] rounded-md border border-bad/50 bg-panel/95 px-4 py-3 text-sm font-medium text-bad shadow-lg"
+              className="absolute inset-x-4 top-16 z-[30] rounded-md border border-bad/50 bg-panel/95 px-4 py-3 text-sm font-medium text-bad shadow-lg"
             >
               <strong className="block">{t("studio.brushCanvasStatus.canvas.gpuPrepareFailed", "작업 화면을 표시하지 못했어요")}</strong>
               {velloHubAuthority.visibleCanvasCount === 1

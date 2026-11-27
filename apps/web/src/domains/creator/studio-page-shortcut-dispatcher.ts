@@ -478,7 +478,7 @@ export function buildStudioShortcutHandler(
       // 탭·메뉴·캔버스 내부 위젯이 이미 소비한 키는 전역 원고 편집 명령으로 다시 실행하지 않는다.
       if (e.defaultPrevented) return;
       if (e.isComposing || e.keyCode === 229) return;
-      const target = e.target as HTMLElement | null;
+      const target = e.target instanceof HTMLElement ? e.target : null;
       const typing = !!target && (
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
@@ -486,8 +486,8 @@ export function buildStudioShortcutHandler(
         target.isContentEditable ||
         target.getAttribute("role") === "textbox"
       );
-      const insideShortcutBoundary = target !== null &&
-        target.closest("[data-studio-shortcut-boundary='true'], [aria-modal='true']") !== null;
+      const insideShortcutBoundary = e.target instanceof Element &&
+        e.target.closest("[data-studio-shortcut-boundary='true'], [aria-modal='true']") !== null;
       // 포커스를 아직 모달 안으로 옮기지 못한 첫 프레임에도 Delete/Undo/B/E가 뒤 원고에 닿지 않게,
       // 이벤트 target뿐 아니라 열린 modal 자체를 전역 파괴 명령의 경계로 취급한다.
       const openModals = typeof document === "undefined"

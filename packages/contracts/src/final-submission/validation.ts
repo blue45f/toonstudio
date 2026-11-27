@@ -1,3 +1,4 @@
+import { coordinationStatus } from "./coordination";
 import { checkJsonInput, finalSubmissionBoardSchema } from "./schema";
 import { finalSubmissionTransitionErrors } from "./transitions";
 import { GLOBAL_PLATFORM_TASK_ID, REQUIRED_APPROVALS, REQUIRED_DOCUMENT_IDS } from "./types";
@@ -10,6 +11,12 @@ function checkUnique(records: { id: string }[], label: string, errors: string[])
 function checkMeaning(board: BoardState): string[] {
   const errors: string[] = [];
   checkUnique(board.documents, "관리 파일", errors); checkUnique(board.tasks, "점검 항목", errors); checkUnique(board.sources, "기준 자료", errors);
+  for (const item of board.coordination ?? []) {
+    if (item.sourceTaskId && !board.tasks.some(task => task.id === item.sourceTaskId)) errors.push(`${item.title}: 연결한 제출 점검 항목을 확인해 주세요.`);
+    if ((item.status === "검증 완료" || item.status === "최종 확인") && coordinationStatus(item, board.coordination) !== item.status) {
+      errors.push(`${item.title}: 최신 근거·버전 대조·승인 상태와 확인 시점을 먼저 확인해 주세요.`);
+    }
+  }
   for (const id of REQUIRED_DOCUMENT_IDS) if (!board.documents.some((doc) => doc.id === id)) errors.push(`${id}: 필수 관리 파일 기록이 누락되었습니다.`);
   for (const fixed of REQUIRED_APPROVALS) {
     const task = board.tasks.find((item) => item.id === fixed.id);
@@ -61,7 +68,13 @@ export function parseFinalSubmissionBoard(value: unknown, previous?: BoardState)
   if (unsafe) return { ok: false, errors: [unsafe] };
   const parsed = finalSubmissionBoardSchema.safeParse(value);
   if (!parsed.success) return { ok: false, errors: parsed.error.issues.slice(0, 20).map((issue) => `${issue.path.join(".") || "점검 보드"}: ${issue.message}`) };
-  const board: BoardState = parsed.data;
+  let board: BoardState = parsed.data;
+  // 구버전 클라이언트가 전송하지 않은 조정 원장을 유지한다. JSONB 전체 교체 저장에도 같은 기준을 적용한다.
+  if (board.coordination === undefined && previous?.coordination) {
+    board = { ...board, coordination: structuredClone(previous.coordination) };
+    const tooLarge = checkJsonInput(board);
+    if (tooLarge) return { ok: false, errors: [tooLarge] };
+  }
   const errors = [...checkMeaning(board), ...(previous ? finalSubmissionTransitionErrors(board, previous) : [])];
   return errors.length ? { ok: false, errors: [...new Set(errors)] } : { ok: true, value: board };
 }

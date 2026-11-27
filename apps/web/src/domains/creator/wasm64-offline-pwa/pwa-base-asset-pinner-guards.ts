@@ -17,6 +17,14 @@ export const DEFAULT_WASM64_CORE_ASSET_URLS = Object.freeze([
   "/wasm/studio-wasm64-drawing-core-relaxed-simd.wasm",
   "/wasm/studio-wasm64-extended-suite.wasm",
 ] as const);
+export const DEFAULT_WASM64_MEMORY64_ASSET_URLS = Object.freeze([
+  "/wasm/studio-wasm64-drawing-core-memory64.wasm",
+  "/wasm/studio-wasm64-extended-suite-memory64.wasm",
+] as const);
+export const ALL_WASM64_ASSET_URLS = Object.freeze([
+  ...DEFAULT_WASM64_CORE_ASSET_URLS,
+  ...DEFAULT_WASM64_MEMORY64_ASSET_URLS,
+] as const);
 export const DEFAULT_AI_STARTER_MANIFEST_URL = "/assets/ai-starter-pack/manifest.json";
 export const DEFAULT_SEMANTIC_INDEX_256D_URL =
   "/assets/ai-starter-pack/embeddings/catalog-semantic-index-256d.json";
@@ -126,6 +134,7 @@ export interface PwaBaseAssetPinnerOptions {
   readonly versionHash?: string; readonly buildTag?: string;
   readonly cachePrefix?: string; readonly stagingCachePrefix?: string;
   readonly includeDefaultCoreAssets?: boolean;
+  readonly includeMemory64Assets?: boolean;
   readonly fontUrls?: readonly string[]; readonly iconUrls?: readonly string[];
   readonly extraAssets?: readonly PwaBaseAssetDescriptor[]; readonly assets?: readonly PwaBaseAssetDescriptor[];
   readonly cacheStorage?: PinCacheStorageLike; readonly storageManager?: PinStorageManagerLike | null;
@@ -316,6 +325,11 @@ export function buildAssetList(options: PwaBaseAssetPinnerOptions): readonly Pwa
     ? [...options.assets]
     : [
       ...(options.includeDefaultCoreAssets !== false ? DEFAULT_PWA_BASE_ASSET_DESCRIPTORS : []),
+      ...(options.includeMemory64Assets
+        ? DEFAULT_WASM64_MEMORY64_ASSET_URLS.map(
+            (url): PwaBaseAssetDescriptor => ({ url, kind: "wasm", minBytes: 8 }),
+          )
+        : []),
       ...(options.fontUrls ?? []).map((url): PwaBaseAssetDescriptor => ({ url, kind: "font", minBytes: 1 })),
       ...(options.iconUrls ?? []).map((url): PwaBaseAssetDescriptor => ({ url, kind: "icon", minBytes: 1 })),
       ...(options.extraAssets ?? []),

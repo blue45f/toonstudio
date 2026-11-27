@@ -6,12 +6,16 @@ import type { ImpastoLightParams } from "./wasm64-hotpath-js-fallback";
 
 export type { ImpastoLightParams };
 
-/** Vite `apps/web/public/wasm/` 정적 자산 기본 경로 (스칼라 · SIMD128 · Relaxed-SIMD · 확장 스위트). */
+/** Vite `apps/web/public/wasm/` 정적 자산 기본 경로 (스칼라 · SIMD128 · Relaxed-SIMD · Memory64 · 확장 스위트). */
 export const STUDIO_WASM64_CORE_URL = "/wasm/studio-wasm64-drawing-core.wasm";
 export const STUDIO_WASM64_CORE_SIMD_URL = "/wasm/studio-wasm64-drawing-core-simd.wasm";
 export const STUDIO_WASM64_CORE_RELAXED_SIMD_URL =
   "/wasm/studio-wasm64-drawing-core-relaxed-simd.wasm";
+export const STUDIO_WASM64_CORE_MEMORY64_URL =
+  "/wasm/studio-wasm64-drawing-core-memory64.wasm";
 export const STUDIO_WASM64_EXTENDED_SUITE_URL = "/wasm/studio-wasm64-extended-suite.wasm";
+export const STUDIO_WASM64_EXTENDED_SUITE_MEMORY64_URL =
+  "/wasm/studio-wasm64-extended-suite-memory64.wasm";
 export const WASM64_HOTPATH_EXPECTED_ABI = 1;
 export const WASM64_HOTPATH_EXPECTED_CAPABILITIES = 0x7f;
 
@@ -28,11 +32,13 @@ export interface Wasm64CpuTierProbe {
   readonly webAssemblySupported: boolean;
   readonly simd128Supported: boolean;
   readonly relaxedSimdSupported: boolean;
+  readonly memory64Supported: boolean;
 }
 
 export interface WasmCoreTierCandidate {
   readonly tier: Wasm64ExecutableTier;
   readonly url: string;
+  readonly isMemory64?: boolean;
 }
 
 export interface WasmDirtyRect {
@@ -77,6 +83,8 @@ export const DEFAULT_WASM64_HOTPATH_ROUTING: Wasm64HotpathRoutingConfig = Object
 export interface StudioWasm64HotpathMetadata {
   readonly backendMode: Wasm64HotpathBackendMode;
   readonly cpuTier: Wasm64CpuTier;
+  readonly addressBits: 64 | 32;
+  readonly memory64Active: boolean;
   readonly resolvedUrl: string | null;
   readonly wasmByteLength: number;
   readonly abiVersion: number;
@@ -87,11 +95,14 @@ export interface StudioWasm64HotpathMetadata {
   readonly fallbackReason: string | null;
 }
 
+export type StudioWasm64HotpathTelemetry = StudioWasm64HotpathMetadata;
+
 export interface LoadStudioWasm64HotpathOptions {
   readonly wasmUrl?: string;
   readonly wasmBytes?: Uint8Array | ArrayBuffer;
   readonly cpuTierHint?: Wasm64ExecutableTier;
   readonly preferredTier?: Wasm64CpuTier;
+  readonly preferMemory64?: boolean;
   readonly fetchFn?: typeof fetch;
   readonly validateFn?: (bytes: Uint8Array) => boolean;
   readonly forceJsFallback?: boolean;
@@ -180,6 +191,7 @@ export interface ZeroCopyUnsharpViewResult {
 
 export interface StudioWasm64HotpathRuntime {
   readonly getMetadata: () => StudioWasm64HotpathMetadata;
+  readonly getTelemetry: () => StudioWasm64HotpathTelemetry;
   readonly getRouting: () => Wasm64HotpathRoutingConfig;
   readonly setRouting: (patch: Partial<Wasm64HotpathRoutingConfig>) => Wasm64HotpathRoutingConfig;
   readonly unsharpMaskRgba: (

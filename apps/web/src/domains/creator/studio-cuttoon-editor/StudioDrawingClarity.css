@@ -8,6 +8,7 @@
 /* 44px 단일 상단바 안에서 원고명과 저장 상태 요약을 고정 예약해 캔버스 원점이 밀리지 않게 한다. */
 .studio-drawing-clarity-title{position:relative;flex:1;min-width:96px;height:44px;min-height:44px;max-height:44px;overflow:hidden}
 .studio-drawing-clarity-title h1{position:absolute;inset:2px 0 auto;z-index:1;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:17px;word-break:keep-all}
+.studio-drawing-clarity-title:not(:has(button[data-studio-drawing-save-summary=true])) h1{inset:0;display:flex;align-items:center}
 .studio-drawing-clarity-title [data-studio-document-chrome-slot]{display:block;position:static;min-width:0;width:100%;max-width:none;margin:0}
 .studio-drawing-clarity-title [data-studio-save-status-chrome-mount],.studio-drawing-clarity-title [data-studio-save-sync-status-center]{display:block;min-width:0;width:100%}
 button[data-studio-drawing-save-summary=true]{display:flex;align-items:flex-end;min-height:44px;max-height:44px;min-width:44px;width:100%;gap:5px;padding:19px 0 4px;overflow:hidden;border:0;border-radius:8px;background:transparent;box-shadow:none;text-align:left;font-size:12px;line-height:1.25;color:var(--color-fg-2)}
@@ -173,7 +174,8 @@ body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-stud
 [data-studio-drawing-clarity=true][data-studio-drawing-clarity-mobile=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-status-bar=true]{bottom:max(calc(var(--studio-canvas-bottom-inset,4.5rem) + .5rem),calc(var(--studio-mobile-dock-measured-height,4rem) + .5rem),calc(env(safe-area-inset-bottom) + 4.5rem))!important;max-width:calc(100% - max(1.5rem,env(safe-area-inset-left) + env(safe-area-inset-right)))}
 /* 데스크톱에서 서비스 저하 배너나 좌측 열린 브러시 패널과 캔버스 상태 바가 겹치지 않게 비킨다. */
 html:has([data-service-degraded-banner="degraded"]) [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true]):not([data-studio-drawing-clarity-panel=pages]) [data-studio-status-bar=true]{bottom:max(12px,var(--service-status-overlay-clearance,0px))!important}
-[data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=brush]:not([data-studio-drawing-clarity-mobile=true]):not([data-studio-handedness="left"]):not([data-studio-handedness="left-handed"]) [data-studio-status-bar=true]{left:calc(min(320px,calc(100vw - 56px)) + 56px);max-width:calc(100% - min(320px,calc(100vw - 56px)) - 68px)}
+[data-studio-drawing-clarity=true]:is([data-studio-drawing-clarity-panel=brush],[data-studio-drawing-clarity-panel=pages]):not([data-studio-drawing-clarity-mobile=true]):not([data-studio-handedness="left"]):not([data-studio-handedness="left-handed"]) [data-studio-status-bar=true]{left:calc(min(320px,calc(100vw - 56px)) + 56px);max-width:calc(100% - min(320px,calc(100vw - 56px)) - 68px)}
+[data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=pages]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-status-bar=true]{bottom:108px!important}
 .studio-drawing-clarity-entry-mobile{padding:4px 8px;border-top:1px solid var(--color-line)}
 .studio-drawing-clarity-entry-mobile:empty{display:none}
 .studio-drawing-clarity-entry-mobile>.studio-drawing-clarity-button{width:100%}
@@ -508,6 +510,9 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
   }
   body:has(#studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true])) [data-studio-draft-save-placement=floating]{
     top:calc(6.5rem + env(safe-area-inset-top));
+  }
+  body:has(#studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true])) [data-studio-shell-floating-target="offline-readiness"]{
+    top:calc(9.5rem + env(safe-area-inset-top));
   }
   #studio-app-shell[data-studio-stroke-active="true"] .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
     opacity:0.24;

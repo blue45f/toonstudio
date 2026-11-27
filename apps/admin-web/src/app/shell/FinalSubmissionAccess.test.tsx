@@ -13,6 +13,10 @@ vi.mock("../../domains/final-submission/FinalSubmissionBoard", () => ({
   },
 }));
 
+vi.mock("../../domains/final-submission/SubmissionCoordinationBoard", () => ({
+  SubmissionCoordinationBoard: ({ userIdentity }: { userIdentity: string }) => <h1>조정 기록 {userIdentity}</h1>,
+}));
+
 beforeEach(() => { mocks.identity.mockReset(); mocks.mount.mockReset(); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
@@ -47,6 +51,21 @@ describe("최종 제출 점검의 서버 관리자 권한 경계", () => {
     fireEvent.focus(window);
     await screen.findByText("로그아웃");
     expect(screen.queryByText("개인 제출 자료 admin-b")).toBeNull();
+  });
+
+  it("조정 화면은 활성 운영자의 신원을 사용하고 권한 회수 즉시 조정 기록을 제거한다", async () => {
+    const identity = Promise.withResolvers<{ id: string; role: string }>();
+    mocks.identity.mockReturnValueOnce(identity.promise);
+    render(<FinalSubmissionAccess coordination />);
+    expect(screen.queryByRole("heading")).toBeNull();
+    identity.resolve({ id: "operator-a", role: "operator" });
+    await screen.findByRole("heading", { name: "조정 기록 operator-a" });
+    expect(mocks.mount).not.toHaveBeenCalled();
+    fireEvent(window, new Event("toonstudio:final-submission-access-denied"));
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.queryByText("조정 기록 operator-a")).toBeNull();
+    fireEvent.focus(window);
+    expect(mocks.identity).toHaveBeenCalledTimes(1);
   });
 
   it("보드 API가 거부하면 자료를 제거하고 자동 재시도 루프를 막는다", async () => {

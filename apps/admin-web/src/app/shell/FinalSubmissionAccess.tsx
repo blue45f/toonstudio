@@ -1,12 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { FinalSubmissionBoard } from "../../domains/final-submission/FinalSubmissionBoard";
 import { loadAdminIdentity, type AdminIdentity } from "../../platform/http/admin-identity";
 
+const SubmissionCoordinationBoard = lazy(async () => {
+  const module = await import("../../domains/final-submission/SubmissionCoordinationBoard");
+  return { default: module.SubmissionCoordinationBoard };
+});
+
 type Access = { phase: "checking" | "ready" | "denied"; actor: AdminIdentity | null; error: string };
 
 /** 서버에서 활성 관리자임을 확인한 동안에만 제출 점검 자료를 표시한다. */
-export function FinalSubmissionAccess() {
+export function FinalSubmissionAccess({ coordination = false }: { coordination?: boolean }) {
   const [access, setAccess] = useState<Access>({ phase: "checking", actor: null, error: "" });
   const [attempt, setAttempt] = useState(0);
   const sequence = useRef(0);
@@ -65,14 +70,16 @@ export function FinalSubmissionAccess() {
     };
   }, [attempt]);
 
-  return <section className="admin-final-submission-access" aria-label="최종 제출 점검 관리자 권한 확인">
+  return <section className="admin-final-submission-access" aria-label={coordination ? "증빙·승인 조정 관리자 권한 확인" : "최종 제출 점검 관리자 권한 확인"}>
     {access.phase === "checking" && <p role="status">서버에서 관리자 권한을 확인하고 있습니다.</p>}
     {access.phase === "denied" && <div className="policy-alert" role="alert">
       <p>{access.error}</p>
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>관리자 권한 다시 확인</button>
     </div>}
     {access.actor && <div hidden={access.phase !== "ready"} inert={access.phase !== "ready"}>
-      <FinalSubmissionBoard key={`${access.actor.id}:${access.actor.role}`} userIdentity={access.actor.id} />
+      {coordination ? <Suspense fallback={<p role="status">증빙·승인 조정 보드를 여는 중입니다.</p>}>
+        <SubmissionCoordinationBoard key={`${access.actor.id}:${access.actor.role}`} userIdentity={access.actor.id} />
+      </Suspense> : <FinalSubmissionBoard key={`${access.actor.id}:${access.actor.role}`} userIdentity={access.actor.id} />}
     </div>}
   </section>;
 }
