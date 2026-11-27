@@ -1,3 +1,4 @@
+import { buildLocalColorMood } from "@toonstudio/studio-project-model/character-art-style";
 import type {
   OpenAiAssistStructuredResult,
   StudioOpenAiAssistMode,
@@ -177,20 +178,7 @@ export function buildDeterministicAssistResult(
       };
 
     case "color-mood-director":
-      return {
-        mode,
-        data: {
-          emotionLabel: `${tone} 핵심 감정 팔레트`,
-          moodSummary: `"${snippet}" 장면의 감정 대비를 살리는 OKLCH 기반 배색과 조명 가이드입니다.`,
-          palette: [
-            { role: "배경 베이스", nameKo: "차분한 슬레이트 네이비", oklch: "oklch(0.28 0.04 252)", usageTip: "원경과 그림자 면적의 60%에 배치해 안정감을 줍니다." },
-            { role: "인물 키 톤", nameKo: "따뜻한 미드 앰버", oklch: "oklch(0.76 0.11 72)", usageTip: "인물 얼굴과 주요 시선 지점에 집중 배치합니다." },
-            { role: "감정 포인트", nameKo: "선명한 코랄 크림슨", oklch: "oklch(0.64 0.19 24)", usageTip: "긴장·심박·핵심 소품 10% 이하로만 강조하세요." },
-          ],
-          lightingGuide: "키 라이트는 45도 측면에서 따뜻하게, 그림자 채움은 차가운 보색 계열로 분리해 입체감을 살리세요.",
-          contrastWarning: "말풍선 배경과 인접 배경 명도 차이를 최소 4.5:1 이상 유지해 모바일 야외 가독성을 확보하세요.",
-        },
-      };
+      return { mode, data: buildLocalColorMood(input.inputText) };
 
     case "sfx-onomatopoeia-lab":
       return {

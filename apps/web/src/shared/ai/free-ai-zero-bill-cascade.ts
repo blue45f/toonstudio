@@ -1,4 +1,6 @@
+import { buildLocalDialogueLayout, buildLocalScriptCuts } from "@toonstudio/contracts/studio-assist-local-script";
 import { redactCreatorSensitiveText } from "@toonstudio/contracts/studio-pii-redactor";
+import { buildLocalColorMood } from "@toonstudio/studio-project-model/character-art-style";
 
 import { withCsrfProtection } from "@/shared/lib/csrf";
 import { useApp } from "@/shared/lib/store";
@@ -450,14 +452,36 @@ function summarizeStructuredData(
     data.sceneEnergy,
   ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
 
+  const sourceLimits: Partial<Record<FreeAiZeroBillModeId, number>> = {
+    "script-to-cuts": 20, "dialogue-polish": 12, "color-mood-director": 8,
+  };
+  const sourceLimit = sourceLimits[mode];
   const bullets: string[] = [];
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
-      for (const entry of value.slice(0, 4)) {
+      for (const entry of value.slice(0, sourceLimit ?? 4)) {
         if (typeof entry === "string") {
           bullets.push(entry);
         } else if (entry && typeof entry === "object") {
           const rec = entry as Record<string, unknown>;
+          if (mode === "script-to-cuts" && key === "cuts" && typeof rec.visualAction === "string") {
+            const speech = typeof rec.dialogue === "string" && rec.dialogue.trim() && !rec.visualAction.includes(rec.dialogue)
+              ? ` — ${rec.dialogue}` : "";
+            bullets.push(`${rec.cutNumber}컷 · ${rec.visualAction}${speech}`);
+            continue;
+          }
+          if (mode === "dialogue-polish" && key === "balloons" && typeof rec.line === "string") {
+            const lines = [rec.line, rec.subBubble].filter((line): line is string => typeof line === "string" && Boolean(line));
+            const label = typeof rec.toneLabel === "string" ? `[${rec.toneLabel}] ` : "";
+            const reason = typeof rec.reason === "string" && rec.reason.trim() ? ` — ${rec.reason}` : "";
+            bullets.push(`${label}${lines.join(" ")}${reason}`);
+            continue;
+          }
+          if (mode === "color-mood-director" && key === "palette" && typeof rec.oklch === "string") {
+            const tip = typeof rec.usageTip === "string" && rec.usageTip.trim() ? ` — ${rec.usageTip}` : "";
+            bullets.push(`[${rec.role}] ${rec.nameKo} · ${rec.oklch}${tip}`);
+            continue;
+          }
           const primary =
             rec.headline ??
             rec.visualAction ??
@@ -498,7 +522,7 @@ function summarizeStructuredData(
       typeof value === "string" &&
       value !== headlineCandidate &&
       value.trim().length > 0 &&
-      bullets.length < 4 &&
+      (sourceLimit !== undefined || bullets.length < 4) &&
       key !== "emotionLabel"
     ) {
       bullets.push(value);
@@ -507,7 +531,7 @@ function summarizeStructuredData(
 
   return {
     headlineKo: headlineCandidate ?? fallbackHeadline,
-    bulletsKo: bullets.length > 0 ? bullets.slice(0, 6) : [fallbackHeadline],
+    bulletsKo: bullets.length > 0 ? (sourceLimit === undefined ? bullets.slice(0, 6) : bullets) : [fallbackHeadline],
   };
 }
 
@@ -520,21 +544,12 @@ export function buildLocalZeroCostAssistResult(
   const snippet = masked.inputText.slice(0, 64) || "장면 초안";
   const title = masked.projectTitle || "현재 원고";
 
-  const bulletsByMode: Record<FreeAiZeroBillModeId, readonly string[]> = {
+  type TemplateMode = Exclude<FreeAiZeroBillModeId, "script-to-cuts" | "dialogue-polish" | "color-mood-director">;
+  const bulletsByMode: Record<TemplateMode, readonly string[]> = {
     "idea-remix": [
       `[통념 뒤집기] "${snippet}"에서 조력자의 숨은 동기를 먼저 암시하세요.`,
       "[현실 공감 훅] 첫 컷 상단에 짧은 독백과 220px 여백을 배치해 이탈을 막으세요.",
       "[4컷 전개] 상황 제시 → 이상 징후 → 표정 반응 → 다음 화 질문 순으로 압축하세요.",
-    ],
-    "script-to-cuts": [
-      `1컷(와이드): '${title}' 공간 분위기와 인물의 거리감을 설정합니다.`,
-      "2컷(미디엄): 핵심 대사를 꺼내며 손동작과 시선을 교차합니다.",
-      "3컷(클로즈업): 여백 360px 뒤에 표정 변화를 크게 잡아 긴장을 높입니다.",
-    ],
-    "dialogue-polish": [
-      `[구어체] "${snippet.slice(0, 22)}" + 보조 말풍선으로 호흡을 나누세요.`,
-      "[핵심형] 불필요한 접속사를 빼고 16자 이내로 짧게 압축하세요.",
-      "[여운형] 말줄임과 표정 컷을 붙여 감정 잔향을 남기세요.",
     ],
     "export-preflight-coach": [
       "[말풍선] 모바일 800px 폭 기준 2~3줄 이내, 최소 16px 폰트를 유지하세요.",
@@ -553,11 +568,6 @@ export function buildLocalZeroCostAssistResult(
     "bg3d-camera-blocking": [
       "[카메라] 35mm(FOV 54.4°), 위치 [2.4, 1.45, 4.2] → 타깃 [0, 1.35, 0] 약로우 구도",
       "[조명] 골든아워 키 라이트 + 45도 림라이트, 캐릭터 발바닥 Z=0/Y=0 접지 확인",
-    ],
-    "color-mood-director": [
-      "[배경 베이스] oklch(0.28 0.04 252) 슬레이트 네이비 (60%)",
-      "[인물 키] oklch(0.76 0.11 72) 미드 앰버 · [포인트] oklch(0.64 0.19 24) 코랄 크림슨",
-      "[대비] 말풍선과 인접 배경 명도 대비 4.5:1 이상 유지",
     ],
     "sfx-onomatopoeia-lab": [
       "탁—! / タンッ！ / SNAP! — 동작선 끝점에 12도 기울기 굵은 고딕 배치",
@@ -587,9 +597,20 @@ export function buildLocalZeroCostAssistResult(
     ],
   };
 
-  const bulletsKo = bulletsByMode[input.mode];
-  const headlineKo = localReviewHeadlines[input.mode]
-    ?? `[로컬 무과금 코치 · ₩0] ${modeSpec?.labelKo ?? input.mode} 초안이 준비되었어요.`;
+  let structuredData: Record<string, unknown> = {};
+  let bulletsKo: readonly string[];
+  let headlineKo: string;
+  if (input.mode === "script-to-cuts" || input.mode === "dialogue-polish" || input.mode === "color-mood-director") {
+    const source = masked.inputText.slice(0, 6_000);
+    if (input.mode === "script-to-cuts") structuredData = buildLocalScriptCuts(source, title.slice(0, 120));
+    else if (input.mode === "dialogue-polish") structuredData = buildLocalDialogueLayout(source);
+    else structuredData = buildLocalColorMood(source);
+    ({ bulletsKo, headlineKo } = summarizeStructuredData(input.mode, structuredData));
+  } else {
+    bulletsKo = bulletsByMode[input.mode];
+    headlineKo = localReviewHeadlines[input.mode]
+      ?? `[로컬 무과금 코치 · ₩0] ${modeSpec?.labelKo ?? input.mode} 초안이 준비되었어요.`;
+  }
 
   return {
     ok: true,
@@ -604,6 +625,7 @@ export function buildLocalZeroCostAssistResult(
     headlineKo,
     bulletsKo,
     rawData: {
+      ...structuredData,
       mode: input.mode,
       title,
       summary: headlineKo,

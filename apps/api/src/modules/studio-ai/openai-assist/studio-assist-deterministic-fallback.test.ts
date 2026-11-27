@@ -13,6 +13,48 @@ describe("로컬 창작 보조의 원문 보존", () => {
     }
   });
 
+  it("한국어 원고의 지정색을 첫 표기와 순서대로 보존하고 같은 색의 대소문자·축약 표기를 합친다", () => {
+    const inputText = "첫 장면은 #F00으로, 다음은 #00FF00, 끝은 #0000ff80. 다시 #ff0000FF, #0f0.";
+    const result = buildDeterministicAssistResult("color-mood-director", { inputText });
+    if (result.mode !== "color-mood-director") throw new Error("배색 모드 필요");
+    expect(result.data.palette.map((color) => color.nameKo)).toEqual(["#F00", "#00FF00", "#0000ff80"]);
+    expect(result.data.palette.every((color) => color.role === "원고 지정색")).toBe(true);
+    // CSS sRGB 원색의 OKLCH 좌표와 알파 128/255를 확인한다.
+    expect(result.data.palette.map((color) => color.oklch)).toEqual([
+      "oklch(0.627955 0.257683 29.233885)", "oklch(0.86644 0.294827 142.495339)",
+      "oklch(0.452014 0.313214 264.052021 / 0.501961)",
+    ]);
+    expect(validateAssistModeStructuredOutput(result.mode, result.data)).not.toBeNull();
+  });
+
+  it("투명도만 다른 색을 구별하고 부족한 견본은 예시로 표시한다", () => {
+    const result = buildDeterministicAssistResult("color-mood-director", { inputText: "견본은 #FFF와 #FFF8, #ffffff88." });
+    if (result.mode !== "color-mood-director") throw new Error("배색 모드 필요");
+    expect(result.data.palette).toMatchObject([
+      { role: "원고 지정색", nameKo: "#FFF", oklch: "oklch(1 0 0)" },
+      { role: "원고 지정색", nameKo: "#FFF8", oklch: "oklch(1 0 0 / 0.533333)" },
+      { role: "예시 후보" },
+    ]);
+    expect(result.data.moodSummary).toContain("나머지는 비교용 예시");
+  });
+
+  it("HEX가 없는 원고와 잘못된 색 표기의 일부를 짐작하지 않고 예시만 제공한다", () => {
+    const result = buildDeterministicAssistResult("color-mood-director", { inputText: "비 오는 정류장. 색은 미정. #ABCDE #F00G #123456789" });
+    if (result.mode !== "color-mood-director") throw new Error("배색 모드 필요");
+    expect(result.data.palette).toHaveLength(3);
+    expect(result.data.palette.every((color) => color.role === "예시 후보")).toBe(true);
+    expect(result.data.emotionLabel).toBe("예시 배색");
+    expect(validateAssistModeStructuredOutput(result.mode, result.data)).not.toBeNull();
+  });
+
+  it("서로 다른 지정색이 아홉 개면 계약 한도인 앞 여덟 색과 표시 범위를 안내한다", () => {
+    const colors = Array.from({ length: 9 }, (_, i) => "#00" + i);
+    const result = buildDeterministicAssistResult("color-mood-director", { inputText: colors.join(" ") });
+    if (result.mode !== "color-mood-director") throw new Error("배색 모드 필요");
+    expect(result.data.palette.map((color) => color.nameKo)).toEqual(colors.slice(0, 8));
+    expect(result.data.moodSummary).toContain("처음 여덟 색");
+  });
+
   it("발화만 골라 내일 오전이라는 기한과 존댓말을 말풍선 끝까지 보존한다", () => {
     const spoken = "저는 이것을 한 번 더 확인하고 싶습니다. 내일 오전까지 보내도 괜찮을까요?";
     const result = buildDeterministicAssistResult("dialogue-polish", { inputText: `수아의 대사: ‘${spoken}’ 존댓말과 기한을 유지해 주세요.` });
