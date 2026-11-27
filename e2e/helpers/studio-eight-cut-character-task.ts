@@ -43,7 +43,7 @@ async function captureTemplate(page: Page, name: string, angle: string) {
   const shaper = page.locator(shaperRoot).filter({ visible: true }).first();
   const camera = shaper.getByRole("group", { name: "카메라 프리셋", exact: true });
   await expect(camera).toBeVisible({ timeout: 150000 });
-  await shaper.getByRole("button", { name: "확대", exact: true }).filter({ visible: true }).first().waitFor();
+  await shaper.getByRole("button", { name: "확대", exact: true }).filter({ visible: true }).first().waitFor({ timeout: 150000 });
   const choice = camera.getByRole("button", { name: angle, exact: true });
   await expect(choice).toBeEnabled({ timeout: 150000 });
   await choice.click();
@@ -103,8 +103,16 @@ async function seedManuscript(page: Page) {
 // Select and focus the real image through Studio before aiming the pointer. The page may
 // open scrolled or clipped at its saved zoom, so the canvas container is not a world origin.
 async function cutMenu(page: Page, cut: Cut) {
+  console.log("[studio-eight-cut] Selecting layer", cut.id);
   await page.keyboard.press("v");
-  await selectStudioLayerThroughNavigator(page, cut.id);
+  try {
+    await selectStudioLayerThroughNavigator(page, cut.id);
+  } catch (cause) {
+    const rows = await page.locator("[data-studio-layer-row]").evaluateAll(nodes =>
+      nodes.map(node => [node.id, node.getAttribute("aria-selected")]));
+    throw new Error("Studio layer navigator did not select " + cut.id + "; rows=" + JSON.stringify(rows), { cause });
+  }
+  console.log("[studio-eight-cut] Layer selected; focusing viewport", cut.id);
   await page.keyboard.press("Shift+f");
   let target: { x: number; y: number } | null = null;
   let diagnostics = "";
@@ -147,16 +155,22 @@ async function cutMenu(page: Page, cut: Cut) {
   }
   if (!target) throw new Error("Missing Studio pointer target");
   const { x, y } = target as { x: number; y: number };
+  console.log("[studio-eight-cut] Canvas hit verified", cut.id, { x, y });
   await page.mouse.click(x, y, { button: "right" });
-  return page.getByRole("menu").filter({ visible: true }).last();
+  const menu = page.getByRole("menu").filter({ visible: true }).last();
+  await expect(menu).toBeVisible({ timeout: 30000 });
+  console.log("[studio-eight-cut] Canvas menu opened", cut.id, await menu.getByRole("menuitem").allTextContents());
+  return menu;
 }
 
 async function selectSlot(shaper: Locator, group: string, slot: string) {
+  console.log("[studio-eight-cut] Choosing editor group and slot", group, slot);
   await shaper.getByRole("combobox", { name: "캐릭터 편집 분류" }).filter({ visible: true }).first().selectOption(group);
   await shaper.locator('[data-character-slot="' + slot + '"]').filter({ visible: true }).first().click();
 }
 
 async function chooseCard(shaper: Locator, id: string) {
+  console.log("[studio-eight-cut] Waiting for preset card", id);
   const card = shaper.locator('[data-character-slot-card="' + id + '"]').filter({ visible: true }).first();
   await expect(card).toBeVisible({ timeout: 60000 });
   await expect(card).not.toHaveAttribute("aria-disabled", "true");
@@ -182,6 +196,8 @@ async function pixels(page: Page, src: string) {
 }
 
 export async function runStudioEightCutTask(page: Page, info: TestInfo) {
+  // Keep locator/navigation mistakes short while explicit GPU and batch deadlines remain in force.
+  page.setDefaultTimeout(30_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/studio/draft/eight-cut-task?language=ko", { waitUntil: "domcontentloaded" });
   await expect(page.locator("[data-studio-canvas-viewport]").first()).toHaveAttribute("data-studio-canvas-input-state", "ready", { timeout: 180000 });
@@ -190,6 +206,7 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   const local = before[2];
   const beforePixels: Awaited<ReturnType<typeof pixels>>[] = [];
   for (const cut of before) beforePixels.push(await pixels(page, cut.src));
+  console.log("[studio-eight-cut] Decoded eight baseline rasters");
   const individuallyOpened: string[] = [];
   const start = performance.now();
   const tools = await cutMenu(page, local);
@@ -197,6 +214,7 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   individuallyOpened.push(local.id);
   const shaper = page.locator(shaperRoot).filter({visible:true}).first();
   await expect(shaper).toBeVisible({ timeout: 120000 });
+  console.log("[studio-eight-cut] Selected cut editor opened", local.id);
   await selectSlot(shaper, "identity", "hair");
   await chooseCard(shaper, "hair:ponytail");
   console.log("[studio-eight-cut] Hairstyle applied");
@@ -211,10 +229,13 @@ export async function runStudioEightCutTask(page: Page, info: TestInfo) {
   console.log("[studio-eight-cut] Right-hand pose applied");
   await saveShot(shaper);
   const editMs = performance.now() - start;
+  console.log("[studio-eight-cut] Individual cut saved", local.id, editMs);
   // A different cut of the same actor is a stable refresh entry even if the edited shot was selected.
   const refresh = await cutMenu(page, before[0]);
   await refresh.getByRole("menuitem", { name:"이 페이지의 같은 캐릭터 컷 갱신", exact:true }).click();
   const receipt = page.getByRole("dialog", { name:"캐릭터 컷 갱신", exact:true });
+  await expect(receipt).toBeVisible({ timeout: 30000 });
+  console.log("[studio-eight-cut] Page refresh started");
   await expect(receipt.getByRole("button", { name:"닫기", exact:true })).toBeVisible({ timeout: 480000 });
   const settledMs = performance.now() - start;
   const summary = await receipt.innerText();
