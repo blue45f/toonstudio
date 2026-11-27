@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -234,8 +234,14 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(aiDisclosure.open).toBe(false);
     expect(screen.queryByTestId("ai-quick-blueprint-composer")).toBeNull();
     const summary = within(aiDisclosure).getByText("글 한 줄로 콘티 초안 만들기");
-    fireEvent.click(summary);
-    const ideaInput = await screen.findByLabelText("웹툰 아이디어 한 줄 입력") as HTMLInputElement;
+    await act(async () => {
+      const toggled = new Promise<Event>((resolve) => aiDisclosure.addEventListener("toggle", resolve, { once: true }));
+      fireEvent.click(summary);
+      await toggled;
+    });
+    expect(aiDisclosure.open).toBe(true);
+    await act(() => vi.dynamicImportSettled());
+    const ideaInput = within(aiDisclosure).getByLabelText("웹툰 아이디어 한 줄 입력") as HTMLInputElement;
     fireEvent.change(ideaInput, { target: { value: "달에서 만난 고양이" } });
     fireEvent.click(summary);
     expect(aiDisclosure.open).toBe(false);
