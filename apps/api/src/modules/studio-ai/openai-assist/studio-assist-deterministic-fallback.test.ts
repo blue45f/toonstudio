@@ -24,6 +24,17 @@ describe("로컬 창작 보조의 원문 보존", () => {
     expect(result.data.balloons.some((balloon) => balloon.line.startsWith("저는 이걸 "))).toBe(true);
   });
 
+  it.each([
+    ["비가 그치면 저녁 7시에 도서관 앞에서 만나자.", "젖은 스케치북은 내가 가져갈 테니까 너는 색연필만 챙겨 와."],
+    ["젖은 스케치북은 내가 가져갈 테니까", "너는 색연필만 챙겨 와."],
+    ["젖은 스케치북을 챙겨 와.", ""],
+  ])("핵심형 대사의 문장·절 경계를 살리고 짧은 대사는 그대로 둔다 (%s)", (first, second) => {
+    const inputText = [first, second].filter(Boolean).join(" ");
+    const result = buildDeterministicAssistResult("dialogue-polish", { inputText });
+    if (result.mode !== "dialogue-polish") throw new Error("대사 모드 필요");
+    expect(result.data.balloons[1]).toMatchObject({ line: first, subBubble: second });
+  });
+
   it("낱말을 강조하는 따옴표는 대사 전체로 오인하지 않는다", () => {
     const inputText = "그날 네가 ‘내일’이라고 했잖아.";
     const result = buildDeterministicAssistResult("dialogue-polish", { inputText });

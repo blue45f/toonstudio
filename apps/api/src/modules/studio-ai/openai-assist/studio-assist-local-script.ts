@@ -17,13 +17,18 @@ function excerpt(text: string, limit: number): string {
 }
 
 function splitBalloon(text: string, preferred: number): [string, string] {
+  if (Array.from(text).length <= 24) return [text, ""];
   const lower = Math.max(1, text.length - 240);
   const upper = Math.min(300, text.length - 1);
   const breaks = [...text.matchAll(/\s+/gu)].map((space) => space.index).filter((at) => at >= lower && at <= upper);
   if (breaks.length === 0 && text.length <= 300) return [text, ""];
-  const at = breaks.reduce((best, candidate) =>
+  // 수식어와 명사를 떼지 않도록 문장 끝, 절 끝, 일반 띄어쓰기 순서로 고른다.
+  const sentences = breaks.filter((at) => /[.!?…。！？][”’"'」)]?$/u.test(text.slice(0, at)));
+  const clauses = breaks.filter((at) => /(?:[,，;；]|니까|지만|는데|다면|으면)$/u.test(text.slice(0, at)));
+  const candidates = sentences.length ? sentences : clauses.length ? clauses : breaks;
+  const at = candidates.reduce((best, candidate) =>
     Math.abs(candidate - preferred) < Math.abs(best - preferred) ? candidate : best,
-  breaks[0] ?? upper);
+  candidates[0] ?? upper);
   // 긴 단일 단어도 두 필드의 계약 범위 안에서 보존한다.
   const boundary = /[\uD800-\uDBFF]/u.test(text.charAt(at - 1)) ? at - 1 : at;
   return [text.slice(0, boundary).trimEnd(), text.slice(boundary).trimStart()];
@@ -63,8 +68,9 @@ export function buildLocalDialogueLayout(input: string): LocalData<"dialogue-pol
       },
       {
         toneLabel: DIALOGUE_TONE_LABELS[1], line: shortLine, subBubble: shortTail,
-        reason: contracted !== text ? "지시대명사를 입말로 줄이고 긴 구절은 두 말풍선에 나눕니다."
-          : "조건과 높임말을 그대로 두고 한 말풍선에서 읽어야 하는 분량을 줄이세요.",
+        reason: contracted !== text ? "지시대명사를 입말로 줄여 원래 뜻을 유지합니다."
+          : shortTail ? "조건과 높임말을 유지하고 두 말풍선에 나눠 읽도록 했습니다."
+          : "발화를 한 말풍선에 담아 한 호흡에 읽도록 했습니다.",
       },
       {
         toneLabel: DIALOGUE_TONE_LABELS[2], line, subBubble,
