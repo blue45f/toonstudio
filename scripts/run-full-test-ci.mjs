@@ -42,6 +42,7 @@ export async function runFullTestCi({
   });
   // This retains the PG preflight, every required DB suite, and the marketplace verifier.
   await runDatabase({ arguments_: [], environment });
+  await runChild("pnpm", ["run", "test:cloudflare-static-edge"], childEnvironment);
   await runChild(process.execPath, fullTestRemainderArguments(), childEnvironment);
   await runChild("pnpm", ["run", "test:perf"], childEnvironment);
 }

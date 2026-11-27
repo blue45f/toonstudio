@@ -53,15 +53,17 @@ describe("complete CI root and performance execution", () => {
     } finally { await rm(temporary, { recursive: true, force: true }); }
   });
 
-  it("completes database proof before root and keeps the existing performance entrypoint", async () => {
+  it("DB 검증 후 엣지 Node 테스트, 나머지 루트 Vitest, 성능 검사를 한 번씩 실행한다", async () => {
     const events = [];
     const runDatabase = vi.fn(async (input) => { events.push(["database", input]); });
     const runChild = vi.fn(async (command, args, env) => { events.push(["child", command, args, env]); });
     await runFullTestCi({ environment, runDatabase, runChild });
     expect(events[0]).toEqual(["database", { arguments_: [], environment }]);
-    expect(events[1].slice(0, 3)).toEqual(["child", process.execPath, fullTestRemainderArguments()]);
-    expect(events[2].slice(0, 3)).toEqual(["child", "pnpm", ["run", "test:perf"]]);
-    expect(events).toHaveLength(3);
+    expect(events.slice(1).map((event) => event.slice(0, 3))).toEqual([
+      ["child", "pnpm", ["run", "test:cloudflare-static-edge"]],
+      ["child", process.execPath, fullTestRemainderArguments()],
+      ["child", "pnpm", ["run", "test:perf"]],
+    ]);
     for (const event of events.slice(1)) expect(event[3]).toMatchObject({
       CI: "1", NODE_ENV: "test", DATABASE_URL: environment.TEST_DATABASE_URL,
       TEST_DATABASE_URL: environment.TEST_DATABASE_URL,
@@ -71,12 +73,16 @@ describe("complete CI root and performance execution", () => {
     });
   });
 
-  it.each(["database", "root", "perf"])("propagates the %s failure without running later phases", async (phase) => {
+  it.each([
+    ["database", 0], ["test:cloudflare-static-edge", 1], ["root", 2], ["test:perf", 3],
+  ])("%s 실패를 전달하고 다음 단계를 시작하지 않는다", async (phase, expectedChildCalls) => {
     const failed = new Error(`${phase} failed`);
     const runDatabase = vi.fn(async () => { if (phase === "database") throw failed; });
-    const runChild = vi.fn(async (command) => { if (command === (phase === "root" ? process.execPath : "pnpm")) throw failed; });
+    const runChild = vi.fn(async (command, args) => {
+      if ((command === process.execPath && phase === "root") || (command === "pnpm" && args[1] === phase)) throw failed;
+    });
     await expect(runFullTestCi({ environment, runDatabase, runChild })).rejects.toBe(failed);
-    expect(runChild).toHaveBeenCalledTimes(phase === "database" ? 0 : phase === "root" ? 1 : 2);
+    expect(runChild).toHaveBeenCalledTimes(expectedChildCalls);
   });
 
   it("refuses missing database prerequisites before any phase", async () => {
