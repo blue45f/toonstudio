@@ -26,15 +26,22 @@ export function isStudioDryMediaUnionComposableProgramPin(
     && Object.keys(candidate).every((key) => key === "version" || key === "programDigest");
 }
 
-export const STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION =
-  "dry-media-kernel-dab-path-v1" as const;
-export const STUDIO_DRY_MEDIA_KERNEL_PROGRAM_DIGEST =
-  "30c48947ab54ce7efde21a4935d7d5e278e08510e061fc5fbefb7056de818860" as const;
+const DRY_MEDIA_KERNEL_V1 = {
+  version: "dry-media-kernel-dab-path-v1",
+  programDigest: "30c48947ab54ce7efde21a4935d7d5e278e08510e061fc5fbefb7056de818860",
+} as const;
 
-export interface StudioDryMediaKernelProgramPin {
-  readonly version: typeof STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION;
-  readonly programDigest: typeof STUDIO_DRY_MEDIA_KERNEL_PROGRAM_DIGEST;
-}
+export const STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION =
+  "dry-media-kernel-sheet-contact-v2" as const;
+export const STUDIO_DRY_MEDIA_KERNEL_PROGRAM_DIGEST =
+  "fe356b665b799b3e61af867fb6bddb9804df4e64018106ee1c7e796a27a0ad27" as const;
+
+export type StudioDryMediaKernelProgramPin =
+  | typeof DRY_MEDIA_KERNEL_V1
+  | Readonly<{
+      version: typeof STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION;
+      programDigest: typeof STUDIO_DRY_MEDIA_KERNEL_PROGRAM_DIGEST;
+    }>;
 
 export function studioDryMediaKernelDabProgramPin(): StudioDryMediaKernelProgramPin {
   return Object.freeze({
@@ -48,9 +55,11 @@ export function isStudioDryMediaKernelDabProgramPin(
 ): value is StudioDryMediaKernelProgramPin {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const candidate = value as Record<string, unknown>;
-  return candidate.version === STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION
-    && candidate.programDigest === STUDIO_DRY_MEDIA_KERNEL_PROGRAM_DIGEST
-    && Object.keys(candidate).every((key) => key === "version" || key === "programDigest");
+  if (!Object.keys(candidate).every((key) => key === "version" || key === "programDigest")) return false;
+  return (candidate.version === STUDIO_DRY_MEDIA_KERNEL_PROGRAM_VERSION
+      && candidate.programDigest === STUDIO_DRY_MEDIA_KERNEL_PROGRAM_DIGEST)
+    || (candidate.version === DRY_MEDIA_KERNEL_V1.version
+      && candidate.programDigest === DRY_MEDIA_KERNEL_V1.programDigest);
 }
 
 export const STUDIO_SOFT_FALLOFF_LINEAR_PROGRAM_VERSION =
