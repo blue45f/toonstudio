@@ -13,10 +13,13 @@ import {
 import {
   planStudioOilRibbonCarrier,
   studioOilRibbonProgramsForBrush,
-  STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR,
   STUDIO_OIL_IMPASTO_RELIEF_OVERLAY_VERSION,
   studioOilRibbonPathData,
 } from "../brush/studio-oil-ribbon-carrier";
+import {
+  STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR,
+  STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR,
+} from "../brush/studio-oil-ribbon-impasto-relief";
 import {
   planStudioAngledNibStrokeLocalCoverage,
   type StudioStrokeLocalCoveragePolygon,
@@ -600,10 +603,10 @@ export function serializeFreehandMedia(
       `<path data-paint-bristle-lane="true" d="${lane.runs.map((run) => studioOilRibbonPathData(run)).join("")}" fill="none" stroke="${escapeXml(stroke)}" stroke-width="${fmt(lane.lineWidth)}" stroke-linecap="round" stroke-linejoin="round" opacity="${fmtDabOpacity(lane.opacity * strokeOpacity)}"/>`
     )).join("");
     // impastoRelief 오버레이(위 매트릭스가 릴리프를 켜는 모든 id) — Canvas sceneFunc과 같은 페인트
-    // 계약(하이라이트=공유 화이트 상수 screen, 섀도우=스트로크 색 multiply, 레인당 한 번 페인트).
+    // 계약(하이라이트=흰색 screen, 섀도우=중성 회색 multiply, 레인당 한 번 페인트).
     // 플랜에 키가 없으면 빈 문자열이라 기존 유화 lane 직렬화 바이트가 그대로 유지된다.
     const relief = (carrier.impastoReliefLanes ?? []).map((lane) => (
-      `<path data-paint-impasto-relief="${lane.kind}" d="${lane.runs.map((run) => studioOilRibbonPathData(run)).join("")}" fill="none" stroke="${lane.kind === "highlight" ? STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR : escapeXml(stroke)}" stroke-width="${fmt(lane.lineWidth)}" stroke-linecap="round" stroke-linejoin="round" opacity="${fmtDabOpacity(lane.opacity * strokeOpacity)}" style="mix-blend-mode:${lane.kind === "highlight" ? "screen" : "multiply"}"/>`
+      `<path data-paint-impasto-relief="${lane.kind}" d="${lane.runs.map((run) => studioOilRibbonPathData(run)).join("")}" fill="none" stroke="${lane.kind === "highlight" ? STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR : STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR}" stroke-width="${fmt(lane.lineWidth)}" stroke-linecap="round" stroke-linejoin="round" opacity="${fmtDabOpacity(lane.opacity * strokeOpacity)}" style="mix-blend-mode:${lane.kind === "highlight" ? "screen" : "multiply"}"/>`
     )).join("");
     return `<g data-brush-engine="oil-ribbon-carrier-v1">${body}<g style="mix-blend-mode:multiply">${bristles}</g>${relief === "" ? "" : `<g data-brush-engine-overlay="${STUDIO_OIL_IMPASTO_RELIEF_OVERLAY_VERSION}">${relief}</g>`}</g>`;
   }
