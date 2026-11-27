@@ -86,7 +86,7 @@ function loadRecipeRuntime(): Promise<RecipeRuntime> {
 }
 
 export function attachStudioBg3dEditorRecipeHost(h: StudioBg3dEditorRecipeHost): void {
-  h.placeCustomModelWithRecipe = async (modelId, recipe, options): Promise<boolean> => {
+  h.placeCustomModelWithRecipe = async (modelId, recipe, ...options): Promise<boolean> => {
     if (placementInFlight) {
       h.setSurfaceSnapStatus({ tone: "info", message: STUDIO_BG3D_RECIPE_IN_PROGRESS_MESSAGE });
       return false;
@@ -105,7 +105,7 @@ export function attachStudioBg3dEditorRecipeHost(h: StudioBg3dEditorRecipeHost):
         });
         return false;
       }
-      return await runtime.placeStudioBg3dModelWithRecipe(h, modelId, recipe, RECIPE_RUN_DEPS, options);
+      return await runtime.placeStudioBg3dModelWithRecipe(h, modelId, recipe, RECIPE_RUN_DEPS, ...options);
     } catch {
       h.setSurfaceSnapStatus({ tone: "error", message: STUDIO_BG3D_RECIPE_UNEXPECTED_MESSAGE });
       return false;

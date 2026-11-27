@@ -47,6 +47,9 @@ describe("attachStudioBg3dEditorRecipeHost — 가벼운 접합부", () => {
     const { host } = createHost();
     await expect(host.placeCustomModelWithRecipe("model-1", "floor")).resolves.toBe(true);
     expect(run.place).toHaveBeenCalledWith(host, "model-1", "floor", expect.any(Object));
+    const options = { frameEmptyScene: true, indoorLighting: true };
+    await expect(host.placeCustomModelWithRecipe("model-1", "floor", options)).resolves.toBe(true);
+    expect(run.place).toHaveBeenLastCalledWith(host, "model-1", "floor", expect.any(Object), options);
     run.place.mockResolvedValue(false);
     await expect(host.placeCustomModelWithRecipe("model-1", "wall")).resolves.toBe(false);
   });
