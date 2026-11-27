@@ -3,11 +3,12 @@ import type {
   StudioOpenAiAssistMode,
   StudioOpenAiCreativeAssistRequest,
 } from "../studio-openai-creative-assist.dto";
+import { buildLocalDialogueLayout, buildLocalScriptCuts } from "./studio-assist-local-script";
 
 function compactSnippet(input: string, maxLen = 64): string {
   const cleaned = input.replace(/\s+/gu, " ").trim();
   if (!cleaned) return "장면 초안";
-  return cleaned.length > maxLen ? `${cleaned.slice(0, maxLen - 1)}…` : cleaned;
+  return cleaned.length > maxLen ? `${cleaned.slice(0, maxLen - 1).replace(/[\uD800-\uDBFF]$/u, "")}…` : cleaned;
 }
 
 /**
@@ -69,107 +70,43 @@ export function buildDeterministicAssistResult(
       };
 
     case "script-to-cuts":
-      return {
-        mode,
-        data: {
-          episodeGoal: `'${title}' 핵심 장면("${snippet}")을 세로 스크롤 호흡에 맞춰 4컷으로 구성합니다.`,
-          pacingTip: "도입 1~2컷은 180~240px 보통 여백, 반전 3~4컷 사이는 360px 넓은 여백으로 시선을 붙잡으세요.",
-          cuts: [
-            {
-              cutNumber: 1,
-              beatKind: "setup",
-              shotType: "와이드 샷 · 공간 설정",
-              visualAction: `${snippet}의 공간 분위기와 인물의 거리감을 한눈에 보여 주는 도입 컷`,
-              dialogue: "",
-              scrollGapHint: "도입 여백 200px로 배경 인지 시간 확보",
-            },
-            {
-              cutNumber: 2,
-              beatKind: "dialogue",
-              shotType: "미디엄 샷 · 3/4 시점",
-              visualAction: "주인공이 상대의 반응을 살피며 핵심 화두를 꺼낸다",
-              dialogue: "지금 이 말, 꼭 해야겠어.",
-              scrollGapHint: "보통 여백 180px로 대화 리듬 유지",
-            },
-            {
-              cutNumber: 3,
-              beatKind: "reaction",
-              shotType: "클로즈업 · 눈빛 포커스",
-              visualAction: "상대의 표정이 미세하게 굳으며 시선이 흔들린다",
-              dialogue: "…그걸 어떻게 알았어?",
-              scrollGapHint: "넓은 여백 360px로 정적과 긴장 강조",
-            },
-            {
-              cutNumber: 4,
-              beatKind: "reveal",
-              shotType: "로우 앵글 · 결정적 단서",
-              visualAction: "숨겨 둔 단서나 행동 변화가 드러나며 다음 컷 궁금증을 남긴다",
-              dialogue: "처음부터 알고 있었거든.",
-              scrollGapHint: "엔딩 여백 420px로 여운 확보",
-            },
-          ],
-        },
-      };
+      return { mode, data: buildLocalScriptCuts(input.inputText, title) };
 
     case "dialogue-polish":
-      return {
-        mode,
-        data: {
-          readabilityNote: "모바일 말풍선 한 칸당 16~24자 이내로 끊어 한눈에 읽히도록 3가지 톤으로 정리했습니다.",
-          balloons: [
-            {
-              toneLabel: "자연스러운 구어체",
-              line: compactSnippet(input.inputText, 24),
-              subBubble: "지금 얘기해도 될까?",
-              reason: "긴 설명을 본 말풍선과 보조 말풍선으로 나눠 호흡을 살렸습니다.",
-            },
-            {
-              toneLabel: "짧고 강한 핵심형",
-              line: "더는 못 피해. 지금 끝내자.",
-              subBubble: "",
-              reason: "불필요한 접속사를 빼고 감정 동사 중심으로 압축했습니다.",
-            },
-            {
-              toneLabel: "감정 여운 강조형",
-              line: "그때 말했어야 했는데…",
-              subBubble: "너무 늦어버렸네.",
-              reason: "말줄임과 여백으로 표정 컷의 여운을 받쳐 줍니다.",
-            },
-          ],
-        },
-      };
+      return { mode, data: buildLocalDialogueLayout(input.inputText) };
 
     case "export-preflight-coach":
       return {
         mode,
         data: {
-          readinessSummary: `'${title}' 출고 전 핵심 점검(말풍선 밀도·여백·Rights BOM)을 무과금 규칙 코치로 확인했습니다.`,
+          readinessSummary: `'${title}' 원고 메모로 만든 출고 체크리스트입니다. 최종 원고 이미지와 에셋 사용 허가 자료를 열어 아래 항목을 확인하세요.`,
           episodeBlurbSuggestion: `${title} — ${compactSnippet(input.inputText, 48)}`,
           checks: [
             {
               category: "말풍선 가독성",
-              severity: "pass",
-              detail: "한 말풍선당 2~3줄 이내, 폰트 크기 최소 16px(800px 폭 기준) 이상을 유지하세요.",
+              severity: "tip",
+              detail: "배포할 화면 폭으로 원고를 열어 말풍선 안에서 글자가 겹치거나 대사가 잘리는 곳이 있는지 확인하세요.",
             },
             {
               category: "스크롤 호흡",
               severity: "tip",
-              detail: "클라이맥스 직전 컷 간격을 320px 이상 확보하면 모바일 집중도가 높아집니다.",
+              detail: "휴대전화로 회차를 스크롤하며 장면 전환이 보이는지, 엔딩 대사 전에 반응 컷을 읽을 시간이 있는지 확인하세요.",
             },
             {
               category: "권리·에셋 BOM",
-              severity: "fix",
-              detail: "내보내기 전 3D 배경·폰트·브러시 상업 라이선스(Rights BOM) 누락 여부를 확인하세요.",
+              severity: "tip",
+              detail: "사용한 3D 배경·폰트·브러시 목록을 각 라이선스와 대조해 상업 이용 조건과 출처 표시 의무를 확인하세요.",
             },
           ],
         },
       };
 
-    case "character-bible-forge":
+    case "character-bible-forge": {
+      const statedName = input.inputText.match(/^(?:캐릭터명|캐릭터 이름|이름)[ \t]*[:：][ \t]*([^\n\r,|;]+)/mu)?.[1]?.trim();
       return {
         mode,
         data: {
-          characterName: `${title} 핵심 캐릭터`,
+          characterName: compactSnippet(statedName || "미정", 100),
           archetypeKo: `${tone} 중심의 입체적 주연`,
           speechTone: "평소에는 짧고 담백한 구어체를 쓰되, 핵심 가치관이 흔들릴 때 반말·단정형으로 톤이 바뀝니다.",
           appearancePalette: "어두운 코트 계열 메인 컬러 + 시선을 잡는 포인트 악세서리 1종(실루엣 식별용).",
@@ -185,16 +122,17 @@ export function buildDeterministicAssistResult(
           visualConsistencyCue: "좌우 비대칭 앞머리·소매 접힘·특정 소품 위치를 모든 컷의 고정 앵커로 유지하세요.",
         },
       };
+    }
 
     case "continuity-plot-audit":
       return {
         mode,
         data: {
           overallConsistencyScore: 84,
-          summary: `'${title}' 초안("${snippet}")의 시간선·소품·감정선 연속성을 규칙 기반으로 점검했습니다.`,
+          summary: `'${title}'의 컷을 비교할 때 쓸 연속성 점검표입니다. 점수는 템플릿 예시값입니다.`,
           issues: [
             {
-              severity: "warn",
+              severity: "tip",
               category: "시간·조명 연속성",
               locationHint: "장면 전환 컷",
               conflictDetail: "실내/실외 전환 시 시간대(노을·야간)와 그림자 방향이 모호해질 수 있습니다.",
@@ -315,7 +253,7 @@ export function buildDeterministicAssistResult(
       return {
         mode,
         data: {
-          rhythmVerdict: "초반 도입을 빠르게 열고 중반 감정 컷에서 여백을 넓히면 완독률이 높아집니다.",
+          rhythmVerdict: "컷 사이의 여백을 바꿔 보며 읽는 속도를 비교할 수 있는 구성 예시입니다. 여백과 엔딩 점수는 템플릿 예시값입니다.",
           averageGapPx: 260,
           cliffhangerScore: 82,
           cliffhangerTip: "마지막 컷 직전 400px 이상의 백색/암전 여백을 두어 엔딩 대사의 충격을 극대화하세요.",

@@ -42,6 +42,29 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     expect(masked.sanitizedText).not.toContain(fakeKey);
   });
 
+  it.each([
+    { mode: "continuity-plot-audit", headlineField: "summary", scoreField: "overallConsistencyScore", score: 84 },
+    { mode: "scroll-pacing-auditor", headlineField: "rhythmVerdict", scoreField: "cliffhangerScore", score: 82 },
+  ] as const)("$mode 로컬 예시는 화면·복사에 쓰는 요약에서 고정 점수를 제거한다", async ({ mode, headlineField, scoreField, score }) => {
+    const input = { mode, inputText: "1컷에서 민서가 문을 열고 2컷에서 우산을 펼친다." };
+    const headline = `원고 평가 ${score}/100`;
+    const serverResult = (provider: string, providerTier: string) => runFreeAiZeroBillAssist(input, {
+      fetchImpl: async () => Response.json({
+        provider,
+        providerTier,
+        result: { mode, data: { [headlineField]: headline, [scoreField]: score } },
+      }),
+    });
+    const offline = buildLocalZeroCostAssistResult(input);
+    const fromLocalServer = await serverResult("local-zero-cost-fallback", "local-fallback");
+    for (const result of [offline, fromLocalServer]) {
+      expect(result.headlineKo).toContain("예시");
+      expect([result.headlineKo, ...result.bulletsKo].join("\n")).not.toMatch(/\d+\/100/u);
+    }
+    const fromCloud = await serverResult("github-models-free", "cloud-free");
+    expect(fromCloud.headlineKo).toBe(headline);
+  });
+
   it("GET /api/studio/ai/free-quota-status 오프라인 시 안전한 ₩0 스냅샷과 게이지를 반환한다", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
     const snapshot = await fetchFreeAiQuotaStatus({ fetchImpl: fetchMock });
@@ -53,7 +76,7 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
 
     const gauge = computeZeroBillSafetyGauge(snapshot);
     expect(gauge.status).toBe("safe");
-    expect(gauge.badgeTextKo).toContain("유료 과금 0원 보호 ON");
+    expect(gauge.badgeTextKo).toContain("창작자 이용료 ₩0");
   });
 
   it("모든 클라우드 무료 공급자가 90% 안전선으로 차단되면 게이지가 cutoff-local 상태를 표시한다", () => {
@@ -76,6 +99,32 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     expect(gauge.status).toBe("cutoff-local");
     expect(gauge.activeCloudCount).toBe(0);
     expect(gauge.detailTextKo).toContain("90%");
+  });
+
+  it("계정 확인이 필요한 공급자의 실제 사용률과 차단 이유를 표시한다", () => {
+    const base = createOfflineZeroBillQuotaSnapshot();
+    const provider = { ...base.providers[0], configured: true, blocked: true, blockReason: "free_billing_unconfirmed" };
+    const gauge = computeZeroBillSafetyGauge({ ...base, providers: [provider] });
+    expect(gauge.utilizationPct).toBe(0);
+    expect(gauge.detailTextKo).toContain("무료 자격과 추가 과금 차단 설정");
+  });
+
+  it("원고와 작품 제목·장르를 전송 전에 마스킹하고 오프라인 응답에도 같은 횟수를 표시한다", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 503 }));
+    const input = {
+      mode: "script-to-cuts" as const,
+      inputText: "인물이 draft@example.com에 메일을 보낸다.",
+      projectTitle: "title@example.com",
+      genreOrTone: "tone@example.com",
+    };
+    const result = await runFreeAiZeroBillAssist(input, { fetchImpl: fetchMock });
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.projectTitle).toBe("[이메일 비공개]");
+    expect(body.genreOrTone).toBe("[이메일 비공개]");
+    expect(body.inputText).toContain("[이메일 비공개]");
+    expect(result.piiRedactedCount).toBe(3);
+    expect(result.rawData.title).toBe("[이메일 비공개]");
+    expect(JSON.stringify(result)).not.toContain("@example.com");
   });
 
   it.each([402, 429])(

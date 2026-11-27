@@ -28,7 +28,8 @@ export type ZeroBillBlockReason =
   | "safety_cutoff_90pct"
   | "paid_model_blocked"
   | "retired_model_blocked"
-  | "auth_failed";
+  | "auth_failed"
+  | "free_billing_unconfirmed";
 
 export interface ZeroBillProviderResolution {
   readonly id: ZeroBillFreeProviderId;
@@ -36,6 +37,7 @@ export interface ZeroBillProviderResolution {
   readonly priority: number;
   readonly tier: "cloud-free" | "local-fallback";
   readonly configured: boolean;
+  readonly freeBillingConfirmed: boolean;
   readonly endpoint: string;
   readonly apiKey: string;
   readonly model: string;
@@ -73,6 +75,8 @@ export interface ZeroBillProviderQuotaStatus {
 }
 
 export interface ZeroBillFreeQuotaStatusReport {
+  /** 이 서비스는 공급자 계정의 청구 명세를 조회하지 않는다. */
+  readonly providerBilledUsd: null;
   readonly guaranteedZeroCostUsd: 0;
   readonly guaranteedZeroCostLabel: "$0.00";
   readonly guaranteedZeroCostKrwLabel: "₩0";
@@ -181,6 +185,12 @@ function readFirstEnv(env: EnvLike, keys: readonly string[]): string {
   return "";
 }
 
+// 무료 자격과 추가 유료 청구 차단을 해당 키의 계정에서 확인한 운영 설정만 허용한다.
+function freeBillingConfirmed(env: EnvLike, vendor: string): boolean {
+  const name = `STUDIO_AI_FREE_${vendor}_CONFIRMED`;
+  return readFirstEnv(env, [name, `ONPOD_API_ENV_${name}`]).toLowerCase() === "true";
+}
+
 function parseClampedInt(
   raw: string | undefined,
   fallback: number,
@@ -223,20 +233,6 @@ export function classifyUpstreamFailure(status: number, bodyText: string): ZeroB
   if (status === 401 || status === 403) return "auth_failed";
   if (QUOTA_ERROR_PATTERN.test(truncated)) return "insufficient_quota";
   return null;
-}
-
-function isLoopbackOllamaUrl(raw: string): boolean {
-  if (!raw) return false;
-  try {
-    const parsed = new URL(raw);
-    const host = parsed.hostname.toLowerCase();
-    return (
-      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
-      (host === "127.0.0.1" || host === "localhost" || host === "::1")
-    );
-  } catch {
-    return false;
-  }
 }
 
 export function isFreeModelWhitelisted(
@@ -301,39 +297,39 @@ export function resolveZeroBillFreeProviders(
   if (PROJECT_ID_PATTERN.test(rawProject)) openaiHeaders["OpenAI-Project"] = rawProject;
 
   const geminiKey = readFirstEnv(env, [
-    "GEMINI_API_KEY",
-    "GOOGLE_AI_API_KEY",
     "STUDIO_AI_FREE_GEMINI_API_KEY",
     "ONPOD_API_ENV_STUDIO_AI_FREE_GEMINI_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_AI_API_KEY",
   ]);
   const geminiModel =
     readFirstEnv(env, [
-      "STUDIO_FREE_AI_GEMINI_MODEL",
-      "GEMINI_MODEL",
       "STUDIO_AI_FREE_GEMINI_MODEL",
       "ONPOD_API_ENV_STUDIO_AI_FREE_GEMINI_MODEL",
+      "STUDIO_FREE_AI_GEMINI_MODEL",
+      "GEMINI_MODEL",
     ]) || "gemini-2.5-flash";
   const geminiCheck = isFreeModelWhitelisted("gemini-free", geminiModel);
 
   const githubKey = readFirstEnv(env, [
     "STUDIO_AI_FREE_GITHUB_MODELS_API_KEY",
-    "GITHUB_MODELS_API_KEY",
     "ONPOD_API_ENV_STUDIO_AI_FREE_GITHUB_MODELS_API_KEY",
+    "GITHUB_MODELS_API_KEY",
   ]);
   const githubModel =
-    readFirstEnv(env, ["STUDIO_AI_FREE_GITHUB_MODELS_MODEL", "GITHUB_MODELS_MODEL"]) ||
+    readFirstEnv(env, ["STUDIO_AI_FREE_GITHUB_MODELS_MODEL", "ONPOD_API_ENV_STUDIO_AI_FREE_GITHUB_MODELS_MODEL", "GITHUB_MODELS_MODEL"]) ||
     "openai/gpt-4o-mini";
   const githubCheck = isFreeModelWhitelisted("github-models-free", githubModel);
 
   const cfToken = readFirstEnv(env, [
     "STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN",
-    "CLOUDFLARE_WORKERS_AI_API_TOKEN",
     "ONPOD_API_ENV_STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN",
+    "CLOUDFLARE_WORKERS_AI_API_TOKEN",
   ]);
   const cfAccount = readFirstEnv(env, [
     "STUDIO_AI_FREE_CLOUDFLARE_ACCOUNT_ID",
-    "CLOUDFLARE_ACCOUNT_ID",
     "ONPOD_API_ENV_STUDIO_AI_FREE_CLOUDFLARE_ACCOUNT_ID",
+    "CLOUDFLARE_ACCOUNT_ID",
   ]).toLowerCase();
   const cfModel =
     readFirstEnv(env, [
@@ -388,17 +384,13 @@ export function resolveZeroBillFreeProviders(
     ]) || "openrouter/free";
   const openrouterCheck = isFreeModelWhitelisted("openrouter-free", openrouterModel);
 
-  const ollamaUrl = readFirstEnv(env, ["STUDIO_LOCAL_OLLAMA_URL"]);
-  const localEndpoint = isLoopbackOllamaUrl(ollamaUrl)
-    ? `${ollamaUrl.replace(/\/+$/u, "")}/v1/chat/completions`
-    : "local://toonstudio-deterministic-coach";
-
   return [
     {
       id: "openai-free-share",
       labelKo: "OpenAI 무료 데이터 공유 토큰",
       priority: 1,
       tier: "cloud-free",
+      freeBillingConfirmed: freeBillingConfirmed(env, "OPENAI"),
       configured: openaiKey.length > 0,
       endpoint: "https://api.openai.com/v1/chat/completions",
       apiKey: openaiKey,
@@ -421,6 +413,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "Gemini 무료 티어",
       priority: 2,
       tier: "cloud-free",
+      freeBillingConfirmed: freeBillingConfirmed(env, "GEMINI"),
       configured: geminiKey.length > 0,
       endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       apiKey: geminiKey,
@@ -437,6 +430,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "GitHub Models 무료",
       priority: 3,
       tier: "cloud-free",
+      freeBillingConfirmed: freeBillingConfirmed(env, "GITHUB_MODELS"),
       configured: githubKey.length > 0,
       endpoint: "https://models.github.ai/inference/chat/completions",
       apiKey: githubKey,
@@ -453,6 +447,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "Cloudflare Workers AI 무료",
       priority: 4,
       tier: "cloud-free",
+      freeBillingConfirmed: freeBillingConfirmed(env, "CLOUDFLARE"),
       configured: cfToken.length > 0 && cfAccountValid,
       endpoint: cfAccountValid
         ? `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/v1/chat/completions`
@@ -471,6 +466,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "Mistral 무료 티어",
       priority: 5,
       tier: "cloud-free",
+      freeBillingConfirmed: freeBillingConfirmed(env, "MISTRAL"),
       configured: mistralKey.length > 0,
       endpoint: "https://api.mistral.ai/v1/chat/completions",
       apiKey: mistralKey,
@@ -487,6 +483,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "SambaNova 무료 티어",
       priority: 6,
       tier: "cloud-free",
+      freeBillingConfirmed: freeBillingConfirmed(env, "SAMBANOVA"),
       configured: sambanovaKey.length > 0,
       endpoint: "https://api.sambanova.ai/v1/chat/completions",
       apiKey: sambanovaKey,
@@ -503,6 +500,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "Groq 무료 플랜",
       priority: 7,
       tier: "cloud-free",
+      freeBillingConfirmed: freeBillingConfirmed(env, "GROQ"),
       configured: groqKey.length > 0,
       endpoint: "https://api.groq.com/openai/v1/chat/completions",
       apiKey: groqKey,
@@ -519,6 +517,7 @@ export function resolveZeroBillFreeProviders(
       labelKo: "OpenRouter 무료(:free 전용)",
       priority: 8,
       tier: "cloud-free",
+      freeBillingConfirmed: true,
       configured: openrouterKey.length > 0,
       endpoint: "https://openrouter.ai/api/v1/chat/completions",
       apiKey: openrouterKey,
@@ -532,13 +531,14 @@ export function resolveZeroBillFreeProviders(
     },
     {
       id: "local-zero-cost-fallback",
-      labelKo: "로컬 무과금 폴백 (Ollama · WebNN · 결정론적 코치)",
+      labelKo: "로컬 무과금 코치",
       priority: 9,
       tier: "local-fallback",
+      freeBillingConfirmed: true,
       configured: true,
-      endpoint: localEndpoint,
+      endpoint: "local://toonstudio-deterministic-coach",
       apiKey: "",
-      model: isLoopbackOllamaUrl(ollamaUrl) ? "ollama-local" : "toonstudio-deterministic-coach-v2",
+      model: "toonstudio-deterministic-coach-v2",
       modelAllowed: true,
       modelBlockReason: null,
       supportsStrictJsonSchema: true,

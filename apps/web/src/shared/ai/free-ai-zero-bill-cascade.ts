@@ -1,3 +1,5 @@
+import { redactCreatorSensitiveText } from "@toonstudio/contracts/studio-pii-redactor";
+
 import { withCsrfProtection } from "@/shared/lib/csrf";
 import { useApp } from "@/shared/lib/store";
 
@@ -180,6 +182,8 @@ export interface FreeAiProviderQuotaSnapshot {
 }
 
 export interface FreeAiQuotaStatusSnapshot {
+  readonly providerBilledUsd: null;
+  /** 무료 경로에서 창작자에게 부과하는 금액. 공급자 계정의 실제 청구액은 별도 확인한다. */
   readonly guaranteedZeroCostUsd: 0;
   readonly guaranteedZeroCostLabel: "$0.00";
   readonly guaranteedZeroCostKrwLabel: "₩0";
@@ -218,11 +222,13 @@ export interface FreeAiZeroBillAssistInput {
 }
 
 export interface FreeAiZeroBillAssistResponse {
+  readonly providerBilledUsd?: null;
   readonly ok: true;
   readonly providerId: string;
   readonly providerTier: "cloud-free" | "local-fallback";
   readonly model: string;
   readonly mode: FreeAiZeroBillModeId;
+  /** ToonStudio 창작자 이용료. 공급자의 실측 청구액은 포함하지 않는다. */
   readonly costGuaranteedZeroUsd: 0;
   readonly paidBillingBlocked: true;
   readonly piiRedactedCount: number;
@@ -232,27 +238,18 @@ export interface FreeAiZeroBillAssistResponse {
   readonly fallbackNoticeKo: string | null;
 }
 
-const CLIENT_SECRET_PATTERN =
-  /\b(?:sk-[A-Za-z0-9_-]{16,}|Bearer\s+[A-Za-z0-9._-]{20,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{30,})\b/gu;
-const CLIENT_EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu;
-const CLIENT_PHONE_PATTERN =
-  /(?:(?<!\w)\+82[-\s.]?0?1[016789]|\b(?:01[016789]|02|0[3-6][1-5]|070))[-\s.]?\d{3,4}[-\s.]?\d{4}\b/gu;
+export const maskCreatorInputBeforeAiSend = redactCreatorSensitiveText;
 
-export function maskCreatorInputBeforeAiSend(raw: string): {
-  readonly sanitizedText: string;
-  readonly redactedCount: number;
-} {
-  let redactedCount = 0;
-  const mask = (text: string, pattern: RegExp, token: string): string =>
-    text.replace(pattern, () => {
-      redactedCount += 1;
-      return token;
-    });
-  let current = raw;
-  current = mask(current, CLIENT_SECRET_PATTERN, "[비밀키 마스킹됨]");
-  current = mask(current, CLIENT_EMAIL_PATTERN, "[이메일 비공개]");
-  current = mask(current, CLIENT_PHONE_PATTERN, "[연락처 비공개]");
-  return { sanitizedText: current, redactedCount };
+function maskAssistInput(input: FreeAiZeroBillAssistInput) {
+  const text = redactCreatorSensitiveText(input.inputText.trim());
+  const title = redactCreatorSensitiveText(input.projectTitle?.trim() ?? "");
+  const tone = redactCreatorSensitiveText(input.genreOrTone?.trim() ?? "");
+  return {
+    inputText: text.sanitizedText,
+    projectTitle: title.sanitizedText,
+    genreOrTone: tone.sanitizedText,
+    redactedCount: text.redactedCount + title.redactedCount + tone.redactedCount,
+  };
 }
 
 export function createOfflineZeroBillQuotaSnapshot(
@@ -265,6 +262,7 @@ export function createOfflineZeroBillQuotaSnapshot(
   ).toISOString();
 
   return {
+    providerBilledUsd: null,
     guaranteedZeroCostUsd: 0,
     guaranteedZeroCostLabel: "$0.00",
     guaranteedZeroCostKrwLabel: "₩0",
@@ -347,8 +345,8 @@ export function computeZeroBillSafetyGauge(
       utilizationPct: 0,
       activeCloudCount: 0,
       configuredCloudCount: 0,
-      badgeTextKo: "유료 과금 0원 보호 ON · 무료 소진 시 자동 중지",
-      detailTextKo: "로컬 무과금 코치가 즉시 준비되어 있으며 유료 과금은 ₩0으로 차단됩니다.",
+      badgeTextKo: "창작자 이용료 ₩0 · 무료 경로만 사용",
+      detailTextKo: "로컬 코치를 사용할 수 있습니다.",
     };
   }
 
@@ -357,14 +355,20 @@ export function computeZeroBillSafetyGauge(
   );
 
   if (activeCloud.length === 0) {
+    const cutoffPct = Math.round(snapshot.safetyCutoffRatio * 100);
+    let reasonKo = "사용 가능한 무료 클라우드가 없습니다.";
+    if (configuredCloud.every((item) => item.blockReason === "free_billing_unconfirmed")) {
+      reasonKo = "클라우드 계정의 무료 자격과 추가 과금 차단 설정을 확인해야 합니다.";
+    } else if (configuredCloud.every((item) => item.blockReason === "safety_cutoff_90pct")) {
+      reasonKo = `클라우드 무료 사용량이 안전 한도(${cutoffPct}%)에 도달했습니다.`;
+    }
     return {
       status: "cutoff-local",
-      utilizationPct: 100,
+      utilizationPct: avgUtil,
       activeCloudCount: 0,
       configuredCloudCount: configuredCloud.length,
-      badgeTextKo: "유료 과금 0원 보호 ON · 무료 소진 시 자동 중지",
-      detailTextKo:
-        "클라우드 무료 안전 한도(90%)에 도달해 외부 호출을 차단했습니다. 로컬 무과금 코치로 계속 작업할 수 있어요.",
+      badgeTextKo: "창작자 이용료 ₩0 · 무료 경로만 사용",
+      detailTextKo: `${reasonKo} 로컬 코치로 계속 작업할 수 있습니다.`,
     };
   }
 
@@ -373,8 +377,8 @@ export function computeZeroBillSafetyGauge(
     utilizationPct: Math.min(100, Math.max(0, avgUtil)),
     activeCloudCount: activeCloud.length,
     configuredCloudCount: configuredCloud.length,
-    badgeTextKo: "유료 과금 0원 보호 ON · 무료 소진 시 자동 중지",
-    detailTextKo: `활성 무료 클라우드 ${activeCloud.length}/${configuredCloud.length}개 · 안전선 ${Math.round(snapshot.safetyCutoffRatio * 100)}% 이내 ($0.00 보장)`,
+    badgeTextKo: "창작자 이용료 ₩0 · 무료 경로만 사용",
+    detailTextKo: `활성 무료 클라우드 ${activeCloud.length}/${configuredCloud.length}개 · 서버의 일일 할당량 추정치입니다. 실제 청구액은 공급자 계정에서 확인하세요.`,
   };
 }
 
@@ -400,6 +404,7 @@ export async function fetchFreeAiQuotaStatus(options: {
       return createOfflineZeroBillQuotaSnapshot();
     }
     return {
+      providerBilledUsd: null,
       guaranteedZeroCostUsd: 0,
       guaranteedZeroCostLabel: "$0.00",
       guaranteedZeroCostKrwLabel: "₩0",
@@ -418,6 +423,11 @@ export async function fetchFreeAiQuotaStatus(options: {
     return createOfflineZeroBillQuotaSnapshot();
   }
 }
+
+const localReviewHeadlines: Partial<Record<FreeAiZeroBillModeId, string>> = {
+  "continuity-plot-audit": "연속성 점검 예시 · 앞뒤 컷의 시간대와 소품 위치를 직접 비교해 보세요.",
+  "scroll-pacing-auditor": "스크롤 호흡 예시 · 모바일 미리보기에서 컷 사이 여백과 엔딩 호흡을 확인하세요.",
+};
 
 function summarizeStructuredData(
   mode: FreeAiZeroBillModeId,
@@ -505,10 +515,10 @@ export function buildLocalZeroCostAssistResult(
   input: FreeAiZeroBillAssistInput,
   fallbackNoticeKo: string | null = null,
 ): FreeAiZeroBillAssistResponse {
-  const masked = maskCreatorInputBeforeAiSend(input.inputText.trim());
+  const masked = maskAssistInput(input);
   const modeSpec = FREE_AI_14_ASSIST_MODES.find((item) => item.id === input.mode);
-  const snippet = masked.sanitizedText.slice(0, 64) || "장면 초안";
-  const title = input.projectTitle?.trim() || "현재 원고";
+  const snippet = masked.inputText.slice(0, 64) || "장면 초안";
+  const title = masked.projectTitle || "현재 원고";
 
   const bulletsByMode: Record<FreeAiZeroBillModeId, readonly string[]> = {
     "idea-remix": [
@@ -558,7 +568,7 @@ export function buildLocalZeroCostAssistResult(
       "[Camera Raw] Exposure +0.15 · Contrast +12 · Clarity +14 · Dehaze +8 · Grain 9%",
     ],
     "scroll-pacing-auditor": [
-      "[권장 평균 여백] 260px · 클리프행어 강도 82/100",
+      "[여백 예시] 같은 두 컷 사이의 간격을 좁히고 넓혀, 대사 뒤에 어떤 호흡이 어울리는지 비교하세요.",
       "[엔딩 훅] 마지막 컷 직전 420px 낙하 여백 후 클로즈업 1컷으로 마무리하세요.",
     ],
     "thumbnail-hook-optimizer": [
@@ -578,7 +588,8 @@ export function buildLocalZeroCostAssistResult(
   };
 
   const bulletsKo = bulletsByMode[input.mode];
-  const headlineKo = `[로컬 무과금 코치 · ₩0] ${modeSpec?.labelKo ?? input.mode} 초안이 준비되었어요.`;
+  const headlineKo = localReviewHeadlines[input.mode]
+    ?? `[로컬 무과금 코치 · ₩0] ${modeSpec?.labelKo ?? input.mode} 초안이 준비되었어요.`;
 
   return {
     ok: true,
@@ -586,6 +597,7 @@ export function buildLocalZeroCostAssistResult(
     providerTier: "local-fallback",
     model: "toonstudio-deterministic-coach-v2",
     mode: input.mode,
+    providerBilledUsd: null,
     costGuaranteedZeroUsd: 0,
     paidBillingBlocked: true,
     piiRedactedCount: masked.redactedCount,
@@ -611,9 +623,8 @@ export async function runFreeAiZeroBillAssist(
     readonly sessionToken?: string | null;
   } = {},
 ): Promise<FreeAiZeroBillAssistResponse> {
-  const trimmed = input.inputText.trim();
-  const masked = maskCreatorInputBeforeAiSend(trimmed);
-  if (masked.sanitizedText.length < 2) {
+  const masked = maskAssistInput(input);
+  if (masked.inputText.length < 2) {
     return buildLocalZeroCostAssistResult(
       { ...input, inputText: "장면 초안" },
       "두 글자 이상 입력하면 더 구체적인 ₩0 무료 AI 제안을 받을 수 있어요.",
@@ -624,7 +635,7 @@ export async function runFreeAiZeroBillAssist(
   const fetchFn = options.fetchImpl ?? globalThis.fetch?.bind(globalThis);
   if (!fetchFn) {
     return buildLocalZeroCostAssistResult(
-      { ...input, inputText: masked.sanitizedText },
+      input,
       "오프라인 환경이라 로컬 무과금 코치(₩0)로 바로 처리했어요.",
     );
   }
@@ -647,9 +658,9 @@ export async function runFreeAiZeroBillAssist(
         headers,
         body: JSON.stringify({
           mode: input.mode,
-          inputText: masked.sanitizedText.slice(0, 6_000),
-          ...(input.projectTitle?.trim() ? { projectTitle: input.projectTitle.trim().slice(0, 120) } : {}),
-          ...(input.genreOrTone?.trim() ? { genreOrTone: input.genreOrTone.trim().slice(0, 80) } : {}),
+          inputText: masked.inputText.slice(0, 6_000),
+          ...(masked.projectTitle ? { projectTitle: masked.projectTitle.slice(0, 120) } : {}),
+          ...(masked.genreOrTone ? { genreOrTone: masked.genreOrTone.slice(0, 80) } : {}),
           ...(input.targetPlatform ? { targetPlatform: input.targetPlatform } : {}),
           allowZeroBillCascade: true,
         }),
@@ -663,7 +674,7 @@ export async function runFreeAiZeroBillAssist(
           ? "클라우드 무료 한도 보호(₩0 차단)가 작동해 유료 전환 없이 로컬 무과금 코치로 안전하게 전환했어요."
           : "서버 무료 풀에 일시 연결되지 않아 로컬 무과금 코치(₩0)로 바로 처리했어요.";
       return buildLocalZeroCostAssistResult(
-        { ...input, inputText: masked.sanitizedText },
+        input,
         failClosedReason,
       );
     }
@@ -679,7 +690,7 @@ export async function runFreeAiZeroBillAssist(
     const data = payload.result?.data;
     if (!data || typeof data !== "object") {
       return buildLocalZeroCostAssistResult(
-        { ...input, inputText: masked.sanitizedText },
+        input,
         "응답 형식을 확인할 수 없어 로컬 무과금 코치(₩0)로 안전하게 전환했어요.",
       );
     }
@@ -691,20 +702,23 @@ export async function runFreeAiZeroBillAssist(
       providerTier: payload.providerTier ?? "local-fallback",
       model: payload.model ?? "toonstudio-deterministic-coach-v2",
       mode: input.mode,
+      providerBilledUsd: null,
       costGuaranteedZeroUsd: 0,
       paidBillingBlocked: true,
       piiRedactedCount: masked.redactedCount + (payload.privacy?.piiRedactedCount ?? 0),
-      headlineKo: summary.headlineKo,
+      headlineKo: payload.provider === "local-zero-cost-fallback"
+        ? localReviewHeadlines[input.mode] ?? summary.headlineKo
+        : summary.headlineKo,
       bulletsKo: summary.bulletsKo,
       rawData: data,
       fallbackNoticeKo:
         payload.providerTier === "local-fallback"
-          ? "클라우드 무료 풀이 미설정이거나 안전선(90%)에 도달해 로컬 무과금 코치(₩0)로 처리했어요."
+          ? "서버의 로컬 코치가 제안을 만들었습니다."
           : null,
     };
   } catch {
     return buildLocalZeroCostAssistResult(
-      { ...input, inputText: masked.sanitizedText },
+      input,
       "네트워크 연결이 없어 유료 전환 없이 로컬 무과금 코치(₩0)로 즉시 처리했어요.",
     );
   }

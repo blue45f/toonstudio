@@ -4,8 +4,9 @@
  *
  * - `.env.local` / `.env.infrastructure.local`에서 설정된 무료 AI 공급자를 읽되
  *   비밀값(API 키·토큰·계정 ID)은 절대 출력·저장·반환하지 않는다.
- * - 각 설정된 무료 공급자당 최대 1회, `max_tokens: 32` 하드캡으로만 프로브하고
- *   유료 전용 모델은 호출 전 즉시 차단한다.
+ * - 기본 동작과 --offline-only는 외부 통신 없이 구성과 차단 규칙을 점검한다.
+ * - --live-openrouter는 단가 상한 0의 무료 모델에만 합성 입력을 1회 보낸다.
+ * - OpenAI 크레딧 실행은 계정 증거를 검증하는 studio-openai-credit-evaluation.mts에서 수행한다.
  * - HTTP 402/429·insufficient_quota·billing_hard_limit·90% 안전선 차단 시뮬레이션과
  *   시크릿 누출 0건 자체 감사를 함께 실행해 JSON 리포트를 출력한다.
  */
@@ -13,12 +14,12 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import {
-  FREE_AI_14_MODES_CATALOG,
-  inspectSafeFreeQuotaStatus,
-} from "../tools/toonstudio-mcp/tools-division-ai.mjs";
+import { FREE_AI_14_MODES_CATALOG } from "../tools/toonstudio-mcp/tools-division-ai.mjs";
 
+const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
+const USAGE = "사용법: node scripts/verify-free-ai-assist-zero-cost.mjs [--offline-only | --live-openrouter]";
 const MAX_PROBE_TOKENS = 32;
 const PROBE_TIMEOUT_MS = 12_000;
 const SAFETY_CUTOFF_RATIO = 0.9;
@@ -47,9 +48,10 @@ const WHITELISTS = {
 const RETIRED_OPENAI_MODELS = new Set(["gpt-4.1-nano", "gpt-4.1-nano-2025-04-14"]);
 
 function resolveEnvCandidateDirs() {
-  const dirs = [process.cwd()];
+  const dirs = [REPO_ROOT];
   try {
-    const commonDir = execFileSync("git", ["rev-parse", "--git-common-dir"], {
+    const commonDir = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {
+      cwd: REPO_ROOT,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     }).trim();
@@ -120,7 +122,7 @@ function isAllowedFreeModel(providerId, model) {
     return { allowed: false, reason: "retired_model_blocked" };
   }
   if (providerId === "openrouter-free") {
-    return normalized === "openrouter/free" || normalized.endsWith(":free")
+    return normalized === "openrouter/free" || /^[a-z0-9._-]+\/[a-z0-9._-]+:free$/u.test(normalized)
       ? { allowed: true, reason: null }
       : { allowed: false, reason: "paid_model_blocked" };
   }
@@ -166,18 +168,16 @@ function resolveProbeSpecs(env) {
       apiKey: readFirst(env, ["OPENAI_API_KEY"]),
       endpoint: "https://api.openai.com/v1/chat/completions",
       model: readFirst(env, ["OPENAI_MODEL"]) || "gpt-4o-mini",
-      useMaxCompletionTokens: true,
-      sendStoreFalse: true,
     },
     {
       id: "gemini-free",
       labelKo: "Gemini 무료 티어",
       priority: 2,
       apiKey: readFirst(env, [
-        "GEMINI_API_KEY",
-        "GOOGLE_AI_API_KEY",
         "STUDIO_AI_FREE_GEMINI_API_KEY",
         "ONPOD_API_ENV_STUDIO_AI_FREE_GEMINI_API_KEY",
+        "GEMINI_API_KEY",
+        "GOOGLE_AI_API_KEY",
       ]),
       endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       model:
@@ -186,8 +186,6 @@ function resolveProbeSpecs(env) {
           "GEMINI_MODEL",
           "STUDIO_AI_FREE_GEMINI_MODEL",
         ]) || "gemini-2.5-flash-lite",
-      useMaxCompletionTokens: false,
-      sendStoreFalse: false,
     },
     {
       id: "github-models-free",
@@ -200,8 +198,6 @@ function resolveProbeSpecs(env) {
       ]),
       endpoint: "https://models.github.ai/inference/chat/completions",
       model: readFirst(env, ["STUDIO_AI_FREE_GITHUB_MODELS_MODEL"]) || "openai/gpt-4o-mini",
-      useMaxCompletionTokens: false,
-      sendStoreFalse: false,
     },
     {
       id: "cloudflare-workers-ai-free",
@@ -218,8 +214,6 @@ function resolveProbeSpecs(env) {
         ? `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/v1/chat/completions`
         : "",
       model: readFirst(env, ["STUDIO_AI_FREE_CLOUDFLARE_MODEL"]) || "@cf/google/gemma-4-26b-a4b-it",
-      useMaxCompletionTokens: false,
-      sendStoreFalse: false,
     },
     {
       id: "mistral-free",
@@ -235,8 +229,6 @@ function resolveProbeSpecs(env) {
           "STUDIO_AI_FREE_MISTRAL_MODEL",
           "ONPOD_API_ENV_STUDIO_AI_FREE_MISTRAL_MODEL",
         ]) || "mistral-small-latest",
-      useMaxCompletionTokens: false,
-      sendStoreFalse: false,
     },
     {
       id: "sambanova-free",
@@ -252,8 +244,6 @@ function resolveProbeSpecs(env) {
           "STUDIO_AI_FREE_SAMBANOVA_MODEL",
           "ONPOD_API_ENV_STUDIO_AI_FREE_SAMBANOVA_MODEL",
         ]) || "DeepSeek-V3.1",
-      useMaxCompletionTokens: false,
-      sendStoreFalse: false,
     },
     {
       id: "groq-free",
@@ -265,8 +255,6 @@ function resolveProbeSpecs(env) {
       ]),
       endpoint: "https://api.groq.com/openai/v1/chat/completions",
       model: readFirst(env, ["STUDIO_AI_FREE_GROQ_MODEL"]) || "llama-3.3-70b-versatile",
-      useMaxCompletionTokens: false,
-      sendStoreFalse: false,
     },
     {
       id: "openrouter-free",
@@ -275,188 +263,83 @@ function resolveProbeSpecs(env) {
       apiKey: readFirst(env, [
         "STUDIO_AI_FREE_OPENROUTER_API_KEY",
         "ONPOD_API_ENV_STUDIO_AI_FREE_OPENROUTER_API_KEY",
+        "OPENROUTER_API_KEY",
       ]),
       endpoint: "https://openrouter.ai/api/v1/chat/completions",
-      model: readFirst(env, ["STUDIO_AI_FREE_OPENROUTER_MODEL"]) || "openrouter/free",
-      useMaxCompletionTokens: false,
-      sendStoreFalse: false,
+      model: readFirst(env, ["STUDIO_AI_FREE_OPENROUTER_MODEL", "ONPOD_API_ENV_STUDIO_AI_FREE_OPENROUTER_MODEL"]) || "openrouter/free",
     },
   ];
 }
 
-async function runSingleHardCappedProbe(spec, offlineOnly) {
+async function runSingleHardCappedProbe(spec, liveOpenRouter, fetchImpl) {
   const configured = Boolean(spec.apiKey && spec.endpoint);
   const modelCheck = isAllowedFreeModel(spec.id, spec.model);
-
-  if (!configured) {
-    return {
-      id: spec.id,
-      labelKo: spec.labelKo,
-      priority: spec.priority,
-      configured: false,
-      model: spec.model,
-      modelAllowed: modelCheck.allowed,
-      probeExecuted: false,
-      httpStatus: null,
-      outcome: "skipped-not-configured",
-      diagnosticCode: "not_configured",
-      failClosedBlockedUntilUtc: null,
-      latencyMs: 0,
-      usageTotalTokens: 0,
-    };
-  }
-
+  const result = {
+    id: spec.id, labelKo: spec.labelKo, priority: spec.priority, configured,
+    model: spec.model, modelAllowed: modelCheck.allowed, probeExecuted: false,
+    httpStatus: null, outcome: "skipped-not-configured", diagnosticCode: "not_configured",
+    latencyMs: 0, usageTotalTokens: 0, reportedCostUsd: null,
+  };
+  if (!configured) return result;
   if (!modelCheck.allowed) {
-    return {
-      id: spec.id,
-      labelKo: spec.labelKo,
-      priority: spec.priority,
-      configured: true,
-      model: spec.model,
-      modelAllowed: false,
-      probeExecuted: false,
-      httpStatus: null,
-      outcome: "fail-closed-blocked-before-send",
-      diagnosticCode: modelCheck.reason,
-      failClosedBlockedUntilUtc: null,
-      latencyMs: 0,
-      usageTotalTokens: 0,
-    };
+    return { ...result, outcome: "fail-closed-blocked-before-send", diagnosticCode: modelCheck.reason };
   }
-
-  if (offlineOnly) {
-    return {
-      id: spec.id,
-      labelKo: spec.labelKo,
-      priority: spec.priority,
-      configured: true,
-      model: spec.model,
-      modelAllowed: true,
-      probeExecuted: false,
-      httpStatus: null,
-      outcome: "skipped-offline-mode",
-      diagnosticCode: "offline_flag",
-      failClosedBlockedUntilUtc: null,
-      latencyMs: 0,
-      usageTotalTokens: 0,
-    };
+  if (!liveOpenRouter) return { ...result, outcome: "skipped-offline-mode", diagnosticCode: "offline_mode" };
+  if (spec.id !== "openrouter-free") {
+    return { ...result, outcome: "skipped-account-billing-unverified", diagnosticCode: "account_billing_unverified" };
   }
 
   const startedAt = Date.now();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
-
+  result.probeExecuted = true;
+  result.usageTotalTokens = null;
   try {
-    const payload = {
-      model: spec.model,
-      temperature: 0,
-      messages: [
-        { role: "system", content: "Reply with exact token OK only." },
-        { role: "user", content: "OK" },
-      ],
-    };
-    if (spec.useMaxCompletionTokens) {
-      payload.max_completion_tokens = MAX_PROBE_TOKENS;
-    } else {
-      payload.max_tokens = MAX_PROBE_TOKENS;
-    }
-    if (spec.sendStoreFalse) {
-      payload.store = false;
-    }
-
-    const response = await fetch(spec.endpoint, {
+    const response = await fetchImpl(spec.endpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${spec.apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    const text = await response.text();
-    const latencyMs = Date.now() - startedAt;
-
-    if (!response.ok) {
-      const code = classifyFailure(response.status, text);
-      const shouldBlockUntilMidnight =
-        response.status === 402 ||
-        response.status === 429 ||
-        code === "insufficient_quota" ||
-        code === "billing_hard_limit" ||
-        code === "auth_failed";
-      return {
-        id: spec.id,
-        labelKo: spec.labelKo,
-        priority: spec.priority,
-        configured: true,
+      body: JSON.stringify({
         model: spec.model,
-        modelAllowed: true,
-        probeExecuted: true,
-        httpStatus: response.status,
-        outcome: shouldBlockUntilMidnight ? "fail-closed-blocked-and-failover" : "upstream-error",
-        diagnosticCode: code,
-        failClosedBlockedUntilUtc: shouldBlockUntilMidnight ? nextUtcMidnightIso() : null,
-        latencyMs,
-        usageTotalTokens: 0,
-      };
+        messages: [{ role: "user", content: "Reply with exactly OK." }],
+        max_tokens: MAX_PROBE_TOKENS,
+        temperature: 0,
+        provider: { max_price: { prompt: 0, completion: 0, request: 0 }, allow_fallbacks: false },
+        plugins: [],
+        usage: { include: true },
+      }),
+      redirect: "error",
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+    });
+    result.httpStatus = response.status;
+    const body = await response.text();
+    if (!response.ok) {
+      result.outcome = "upstream-error";
+      result.diagnosticCode = classifyFailure(response.status, body);
+      return result;
     }
-
-    let totalTokens = 0;
-    let hasReply = false;
-    let parsedOk = false;
-    try {
-      const parsed = JSON.parse(text);
-      parsedOk = true;
-      totalTokens = Number(parsed?.usage?.total_tokens ?? 0) || 0;
-      const content = parsed?.choices?.[0]?.message?.content;
-      hasReply = typeof content === "string" && content.trim().length > 0;
-    } catch {
-      parsedOk = false;
-      hasReply = false;
+    const parsed = JSON.parse(body);
+    const usage = parsed?.usage;
+    if (Number.isSafeInteger(usage?.total_tokens) && usage.total_tokens >= 0) result.usageTotalTokens = usage.total_tokens;
+    if (Number.isFinite(usage?.cost) && usage.cost >= 0) result.reportedCostUsd = usage.cost;
+    if (parsed?.choices?.[0]?.message?.content?.trim() !== "OK") {
+      result.outcome = "fail-closed-unexpected-response";
+      result.diagnosticCode = "unexpected_reply";
+    } else if (result.reportedCostUsd !== 0) {
+      result.outcome = "fail-closed-unverified-cost";
+      result.diagnosticCode = result.reportedCostUsd === null ? "missing_cost" : "nonzero_cost";
+    } else {
+      result.outcome = "live-probe-ok";
+      result.diagnosticCode = "ok";
     }
-
-    const contentType = response.headers.get("content-type")?.split(";")[0]?.trim() || "unknown";
-    const diagnosticCode = hasReply
-      ? "ok"
-      : !parsedOk
-        ? `non_json_response:${contentType}`
-        : "empty_reply";
-
-    return {
-      id: spec.id,
-      labelKo: spec.labelKo,
-      priority: spec.priority,
-      configured: true,
-      model: spec.model,
-      modelAllowed: true,
-      probeExecuted: true,
-      httpStatus: response.status,
-      outcome: hasReply ? "live-probe-ok" : "fail-closed-unexpected-response",
-      diagnosticCode,
-      failClosedBlockedUntilUtc: null,
-      latencyMs,
-      usageTotalTokens: totalTokens,
-    };
   } catch (error) {
-    const isAbort = error instanceof Error && error.name === "AbortError";
-    return {
-      id: spec.id,
-      labelKo: spec.labelKo,
-      priority: spec.priority,
-      configured: true,
-      model: spec.model,
-      modelAllowed: true,
-      probeExecuted: true,
-      httpStatus: null,
-      outcome: "fail-closed-network-fallback",
-      diagnosticCode: isAbort ? "timeout_12s" : "network_error",
-      failClosedBlockedUntilUtc: null,
-      latencyMs: Date.now() - startedAt,
-      usageTotalTokens: 0,
-    };
+    result.outcome = "fail-closed-request-error";
+    result.diagnosticCode = result.httpStatus !== null ? "invalid_response"
+      : error instanceof Error && error.name === "TimeoutError" ? "timeout" : "network_error";
   } finally {
-    clearTimeout(timer);
+    result.latencyMs = Date.now() - startedAt;
   }
+  return result;
 }
 
 function runGuardrailSimulations() {
@@ -521,9 +404,11 @@ function runGuardrailSimulations() {
   return { allPassed, paidBlocks, cutoffSimulation, errorBlockSimulations };
 }
 
-async function main() {
-  const offlineOnly = process.argv.includes("--offline-only");
-  const { merged, loadedFileTypes } = loadMergedEnvWithoutExposingSecrets();
+export async function verifyFreeAiAssist({ env: merged, args = [], envSources = [], fetchImpl = fetch }) {
+  if (args.length > 1 || (args.length === 1 && !["--offline-only", "--live-openrouter"].includes(args[0]))) {
+    throw new Error(USAGE);
+  }
+  const liveOpenRouter = args[0] === "--live-openrouter";
   const specs = resolveProbeSpecs(merged);
 
   // 누출 감사에 사용할 비밀값 목록(출력에는 절대 포함하지 않는다).
@@ -539,33 +424,33 @@ async function main() {
   const guardrailSimulations = runGuardrailSimulations();
   const liveProbes = [];
   for (const spec of specs) {
-    liveProbes.push(await runSingleHardCappedProbe(spec, offlineOnly));
+    liveProbes.push(await runSingleHardCappedProbe(spec, liveOpenRouter, fetchImpl));
   }
 
-  const safeMcpQuota = inspectSafeFreeQuotaStatus(merged);
+  const dispatched = liveProbes.filter((probe) => probe.probeExecuted);
+  const succeeded = dispatched.filter((probe) => probe.outcome === "live-probe-ok");
+  const reportedCostUsd = dispatched.length ? dispatched[0].reportedCostUsd : null;
   const report = {
-    ok: guardrailSimulations.allPassed && safeMcpQuota.paidBillingBlocked === true,
+    ok: guardrailSimulations.allPassed && (!liveOpenRouter || succeeded.length === 1),
     verifiedAtUtc: new Date().toISOString(),
-    offlineOnly,
-    guaranteedZeroCostUsd: 0,
-    guaranteedZeroCostLabel: "$0.00",
-    guaranteedZeroCostKrwLabel: "₩0",
-    paidBillingBlocked: true,
+    offlineOnly: !liveOpenRouter,
+    reportedCostUsd,
+    accountBalanceVerified: false,
     hardCapPolicy: {
       maxProbeTokens: MAX_PROBE_TOKENS,
       maxProbesPerProvider: 1,
       retriesAllowed: 0,
       safetyCutoffRatio: SAFETY_CUTOFF_RATIO,
     },
-    envSourcesDetected: loadedFileTypes,
+    envSourcesDetected: envSources,
     guardrailSimulations,
     liveProbes,
     summary: {
       configuredCloudProviders: liveProbes.filter((p) => p.configured).length,
-      liveProbesSucceeded: liveProbes.filter((p) => p.outcome === "live-probe-ok").length,
+      requestsDispatched: dispatched.length,
+      liveProbesSucceeded: succeeded.length,
       failClosedTriggered: liveProbes.filter((p) => p.outcome.startsWith("fail-closed")).length,
       mcpAiModesCount: FREE_AI_14_MODES_CATALOG.length,
-      localFallbackReady: true,
       secretLeaksDetected: 0,
     },
   };
@@ -578,14 +463,20 @@ async function main() {
     );
 
   if (leaked) {
-    process.stderr.write("FATAL: secret leak detected in report; output suppressed.\n");
-    process.exit(2);
+    throw new Error("보고서에서 민감한 값이 탐지되어 출력을 중단했습니다. 공급자 모델 설정을 확인하세요.");
   }
 
-  process.stdout.write(`${serialized}\n`);
-  if (!report.ok) {
-    process.exit(1);
-  }
+  return report;
 }
 
-void main();
+if (import.meta.main) {
+  try {
+    const { merged, loadedFileTypes } = loadMergedEnvWithoutExposingSecrets();
+    const report = await verifyFreeAiAssist({ env: merged, envSources: loadedFileTypes, args: process.argv.slice(2) });
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    if (!report.ok) process.exitCode = 1;
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    process.exitCode = 2;
+  }
+}

@@ -16,6 +16,7 @@ import { prepareApprovedDialogueReview } from "./openai-assist/approved-dialogue
 import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
 import {
   DEFAULT_OPENAI_MODEL,
+  isOpenAiFreeShareModel,
   isOpenAiReasoningModel,
   redactCreatorSensitiveText,
   resolveStudioOpenAiCreativeConfig,
@@ -92,6 +93,7 @@ export class StudioOpenAiCreativeAssistService {
   listModes() {
     return {
       totalModes: STUDIO_OPENAI_MODE_DESCRIPTORS.length,
+      providerBilledUsd: null,
       costUsdGuaranteed: "$0.00" as const,
       paidBillingBlocked: true as const,
       modes: STUDIO_OPENAI_MODE_DESCRIPTORS,
@@ -124,6 +126,7 @@ export class StudioOpenAiCreativeAssistService {
       modes: STUDIO_OPENAI_MODE_DESCRIPTORS,
       freeQuotaSummary: {
         guaranteedZeroCostLabel: freeQuota.guaranteedZeroCostLabel,
+        providerBilledUsd: freeQuota.providerBilledUsd,
         paidBillingBlocked: freeQuota.paidBillingBlocked,
         safetyCutoffRatio: freeQuota.safetyCutoffRatio,
         activeCloudCount: freeQuota.summary.activeCloudCount,
@@ -170,9 +173,8 @@ export class StudioOpenAiCreativeAssistService {
       ? this.rateLimiter.consume(actorIdentifier, config.limits, options.nowMs)
       : { remainingDaily: config.limits.dailyRequests, release: () => undefined };
 
-    const { userPrompt, piiRedactedCount } = this.prepareMaskedUserPrompt(input);
+    const { userPrompt, piiRedactedCount, maskedInput } = this.prepareMaskedUserPrompt(input);
     const schemaSpec = MODE_JSON_SCHEMAS[input.mode];
-    const fallbackResult = buildDeterministicAssistResult(input.mode, input);
 
     const cascade = await this.zeroBillRouter.executeCascade(
       {
@@ -182,7 +184,7 @@ export class StudioOpenAiCreativeAssistService {
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         localOnly: effectiveLocalOnly,
         allowLocalDeterministicFallback: true,
-        localDeterministicOutput: () => JSON.stringify(fallbackResult.data),
+        localDeterministicOutput: () => JSON.stringify(buildDeterministicAssistResult(input.mode, maskedInput).data),
       },
       {
         env,
@@ -220,15 +222,16 @@ export class StudioOpenAiCreativeAssistService {
 
     let structured: OpenAiAssistStructuredResult;
     try {
-      const parsed = JSON.parse(cascade.content) as unknown;
-      structured = validateAssistModeStructuredOutput(input.mode, parsed) ?? fallbackResult;
-    } catch {
-      structured = fallbackResult;
+      structured = this.parseModeOutput(input.mode, cascade.content);
+    } catch (error) {
+      quota.release();
+      throw error;
     }
 
     return {
       provider: cascade.providerId,
       providerTier: cascade.providerTier,
+      providerBilledUsd: null,
       model: cascade.model,
       result: structured,
       costGuaranteedZeroUsd: 0 as const,
@@ -397,7 +400,7 @@ export class StudioOpenAiCreativeAssistService {
           quota.release();
         }
         const errorCode = this.readSafeOpenAiErrorCode(responseText);
-        if (response.status === 402 || response.status === 429) {
+        if (isOpenAiFreeShareModel(config.model) && (response.status === 402 || response.status === 429)) {
           this.zeroBillRouter.blockProviderUntilUtcMidnight(
             "openai-free-share",
             response.status === 402
@@ -414,13 +417,25 @@ export class StudioOpenAiCreativeAssistService {
 
       let payload: Record<string, unknown>;
       try {
-        payload = JSON.parse(responseText) as Record<string, unknown>;
+        const parsed: unknown = JSON.parse(responseText);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+        payload = parsed as Record<string, unknown>;
       } catch {
         quota.release();
         throw new BadGatewayException({
           code: "OPENAI_INVALID_JSON",
           message: "OpenAI 응답 형식을 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
         });
+      }
+
+      const usageRecord =
+        payload.usage && typeof payload.usage === "object"
+          ? (payload.usage as Record<string, unknown>)
+          : {};
+      const totalTokens =
+        typeof usageRecord.total_tokens === "number" ? usageRecord.total_tokens : 0;
+      if (isOpenAiFreeShareModel(config.model)) {
+        this.zeroBillRouter.recordProviderUsage("openai-free-share", totalTokens, env);
       }
 
       const choices = Array.isArray(payload.choices) ? payload.choices : [];
@@ -460,14 +475,6 @@ export class StudioOpenAiCreativeAssistService {
         throw error;
       }
 
-      const usageRecord =
-        payload.usage && typeof payload.usage === "object"
-          ? (payload.usage as Record<string, unknown>)
-          : {};
-      const totalTokens =
-        typeof usageRecord.total_tokens === "number" ? usageRecord.total_tokens : 0;
-      this.zeroBillRouter.recordProviderUsage("openai-free-share", totalTokens, env);
-
       return {
         provider: "openai" as const,
         model:
@@ -499,6 +506,7 @@ export class StudioOpenAiCreativeAssistService {
 
   private prepareMaskedUserPrompt(input: StudioOpenAiCreativeAssistRequest): {
     readonly userPrompt: string;
+    readonly maskedInput: Pick<StudioOpenAiCreativeAssistRequest, "inputText" | "projectTitle" | "genreOrTone">;
     readonly piiRedactedCount: number;
   } {
     const redactedInput = redactCreatorSensitiveText(input.inputText);
@@ -522,7 +530,16 @@ export class StudioOpenAiCreativeAssistService {
         ? `${contextLines.join("\n")}\n\n[창작자 입력]\n${redactedInput.sanitizedText}`
         : `[창작자 입력]\n${redactedInput.sanitizedText}`;
 
-    return { userPrompt, piiRedactedCount };
+    return {
+      userPrompt,
+      piiRedactedCount,
+      maskedInput: {
+        inputText: redactedInput.sanitizedText,
+        // 짧은 개인정보가 긴 마스킹 표지로 바뀌어도 로컬 결과 필드의 입력 한도를 지킨다.
+        projectTitle: redactedTitle.sanitizedText.slice(0, 120),
+        genreOrTone: redactedTone.sanitizedText.slice(0, 80),
+      },
+    };
   }
 
   private parseModeOutput(
