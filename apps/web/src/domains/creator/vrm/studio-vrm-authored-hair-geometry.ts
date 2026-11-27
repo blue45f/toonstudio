@@ -129,6 +129,23 @@ function safeAspect(longAxis: number, crossAxis: number): number {
   return Math.sqrt(Math.min(5, Math.max(1, ratio)));
 }
 
+function ponytailCenter(
+  part: AvatarForgeHairPart, progress: number, curl: number, waveAmount: number, waveFrequency: number,
+): readonly [number, number] {
+  // 묶은 긴 가닥의 굽힘은 길이의 비율이다. 폭·두께로 나누어 단면을 머리에
+  // 맞춰 배율 조정한 뒤에도 모발 굵기 슬라이더가 컬까지 바꾸지 않게 한다.
+  if (progress === 1 || (curl === 0 && waveAmount === 0)) return [0, 0];
+  const span = 2 * Math.abs(part.scale[1]);
+  const width = Math.abs(part.scale[0]);
+  const depth = Math.abs(part.scale[2]);
+  if (![span, width, depth].every(Number.isFinite) || Math.min(width, depth) < 1e-4) return [0, 0];
+  const envelope = Math.sin(Math.PI * progress) ** 2;
+  const side = 0.12 * curl * Math.sin(Math.PI * progress)
+    + 0.09 * waveAmount * Math.sin(Math.PI * waveFrequency * progress);
+  const rear = 0.18 * Math.abs(curl) + 0.05 * Math.abs(waveAmount);
+  return [envelope * side * span / width, -envelope * rear * span / depth];
+}
+
 /**
  * Head-local clump centre line. The root is pinned to the authored transform and wave amplitude is
  * bounded independently of a very thin/tall part's raw aspect ratio. This keeps style switches from
@@ -145,6 +162,9 @@ export function resolveStudioVrmAuthoredHairClumpCenter(
   const waveFrequency = Math.min(6, Math.max(0.5, Number.isFinite(part.waveFrequency)
     ? (part.waveFrequency ?? 2.4)
     : 2.4));
+  if (part.id === "pony-tail" && part.role === "tail") {
+    return ponytailCenter(part, progress, curl, waveAmount, waveFrequency);
+  }
   const aspectX = safeAspect(part.scale[1], part.scale[0]);
   const aspectZ = safeAspect(part.scale[1], part.scale[2]);
   const rootEase = smoothstep(0, 0.22, progress);
