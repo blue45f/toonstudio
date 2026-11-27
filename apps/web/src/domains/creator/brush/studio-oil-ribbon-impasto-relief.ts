@@ -11,12 +11,9 @@ import type {
 export const STUDIO_OIL_IMPASTO_RELIEF_OVERLAY_VERSION =
   "oil-impasto-relief-overlay-v1" as const;
 
-/**
- * Exact glint color both durable surfaces stroke under `screen`. dli adds the GGX specular as an
- * achromatic term on top of the pigment (`color·diffuse + specular`), so the vector expression of
- * "specular" is white-toward light, never a hue shift.
- */
+/** 반사광은 흰색으로 더하고 홈의 차광은 모든 색 채널을 똑같이 감쇠시킨다. */
 export const STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR = "#ffffff" as const;
+export const STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR = "#404040" as const;
 
 const COORDINATE_LIMIT = 1_000_000;
 const GEOMETRY_QUANTIZATION = 10_000;
@@ -1183,16 +1180,16 @@ export function planImpastoReliefOverlayLanes(
     .sort((left, right) => left.order - right.order)
     .map((entry) => {
       const welded = weldReliefRuns(entry.runs);
+      const opacity = mean(entry.opacities);
+      // 정반사 하이라이트는 마루 일부만 차지하고, 입사각이 맞아 밝아질 때 넓어진다.
+      const footprint = entry.kind === "highlight"
+        ? 0.52 + 0.32 * (opacity / IMPASTO_RELIEF_MAX_HIGHLIGHT_OPACITY) : 1;
       return Object.freeze({
         runs: Object.freeze(
-          welded.map((run) =>
-            Object.freeze({
-              points: Object.freeze(run.points),
-            })
-          )
+          welded.map((run) => Object.freeze({ points: Object.freeze(run.points) }))
         ),
-        lineWidth: quantize(meanBy(entry.runs, (run) => run.width)),
-        opacity: quantize(mean(entry.opacities)),
+        lineWidth: quantize(meanBy(entry.runs, (run) => run.width) * footprint),
+        opacity: quantize(opacity),
         kind: entry.kind,
       });
     });

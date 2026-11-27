@@ -1717,6 +1717,38 @@ describe("studio dynamic brush bounded coverage renderer", () => {
     },
   );
 
+  it("긴 분필 획의 넓은 자국은 텍셀 맵 예산 뒤에도 종이를 읽는다", () => {
+    const authored = studioBrushDynamicsSettingsForBrushId("chalk")!;
+    const materialIdentity = resolveStudioDynamicBrushMaterialIdentity("chalk")!;
+    const source = dab({
+      index: 400, x: 184, y: 35, sourceX: 184, sourceY: 35, size: 320,
+      opacity: 0.75, flow: 0.7, distanceFromStrokeStart: 900,
+    });
+    const plan = (granulation: number, historical: boolean) => {
+      const result = planStudioDynamicBrushCoverageMarks({
+        dabVariations: [[source]],
+        dynamics: historical ? normalizeStudioBrushDynamicsSettings({
+          ...authored,
+          dryMediaKernelProgram: {
+            version: "dry-media-kernel-dab-path-v1",
+            programDigest: "30c48947ab54ce7efde21a4935d7d5e278e08510e061fc5fbefb7056de818860",
+          },
+        }) : authored,
+        materialIdentity, dynamicSeed: 123, stroke: "#654321", stampGrid: 3, markBudget: 1000,
+        paper: {
+          model: "contact-tooth-v2", medium: "chalk",
+          response: { granulation, staining: 0, scale: 0.25 },
+        },
+      });
+      if (!result.ok) throw new Error(result.reason);
+      expect(result.marks.length).toBeGreaterThan(0);
+      expect(result.marks.every(mark => Math.min(mark.radiusX, mark.radiusY) >= 1)).toBe(true);
+      return result.marks.map(mark => mark.alpha);
+    };
+    expect(plan(1, false)).not.toEqual(plan(0, false));
+    expect(plan(1, true)).toEqual(plan(0, true));
+  });
+
   it("keeps explicit full-stroke origins stable for suffix-only stroke-fixed grain plans", () => {
     const dynamics = normalizeStudioBrushDynamicsSettings({
       tip: { shape: "hard", softness: 0 },

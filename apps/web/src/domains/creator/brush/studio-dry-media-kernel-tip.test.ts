@@ -83,6 +83,21 @@ describe("dry-media kernel tip routing", () => {
     }
   });
 
+  it("이전 커널 핀을 재생하고 새 문서 접촉 핀과 구분한다", () => {
+    const oldPin = {
+      version: "dry-media-kernel-dab-path-v1",
+      programDigest: "30c48947ab54ce7efde21a4935d7d5e278e08510e061fc5fbefb7056de818860",
+    };
+    const current = authoredSettings("chalk");
+    const persisted = normalizeStudioBrushDynamicsSettings({ ...current, dryMediaKernelProgram: oldPin });
+    expect(persisted.dryMediaKernelProgram).toEqual(oldPin);
+    expect(current.dryMediaKernelProgram?.version).toBe("dry-media-kernel-sheet-contact-v2");
+    expect(isStudioDryMediaKernelDabProgramPin({
+      ...oldPin, version: current.dryMediaKernelProgram?.version,
+    })).toBe(false);
+    expect(studioDryMediaKernelDabPathOwnsMaterial(identityOf("chalk"), persisted)).toBe("chalk");
+  });
+
   it("keeps stored pre-wave causal snapshots (no kernel marker) on the union carrier", () => {
     // Reviewer probe D3/F5: before the marker gate, every unpinned causal stroke — i.e. every
     // pre-wave persisted core dry-media stroke — was silently re-routed union → kernel.
@@ -418,6 +433,27 @@ describe("dry-media kernel deposition response", () => {
         ).toBe(first);
       }
     }
+  });
+
+  it("새 분필의 골은 다른 획에도 같은 위치에 남고 접촉량이 늘면 메워진다", () => {
+    let pores = 0;
+    let differentSheet = 0;
+    for (let i = 0; i < 256; i += 1) {
+      const dab = { index: i, x: i * 1.7 - 100, y: Math.sin(i / 9) * 13 };
+      const light = studioDryMediaKernelStrokeToothMultiplier("chalk", dab, 0, 0, 12, 41, 0.05);
+      const heavy = studioDryMediaKernelStrokeToothMultiplier("chalk", dab, 0, 0, 12, 41, 0.9);
+      expect(studioDryMediaKernelStrokeToothMultiplier("chalk", dab, 30, -14, 97, 41, 0.05)).toBe(light);
+      expect(heavy).toBeGreaterThanOrEqual(light);
+      if (light < 0.2) {
+        expect(heavy).toBeGreaterThan(light);
+        pores += 1;
+      }
+      if (studioDryMediaKernelStrokeToothMultiplier("chalk", dab, 0, 0, 12, 77, 0.05) !== light) {
+        differentSheet += 1;
+      }
+    }
+    expect(pores).toBeGreaterThan(8);
+    expect(differentSheet).toBeGreaterThan(16);
   });
 
   it("opens full-contrast pores somewhere along a wax lane while rails stay denser", () => {
