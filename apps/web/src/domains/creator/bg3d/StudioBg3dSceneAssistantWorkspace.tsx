@@ -4,13 +4,14 @@
 import {
   ArrowLeft, ArrowRight, Box, Camera, Check, CircleUserRound, Compass,
   Copy, Cuboid, Focus, ImagePlus, Layers3, Loader2, Maximize2, Move3d, Rotate3d,
-  Save, Scaling, ScanLine, SlidersHorizontal, SunMedium, Trash2, Upload, UserPlus,
+  Scaling, ScanLine, SlidersHorizontal, Trash2, Upload, UserPlus,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
 
 import type { ReactNode } from "react";
 
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
+import { StudioBg3dAssistantFinishStep } from "./StudioBg3dAssistantFinishStep";
 import { StudioBg3dAssistantHostReadinessBanner, type StudioBg3dAssistantReadinessHostLike } from "./StudioBg3dAssistantReadinessBanner";
 import { StudioBg3dAssistantScenePicker } from "./StudioBg3dAssistantScenePicker";
 import { getStudioBg3dEnvironmentAsset } from "./studio-bg3d-environment-catalog";
@@ -18,7 +19,7 @@ import { studioBg3dAssistantLocationId, type StudioBg3dSceneChoice } from "./stu
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
 import { AssetCard, AssistantStepper, GoalPicker, SceneAssistantTouchGuide, SheetHandle, type StudioBg3dAssistantAssetItem as AssistantAsset } from "./StudioBg3dSceneAssistantChrome";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
-import { STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS, STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES, STUDIO_BG3D_ASSISTANT_STEPS, nextStudioBg3dAssistantStep, previousStudioBg3dAssistantStep, studioBg3dAssistantOutputSettings, studioBg3dAssistantStepIndex } from "./studio-bg3d-scene-assistant";
+import { STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS, STUDIO_BG3D_ASSISTANT_STEPS, nextStudioBg3dAssistantStep, previousStudioBg3dAssistantStep, studioBg3dAssistantOutputSettings, studioBg3dAssistantStepIndex } from "./studio-bg3d-scene-assistant";
 import type { StudioBg3dAssistantGoal, StudioBg3dAssistantOutputStyle, StudioBg3dAssistantSheetState, StudioBg3dAssistantStep } from "./studio-bg3d-scene-assistant";
 
 import "./studio-bg3d-scene-assistant.css";
@@ -43,6 +44,8 @@ export interface StudioBg3dSceneAssistantHost extends StudioBg3dAssistantReadine
   readonly transformMode?: "translate" | "rotate" | "scale";
   readonly lineArtPreview?: boolean;
   readonly ltToneSettings?: { readonly mode?: string; readonly type?: string };
+  readonly ltExportAspectRatio?: number | null;
+  readonly updateLtExportAspectRatio?: (aspectRatio: number | null) => void;
   readonly placementActive?: boolean;
   readonly placementSession?: { readonly phase?: string };
   readonly isCapturing?: boolean;
@@ -114,6 +117,7 @@ function readAssistantHostSnapshot(h: StudioBg3dSceneAssistantHost): string {
     h.genericModelClassifications?.size ?? 0,
     h.transformMode ?? "",
     h.lineArtPreview ? 1 : 0,
+    h.ltExportAspectRatio ?? "",
     h.placementActive ? 1 : 0,
     h.placementSession?.phase ?? "",
     h.groundSelectionDisabledReason ?? "",
@@ -451,68 +455,6 @@ function FrameStep({
     </div>
   );
 }
-function FinishStep({
-  h,
-  outputStyle,
-  busy,
-  hasScene,
-  onOutputStyle,
-}: {
-  readonly h: StudioBg3dSceneAssistantHost;
-  readonly outputStyle: StudioBg3dAssistantOutputStyle;
-  readonly busy: boolean;
-  readonly hasScene: boolean;
-  readonly onOutputStyle: (style: StudioBg3dAssistantOutputStyle) => void;
-}) {
-  return (
-    <div className="scene-assistant__step-body" data-step="finish">
-      <section className="scene-assistant__finish-hero">
-        <div className="scene-assistant__finish-art" aria-hidden>
-          <span className="color" /><span className="line" /><span className="tone" />
-        </div>
-        <div>
-          <p><SunMedium size={13} aria-hidden /> 웹툰 적용 준비</p>
-          <h3>어떤 모습으로 넣을까요?</h3>
-          <span>적용 후에도 연결된 장면을 다시 열어 구도와 스타일을 바꿀 수 있습니다.</span>
-        </div>
-      </section>
-
-      <section aria-labelledby="scene-assistant-output-title">
-        <div className="scene-assistant__section-title compact">
-          <h4 id="scene-assistant-output-title">작화 스타일</h4>
-          <span>추천: 컬러 배경</span>
-        </div>
-        <div className="scene-assistant__output-grid">
-          {STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES.map((style) => (
-            <button
-              key={style.id}
-              type="button"
-              aria-pressed={outputStyle === style.id}
-              disabled={busy}
-              onClick={() => onOutputStyle(style.id)}
-            >
-              <span className={`scene-assistant__output-preview is-${style.id}`} aria-hidden>
-                <span /><span /><span />
-              </span>
-              <span><strong>{style.label}</strong><small>{style.description}</small></span>
-              {outputStyle === style.id ? <Check size={15} aria-hidden /> : null}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="scene-assistant__apply-benefits">
-        <div><Check size={14} aria-hidden /><span>현재 컷 비율에 맞춰 출력</span></div>
-        <div><Check size={14} aria-hidden /><span>원본 3D 장면을 함께 보존</span></div>
-        <div><Check size={14} aria-hidden /><span>캔버스에서 다시 편집 가능</span></div>
-      </section>
-
-      <button type="button" className="scene-assistant__save" disabled={busy || !hasScene} onClick={h.handleSaveToLibrary}>
-        <Save size={16} aria-hidden /><span><strong>장면을 소재로도 저장</strong><small>다른 컷과 다음 화에서 다시 사용합니다.</small></span>
-      </button>
-    </div>
-  );
-}
 export function StudioBg3dSceneAssistantWorkspace({
   h, onOpenProfessional, viewport, onHostChange,
 }: StudioBg3dSceneAssistantWorkspaceProps) {
@@ -675,6 +617,10 @@ export function StudioBg3dSceneAssistantWorkspace({
     h.setLineArtPreview(settings.lineArtPreview);
     h.updateLtToneSettings(settings.tone);
   };
+  const selectAspectRatio = (aspectRatio: number | null) => {
+    h.updateLtExportAspectRatio?.(aspectRatio);
+    (onHostChange ?? refreshMutableHost)();
+  };
   const advance = () => {
     if (step === "finish") {
       if (!insertDisabled) void h.handleInsert();
@@ -736,12 +682,15 @@ export function StudioBg3dSceneAssistantWorkspace({
     );
   } else {
     stepContent = (
-      <FinishStep
-        h={h}
+      <StudioBg3dAssistantFinishStep
         outputStyle={outputStyle}
         busy={busy}
         hasScene={hasScene}
         onOutputStyle={selectOutputStyle}
+        aspectRatio={h.ltExportAspectRatio ?? null}
+        aspectRatioDisabled={insertDisabled || placementActive}
+        onAspectRatio={h.updateLtExportAspectRatio ? selectAspectRatio : undefined}
+        onSaveToLibrary={h.handleSaveToLibrary}
       />
     );
   }
