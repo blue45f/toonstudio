@@ -1,9 +1,11 @@
 /** @vitest-environment jsdom */
 
 import { act, cleanup, renderHook } from "@testing-library/react";
+import { Euler, Quaternion } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyCharacterRecipe } from "../../character-shaper/character-shaper-recipe";
+import { createDefaultStudioVrmSceneDocument } from "../../vrm/studio-vrm-scene-document";
 import { createCharacterDocumentV2, projectCharacterRecipeV1 } from "../document/character-document-v2";
 import { migrateCharacterDocumentV2ToV3, parseCharacterDocumentV3, serializeCharacterDocumentV3 } from "../document/character-document-v3";
 import { CharacterDocumentV3Repository } from "../document/character-document-v3-repository";
@@ -58,6 +60,29 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("캐릭터 저작 문서 저장 수명주기", () => {
+  it("아직 준비 중인 뷰포트 대신 저장된 컷의 XYZ 관절·위치·표정으로 편집을 시작한다", async () => {
+    const { repository } = fixture();
+    const original = document();
+    await repository.save(original);
+    const base = createDefaultStudioVrmSceneDocument();
+    const saved = { ...base, characterDocumentId: original.documentId, expressions: { happy: 0.4 }, pose: {
+      ...base.pose, bodyRotationY: 0.25, yOffset: 0.31, translations: { ...base.pose.translations, root: [0.2, 0, -0.4] as const },
+      bones: { rightHand: { rotation: [0.37, -0.28, 0.51] as const } },
+      fingerOverrides: { rightIndexProximal: [0, 0, 0.45] as const },
+    } };
+    const view = renderHook(() => useCharacterAuthoringAuthority(original, "cold", {
+      repository, autosave: false, synchronizeProjection: false, placementScene: saved, modelBaseYaw: 1.1,
+    }));
+    await flush();
+    const hydrated = view.result.current.snapshot.document;
+    expect(hydrated.pose.bones.rightHand).toEqual(new Quaternion().setFromEuler(new Euler(.37, -.28, .51, "XYZ")).toArray());
+    expect(hydrated.pose.bones.rightIndexProximal).toBeUndefined();
+    expect(hydrated.pose.root.position).toEqual([.2, .31, -.4]);
+    expect(hydrated.pose.root.rotation).toEqual(new Quaternion().setFromEuler(new Euler(0, 1.35, 0)).toArray());
+    expect(hydrated.expression.weights).toEqual({ happy: .4 });
+    expect((await repository.load(original.documentId))?.pose).toEqual(original.pose);
+  });
+
   it("같은 VRM을 쓰는 두 캐릭터의 8컷에서 외형은 6컷에만, 오른손 편집은 한 컷에만 반영한다", async () => {
     const { repository } = fixture();
     const base = document();

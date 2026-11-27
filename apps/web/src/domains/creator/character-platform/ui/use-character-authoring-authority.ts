@@ -21,9 +21,7 @@ import {
   serializeCharacterDocumentV3,
   type CharacterDocumentV3,
 } from "../document/character-document-v3";
-import { createCharacterPlacementSession } from "../document/character-placement-session";
-
-import type { StudioVrmSceneDocument } from "../../vrm/studio-vrm-scene-document";
+import { createCharacterPlacementSession, readCharacterPlacementContext, type CharacterPlacementScene } from "../document/character-placement-session";
 
 export type CharacterAuthoringPersistenceStatus =
   | "loading"
@@ -35,7 +33,8 @@ export type CharacterAuthoringPersistenceStatus =
 export interface UseCharacterAuthoringAuthorityOptions {
   readonly repository?: CharacterDocumentV3Repository;
   readonly autosave?: boolean;
-  readonly placementScene?: Pick<StudioVrmSceneDocument, "characterDocumentId">;
+  readonly placementScene?: CharacterPlacementScene;
+  readonly modelBaseYaw?: number;
   readonly enabled?: boolean;
   readonly synchronizeProjection?: boolean;
   readonly initializeDocument?: (projection: CharacterDocumentV3) => Promise<CharacterDocumentV3>;
@@ -99,6 +98,8 @@ export function useCharacterAuthoringAuthority(
   const repository = options.repository ?? getCharacterDocumentV3Repository();
   const autosave = options.autosave !== false;
   const linkedCut = options.placementScene?.characterDocumentId === projection.documentId;
+  const placed = useRef({ scene: options.placementScene, modelBaseYaw: options.modelBaseYaw ?? 0 });
+  placed.current = { scene: options.placementScene, modelBaseYaw: options.modelBaseYaw ?? 0 };
   const enabled = options.enabled !== false;
   const initializeRef = useRef(options.initializeDocument);
   initializeRef.current = options.initializeDocument;
@@ -165,8 +166,9 @@ export function useCharacterAuthoringAuthority(
         ? await initializeRef.current(projectionRef.current)
         : projectionRef.current);
       if (!active || generation !== generationRef.current) return;
-      const placement = linkedCut
-        ? createCharacterPlacementSession(seed, projectionRef.current, repository, stored !== null)
+      const { scene, modelBaseYaw } = placed.current;
+      const placement = linkedCut && scene
+        ? createCharacterPlacementSession(seed, readCharacterPlacementContext(projectionRef.current, scene, modelBaseYaw), repository, stored !== null)
         : null;
       const initial = placement?.document ?? seed;
       const fingerprint = fingerprintRef.current;

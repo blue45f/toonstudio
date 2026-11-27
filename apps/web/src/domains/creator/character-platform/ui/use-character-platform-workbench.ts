@@ -259,6 +259,8 @@ export function useCharacterPlatformWorkbench(
     ],
   );
 
+  const rawBaseYaw: unknown = h.vrm?.scene?.userData?.[STUDIO_VRM_BASE_ROTATION_Y_KEY];
+  const modelBaseYaw = typeof rawBaseYaw === "number" && Number.isFinite(rawBaseYaw) ? rawBaseYaw : 0;
   const documentV3Projection = useMemo(() => {
     const migrated = migrateCharacterDocumentV2ToV3(document);
     const runtime = readCharacterPoseRuntimeSource(h.vrm);
@@ -266,9 +268,8 @@ export function useCharacterPlatformWorkbench(
       source: runtime, poseId: migrated.pose.poseId, generationId: migrated.pose.generationId,
     }) : migrated.pose;
     const translations = normalizeStudioVrmPoseTranslations(h.poseTranslations)?.root;
-    const base: unknown = runtime?.scene.userData[STUDIO_VRM_BASE_ROTATION_Y_KEY];
     const yaw = typeof h.bodyRotation === "number" && Number.isFinite(h.bodyRotation)
-      ? h.bodyRotation + (typeof base === "number" && Number.isFinite(base) ? base : 0) : null;
+      ? h.bodyRotation + modelBaseYaw : null;
     const rotation = yaw === null ? captured.root.rotation
       : new Quaternion().setFromEuler(new Euler(0, yaw, 0)).toArray();
     return validateCharacterDocumentV3({
@@ -286,7 +287,7 @@ export function useCharacterPlatformWorkbench(
         },
       },
     });
-  }, [document, h.avatarForgeState, h.vrm, h.customBones, h.customYOffset, h.poseTranslations, h.bodyRotation]);
+  }, [document, h.avatarForgeState, h.vrm, h.customBones, h.customYOffset, h.poseTranslations, h.bodyRotation, modelBaseYaw]);
   const sourceFingerprint = useMemo(() => JSON.stringify({
     model: documentV3Projection.model,
     compatibility: documentV3Projection.compatibility,
@@ -302,6 +303,7 @@ export function useCharacterPlatformWorkbench(
     sourceFingerprint,
     {
       placementScene: options.placementScene,
+      modelBaseYaw,
       autosave: !options.readOnlyCapture,
       synchronizeProjection: options.documentAuthority !== true || options.legacyEditing === true,
       enabled: !options.documentAuthority || (h.status === "ready" && Boolean(h.vrm)),
