@@ -16,6 +16,7 @@ import { pickShowcaseText, showcaseBi } from "./interactive-showcase-models";
 
 import { cx } from "@/shared/lib/cx";
 import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { fitSvgPillWidth, wrapSvgText } from "@/shared/lib/svg-text-wrap";
 
 const STAGE_ICONS: Readonly<Record<CreationStageId, LucideIcon>> = {
   "line-stabilize": PenTool,
@@ -150,92 +151,169 @@ function StageArtworkSvg({
   }
 
   if (stageId === "balloon-multilang") {
+    const bubbleTitle = isAfter
+      ? "마감 전 다국어 식자 완료!"
+      : "Translated dialogue overflows box...";
+    const bubbleTitleLines = wrapSvgText(bubbleTitle, {
+      maxWidth: isAfter ? 216 : 158,
+      fontSize: 13,
+      maxLines: 2,
+      bold: true,
+    });
+    const rightTitleLines = wrapSvgText(
+      isAfter ? "컷 순서 L→R / R→L 자동 정합" : "수동 말풍선 크기 재조정",
+      { maxWidth: 214, fontSize: 12.5, maxLines: 2, bold: true },
+    );
+    const rightSubLines = wrapSvgText(
+      isAfter ? "대사 시트 양방향 동기화" : "언어별 파일 사본 수동 관리",
+      { maxWidth: 214, fontSize: 11, maxLines: 2, bold: false },
+    );
     return (
       <g>
         <rect x="0" y="0" width="640" height="220" fill="var(--color-canvas)" />
         <ellipse
-          cx="220"
-          cy="108"
-          rx={isAfter ? 124 : 88}
-          ry={isAfter ? 58 : 44}
+          cx="188"
+          cy="110"
+          rx={isAfter ? 140 : 94}
+          ry={isAfter ? 62 : 48}
           fill="var(--color-card)"
           stroke={isAfter ? "var(--color-good)" : "var(--color-warn)"}
           strokeWidth="3"
         />
         <text
-          x="220"
-          y="104"
+          x="188"
+          y={bubbleTitleLines.length > 1 ? 94 : 100}
           textAnchor="middle"
+          dominantBaseline="middle"
           fill="var(--color-fg)"
-          fontSize="14"
+          fontSize="13"
           fontWeight="800"
         >
-          {isAfter ? "마감 전 다국어 식자 완료!" : "Translated dialogue overflows box..."}
+          {bubbleTitleLines.map((line, idx) => (
+            <tspan key={`b-title-${idx}`} x="188" dy={idx === 0 ? 0 : 16}>
+              {line}
+            </tspan>
+          ))}
         </text>
         <text
-          x="220"
-          y="126"
+          x="188"
+          y="132"
           textAnchor="middle"
+          dominantBaseline="middle"
           fill={isAfter ? "var(--color-good)" : "var(--color-warn)"}
-          fontSize="12"
+          fontSize="11.5"
           fontWeight="700"
         >
           {isAfter ? "KO · EN · JA · RTL 여백 통과" : "Overflow +18px"}
         </text>
         <rect
-          x="392"
-          y="58"
-          width="184"
-          height="102"
+          x="368"
+          y="50"
+          width="248"
+          height="118"
           rx="16"
           fill="var(--color-panel)"
           stroke="var(--color-line-strong)"
           strokeWidth="2"
         />
-        <text x="484" y="102" textAnchor="middle" fill="var(--color-accent)" fontSize="13" fontWeight="800">
-          {isAfter ? "컷 순서 L→R / R→L 자동 정합" : "수동 말풍선 크기 재조정"}
+        <text
+          x="492"
+          y={rightTitleLines.length > 1 ? 86 : 94}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="var(--color-accent)"
+          fontSize="12.5"
+          fontWeight="800"
+        >
+          {rightTitleLines.map((line, idx) => (
+            <tspan key={`r-title-${idx}`} x="492" dy={idx === 0 ? 0 : 16}>
+              {line}
+            </tspan>
+          ))}
         </text>
-        <text x="484" y="126" textAnchor="middle" fill="var(--color-fg-2)" fontSize="11.5" fontWeight="600">
-          {isAfter ? "대사 시트 양방향 동기화" : "언어별 파일 사본 수동 관리"}
+        <text
+          x="492"
+          y={rightTitleLines.length > 1 ? 128 : 122}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="var(--color-fg-2)"
+          fontSize="11"
+          fontWeight="600"
+        >
+          {rightSubLines.map((line, idx) => (
+            <tspan key={`r-sub-${idx}`} x="492" dy={idx === 0 ? 0 : 15}>
+              {line}
+            </tspan>
+          ))}
         </text>
       </g>
     );
   }
 
+  const leftHeadlineLines = wrapSvgText(
+    isAfter ? "CMYK PDF/X-4 · TAC <= 300%" : "형광 RGB 색역 이탈 미검출",
+    { maxWidth: 256, fontSize: 13, maxLines: 2, bold: true },
+  );
+  const leftSubLines = wrapSvgText(
+    isAfter ? "OKLCH 소프트프루프 통과" : "단행본 인쇄 시 채도 급락 위험",
+    { maxWidth: 256, fontSize: 11.5, maxLines: 2, bold: false },
+  );
+  const leftFootLines = wrapSvgText(
+    isAfter ? "Rights BOM + WOTS+ 진본 서명 완료" : "외부 폰트·3D 라이선스 미확인",
+    { maxWidth: 256, fontSize: 11.5, maxLines: 2, bold: true },
+  );
+  const audioHeadLines = wrapSvgText(
+    isAfter ? "HRTF 스크롤 오디오 스템 동기화" : "무음 정적 컷만 내보내기",
+    { maxWidth: 256, fontSize: 12, maxLines: 2, bold: true },
+  );
+
   return (
     <g>
       <rect x="0" y="0" width="640" height="220" fill="var(--color-canvas)" />
       <rect
-        x="56"
-        y="44"
-        width="240"
-        height="132"
+        x="24"
+        y="34"
+        width="284"
+        height="152"
         rx="16"
         fill="var(--color-card)"
         stroke={isAfter ? "var(--color-good)" : "var(--color-warn)"}
         strokeWidth="2.5"
       />
-      <text x="78" y="80" fill="var(--color-fg)" fontSize="13.5" fontWeight="800">
-        {isAfter ? "CMYK PDF/X-4 · TAC <= 300%" : "형광 RGB 색역 이탈 미검출"}
+      <text x="40" y="64" dominantBaseline="middle" fill="var(--color-fg)" fontSize="13" fontWeight="800">
+        {leftHeadlineLines.map((line, idx) => (
+          <tspan key={`qa-h-${idx}`} x="40" dy={idx === 0 ? 0 : 16}>
+            {line}
+          </tspan>
+        ))}
       </text>
-      <text x="78" y="108" fill="var(--color-fg-2)" fontSize="12" fontWeight="600">
-        {isAfter ? "OKLCH 소프트프루프 통과" : "단행본 인쇄 시 채도 급락 위험"}
+      <text x="40" y="102" dominantBaseline="middle" fill="var(--color-fg-2)" fontSize="11.5" fontWeight="600">
+        {leftSubLines.map((line, idx) => (
+          <tspan key={`qa-s-${idx}`} x="40" dy={idx === 0 ? 0 : 15}>
+            {line}
+          </tspan>
+        ))}
       </text>
       <text
-        x="78"
-        y="146"
+        x="40"
+        y="142"
+        dominantBaseline="middle"
         fill={isAfter ? "var(--color-good)" : "var(--color-warn)"}
-        fontSize="12"
+        fontSize="11.5"
         fontWeight="800"
       >
-        {isAfter ? "Rights BOM + WOTS+ 진본 서명 완료" : "외부 폰트·3D 라이선스 미확인"}
+        {leftFootLines.map((line, idx) => (
+          <tspan key={`qa-f-${idx}`} x="40" dy={idx === 0 ? 0 : 15}>
+            {line}
+          </tspan>
+        ))}
       </text>
 
       <rect
-        x="336"
-        y="44"
-        width="248"
-        height="132"
+        x="332"
+        y="34"
+        width="284"
+        height="152"
         rx="16"
         fill="var(--color-panel)"
         stroke="var(--color-line-strong)"
@@ -246,17 +324,21 @@ function StageArtworkSvg({
         return (
           <rect
             key={barIdx}
-            x={364 + barIdx * 28}
-            y={144 - barH}
-            width="16"
+            x={376 + barIdx * 30}
+            y={162 - barH}
+            width="18"
             height={barH}
             rx="4"
             fill={isAfter ? "var(--color-accent)" : "var(--color-fg-3)"}
           />
         );
       })}
-      <text x="364" y="72" fill="var(--color-fg)" fontSize="12.5" fontWeight="800">
-        {isAfter ? "HRTF 스크롤 오디오 스템 동기화" : "무음 정적 컷만 내보내기"}
+      <text x="348" y="62" dominantBaseline="middle" fill="var(--color-fg)" fontSize="12" fontWeight="800">
+        {audioHeadLines.map((line, idx) => (
+          <tspan key={`qa-a-${idx}`} x="348" dy={idx === 0 ? 0 : 15}>
+            {line}
+          </tspan>
+        ))}
       </text>
     </g>
   );
@@ -391,60 +473,141 @@ export function InteractiveFiveStageTourPreview({
         </div>
 
         {/* SVG Before/After 클립 스플릿 */}
-        <figure className="m-0 overflow-hidden rounded-2xl border border-line-strong bg-canvas">
-          <svg
-            role="img"
-            aria-label={`${pickShowcaseText(activeStage.shortTab)} — ${pickShowcaseText(activeStage.beforeLabel)} vs ${pickShowcaseText(activeStage.afterLabel)} (${scrubPercent}%)`}
-            viewBox="0 0 640 220"
-            className="block h-auto w-full"
-          >
-            <defs>
-              <clipPath id={clipPathId}>
-                <rect x="0" y="0" width={splitX} height="220" />
-              </clipPath>
-            </defs>
+        {(() => {
+          const afterText = pickShowcaseText(activeStage.afterLabel);
+          const beforeText = pickShowcaseText(activeStage.beforeLabel);
+          const afterLines = wrapSvgText(afterText, { maxWidth: 274, fontSize: 10.5, maxLines: 2, bold: true });
+          const beforeLines = wrapSvgText(beforeText, { maxWidth: 274, fontSize: 10.5, maxLines: 2, bold: true });
+          const pillHeight = afterLines.length > 1 || beforeLines.length > 1 ? 36 : 26;
+          const headerBandH = pillHeight + 16;
+          const totalH = headerBandH + 220;
+          const afterW = fitSvgPillWidth(
+            afterLines.reduce((a, b) => (b.length > a.length ? b : a), afterLines[0] ?? ""),
+            10.5,
+            12,
+            156,
+            298,
+            true,
+          );
+          const beforeW = fitSvgPillWidth(
+            beforeLines.reduce((a, b) => (b.length > a.length ? b : a), beforeLines[0] ?? ""),
+            10.5,
+            12,
+            156,
+            298,
+            true,
+          );
+          const beforeX = 640 - 12 - beforeW;
+          const pillY = 8;
+          const pillMidY = pillY + pillHeight / 2;
 
-            {/* 전체 폭에 깔리는 Before 레이어 */}
-            <StageArtworkSvg stageId={activeStage.id} variant="before" />
+          return (
+            <figure className="m-0 overflow-hidden rounded-2xl border border-line-strong bg-canvas">
+              <svg
+                role="img"
+                aria-label={`${pickShowcaseText(activeStage.shortTab)} — ${beforeText} vs ${afterText} (${scrubPercent}%)`}
+                viewBox={`0 0 640 ${totalH}`}
+                className="block h-auto w-full max-w-full"
+              >
+                <defs>
+                  <clipPath id={clipPathId}>
+                    <rect x="0" y={headerBandH} width={splitX} height="220" />
+                  </clipPath>
+                </defs>
 
-            {/* 좌측 0..splitX 구간에만 드러나는 After 레이어 */}
-            <g clipPath={`url(#${clipPathId})`}>
-              <StageArtworkSvg stageId={activeStage.id} variant="after" />
-            </g>
+                {/* 상단 상태 배지 전용 헤더 띠 (도식 아트워크와 비겹침 보장) */}
+                <rect x="0" y="0" width="640" height={headerBandH} fill="var(--color-panel)" />
+                <line x1="0" y1={headerBandH} x2="640" y2={headerBandH} stroke="var(--color-line)" strokeWidth="1" />
 
-            {/* 분할선 핸들 표시 */}
-            <line
-              x1={splitX}
-              y1="0"
-              x2={splitX}
-              y2="220"
-              stroke="var(--color-accent)"
-              strokeWidth="3"
-            />
-            <circle cx={splitX} cy="110" r="13" fill="var(--color-accent)" />
-            <text
-              x={splitX}
-              y="114"
-              textAnchor="middle"
-              fill="var(--color-on-accent)"
-              fontSize="10"
-              fontWeight="900"
-            >
-              ↔
-            </text>
+                <rect
+                  x="12"
+                  y={pillY}
+                  width={afterW}
+                  height={pillHeight}
+                  rx="12"
+                  fill="var(--color-card)"
+                  stroke="var(--color-good)"
+                  strokeWidth="1.2"
+                />
+                <text
+                  x={12 + afterW / 2}
+                  y={pillMidY - ((afterLines.length - 1) * 13) / 2}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="var(--color-good)"
+                  fontSize="10.5"
+                  fontWeight="800"
+                >
+                  {afterLines.map((line, idx) => (
+                    <tspan key={`after-pill-${idx}`} x={12 + afterW / 2} dy={idx === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
 
-            {/* 좌/우 상태 배지 */}
-            <rect x="14" y="12" width="198" height="24" rx="999" fill="var(--color-panel)" />
-            <text x="26" y="28" fill="var(--color-good)" fontSize="11" fontWeight="800">
-              {pickShowcaseText(activeStage.afterLabel)}
-            </text>
+                <rect
+                  x={beforeX}
+                  y={pillY}
+                  width={beforeW}
+                  height={pillHeight}
+                  rx="12"
+                  fill="var(--color-card)"
+                  stroke="var(--color-warn)"
+                  strokeWidth="1.2"
+                />
+                <text
+                  x={beforeX + beforeW / 2}
+                  y={pillMidY - ((beforeLines.length - 1) * 13) / 2}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="var(--color-warn)"
+                  fontSize="10.5"
+                  fontWeight="800"
+                >
+                  {beforeLines.map((line, idx) => (
+                    <tspan key={`before-pill-${idx}`} x={beforeX + beforeW / 2} dy={idx === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
 
-            <rect x="412" y="12" width="214" height="24" rx="999" fill="var(--color-panel)" />
-            <text x="424" y="28" fill="var(--color-warn)" fontSize="11" fontWeight="800">
-              {pickShowcaseText(activeStage.beforeLabel)}
-            </text>
-          </svg>
-        </figure>
+                {/* 전체 폭에 깔리는 Before 레이어 */}
+                <g transform={`translate(0, ${headerBandH})`}>
+                  <StageArtworkSvg stageId={activeStage.id} variant="before" />
+                </g>
+
+                {/* 좌측 0..splitX 구간에만 드러나는 After 레이어 */}
+                <g clipPath={`url(#${clipPathId})`}>
+                  <g transform={`translate(0, ${headerBandH})`}>
+                    <StageArtworkSvg stageId={activeStage.id} variant="after" />
+                  </g>
+                </g>
+
+                {/* 분할선 핸들 표시 */}
+                <line
+                  x1={splitX}
+                  y1={headerBandH}
+                  x2={splitX}
+                  y2={totalH}
+                  stroke="var(--color-accent)"
+                  strokeWidth="3"
+                />
+                <circle cx={splitX} cy={headerBandH + 110} r="13" fill="var(--color-accent)" />
+                <text
+                  x={splitX}
+                  y={headerBandH + 110}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="var(--color-on-accent)"
+                  fontSize="10"
+                  fontWeight="900"
+                >
+                  ↔
+                </text>
+              </svg>
+            </figure>
+          );
+        })()}
 
         {/* 키보드 접근성 + >= 44px 터치 타깃 비교 슬라이더 */}
         <div className="grid gap-2 rounded-2xl border border-line/80 bg-panel/80 p-3.5">

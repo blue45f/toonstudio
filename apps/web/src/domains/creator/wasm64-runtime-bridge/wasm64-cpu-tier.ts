@@ -8,6 +8,7 @@
  */
 
 import {
+  STUDIO_WASM64_CORE_MEMORY64_URL,
   STUDIO_WASM64_CORE_RELAXED_SIMD_URL,
   STUDIO_WASM64_CORE_SIMD_URL,
   STUDIO_WASM64_CORE_URL,
@@ -16,6 +17,21 @@ import {
   type Wasm64ExecutableTier,
   type WasmCoreTierCandidate,
 } from "./wasm64-hotpath-types";
+import {
+  detectWasmMemory64Support,
+  inspectWasmBinaryMemorySection,
+  WASM_MEMORY64_FLAG,
+  WASM_MEMORY64_PROBE_BYTES,
+  type WasmBinaryMemorySectionInfo,
+} from "./wasm64-memory64-abi-adapter";
+
+export {
+  detectWasmMemory64Support,
+  inspectWasmBinaryMemorySection,
+  WASM_MEMORY64_FLAG,
+  WASM_MEMORY64_PROBE_BYTES,
+  type WasmBinaryMemorySectionInfo,
+};
 
 /** 최소 유효 스칼라 WebAssembly 모듈 (매직 + 버전 1, 8 B). */
 export const WASM_SCALAR_PROBE_BYTES: Uint8Array = new Uint8Array([
@@ -74,6 +90,7 @@ export function probeWasmCpuTierCapabilities(validateFn?: WasmValidateFn): Wasm6
       webAssemblySupported: false,
       simd128Supported: false,
       relaxedSimdSupported: false,
+      memory64Supported: false,
     });
   }
 
@@ -84,12 +101,14 @@ export function probeWasmCpuTierCapabilities(validateFn?: WasmValidateFn): Wasm6
       webAssemblySupported: false,
       simd128Supported: false,
       relaxedSimdSupported: false,
+      memory64Supported: false,
     });
   }
 
   const simd128Supported = safeValidate(validator, WASM_SIMD128_PROBE_BYTES);
   const relaxedSimdSupported =
     simd128Supported && safeValidate(validator, WASM_RELAXED_SIMD_PROBE_BYTES);
+  const memory64Supported = detectWasmMemory64Support(validateFn);
 
   const tier: Wasm64CpuTier = relaxedSimdSupported
     ? "wasm-relaxed-simd"
@@ -102,6 +121,7 @@ export function probeWasmCpuTierCapabilities(validateFn?: WasmValidateFn): Wasm6
     webAssemblySupported,
     simd128Supported,
     relaxedSimdSupported,
+    memory64Supported,
   });
 }
 
@@ -127,22 +147,44 @@ const SCALAR_CANDIDATES: readonly WasmCoreTierCandidate[] = Object.freeze([
   Object.freeze({ tier: "wasm-scalar", url: STUDIO_WASM64_CORE_URL }),
 ]);
 
+const MEMORY64_CORE_CANDIDATE: WasmCoreTierCandidate = Object.freeze({
+  tier: "wasm-simd128",
+  url: STUDIO_WASM64_CORE_MEMORY64_URL,
+  isMemory64: true,
+});
+
 /**
- * 판정된 CPU 계층에 대해 우선순위 내림차순 코어 `.wasm` 로드 후보군을 반환한다.
+ * 판정된 CPU 계층과 `memory64` 선호 옵션에 대해 우선순위 내림차순 코어 `.wasm` 로드 후보군을 반환한다.
  */
 export function resolveWasmCoreTierCandidates(
   tier: Wasm64CpuTier,
+  options?: {
+    readonly preferMemory64?: boolean;
+    readonly memory64Supported?: boolean;
+  },
 ): readonly WasmCoreTierCandidate[] {
+  let base: readonly WasmCoreTierCandidate[];
   switch (tier) {
     case "wasm-relaxed-simd":
-      return RELAXED_CANDIDATES;
+      base = RELAXED_CANDIDATES;
+      break;
     case "wasm-simd128":
-      return SIMD128_CANDIDATES;
+      base = SIMD128_CANDIDATES;
+      break;
     case "wasm-scalar":
-      return SCALAR_CANDIDATES;
+      base = SCALAR_CANDIDATES;
+      break;
     case "js-fallback":
       return [];
   }
+  if (
+    options?.preferMemory64 &&
+    options.memory64Supported !== false &&
+    (tier === "wasm-relaxed-simd" || tier === "wasm-simd128")
+  ) {
+    return Object.freeze([MEMORY64_CORE_CANDIDATE, ...base]);
+  }
+  return base;
 }
 
 /** URL 파일명 패턴에서 코어 Wasm CPU 계층을 추정한다. */
@@ -151,7 +193,7 @@ export function inferCpuTierFromUrl(url: string): Wasm64ExecutableTier | null {
   if (lower.includes("relaxed-simd") || lower.includes("extended-suite")) {
     return "wasm-relaxed-simd";
   }
-  if (lower.includes("-simd")) {
+  if (lower.includes("-simd") || lower.includes("drawing-core-memory64")) {
     return "wasm-simd128";
   }
   if (lower.includes("studio-wasm64-drawing-core.wasm")) {

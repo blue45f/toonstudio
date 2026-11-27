@@ -60,6 +60,7 @@ const EXACT_DESCRIPTIONS = Object.freeze({
   "build:bundle": "타입체크 없이 웹 프로덕션 Vite 번들만 단독 빌드",
   postbuild: "빌드 산출물 제3자 라이선스 고지서 생성 및 dist/index.html CSP 검증",
   "build:all": "모노레포 전체 워크스페이스 패키지 순차 빌드",
+  "build:wasm64:memory64": "Rust studio-wasm64-drawing-core 실물 wasm64(memory64·i64) 바이너리 2종 빌드 및 V8 검증",
   "bundle:visualize": "Rollup/Vite 번들 크기 트리맵 시각화 리포트 생성",
   "check:studio-bundle": "Studio 번들 크기·청크 분리·지연 로딩 예산 게이트 검증",
   "check:product-tour-remotion-chunks": "Remotion 단일 인스턴스 및 제품 투어 청크 무결성(G5-3) 검증",

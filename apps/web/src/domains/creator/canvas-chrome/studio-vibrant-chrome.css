@@ -220,7 +220,7 @@
   color: var(--color-fg);
 }
 
-/* 좌측 도구 레일 버튼 위에 44종 컬러 스프라이트 레이어링 (studio-chrome-ui 수정 없이 적용) */
+/* 좌측 도구 레일 버튼: 35종 고유 StudioToolArtwork 글리프를 선명하게 유지하고 OKLCH 액센트 링만 입힌다 */
 .studio-vibrant-rail-btn {
   min-width: 44px;
   min-height: 44px;
@@ -239,41 +239,23 @@
   position: relative;
 }
 
-.studio-vibrant-rail-btn[data-vibrant-tool-sprite] .studio-premium-tool-glyph::after {
-  content: "";
-  position: absolute;
-  inset: 2px;
-  z-index: 2;
-  border-radius: 0.5rem;
-  background-image: var(--studio-vibrant-sprite-url);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  pointer-events: none;
-  filter: saturate(1.14) drop-shadow(0 1px 3px var(--studio-vibrant-bloom-shadow));
-  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), filter 150ms ease;
+.studio-vibrant-rail-btn[aria-pressed="true"] .studio-premium-tool-glyph {
+  filter: drop-shadow(0 0 6px color-mix(in oklch, var(--studio-vibrant-ring) 46%, transparent));
 }
 
-.studio-vibrant-rail-btn[data-vibrant-tool-sprite] .studio-premium-tool-glyph > .studio-tool-art {
-  opacity: 0.08;
-}
-
-.studio-vibrant-rail-btn[aria-pressed="true"] .studio-premium-tool-glyph::after {
-  filter:
-    saturate(1.26)
-    drop-shadow(0 0 8px color-mix(in oklch, var(--studio-vibrant-ring) 58%, transparent));
-}
-
-/* CSS Anchor Positioning + Popover 안전 배치 */
+/* CSS Anchor Positioning + Popover 안전 배치:
+   포털 다이얼로그는 JS resolveSafePopoverAnchor가 left/top을 직접 계산하므로,
+   명시적으로 data-studio-css-anchor="true"를 선언한 요소만 CSS 앵커를 연결하고
+   anchors-visible로 인해 포털 팝오버가 opacity:0(투명 먹통) 되는 현상을 원천 방지한다. */
 @supports (anchor-name: --a) {
-  .studio-vibrant-anchor-trigger {
+  .studio-vibrant-anchor-trigger[data-studio-css-anchor="true"] {
     anchor-name: var(--studio-anchor-name, --studio-vibrant-trigger);
   }
 
-  .studio-vibrant-anchored-popover {
+  .studio-vibrant-anchored-popover[data-studio-css-anchor="true"] {
     position-anchor: var(--studio-anchor-name, --studio-vibrant-trigger);
     position-try-fallbacks: flip-inline, flip-block, flip-inline flip-block;
-    position-visibility: anchors-visible;
+    position-visibility: always;
   }
 }
 
