@@ -12,6 +12,8 @@ type Model = typeof models[number];
 type FrameSpec = { variant: string; view: View; turned: boolean };
 type Evidence = {
   hairPixels: number; renderer: string;
+  tail: { arcLengthMm: number; chordLengthMm: number; maxDepthDeviationMm: number; maxDeviationMm: number;
+    bodyTriangles: number; intersectsUpperBody: boolean; upperBodyDistanceMm: number } | null;
   ponytailContact: { rootVertices: number; insideKnot: number; nearestRadius: number; farthestRadius: number } | null;
   cap: { visible: number; visibleWithoutHair: number; coveredByHair: number };
   sunglasses: { visible: number; visibleWithoutHair: number; coveredByHair: number };
@@ -84,7 +86,7 @@ async function sheet(page: Page, directory: string, name: string, frames: Frame[
 
 function validate(frames: Frame[], baseline: boolean) {
   const failures: string[] = [];
-  const expected = baseline ? 8 : 44;
+  const expected = baseline ? 16 : 44;
   if (frames.length !== expected) failures.push(`Captured ${frames.length}/${expected} frames`);
   for (const frame of frames) {
     const { stats } = frame;
@@ -96,6 +98,7 @@ function validate(frames: Frame[], baseline: boolean) {
       const tie = stats.ponytailContact;
       if (!tie || tie.rootVertices < 1) failures.push(`${frame.file}: missing visible geometry root-ring evidence`);
       else if (!baseline && tie.insideKnot !== tie.rootVertices) failures.push(`${frame.file}: tail root exits tie`);
+      if (!stats.tail?.bodyTriangles || !Number.isFinite(stats.tail.upperBodyDistanceMm)) failures.push(`${frame.file}: missing deformed upper body surfaces`);
     }
     if (frame.variant.startsWith("ponytail-") && stats.hairPixels < 20) failures.push(`${frame.file}: no visible hair in tie closeup`);
   }
@@ -148,7 +151,10 @@ async function compareBaseline(page: Page, directory: string, baseline: Frame[])
         }
         return changed;
       }, sources);
+      if (!before.stats.tail || !after.stats.tail) throw new Error(`Missing body clearance for ${before.file}`);
+      if (!before.stats.tail.intersectsUpperBody && after.stats.tail.intersectsUpperBody) throw new Error(`New tail/upper body crossing: ${before.file}`);
       pairs.push({ file: before.file, sameCamera, changedPixels,
+        beforeTail: before.stats.tail, afterTail: after.stats.tail,
         beforeContact: before.stats.ponytailContact, afterContact: after.stats.ponytailContact });
       sheetFrames.push(before, { ...after, file: join("../studio-hair-stack", after.file) });
       labels.push(`Base ${before.variant} ${before.view}`, `Current ${after.variant} ${after.view}`);
@@ -187,12 +193,13 @@ async function run(baselineRef?: string) {
     for (const model of models) {
       await page.evaluate(model => window.studioHairStack.load(model), model);
       await page.waitForFunction(model => window.studioHairStack.model === model, model);
-      for (const choice of baselineRef ? extrema : [...standard, ...extrema]) {
+      const choices = [...standard.filter(s => !baselineRef || s.style === "ponytail"), ...extrema];
+      for (const choice of choices) {
         await page.evaluate(({ style, height }) => window.studioHairStack.style(style, height), choice);
         const closeup = choice.height !== undefined;
         for (const turned of closeup ? [false] : [false, true]) {
           await page.evaluate(turned => window.studioHairStack.pose(turned), turned);
-          for (const view of closeup ? ["side", "back"] as const : views) {
+          for (const view of closeup || baselineRef ? ["side", "back"] as const : views) {
             await page.evaluate(({ view, closeup }) => window.studioHairStack.view(view, closeup), { view, closeup });
             await page.waitForFunction(() => window.studioHairStack.settled(), undefined, { timeout: 45_000 });
             const spec = { variant: choice.variant, view, turned };
@@ -214,6 +221,28 @@ async function run(baselineRef?: string) {
   } finally {
     await browser.close();
     await server.close();
+  }
+  for (const model of models) {
+    const shots = frames.filter(f => f.model === model);
+    const full = shots.filter(f => !f.variant.startsWith("ponytail-"));
+    if (!full.length) continue;
+    const simultaneous = new Map<string, number>();
+    for (const f of full) {
+      const key = f.variant + "/" + f.turned;
+      simultaneous.set(key, Math.max(simultaneous.get(key) ?? 0, Math.min(f.stats.hairPixels, f.stats.cap.visible, f.stats.sunglasses.visible)));
+    }
+    const tail = full.find(f => f.variant === "ponytail")?.stats.tail;
+    const tails = full.filter(f => f.variant === "ponytail" && f.stats.tail);
+    console.log("HAIR_STACK", JSON.stringify({ model, rendererVersion: baselineRef ? "baseline" : "current",
+      frames: shots.length, maxDriftMm: Math.max(...shots.flatMap(f => Object.values(f.stats.driftMm))),
+      minimumBestSimultaneousPixels: Math.min(...simultaneous.values()), tailDepthBowMm: tail?.maxDepthDeviationMm,
+      tailArcMm: tail?.arcLengthMm, minUpperBodyMm: Math.min(...tails.map(f => f.stats.tail!.upperBodyDistanceMm)),
+      intersectingPoses: [...new Set(tails.filter(f => f.stats.tail!.intersectsUpperBody).map(f => f.turned ? "turned" : "neutral"))] }));
+    const pair = comparison.find(p => p.file === `screenshots/${model}-ponytail-neutral-side.png`);
+    if (pair) console.log("HAIR_STACK_COMPARISON", JSON.stringify({ model, pixels: pair.changedPixels, sameCamera: pair.sameCamera,
+      beforeRoot: pair.beforeContact, afterRoot: pair.afterContact, beforeDepthMm: pair.beforeTail.maxDepthDeviationMm,
+      afterDepthMm: pair.afterTail.maxDepthDeviationMm, beforeUpperBodyMm: pair.beforeTail.upperBodyDistanceMm,
+      afterUpperBodyMm: pair.afterTail.upperBodyDistanceMm }));
   }
   const failures = [...errors, ...validate(frames, Boolean(baselineRef))];
   const sourceRef = baselineRef ?? currentRef;

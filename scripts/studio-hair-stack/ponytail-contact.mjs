@@ -18,6 +18,8 @@ export function measurePonytailContact(mergedGeometry, state, fit) {
   const toKnot = avatarForgeHairInstance(knot, fit).matrix.clone().invert();
   const point = new Vector3();
   let offset = 0;
+  let firstVertex = 0;
+  let vertexCount = 0;
   let rootVertices = 0;
   let insideKnot = 0;
   let nearestRadius = Infinity;
@@ -26,6 +28,7 @@ export function measurePonytailContact(mergedGeometry, state, fit) {
     const template = createStudioVrmAuthoredHairGeometry(part);
     try {
       const count = template.getAttribute("position").count;
+      if (part.id === "pony-tail") { firstVertex = offset; vertexCount = count; }
       const expectedUv = template.getAttribute("uv");
       if (!expectedUv || expectedUv.count !== count || offset + count > positions.count) {
         throw new Error(`Ponytail vertex layout differs at ${part.id}`);
@@ -50,5 +53,5 @@ export function measurePonytailContact(mergedGeometry, state, fit) {
     }
   }
   if (offset !== positions.count || !rootVertices) throw new Error("Incomplete mounted ponytail root range");
-  return { rootVertices, insideKnot, nearestRadius, farthestRadius };
+  return { rootVertices, insideKnot, nearestRadius, farthestRadius, firstVertex, vertexCount };
 }

@@ -1,6 +1,7 @@
 import { MathUtils, Matrix4, Quaternion, Vector3 } from "three";
 
 import { measurePonytailContact } from "./ponytail-contact.mjs";
+import { measureMountedTail } from "./tail-body.mjs";
 
 const threshold = 12;
 function differs(a, b, i) {
@@ -52,6 +53,7 @@ export function captureHairStack({ fixture, gl, scene, camera }) {
   const previousViews = new Map();
   const restProbes = new Map();
   const contacts = new WeakMap();
+  const measureTail = measureMountedTail(fixture);
   const context = gl.getContext();
   const { vrm, head, fit } = fixture;
   const rendererInfo = context.getExtension("WEBGL_debug_renderer_info");
@@ -114,7 +116,7 @@ export function captureHairStack({ fixture, gl, scene, camera }) {
       png: gl.domElement.toDataURL("image/png"),
       stats: {
         hairPixels: difference(full, hairOff), cap: capEvidence, sunglasses: glassesEvidence,
-        ponytailContact: contacts.get(mainHair.geometry), renderer,
+        ponytailContact: contacts.get(mainHair.geometry), tail: measureTail(mainHair, contacts.get(mainHair.geometry), turned), renderer,
         comparedStyle: prior?.variant ?? null, changedPixels: prior ? difference(full, prior.pixels) : null,
         driftMm, headTurnDegrees: MathUtils.radToDeg(headRotation.angleTo(rest.rotation)),
         sampleCounts: Object.fromEntries(Object.entries(probes).map(([id, points]) => [id, points.length])),
