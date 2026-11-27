@@ -1,0 +1,47 @@
+export {
+  PolylineSpatialIntersectionIndex,
+  buildPolylineSpatialIntersectionIndex,
+  clampNumber,
+  computeStrokeArcLengths,
+  distanceBetweenPoints,
+  distancePointToSegment,
+  distanceSegmentToSegment,
+  segmentSegmentIntersection,
+  type IndexedStrokeSegment,
+  type PointToSegmentProjection,
+  type SegmentIntersectionHit,
+  type SpatialHashStats,
+  type SpatialIntersectionIndexOptions,
+  type SpatialIntersectionResult,
+  type StrokeArcMetrics,
+  type StrokeIntersectionKind,
+  type StrokeIntersectionRecord,
+  type StrokeJunctionPoint,
+  type VectorLineartStroke,
+  type VectorPoint2D,
+} from "./polyline-spatial-intersection-index";
+
+export {
+  computePolylineCurvatures,
+  eraseUpToIntersections,
+  pruneMicroOverhangs,
+  sliceStrokeByArcRange,
+  type EraseUpToIntersectionsOptions,
+  type EraseUpToIntersectionsResult,
+  type ErasedSpanRecord,
+  type PruneMicroOverhangsOptions,
+  type PruneMicroOverhangsResult,
+  type PrunedOverhangRecord,
+  type UnintersectedStrokeBehavior,
+} from "./intersection-overhang-eraser-engine";
+
+export {
+  evaluateCubicBezierBridge,
+  weldMagneticEndpoints,
+  type MagneticEndpointWeldOptions,
+  type MagneticEndpointWeldResult,
+  type MagneticTSnapRecord,
+  type MagneticWeldBridgeRecord,
+  type StrokeEndpointSide,
+  type TSnapMode,
+} from "./magnetic-endpoint-welder";

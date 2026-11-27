@@ -58,6 +58,8 @@ export interface StudioWasmFilterExecutionResult {
   readonly filter: StudioWasmAcceleratedFilterKind;
   readonly engine: StudioWasmFilterEngine;
   readonly cpuTier: Wasm64CpuTier;
+  readonly addressBits: 64 | 32;
+  readonly memory64Active: boolean;
   readonly durationMs: number;
   readonly affectedPixels: number;
   readonly wasmReady: boolean;
@@ -68,6 +70,8 @@ export interface StudioWasmFilterTelemetry {
   readonly enabled: boolean;
   readonly wasmReady: boolean;
   readonly cpuTier: Wasm64CpuTier;
+  readonly addressBits: 64 | 32;
+  readonly memory64Active: boolean;
   readonly resolvedWasmUrl: string | null;
   readonly wasmExecCount: number;
   readonly jsFallbackCount: number;
@@ -229,6 +233,8 @@ export function getStudioWasmFilterTelemetry(): StudioWasmFilterTelemetry {
     enabled: accelerationEnabled,
     wasmReady: ready,
     cpuTier: ready && meta ? meta.cpuTier : "js-fallback",
+    addressBits: ready && meta ? meta.addressBits : 32,
+    memory64Active: Boolean(ready && meta?.memory64Active),
     resolvedWasmUrl: ready && meta ? meta.resolvedUrl : null,
     wasmExecCount,
     jsFallbackCount,
@@ -412,10 +418,11 @@ export function executeStudioFilterWithWasmAcceleration(
     request.rgba.set(output, 0);
   }
 
-  const activeCpuTier: Wasm64CpuTier =
+  const activeMeta =
     kernelResult.engine === "rust-wasm" && cachedWasmRuntime
-      ? cachedWasmRuntime.getMetadata().cpuTier
-      : "js-fallback";
+      ? cachedWasmRuntime.getMetadata()
+      : null;
+  const activeCpuTier: Wasm64CpuTier = activeMeta ? activeMeta.cpuTier : "js-fallback";
 
   return {
     output: request.mutateInPlace ? request.rgba : output,
@@ -424,6 +431,8 @@ export function executeStudioFilterWithWasmAcceleration(
     filter: request.filter,
     engine: kernelResult.engine,
     cpuTier: activeCpuTier,
+    addressBits: activeMeta ? activeMeta.addressBits : 32,
+    memory64Active: Boolean(activeMeta?.memory64Active),
     durationMs: kernelResult.durationMs,
     affectedPixels: kernelResult.affectedPixels,
     wasmReady: isWasmRuntimeReady(),

@@ -9,6 +9,7 @@
  */
 
 import {
+  detectWasmMemory64Support,
   fetchAndInstantiateWasmUrl,
   inferWasmBinaryCpuTier,
   normalizeWasmArrayBuffer,
@@ -30,9 +31,13 @@ import {
   type StudioWasm64ExtendedSuiteMetadata,
   type StudioWasm64ExtendedSuiteRuntime,
 } from "./wasm64-extended-suite-types";
-import { STUDIO_WASM64_EXTENDED_SUITE_URL } from "./wasm64-hotpath-types";
+import {
+  STUDIO_WASM64_EXTENDED_SUITE_MEMORY64_URL,
+  STUDIO_WASM64_EXTENDED_SUITE_URL,
+} from "./wasm64-hotpath-types";
+import { createDualAddressWidthWasmAdapter } from "./wasm64-memory64-abi-adapter";
 
-export { STUDIO_WASM64_EXTENDED_SUITE_URL };
+export { STUDIO_WASM64_EXTENDED_SUITE_MEMORY64_URL, STUDIO_WASM64_EXTENDED_SUITE_URL };
 export * from "./wasm64-extended-suite-types";
 
 function nowMs(): number {
@@ -95,7 +100,7 @@ function buildExtendedSuiteRuntime(
 }
 
 /**
- * 이미 확보된 `studio-wasm64-extended-suite.wasm` 바이너리 바이트를 직접 인스턴스화한다
+ * 이미 확보된 확장 스위트 `.wasm` 바이트(`memory64` 및 `wasm32` 모두 지원)를 직접 인스턴스화한다
  * (Node/Vitest 무모킹 검증 및 오프라인 캐시 경로).
  */
 export async function createStudioWasm64ExtendedSuiteFromBytes(
@@ -104,15 +109,21 @@ export async function createStudioWasm64ExtendedSuiteFromBytes(
 ): Promise<StudioWasm64ExtendedSuiteRuntime> {
   const started = nowMs();
   const buffer = normalizeWasmArrayBuffer(wasmBytes);
+  const binaryView = new Uint8Array(buffer);
   const { instance } = await WebAssembly.instantiate(buffer, {});
   if (!isExtendedSuiteExports(instance.exports)) {
     throw new Error("studio-wasm64-extended-suite.wasm 필수 확장 export 시그니처가 누락되었습니다");
   }
-  const caps = assertSuiteCapabilities(instance.exports);
-  const cpuTier = options.cpuTierHint ?? inferWasmBinaryCpuTier(new Uint8Array(buffer));
-  return buildExtendedSuiteRuntime(instance.exports, {
+  const dual = createDualAddressWidthWasmAdapter<RawExtendedSuiteExports>(instance.exports, {
+    binaryBytes: binaryView,
+  });
+  const caps = assertSuiteCapabilities(dual.adaptedExports);
+  const cpuTier = options.cpuTierHint ?? inferWasmBinaryCpuTier(binaryView);
+  return buildExtendedSuiteRuntime(dual.adaptedExports, {
     ...caps,
     cpuTier,
+    addressBits: dual.addressBits,
+    memory64Active: dual.memory64Active,
     resolvedUrl: options.wasmUrl ?? null,
     wasmByteLength: buffer.byteLength,
     loadSource: "instantiate-bytes",
@@ -121,8 +132,9 @@ export async function createStudioWasm64ExtendedSuiteFromBytes(
 }
 
 /**
- * `studio-wasm64-extended-suite.wasm` 바이너리를 지연 로드·인스턴스화한다.
- * `wasmBytes`가 전달되면 네트워크 없이 즉시 인스턴스화하며, 기본 경로는 `/wasm/studio-wasm64-extended-suite.wasm`이다.
+ * `studio-wasm64-extended-suite` 바이너리를 지연 로드·인스턴스화한다.
+ * `preferMemory64` 활성화 시 `/wasm/studio-wasm64-extended-suite-memory64.wasm`을 우선 시도하고
+ * 404/미지원 시 `/wasm/studio-wasm64-extended-suite.wasm`(`wasm32`)으로 무중단 폴백한다.
  */
 export async function loadStudioWasm64ExtendedSuiteRuntime(
   options: LoadStudioWasm64ExtendedSuiteOptions = {},
@@ -138,21 +150,55 @@ export async function loadStudioWasm64ExtendedSuiteRuntime(
     throw new Error("fetch API가 없어 확장 Wasm 스위트를 네트워크에서 로드할 수 없습니다");
   }
   const started = nowMs();
-  const url = options.wasmUrl ?? STUDIO_WASM64_EXTENDED_SUITE_URL;
-  const fetched = await fetchAndInstantiateWasmUrl(url, fetchImpl);
-  if (!isExtendedSuiteExports(fetched.instance.exports)) {
-    throw new Error(`studio-wasm64-extended-suite.wasm 필수 확장 export 누락 (${url})`);
+  const shouldPreferMemory64 =
+    options.preferMemory64 ??
+    (typeof window !== "undefined" && !options.fetchFn && !options.wasmUrl);
+  const candidateUrls: readonly { readonly url: string; readonly isMemory64?: boolean }[] =
+    options.wasmUrl
+      ? [{ url: options.wasmUrl }]
+      : shouldPreferMemory64 && detectWasmMemory64Support(options.validateFn)
+        ? [
+            { url: STUDIO_WASM64_EXTENDED_SUITE_MEMORY64_URL, isMemory64: true },
+            { url: STUDIO_WASM64_EXTENDED_SUITE_URL, isMemory64: false },
+          ]
+        : [{ url: STUDIO_WASM64_EXTENDED_SUITE_URL, isMemory64: false }];
+
+  let lastError: unknown = null;
+  for (const candidate of candidateUrls) {
+    try {
+      const fetched = await fetchAndInstantiateWasmUrl(candidate.url, fetchImpl);
+      if (!isExtendedSuiteExports(fetched.instance.exports)) {
+        throw new Error(`studio-wasm64-extended-suite.wasm 필수 확장 export 누락 (${candidate.url})`);
+      }
+      const dual = createDualAddressWidthWasmAdapter<RawExtendedSuiteExports>(
+        fetched.instance.exports,
+        {
+          binaryBytes: fetched.binaryBytes,
+          isMemory64Hint: fetched.binaryBytes ? undefined : candidate.isMemory64,
+        },
+      );
+      const caps = assertSuiteCapabilities(dual.adaptedExports);
+      const cpuTier =
+        options.cpuTierHint ??
+        (fetched.binaryBytes ? inferWasmBinaryCpuTier(fetched.binaryBytes) : "wasm-relaxed-simd");
+      return buildExtendedSuiteRuntime(dual.adaptedExports, {
+        ...caps,
+        cpuTier,
+        addressBits: dual.addressBits,
+        memory64Active: dual.memory64Active,
+        resolvedUrl: candidate.url,
+        wasmByteLength: fetched.byteLength,
+        loadSource: fetched.loadSource,
+        loadElapsedMs: nowMs() - started,
+      });
+    } catch (err) {
+      lastError = err;
+    }
   }
-  const caps = assertSuiteCapabilities(fetched.instance.exports);
-  const cpuTier =
-    options.cpuTierHint ??
-    (fetched.binaryBytes ? inferWasmBinaryCpuTier(fetched.binaryBytes) : "wasm-relaxed-simd");
-  return buildExtendedSuiteRuntime(fetched.instance.exports, {
-    ...caps,
-    cpuTier,
-    resolvedUrl: url,
-    wasmByteLength: fetched.byteLength,
-    loadSource: fetched.loadSource,
-    loadElapsedMs: nowMs() - started,
-  });
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`확장 Wasm 스위트 로드 실패: ${String(lastError)}`);
 }
+
+/** `loadStudioWasm64ExtendedSuiteRuntime` 별칭 (`preferMemory64: true` 옵션 지원). */
+export const loadStudioWasm64ExtendedSuite = loadStudioWasm64ExtendedSuiteRuntime;

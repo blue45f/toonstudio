@@ -271,9 +271,12 @@ export function StudioDrawingClarityRail({ session: s, pinnedHostRef }: { readon
       v4Actions={{
         onSelectTool: () => s.activatePrimaryCanvasTool?.("select"),
         onOpenFill: (trigger) => {
-          clarity.reveal("layers", trigger);
-          s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "properties", image: "fill" });
+          const wasActive = Boolean(s.advancedFillActive || s.advancedFillArmed);
           s.studioLeftToolRailHandlers.toggleAdvancedFill();
+          if (!wasActive) {
+            clarity.reveal("layers", trigger);
+            s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "properties", image: "fill" });
+          }
         },
         onOpenCutSplit: (trigger) => clarity.open("pages", trigger),
         onOpenBubble: () => {

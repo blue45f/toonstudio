@@ -10,15 +10,19 @@ import type {
   SeminarRecipeDiagramSpec,
 } from "./tech-seminar-reusable-recipes";
 
+import { fitSvgPillWidth, wrapSvgText } from "@/shared/lib/svg-text-wrap";
+
 export interface TechSeminarRecipeSvgDiagramProps {
   readonly recipeId: string;
   readonly diagram: SeminarRecipeDiagramSpec;
 }
 
-const NODE_X = [16, 246, 476, 706] as const;
-const NODE_WIDTH = 198;
-const NODE_Y = 22;
-const NODE_HEIGHT = 96;
+const VIEW_WIDTH = 1040;
+const VIEW_HEIGHT = 252;
+const NODE_X = [16, 276, 536, 796] as const;
+const NODE_WIDTH = 228;
+const NODE_Y = 18;
+const NODE_HEIGHT = 114;
 const ARROW_Y = NODE_Y + NODE_HEIGHT / 2;
 
 function toneStrokeVar(tone: SeminarDiagramTone): string {
@@ -45,9 +49,15 @@ export function TechSeminarRecipeSvgDiagram({
 }: TechSeminarRecipeSvgDiagramProps) {
   const markerId = `recipe-flow-arrow-${recipeId}`;
   const titleId = `recipe-flow-title-${recipeId}`;
+  const guardLines = wrapSvgText(diagram.guardNote, {
+    maxWidth: VIEW_WIDTH - 64,
+    fontSize: 11,
+    maxLines: 2,
+    bold: true,
+  });
 
   return (
-    <figure className="m-0 grid gap-2.5 rounded-2xl border border-line/80 bg-raised/70 p-3.5 sm:p-4">
+    <figure className="m-0 grid gap-2.5 rounded-2xl border border-line/80 bg-raised/70 p-3.5 [word-break:keep-all] sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <figcaption className="text-xs font-extrabold tracking-tight text-fg-2">
           흐름 도식 · {diagram.caption}
@@ -57,12 +67,12 @@ export function TechSeminarRecipeSvgDiagram({
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overscroll-x-contain">
         <svg
           role="img"
           aria-labelledby={titleId}
-          viewBox="0 0 920 198"
-          className="block h-auto w-full min-w-[640px]"
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+          className="block h-auto w-full min-w-[680px] max-w-full"
         >
           <title id={titleId}>{diagram.ariaLabel}</title>
           <defs>
@@ -79,12 +89,29 @@ export function TechSeminarRecipeSvgDiagram({
             </marker>
           </defs>
 
-          {/* 3개 연결 화살표 + 전달 데이터 라벨 */}
+          {/* 3개 연결 화살표 + 비겹침 전달 데이터 배지 */}
           {[0, 1, 2].map((edgeIndex) => {
             const x1 = NODE_X[edgeIndex] + NODE_WIDTH + 3;
             const x2 = NODE_X[edgeIndex + 1] - 4;
             const midX = (x1 + x2) / 2;
             const label = diagram.edgeLabels[edgeIndex] ?? "";
+            const labelLines = wrapSvgText(label, {
+              maxWidth: 210,
+              fontSize: 10.5,
+              maxLines: 2,
+              bold: true,
+            });
+            const longestLine = labelLines.reduce(
+              (best, line) => (line.length > best.length ? line : best),
+              labelLines[0] ?? "",
+            );
+            const pillW = fitSvgPillWidth(longestLine, 10.5, 10, 72, 224, true);
+            const pillH = labelLines.length > 1 ? 34 : 24;
+            const pillY = NODE_Y + NODE_HEIGHT + 16;
+            const textCenterY = pillY + pillH / 2;
+            const lineH = 13;
+            const firstY = textCenterY - ((labelLines.length - 1) * lineH) / 2;
+
             return (
               <g key={edgeIndex}>
                 <line
@@ -96,15 +123,39 @@ export function TechSeminarRecipeSvgDiagram({
                   strokeWidth="2"
                   markerEnd={`url(#${markerId})`}
                 />
+                <line
+                  x1={midX}
+                  y1={ARROW_Y + 4}
+                  x2={midX}
+                  y2={pillY}
+                  stroke="var(--color-line-strong)"
+                  strokeWidth="1.2"
+                  strokeDasharray="3 3"
+                />
+                <rect
+                  x={midX - pillW / 2}
+                  y={pillY}
+                  width={pillW}
+                  height={pillH}
+                  rx="8"
+                  fill="var(--color-card)"
+                  stroke="var(--color-line)"
+                  strokeWidth="1"
+                />
                 <text
                   x={midX}
-                  y={NODE_Y + NODE_HEIGHT + 22}
+                  y={firstY}
                   textAnchor="middle"
-                  fill="var(--color-fg-3)"
-                  fontSize="11"
+                  dominantBaseline="middle"
+                  fill="var(--color-fg-2)"
+                  fontSize="10.5"
                   fontWeight="700"
                 >
-                  {label}
+                  {labelLines.map((line, lineIdx) => (
+                    <tspan key={`${edgeIndex}-edge-${lineIdx}`} x={midX} dy={lineIdx === 0 ? 0 : lineH}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               </g>
             );
@@ -114,6 +165,22 @@ export function TechSeminarRecipeSvgDiagram({
           {diagram.nodes.map((node, index) => {
             const x = NODE_X[index];
             const stroke = toneStrokeVar(node.tone);
+            const cleanTitle = node.title.replace(/^\d+\.\s*/u, "");
+            const titleLines = wrapSvgText(cleanTitle, {
+              maxWidth: NODE_WIDTH - 62,
+              fontSize: 13,
+              maxLines: 2,
+              bold: true,
+            });
+            const detailLines = wrapSvgText(node.detail, {
+              maxWidth: NODE_WIDTH - 28,
+              fontSize: 11.5,
+              maxLines: 2,
+              bold: false,
+            });
+            const titleStartY = titleLines.length > 1 ? NODE_Y + 20 : NODE_Y + 24;
+            const detailStartY = titleLines.length > 1 ? NODE_Y + 72 : NODE_Y + 66;
+
             return (
               <g key={node.title}>
                 <rect
@@ -128,7 +195,7 @@ export function TechSeminarRecipeSvgDiagram({
                 />
                 <rect
                   x={x + 12}
-                  y={NODE_Y + 12}
+                  y={NODE_Y + 14}
                   width="32"
                   height="20"
                   rx="999"
@@ -136,8 +203,9 @@ export function TechSeminarRecipeSvgDiagram({
                 />
                 <text
                   x={x + 28}
-                  y={NODE_Y + 25.5}
+                  y={NODE_Y + 24}
                   textAnchor="middle"
+                  dominantBaseline="middle"
                   fill="var(--color-on-accent)"
                   fontSize="10.5"
                   fontWeight="800"
@@ -146,32 +214,42 @@ export function TechSeminarRecipeSvgDiagram({
                 </text>
                 <text
                   x={x + 52}
-                  y={NODE_Y + 26}
+                  y={titleStartY}
+                  dominantBaseline="middle"
                   fill="var(--color-fg)"
                   fontSize="13"
                   fontWeight="800"
                 >
-                  {node.title.replace(/^\d+\.\s*/u, "")}
+                  {titleLines.map((line, lineIdx) => (
+                    <tspan key={`${node.title}-t-${lineIdx}`} x={x + 52} dy={lineIdx === 0 ? 0 : 16}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
                 <text
                   x={x + 14}
-                  y={NODE_Y + 62}
+                  y={detailStartY}
+                  dominantBaseline="middle"
                   fill="var(--color-fg-2)"
                   fontSize="11.5"
                   fontWeight="600"
                 >
-                  {node.detail}
+                  {detailLines.map((line, lineIdx) => (
+                    <tspan key={`${node.title}-d-${lineIdx}`} x={x + 14} dy={lineIdx === 0 ? 0 : 16}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               </g>
             );
           })}
 
-          {/* 하단 불변식·경계 요약 띠 */}
+          {/* 하단 불변식·경계 요약 띠 (멀티라인 래핑) */}
           <rect
             x="16"
-            y="152"
-            width="888"
-            height="34"
+            y="194"
+            width={VIEW_WIDTH - 32}
+            height="46"
             rx="10"
             fill="var(--color-panel)"
             stroke="var(--color-line-strong)"
@@ -179,14 +257,17 @@ export function TechSeminarRecipeSvgDiagram({
           />
           <text
             x="30"
-            y="173"
+            y={guardLines.length > 1 ? 209 : 217}
+            dominantBaseline="middle"
             fill="var(--color-fg-2)"
-            fontSize="11.5"
+            fontSize="11"
             fontWeight="700"
           >
-            {diagram.guardNote.length > 96
-              ? `${diagram.guardNote.slice(0, 95)}…`
-              : diagram.guardNote}
+            {guardLines.map((line, lineIdx) => (
+              <tspan key={`guard-${lineIdx}`} x="30" dy={lineIdx === 0 ? 0 : 16}>
+                {line}
+              </tspan>
+            ))}
           </text>
         </svg>
       </div>

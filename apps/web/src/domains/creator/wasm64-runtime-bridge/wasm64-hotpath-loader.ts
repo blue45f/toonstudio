@@ -10,72 +10,35 @@
  */
 
 import {
-  detectWasmCpuTier,
-  fetchAndInstantiateWasmUrl,
-  inferCpuTierFromUrl,
-  inferWasmBinaryCpuTier,
-  normalizeWasmArrayBuffer,
-  resolveWasmCoreTierCandidates,
+  detectWasmCpuTier, detectWasmMemory64Support, fetchAndInstantiateWasmUrl,
+  inferCpuTierFromUrl, inferWasmBinaryCpuTier, normalizeWasmArrayBuffer, resolveWasmCoreTierCandidates,
 } from "./wasm64-cpu-tier";
+import { createDualAddressWidthWasmAdapter, type DualAddressWidthWasmAdapter } from "./wasm64-memory64-abi-adapter";
+import { jsCompositeTileDirtyRect, jsMixPigmentsKmPacked } from "./wasm64-hotpath-js-compositor";
 import {
-  jsCompositeTileDirtyRect,
-  jsMixPigmentsKmPacked,
-} from "./wasm64-hotpath-js-compositor";
-import {
-  DEFAULT_IMPASTO_LIGHT_PARAMS,
-  jsApplyImpastoLightingRgba,
-  jsFnv1aChecksum32,
-  jsGaussianBlurRgba,
-  jsMixPigmentsKm16Packed,
-  jsMixPigmentsKm16Strip,
-  jsSampleWorldPaperHeight,
-  jsUnsharpMaskRgba,
-  jsXorTileDeltaBytes,
-  type ImpastoLightParams,
+  DEFAULT_IMPASTO_LIGHT_PARAMS, jsApplyImpastoLightingRgba, jsFnv1aChecksum32,
+  jsGaussianBlurRgba, jsMixPigmentsKm16Packed, jsMixPigmentsKm16Strip,
+  jsSampleWorldPaperHeight, jsUnsharpMaskRgba, jsXorTileDeltaBytes, type ImpastoLightParams,
 } from "./wasm64-hotpath-js-fallback";
 import {
-  DEFAULT_WASM64_HOTPATH_ROUTING,
-  WASM64_HOTPATH_EXPECTED_ABI,
-  WASM64_HOTPATH_EXPECTED_CAPABILITIES,
-  type HotpathBlurOptions,
-  type HotpathBlurResult,
-  type HotpathImpastoOptions,
-  type HotpathImpastoResult,
-  type HotpathKm16StripResult,
-  type HotpathTileCompositeOptions,
-  type HotpathTileCompositeResult,
-  type HotpathUnsharpOptions,
-  type HotpathUnsharpResult,
-  type HotpathXorDeltaResult,
-  type LoadStudioWasm64HotpathOptions,
-  type StudioWasm64HotpathMetadata,
-  type StudioWasm64HotpathRuntime,
-  type TileBlendModeCode,
-  type Wasm64ExecutableTier,
-  type Wasm64HotpathBackendMode,
-  type Wasm64HotpathRouteKey,
-  type Wasm64HotpathRoutingConfig,
-  type WasmCoreTierCandidate,
-  type WasmDirtyRect,
-  type ZeroCopyUnsharpViewResult,
+  DEFAULT_WASM64_HOTPATH_ROUTING, WASM64_HOTPATH_EXPECTED_ABI, WASM64_HOTPATH_EXPECTED_CAPABILITIES,
+  type HotpathBlurOptions, type HotpathBlurResult, type HotpathImpastoOptions, type HotpathImpastoResult,
+  type HotpathKm16StripResult, type HotpathTileCompositeOptions, type HotpathTileCompositeResult,
+  type HotpathUnsharpOptions, type HotpathUnsharpResult, type HotpathXorDeltaResult,
+  type LoadStudioWasm64HotpathOptions, type StudioWasm64HotpathMetadata, type StudioWasm64HotpathRuntime,
+  type TileBlendModeCode, type Wasm64ExecutableTier, type Wasm64HotpathBackendMode,
+  type Wasm64HotpathRouteKey, type Wasm64HotpathRoutingConfig, type WasmCoreTierCandidate,
+  type WasmDirtyRect, type ZeroCopyUnsharpViewResult,
 } from "./wasm64-hotpath-types";
 
+export { benchmarkWasm64VsJsHotpaths, createHotpathBenchmarkFixtures } from "./wasm64-hotpath-benchmark";
 export {
-  benchmarkWasm64VsJsHotpaths,
-  createHotpathBenchmarkFixtures,
-} from "./wasm64-hotpath-benchmark";
-export {
-  detectWasmCpuTier,
-  inferCpuTierFromUrl,
-  inferWasmBinaryCpuTier,
-  probeWasmCpuTierCapabilities,
-  resolveWasmCoreTierCandidates,
-  WASM_RELAXED_SIMD_PROBE_BYTES,
-  WASM_SCALAR_PROBE_BYTES,
-  WASM_SIMD128_PROBE_BYTES,
-  type WasmValidateFn,
+  detectWasmCpuTier, detectWasmMemory64Support, inferCpuTierFromUrl, inferWasmBinaryCpuTier,
+  inspectWasmBinaryMemorySection, probeWasmCpuTierCapabilities, resolveWasmCoreTierCandidates,
+  WASM_MEMORY64_FLAG, WASM_MEMORY64_PROBE_BYTES, WASM_RELAXED_SIMD_PROBE_BYTES,
+  WASM_SCALAR_PROBE_BYTES, WASM_SIMD128_PROBE_BYTES, type WasmBinaryMemorySectionInfo, type WasmValidateFn,
 } from "./wasm64-cpu-tier";
-export { DEFAULT_IMPASTO_LIGHT_PARAMS };
+export { createDualAddressWidthWasmAdapter, DEFAULT_IMPASTO_LIGHT_PARAMS, type DualAddressWidthWasmAdapter };
 export * from "./wasm64-hotpath-types";
 
 interface RawRustWasmExports {
@@ -601,6 +564,7 @@ function buildRuntime(
 
   return {
     getMetadata,
+    getTelemetry: getMetadata,
     getRouting,
     setRouting,
     unsharpMaskRgba,
@@ -628,6 +592,8 @@ export function createStudioWasm64JsFallbackRuntime(
     {
       backendMode: "js-fallback",
       cpuTier: "js-fallback",
+      addressBits: 32,
+      memory64Active: false,
       resolvedUrl: null,
       wasmByteLength: 0,
       abiVersion: WASM64_HOTPATH_EXPECTED_ABI,
@@ -640,7 +606,7 @@ export function createStudioWasm64JsFallbackRuntime(
   );
 }
 
-/** 이미 확보된 `.wasm` 바이너리 바이트를 `WebAssembly.instantiate`로 직접 인스턴스화한다. */
+/** 이미 확보된 `.wasm` 바이너리 바이트(`memory64` 및 `wasm32` 모두 지원)를 직접 인스턴스화한다. */
 export async function createStudioWasm64HotpathFromBytes(
   wasmBytes: Uint8Array | ArrayBuffer,
   initialRouting?: Partial<Wasm64HotpathRoutingConfig>,
@@ -651,20 +617,26 @@ export async function createStudioWasm64HotpathFromBytes(
 ): Promise<StudioWasm64HotpathRuntime> {
   const started = nowMs();
   const buffer = normalizeWasmArrayBuffer(wasmBytes);
+  const binaryView = new Uint8Array(buffer);
   const { instance } = await WebAssembly.instantiate(buffer, {});
   if (!isRustWasmExports(instance.exports)) {
     throw new Error("컴파일된 studio-wasm64-drawing-core.wasm 필수 export 시그니처가 누락되었습니다");
   }
-  const cpuTier = tierMeta?.cpuTierHint ?? inferWasmBinaryCpuTier(new Uint8Array(buffer));
+  const dual = createDualAddressWidthWasmAdapter<RawRustWasmExports>(instance.exports, {
+    binaryBytes: binaryView,
+  });
+  const cpuTier = tierMeta?.cpuTierHint ?? inferWasmBinaryCpuTier(binaryView);
   return buildRuntime(
-    instance.exports,
+    dual.adaptedExports,
     {
       backendMode: "rust-wasm",
       cpuTier,
+      addressBits: dual.addressBits,
+      memory64Active: dual.memory64Active,
       resolvedUrl: tierMeta?.resolvedUrl ?? null,
       wasmByteLength: buffer.byteLength,
-      abiVersion: instance.exports.wasm_drawing_core_abi_version() >>> 0,
-      capabilitiesMask: instance.exports.wasm_hotpath_capabilities() >>> 0,
+      abiVersion: dual.adaptedExports.wasm_drawing_core_abi_version() >>> 0,
+      capabilitiesMask: dual.adaptedExports.wasm_hotpath_capabilities() >>> 0,
       loadSource: "instantiate-bytes",
       loadElapsedMs: nowMs() - started,
       fallbackReason: null,
@@ -674,8 +646,8 @@ export async function createStudioWasm64HotpathFromBytes(
 }
 
 /**
- * `studio-wasm64-drawing-core` 바이너리를 CPU 계층(`relaxed-simd` → `simd128` → `scalar` → JS 폴백)
- * 순으로 자동 탐색·인스턴스화한다. `wasmBytes`·`wasmUrl` 명시 시 기존 호환 경로를 그대로 따른다.
+ * `studio-wasm64-drawing-core` 바이너리를 `memory64` 지원 시 우선 탐색하고,
+ * 미지원·404 시 `wasm32`(`relaxed-simd` → `simd128` → `scalar` → JS 폴백) 순으로 자동 강등한다.
  */
 export async function loadStudioWasm64HotpathRuntime(
   options: LoadStudioWasm64HotpathOptions = {},
@@ -703,6 +675,13 @@ export async function loadStudioWasm64HotpathRuntime(
     return createStudioWasm64JsFallbackRuntime("fetch API 미지원 비네트워크 환경", options.initialRouting);
   }
 
+  const shouldPreferMemory64 =
+    options.preferMemory64 ??
+    (typeof window !== "undefined" && !options.fetchFn && !options.preferredTier && !options.wasmUrl);
+  const memory64Supported = shouldPreferMemory64
+    ? detectWasmMemory64Support(options.validateFn)
+    : false;
+
   const candidates: readonly WasmCoreTierCandidate[] = options.wasmUrl
     ? [
         {
@@ -712,6 +691,7 @@ export async function loadStudioWasm64HotpathRuntime(
       ]
     : resolveWasmCoreTierCandidates(
         options.preferredTier ?? detectWasmCpuTier(options.validateFn),
+        { preferMemory64: shouldPreferMemory64, memory64Supported },
       );
 
   if (candidates.length === 0) {
@@ -727,6 +707,10 @@ export async function loadStudioWasm64HotpathRuntime(
       if (!isRustWasmExports(fetched.instance.exports)) {
         throw new Error(`필수 Wasm export 누락 (${candidate.url})`);
       }
+      const dual = createDualAddressWidthWasmAdapter<RawRustWasmExports>(fetched.instance.exports, {
+        binaryBytes: fetched.binaryBytes,
+        isMemory64Hint: fetched.binaryBytes ? undefined : candidate.isMemory64,
+      });
       const detectedTier: Wasm64ExecutableTier =
         options.cpuTierHint ??
         (options.wasmUrl && fetched.binaryBytes
@@ -734,14 +718,16 @@ export async function loadStudioWasm64HotpathRuntime(
           : candidate.tier);
 
       return buildRuntime(
-        fetched.instance.exports,
+        dual.adaptedExports,
         {
           backendMode: "rust-wasm",
           cpuTier: detectedTier,
+          addressBits: dual.addressBits,
+          memory64Active: dual.memory64Active,
           resolvedUrl: candidate.url,
           wasmByteLength: fetched.byteLength,
-          abiVersion: fetched.instance.exports.wasm_drawing_core_abi_version() >>> 0,
-          capabilitiesMask: fetched.instance.exports.wasm_hotpath_capabilities() >>> 0,
+          abiVersion: dual.adaptedExports.wasm_drawing_core_abi_version() >>> 0,
+          capabilitiesMask: dual.adaptedExports.wasm_hotpath_capabilities() >>> 0,
           loadSource: fetched.loadSource,
           loadElapsedMs: nowMs() - started,
           fallbackReason: null,
@@ -754,4 +740,14 @@ export async function loadStudioWasm64HotpathRuntime(
   }
 
   return createStudioWasm64JsFallbackRuntime(`Wasm 네트워크 로드 폴백: ${lastErrorReason}`, options.initialRouting);
+}
+
+/** `memory64` (`i64`) 코어 바이너리를 최우선 탐색하고 미지원·404 시 `wasm32`/JS로 즉시 폴백한다. */
+export async function loadStudioWasm64Memory64Hotpath(
+  options: LoadStudioWasm64HotpathOptions = {},
+): Promise<StudioWasm64HotpathRuntime> {
+  return loadStudioWasm64HotpathRuntime({
+    ...options,
+    preferMemory64: options.preferMemory64 ?? true,
+  });
 }
