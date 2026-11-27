@@ -173,7 +173,7 @@ export const OPS_SLIDES = [
     points: [
       t("래칫: 레거시 경계 위반은 상한(0·0)에 묶여 늘면 CI가 실패 — 도메인 간 깊은 import 실측은 0", "Ratchet: legacy boundary violations are capped (0 and 0) and CI fails if they grow — measured deep imports are 0"),
       t("접근성: 코어 스모크는 모션 감소 설정에서 axe·터치·초점 복귀와 소재 검색 Enter·Escape를 검사 — 강제 색상은 수동 매트릭스, 키보드 탐색 전수 검증은 아님", "Accessibility: the core smoke uses reduced motion and checks axe, touch, focus return and Enter/Escape in material search — forced colors remain in the manual matrix; this is not exhaustive keyboard navigation coverage"),
-      t("5,100+는 수집 규모이지 매 PR 게이트가 아님 — 병합을 막는 코어는 큐레이션한 1111개 대상, 정본은 CI", "5,100+ is the collected scale, not a per-PR gate — the merge-blocking core lists 1111 curated targets, and CI is the source of truth"),
+      t("5,100+는 수집 규모이지 매 PR 게이트가 아님 — 병합을 막는 코어는 큐레이션한 1101개 대상, 정본은 CI", "5,100+ is the collected scale, not a per-PR gate — the merge-blocking core lists 1101 curated targets, and CI is the source of truth"),
     ],
     stack: ["Vitest", "Testing Library", "Playwright", "@axe-core/playwright", "GitHub Actions"],
     notes: t(
@@ -245,7 +245,7 @@ export const OPS_SLIDES = [
       t("루프 명령 23개는 외부 플러그인의 이름표 — 실행 기록과 효과 수치는 확인 못 해 ‘설정 필요’", "The 23 loop commands are name tags for an external plugin — no run history or effect figures, so ‘setup required’"),
     ],
     facts: [
-      { value: "10", label: t("하네스가 확인하는 AGENTS.md 파일 수(루트 1 + 영역 9)", "AGENTS.md files the harness checks (1 root + 9 areas)") },
+      { value: "9", label: t("하네스가 확인하는 AGENTS.md 파일 수(루트 1 + 영역 8)", "AGENTS.md files the harness checks (1 root + 8 areas)") },
       { value: "7", label: t("CI core가 요구하는 필수 검사 수", "Required checks of the CI core gate") },
       { value: "23", label: t("loop 명령 파일 수", "Loop command files") },
     ],

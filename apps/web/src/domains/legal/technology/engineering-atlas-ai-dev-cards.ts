@@ -59,7 +59,7 @@ const AGENTS_MD_DIAGRAM: EngineeringDiagram = {
     {
       id: "nested",
       label: t("하위 AGENTS.md", "Nested AGENTS.md"),
-      sub: t("web·api·docs 외 6곳", "web, api, docs and six more"),
+      sub: t("web·api·docs 외 5곳", "web, api, docs and five more"),
       tone: "neutral",
       at: [3, 1],
     },
@@ -96,20 +96,20 @@ const AGENTS_MD_SINGLE_POLICY: EngineeringAtlasEntry = {
       "AI coding tools are many, and each reads a differently named instruction file (CLAUDE.md, GEMINI.md, Copilot instructions, Cursor rules). If every file carries its own copy of the rules, the copies drift apart and nobody knows which tool follows which rule. It is like posting a different rulebook in every building.",
     ),
     t(
-      "ToonStudio는 규칙을 루트 AGENTS.md(작업 계약 10개 절) 한 곳에 두고, 앱·문서·스크립트 같은 영역별 규칙은 하위 AGENTS.md 9곳에 더합니다. 도구별 파일은 'AGENTS.md를 먼저 읽고 한글로 보고하며 완료 전 harness:verify를 실행하라'는 짧은 포인터이고, Codex와 OpenCode는 AGENTS.md를 직접 읽습니다(OpenCode에는 같은 취지의 전용 에이전트 파일도 하나 있습니다).",
-      "ToonStudio keeps the rules in the root AGENTS.md (ten sections) and adds area rules in nine nested AGENTS.md files for apps, docs and scripts. Each tool's file is a short pointer: read AGENTS.md first, report in Korean, run harness:verify before finishing. Codex and OpenCode read AGENTS.md directly (OpenCode also has one dedicated agent file with the same intent).",
+      "ToonStudio는 규칙을 루트 AGENTS.md(작업 계약 10개 절) 한 곳에 두고, 앱·문서·스크립트 같은 영역별 규칙은 하위 AGENTS.md 8곳에 더합니다. 도구별 파일은 'AGENTS.md를 먼저 읽고 한글로 보고하며 완료 전 harness:verify를 실행하라'는 짧은 포인터이고, Codex와 OpenCode는 AGENTS.md를 직접 읽습니다(OpenCode에는 같은 취지의 전용 에이전트 파일도 하나 있습니다).",
+      "ToonStudio keeps the rules in the root AGENTS.md (ten sections) and adds area rules in eight nested AGENTS.md files for apps, docs and scripts. Each tool's file is a short pointer: read AGENTS.md first, report in Korean, run harness:verify before finishing. Codex and OpenCode read AGENTS.md directly (OpenCode also has one dedicated agent file with the same intent).",
     ),
     t(
       "대안은 도구마다 규칙을 복사하는 방식이지만 복사본은 반드시 어긋납니다. 대신 이 방식의 약점은 '읽도록 시키는 것'과 '실제로 읽는 것'이 다르다는 점입니다. 예를 들어 Claude Code는 CLAUDE.md가 있으면 기본으로 AGENTS.md를 따로 읽지 않으므로, CLAUDE.md의 지시를 모델이 따를 때 규칙이 불러와집니다.",
       "The alternative is copying rules into every tool's file, but copies always drift. The weakness of this approach is that telling a tool to read is not the same as it reading. For example, Claude Code by default does not load AGENTS.md when a CLAUDE.md exists, so the rules arrive when the model follows the instruction in CLAUDE.md.",
     ),
     t(
-      "하네스(pnpm harness:check)는 어댑터 5개가 AGENTS.md를 '언급'하는지, 필수 파일 22개와 정책 문장 7곳이 남아 있는지 매번 검사합니다. 다만 이는 언급 여부 검사이지 도구가 실제로 읽었다는 증명이 아니며, Gemini·Copilot·Cursor를 실제로 썼는지는 저장소에서 확인하지 못했습니다.",
-      "The harness (pnpm harness:check) verifies every time that five adapters mention AGENTS.md and that 22 required files and seven policy passages remain. That is a mention check, not proof that a tool read the file, and the repository shows no sign that Gemini, Copilot or Cursor were actually used.",
+      "하네스(pnpm harness:check)는 어댑터 5개가 AGENTS.md를 '언급'하는지, 필수 파일 21개와 정책 문장 7곳이 남아 있는지 매번 검사합니다. 다만 이는 언급 여부 검사이지 도구가 실제로 읽었다는 증명이 아니며, Gemini·Copilot·Cursor를 실제로 썼는지는 저장소에서 확인하지 못했습니다.",
+      "The harness (pnpm harness:check) verifies every time that five adapters mention AGENTS.md and that 21 required files and seven policy passages remain. That is a mention check, not proof that a tool read the file, and the repository shows no sign that Gemini, Copilot or Cursor were actually used.",
     ),
   ],
   keyPoints: [
-    t("규칙은 AGENTS.md 한 곳, 영역 규칙은 하위 9곳", "Rules in one AGENTS.md, area rules in nine more"),
+    t("규칙은 AGENTS.md 한 곳, 영역 규칙은 하위 8곳", "Rules in one AGENTS.md, area rules in eight more"),
     t("어댑터는 요약과 포인터만 두고 정책 전문은 복사하지 않음", "Adapters hold a summary and a pointer; the full policy is not copied"),
     t("하네스가 어댑터 연결과 정책 문장을 매번 검사", "The harness checks adapter links and policy text every time"),
     t("읽도록 지시하는 것과 실제로 읽는 것은 다름", "Telling a tool to read is not proof it did"),
@@ -280,8 +280,8 @@ const AGENTS_MD_SINGLE_POLICY: EngineeringAtlasEntry = {
   technologies: ["AGENTS.md", "CLAUDE.md", "Gemini CLI", "GitHub Copilot", "Cursor", "OpenCode", "Codex"],
   facts: [
     {
-      value: "10",
-      label: t("하네스가 필수로 확인하는 AGENTS.md 파일 수(루트 1 + 영역 9)", "AGENTS.md files the harness requires (1 root + 9 area)"),
+      value: "9",
+      label: t("하네스가 필수로 확인하는 AGENTS.md 파일 수(루트 1 + 영역 8)", "AGENTS.md files the harness requires (1 root + 8 area)"),
       source: "scripts/agent-harness.mjs",
     },
     {
@@ -790,7 +790,7 @@ const AGENT_HARNESS_VERIFY_GATES: EngineeringAtlasEntry = {
   technologies: ["Husky", "commitlint", "lint-staged", "Secretlint", "GitHub Actions", "Playwright", "@axe-core/playwright", "ESLint"],
   facts: [
     {
-      value: "22",
+      value: "21",
       label: t("하네스가 확인하는 필수 파일 수", "Required files the harness checks"),
       source: "scripts/agent-harness.mjs",
     },

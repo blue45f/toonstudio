@@ -31,14 +31,14 @@ const MONOREPO_LAYOUT: ArchitectureGuideSection = {
       "Apps do not know each other, each app depends in one direction, and violations are locked by count.",
     ),
     alt: t(
-      "맨 위의 앱 7개(제품 5, 실험 2)는 서로의 소스를 가져다 쓰지 않습니다. 웹 앱 안은 app, domains, platform, shared 네 영역으로 나뉘어 위에서 아래로만 의존하고, 기능은 도메인 폴더에 모입니다. 공유 패키지 13개는 둘 이상의 앱이 쓸 때 올리는 것이 원칙이고(스튜디오 엔진·명령 등 6개는 지금 웹 전용), 앱·패키지 소스 안에서는 다른 앱을 건드리는 시험을 막고(교차 시험은 tests/integration), 맨 아래 래칫이 나쁜 import 개수를 JSON 상한에 못 박습니다.",
-      "The 7 apps at the top (5 product, 2 lab) never import each other's source. Inside the web app there are four areas, app, domains, platform and shared, which depend only downward, and features gather in domain folders. The 13 shared packages follow the rule of promoting code when two or more apps use it (6 studio engine and command packages are web-only today), tests that touch another app are barred from app and package source (cross-app tests live in tests/integration), and the ratchet at the bottom nails the count of bad imports to a JSON ceiling.",
+      "맨 위의 앱 6개(제품 5, 실험 1)는 서로의 소스를 가져다 쓰지 않습니다. 웹 앱 안은 app, domains, platform, shared 네 영역으로 나뉘어 위에서 아래로만 의존하고, 기능은 도메인 폴더에 모입니다. 공유 패키지 13개는 둘 이상의 앱이 쓸 때 올리는 것이 원칙이고(스튜디오 엔진·명령 등 6개는 지금 웹 전용), 앱·패키지 소스 안에서는 다른 앱을 건드리는 시험을 막고(교차 시험은 tests/integration), 맨 아래 래칫이 나쁜 import 개수를 JSON 상한에 못 박습니다.",
+      "The 6 apps at the top (5 product, 1 lab) never import each other's source. Inside the web app there are four areas, app, domains, platform and shared, which depend only downward, and features gather in domain folders. The 13 shared packages follow the rule of promoting code when two or more apps use it (6 studio engine and command packages are web-only today), tests that touch another app are barred from app and package source (cross-app tests live in tests/integration), and the ratchet at the bottom nails the count of bad imports to a JSON ceiling.",
     ),
     layers: [
       {
         id: "apps",
-        label: t("앱 7개 · 제품 5, 실험 2", "7 apps: 5 product, 2 lab"),
-        sub: t("web · admin-web · api · mobile · desktop-sync + 실험 2개", "web · admin-web · api · mobile · desktop-sync + 2 labs"),
+        label: t("앱 6개 · 제품 5, 실험 1", "6 apps: 5 product, 1 lab"),
+        sub: t("web · admin-web · api · mobile · desktop-sync + 실험 1개", "web · admin-web · api · mobile · desktop-sync + 1 lab"),
         tone: "neutral",
         chips: ["Vite", "NestJS", "Capacitor"],
       },
@@ -83,8 +83,8 @@ const MONOREPO_LAYOUT: ArchitectureGuideSection = {
   },
   steps: [
     t(
-      "저장소 한 곳에 앱 7개(apps)와 공유 패키지 13개(packages)를 두고 pnpm 작업공간으로 묶습니다.",
-      "One repository holds 7 apps and 13 shared packages, tied together as a pnpm workspace.",
+      "저장소 한 곳에 앱 6개(apps)와 공유 패키지 13개(packages)를 두고 pnpm 작업공간으로 묶습니다.",
+      "One repository holds 6 apps and 13 shared packages, tied together as a pnpm workspace.",
     ),
     t(
       "앱끼리는 서로의 소스를 가져다 쓰지 않습니다. 함께 쓸 약속만 packages 로 나눕니다.",
@@ -109,8 +109,8 @@ const MONOREPO_LAYOUT: ArchitectureGuideSection = {
       "As a service grows, who imports whose code gets tangled. Fixing one screen breaks the admin screen, changing the server stops the web app from building, and apps can no longer be shipped separately. So ToonStudio set a few rules for dividing code into apps, packages and domains, and lets check scripts, not human memory, keep them.",
     ),
     t(
-      "한 저장소(모노레포)의 pnpm 작업공간이 apps/*, packages/*, tests/integration/* 를 묶습니다. 앱은 따로 빌드·검사하는 단위(제품 앱 5개, 실험 앱 2개)이고, 웹·관리자·API 사이의 직접 소스 참조 6방향은 모두 0건으로 고정돼 있습니다. 웹 앱 안은 app, domains, platform, shared 네 영역이며 기능은 domains 아래 기능별 폴더에 모입니다. packages 로 올리는 기준은 둘 이상의 앱이 실제로 같은 구현을 쓰는 것이며(스튜디오 엔진·명령 등 6개는 지금 웹 한 앱만 씁니다), 대표인 packages/contracts 는 React·NestJS·DB·Node 전용 import 를 금지해 브라우저와 서버가 함께 읽습니다.",
-      "A pnpm workspace in one repository (a monorepo) ties together apps/*, packages/* and tests/integration/*. An app is a unit built and checked on its own (5 product apps, 2 lab apps), and direct source imports in all six directions among web, admin and API are frozen at zero. Inside the web app there are four areas, app, domains, platform and shared, and features gather in per-capability folders under domains. The rule for promoting code into packages is that two or more apps really use the same implementation (6 studio engine and command packages are used by the web app alone today), and the main one, packages/contracts, bans imports of React, NestJS, database and Node-only modules so browser and server can both read it.",
+      "한 저장소(모노레포)의 pnpm 작업공간이 apps/*, packages/*, tests/integration/* 를 묶습니다. 앱은 따로 빌드·검사하는 단위(제품 앱 5개, 실험 앱 1개)이고, 웹·관리자·API 사이의 직접 소스 참조 6방향은 모두 0건으로 고정돼 있습니다. 웹 앱 안은 app, domains, platform, shared 네 영역이며 기능은 domains 아래 기능별 폴더에 모입니다. packages 로 올리는 기준은 둘 이상의 앱이 실제로 같은 구현을 쓰는 것이며(스튜디오 엔진·명령 등 6개는 지금 웹 한 앱만 씁니다), 대표인 packages/contracts 는 React·NestJS·DB·Node 전용 import 를 금지해 브라우저와 서버가 함께 읽습니다.",
+      "A pnpm workspace in one repository (a monorepo) ties together apps/*, packages/* and tests/integration/*. An app is a unit built and checked on its own (5 product apps, 1 lab app), and direct source imports in all six directions among web, admin and API are frozen at zero. Inside the web app there are four areas, app, domains, platform and shared, and features gather in per-capability folders under domains. The rule for promoting code into packages is that two or more apps really use the same implementation (6 studio engine and command packages are used by the web app alone today), and the main one, packages/contracts, bans imports of React, NestJS, database and Node-only modules so browser and server can both read it.",
     ),
     t(
       "기능 구현을 packages/domains 로 올리는 방식도 있지만, 재사용 가능성만으로 올리면 앱 사이의 결합을 감추게 되어 택하지 않았습니다. 정리가 끝난 상태도 아닙니다. 2026-10-08 기준 웹의 shared 가 domains 를 거꾸로 부르는 25건과 도메인 간 깊은 import(상한 58)가 남아 있고, 관리자 화면 일부는 아직 웹에 남아 있고, creator 도메인 폴더 바로 아래에도 파일 3,484개가 평평하게 놓여 하위 폴더로 나누는 중입니다.",
@@ -210,7 +210,7 @@ const MONOREPO_LAYOUT: ArchitectureGuideSection = {
     "Saying all boundaries are at zero is wrong. Direct imports between apps are zero, but as of 2026-10-08, 25 web shared-to-domains imports, 6 platform files exempted from the platform-to-domains ban, and deep cross-domain imports (ceiling 58) remain.",
   ),
   facts: [
-    { value: "7", label: t("apps 폴더의 앱 수(제품 5 · 실험 2)", "Apps in the apps folder (5 product, 2 lab)"), source: "apps" },
+    { value: "6", label: t("apps 폴더의 앱 수(제품 5 · 실험 1)", "Apps in the apps folder (5 product, 1 lab)"), source: "apps" },
     { value: "13", label: t("packages 폴더의 공유 패키지 수(Rust 크레이트 폴더 1개 포함)", "Shared packages in the packages folder (including one Rust crate folder)"), source: "packages" },
     {
       value: "17",

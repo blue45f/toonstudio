@@ -149,7 +149,7 @@ export function sdRoundedRectExact(
   const qy = Math.abs(localY) - (hh - r);
   const outX = qx > 0 ? qx : 0;
   const outY = qy > 0 ? qy : 0;
-  return Math.hypot(outX, outY) + Math.min(Math.max(qx, qy), 0) - r;
+  return Math.sqrt(outX * outX + outY * outY) + Math.min(Math.max(qx, qy), 0) - r;
 }
 
 /** 타원의 정확한 유클리드 부호 거리(SDF). Eberly 볼록 방정식 기반 안전 뉴턴 해법. */
@@ -161,7 +161,7 @@ export function sdEllipseExact(
 ): number {
   const rx = Math.max(radiusX, EPSILON);
   const ry = Math.max(radiusY, EPSILON);
-  if (Math.abs(rx - ry) <= 1e-7) return Math.hypot(localX, localY) - rx;
+  if (Math.abs(rx - ry) <= 1e-7) return Math.sqrt(localX * localX + localY * localY) - rx;
 
   let px = Math.abs(localX);
   let py = Math.abs(localY);
@@ -184,7 +184,8 @@ export function sdEllipseExact(
       const xe = (a2 * px) / aMinusB2;
       const ratio = clamp(xe / a, 0, 1);
       const ye = b * Math.sqrt(Math.max(0, 1 - ratio * ratio));
-      return -Math.hypot(xe - px, ye);
+      const ex = xe - px;
+      return -Math.sqrt(ex * ex + ye * ye);
     }
     return px - a;
   }
@@ -193,7 +194,7 @@ export function sdEllipseExact(
   const ux = a * px;
   const uy = b * py;
   let tLow = -b2 + uy;
-  let tHigh = -b2 + Math.hypot(ux, uy);
+  let tHigh = -b2 + Math.sqrt(ux * ux + uy * uy);
   let t = 0.5 * (tLow + tHigh);
 
   for (let iter = 0; iter < 6; iter += 1) {
@@ -210,7 +211,9 @@ export function sdEllipseExact(
     t = cand > tLow && cand < tHigh ? cand : 0.5 * (tLow + tHigh);
   }
 
-  const dist = Math.hypot(px - (a2 * px) / (t + a2), py - (b2 * py) / (t + b2));
+  const ex = px - (a2 * px) / (t + a2);
+  const ey = py - (b2 * py) / (t + b2);
+  const dist = Math.sqrt(ex * ex + ey * ey);
   return (px / a) * (px / a) + (py / b) * (py / b) - 1 < 0 ? -dist : dist;
 }
 
@@ -229,24 +232,22 @@ function evalBezierTailAt(
   const inv0 = 1 - bestT;
   const bx0 = inv0 * inv0 * p0.x + 2 * inv0 * bestT * p1.x + bestT * bestT * p2.x;
   const by0 = inv0 * inv0 * p0.y + 2 * inv0 * bestT * p1.y + bestT * bestT * p2.y;
-  let bestVal = Math.hypot(bx0 - px, by0 - py) - (baseHalfWidth + radiusDelta * bestT);
+  const dx = bx0 - px;
+  const dy = by0 - py;
+  const spineLen = Math.sqrt(dx * dx + dy * dy);
+  let bestVal = spineLen - (baseHalfWidth + radiusDelta * bestT);
 
-  if (Math.abs(radiusDelta) > 1e-6) {
-    const dx = bx0 - px;
-    const dy = by0 - py;
-    const spineLen = Math.hypot(dx, dy);
-    if (spineLen > 1e-7) {
-      const dbx = 2 * (inv0 * (p1.x - p0.x) + bestT * (p2.x - p1.x));
-      const dby = 2 * (inv0 * (p1.y - p0.y) + bestT * (p2.y - p1.y));
-      const grad = (dx * dbx + dy * dby) / spineLen - radiusDelta;
-      const hess = Math.max((dbx * dbx + dby * dby) / spineLen, 1e-6);
-      const nextT = clamp(bestT - grad / hess, 0, 1);
-      const nInv = 1 - nextT;
-      const nbx = nInv * nInv * p0.x + 2 * nInv * nextT * p1.x + nextT * nextT * p2.x;
-      const nby = nInv * nInv * p0.y + 2 * nInv * nextT * p1.y + nextT * nextT * p2.y;
-      const nextVal = Math.hypot(nbx - px, nby - py) - (baseHalfWidth + radiusDelta * nextT);
-      if (nextVal < bestVal) bestVal = nextVal;
-    }
+  if (Math.abs(radiusDelta) > 1e-6 && spineLen > 1e-7) {
+    const dbx = 2 * (inv0 * (p1.x - p0.x) + bestT * (p2.x - p1.x));
+    const dby = 2 * (inv0 * (p1.y - p0.y) + bestT * (p2.y - p1.y));
+    const grad = (dx * dbx + dy * dby) / spineLen - radiusDelta;
+    const hess = Math.max((dbx * dbx + dby * dby) / spineLen, 1e-6);
+    const nextT = clamp(bestT - grad / hess, 0, 1);
+    const nInv = 1 - nextT;
+    const nbx = nInv * nInv * p0.x + 2 * nInv * nextT * p1.x + nextT * nextT * p2.x - px;
+    const nby = nInv * nInv * p0.y + 2 * nInv * nextT * p1.y + nextT * nextT * p2.y - py;
+    const nextVal = Math.sqrt(nbx * nbx + nby * nby) - (baseHalfWidth + radiusDelta * nextT);
+    if (nextVal < bestVal) bestVal = nextVal;
   }
   return bestVal;
 }
@@ -401,7 +402,7 @@ function evalPreparedPrimitive(p: PreparedPrimitive, x: number, y: number): numb
 function aabbLowerBound(p: PreparedPrimitive, x: number, y: number): number {
   const dx = Math.max(p.boxMinX - x, x - p.boxMaxX, 0);
   const dy = Math.max(p.boxMinY - y, y - p.boxMaxY, 0);
-  return Math.max(dx, dy);
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 function prepareGutters(gutters: readonly DiagonalGutterCut[]): readonly PreparedGutter[] {
@@ -480,6 +481,13 @@ function computeSignedPolygonArea(points: readonly Point2D[]): number {
   return 0.5 * sum;
 }
 
+let contourScratchCap = 0;
+let scratchNextEdge = new Int32Array(0);
+let scratchEdgeCoordX = new Float32Array(0);
+let scratchEdgeCoordY = new Float32Array(0);
+let scratchEdgeInit = new Uint8Array(0);
+let scratchVisited = new Uint8Array(0);
+
 function extractIsoContoursFromGrid(
   field: Float32Array,
   nx: number,
@@ -492,10 +500,20 @@ function extractIsoContoursFromGrid(
   const stride = nx + 1;
   const horizEdgeCount = nx * (ny + 1);
   const totalEdges = horizEdgeCount + (nx + 1) * ny;
-  const nextEdge = new Int32Array(totalEdges).fill(-1);
-  const edgeCoordX = new Float32Array(totalEdges);
-  const edgeCoordY = new Float32Array(totalEdges);
-  const edgeInit = new Uint8Array(totalEdges);
+  if (totalEdges > contourScratchCap) {
+    contourScratchCap = Math.max(totalEdges, contourScratchCap * 2, 4096);
+    scratchNextEdge = new Int32Array(contourScratchCap);
+    scratchEdgeCoordX = new Float32Array(contourScratchCap);
+    scratchEdgeCoordY = new Float32Array(contourScratchCap);
+    scratchEdgeInit = new Uint8Array(contourScratchCap);
+    scratchVisited = new Uint8Array(contourScratchCap);
+  }
+  const nextEdge = scratchNextEdge;
+  const edgeCoordX = scratchEdgeCoordX;
+  const edgeCoordY = scratchEdgeCoordY;
+  const edgeInit = scratchEdgeInit;
+  const visited = scratchVisited;
+  edgeInit.fill(0, 0, totalEdges);
   const activeStarts: number[] = [];
 
   const hEdge = (ix: number, iy: number, vL: number, vR: number): number => {
@@ -505,7 +523,8 @@ function extractIsoContoursFromGrid(
       const t = Math.abs(denom) <= 1e-12 ? 0.5 : clamp((isoLevel - vL) / denom, 0, 1);
       edgeCoordX[id] = originX + (ix + t) * cellSize;
       edgeCoordY[id] = originY + iy * cellSize;
-      edgeInit[id] = 1;
+        edgeInit[id] = 1;
+      nextEdge[id] = -1;
     }
     return id;
   };
@@ -518,6 +537,7 @@ function extractIsoContoursFromGrid(
       edgeCoordX[id] = originX + ix * cellSize;
       edgeCoordY[id] = originY + (iy + t) * cellSize;
       edgeInit[id] = 1;
+      nextEdge[id] = -1;
     }
     return id;
   };
@@ -577,7 +597,7 @@ function extractIsoContoursFromGrid(
     }
   }
 
-  const visited = new Uint8Array(totalEdges);
+  visited.fill(0, 0, totalEdges);
   const loops: ContourLoop[] = [];
   for (let i = 0; i < activeStarts.length; i += 1) {
     const startId = activeStarts[i]!;
@@ -677,7 +697,7 @@ export function sculptBalloonClusterContours(
       for (let pIdx = 1; pIdx < pCount; pIdx += 1) {
         const pi = prepared[pIdx]!;
         const lb = aabbLowerBound(pi, px, py);
-        if (lb >= d + blend && lb > farCutoff) continue;
+        if (lb >= d + blend) continue;
         d = polynomialSmoothMin(d, evalPreparedPrimitive(pi, px, py), blend);
       }
       if (shouldIntersectFrame && frameBounds) {

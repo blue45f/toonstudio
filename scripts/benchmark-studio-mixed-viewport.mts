@@ -9,8 +9,8 @@ import { expect } from '@playwright/test';
 import { chromium, type Page } from 'playwright';
 
 import { REPO_ROOT, WEB_PUBLIC } from './lib/repo-paths.mjs';
-import { findFreePort, stopChildProcess, waitForServer } from './lib/studio-verify-preview-harness.mjs';
 import { openStudioAllTools, openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, prepareStudioBg3dViewportCapture, selectStudioBg3dTaskTab } from './lib/studio-bg3d-ui-interactions';
+import { findFreePort, stopChildProcess, waitForServer } from './lib/studio-verify-preview-harness.mjs';
 
 const output = path.resolve(process.env.STUDIO_MIXED_VIEWPORT_OUT ?? 'artifacts/mixed-viewport');
 const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim();

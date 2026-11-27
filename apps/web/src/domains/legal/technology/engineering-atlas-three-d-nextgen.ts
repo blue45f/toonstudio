@@ -207,8 +207,8 @@ export const THREE_D_NEXTGEN_CARDS: readonly EngineeringAtlasEntry[] = [
         "(2) 120 Hz XPBD cloth and hair physics uses tight substeps to curb tunneling, pairing with an optional WebNN residual hook (ondevice-webnn-assist-runtime.ts) when supported while running purely on the XPBD solver otherwise.",
       ),
       t(
-        "③ 텍스처·룩뎁 단계에서는 4×4 블록 텍스처 압축(VRAM 절감), 2× 업스케일링, 6패스 NPR UV 베이킹(studio-bg3d-six-pass-project-contract.ts, wgsl-compute-kernels.ts)으로 웹툰 선화·음영 텍스처를 가볍게 만듭니다. ④ 협업·연출 단계에서는 크로스 플랫폼 3D CRDT 메타데이터 동기화와 캐릭터 시선·헤드포즈 연동 3D 조명 제어(apps/character-lab/src/render/babylon/eye-gaze.ts, studio-bg3d-lighting-studio.ts)를 연결합니다.",
-        "(3) Texture and lookdev stages combine 4x4 block compression, 2x upscaling and NPR UV baking (studio-bg3d-six-pass-project-contract.ts) to keep toon textures light. (4) Collaboration and staging link cross-platform 3D CRDT metadata sync with eye-gaze/head-pose-driven 3D lighting (eye-gaze.ts, studio-bg3d-lighting-studio.ts).",
+        "③ 텍스처·룩뎁 단계에서는 4×4 블록 텍스처 압축(VRAM 절감), 2× 업스케일링, 6패스 NPR UV 베이킹(studio-bg3d-six-pass-project-contract.ts, wgsl-compute-kernels.ts)으로 웹툰 선화·음영 텍스처를 가볍게 만듭니다. ④ 협업·연출 단계에서는 크로스 플랫폼 3D CRDT 메타데이터 동기화와 캐릭터 시선·헤드포즈 연동 3D 조명 제어(gaze-pose-light-controller.ts, studio-bg3d-lighting-studio.ts)를 연결합니다.",
+        "(3) Texture and lookdev stages combine 4x4 block compression, 2x upscaling and NPR UV baking (studio-bg3d-six-pass-project-contract.ts) to keep toon textures light. (4) Collaboration and staging link cross-platform 3D CRDT metadata sync with eye-gaze/head-pose-driven 3D lighting (gaze-pose-light-controller.ts, studio-bg3d-lighting-studio.ts).",
       ),
       t(
         "현재 구현(Current)과 확장 로드맵(Target): 이 브랜치에서는 55본 휴머노이드 계약·Rust 2-Bone+CCD 전신 IK 커널·가상 3D 물리 커널(virtual_3d_physics_kernel.rs)·WebNN 어시스트 훅·6패스 룩뎁 계약·시선(eye-gaze) 및 3D 조명 스튜디오가 구현·검증돼 있습니다. QEM 경량화·120Hz XPBD 의상/헤어·4×4 블록 압축·3D CRDT 동기화의 병렬 시뮬레이션 모듈은 차세대 3D 트랙 통합과 브라우저 회귀 검증을 거쳐 단계적으로 스튜디오 UI 에 활성화합니다.",
@@ -299,7 +299,7 @@ export const THREE_D_NEXTGEN_CARDS: readonly EngineeringAtlasEntry[] = [
         ),
         paths: [
           "apps/web/src/domains/creator/scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract.ts",
-          "apps/character-lab/src/render/babylon/eye-gaze.ts",
+          "apps/web/src/domains/creator/wasm64-3d-neural-sim/gaze-pose-light-controller.ts",
           "apps/web/src/domains/creator/bg3d/studio-bg3d-lighting-studio.ts",
         ],
         route: "/studio",
@@ -396,7 +396,7 @@ export const THREE_D_NEXTGEN_CARDS: readonly EngineeringAtlasEntry[] = [
       {
         value: "6-Pass NPR + Gaze",
         label: t("6패스 NPR 룩뎁 계약 · 시선/헤드포즈 연동 3D 조명 스튜디오", "6-pass NPR lookdev contract & gaze-linked 3D lighting studio"),
-        source: "apps/character-lab/src/render/babylon/eye-gaze.ts",
+        source: "apps/web/src/domains/creator/wasm64-3d-neural-sim/gaze-pose-light-controller.ts",
       },
     ],
     reviewedAt: "2026-11-26",

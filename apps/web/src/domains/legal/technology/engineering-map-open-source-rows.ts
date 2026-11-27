@@ -84,8 +84,8 @@ const APP_AND_STORAGE_ROWS: readonly EngineeringMapRow[] = [
       license: same("MIT"),
       mode: t("런타임 · 서버·웹 공용", "Runtime · server and web"),
       note: t(
-        "8개 워크스페이스가 같은 4.4.3으로 정확히 고정한다. 폼 쪽은 React Hook Form과 @hookform/resolvers/zod로 이어 쓴다.",
-        "Eight workspaces pin the exact same version, 4.4.3. On forms it connects to React Hook Form through @hookform/resolvers/zod.",
+        "7개 워크스페이스가 같은 4.6.7로 정확히 고정한다. 폼 쪽은 React Hook Form과 @hookform/resolvers/zod로 이어 쓴다.",
+        "Seven workspaces pin the exact same version, 4.6.7. On forms it connects to React Hook Form through @hookform/resolvers/zod.",
       ),
     },
     evidence: ["package.json", "apps/api/src/config/env.ts", "apps/web/src/domains/auth/components/auth-form.tsx"],
