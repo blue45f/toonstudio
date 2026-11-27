@@ -5,7 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR,
-} from "./studio-oil-ribbon-carrier";
+  STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR,
+} from "./studio-oil-ribbon-impasto-relief";
 import { StudioDrawNode } from "./StudioDrawNode";
 
 import type { DrawEl } from "../studio-element-model";
@@ -129,12 +130,9 @@ describe("StudioDrawNode — impastoRelief Canvas 릴리프 오버레이", () =>
 
     // 유화 바디는 그대로 한 번 채운다.
     expect(context.fills.length).toBeGreaterThan(0);
-    // 강모 밴드와 릴리프 섀도우는 이제 캔버스 API 로 구분되지 않는다 — 강모 런의 각진 끝을
-    // 없애려고 밴드도 round 캡으로 바꿨고(studio-oil-ribbon-carrier), 둘 다 multiply 에 스트로크
-    // 색이다. 그래서 판별은 관찰 가능한 것만 쓴다: screen 글린트는 유일하고, 릴리프가 붙었다는
-    // 사실은 형제 레인보다 multiply 패스가 더 많다는 것으로 확인한다(아래 별도 테스트).
+    // 강모는 안료색, 그늘은 중성 회색이어서 서로 독립적으로 확인할 수 있다.
     const bandStrokes = context.strokes.filter(
-      ({ composite }) => composite === "multiply",
+      ({ composite, style }) => composite === "multiply" && style === "#8b3f31",
     );
     const glints = context.strokes.filter(
       ({ composite, style }) =>
@@ -142,7 +140,7 @@ describe("StudioDrawNode — impastoRelief Canvas 릴리프 오버레이", () =>
     );
     const coreShadows = context.strokes.filter(
       ({ cap, composite, style }) =>
-        cap === "round" && composite === "multiply" && style === "#8b3f31",
+        cap === "round" && composite === "multiply" && style === STUDIO_OIL_IMPASTO_RELIEF_SHADOW_COLOR,
     );
     expect(bandStrokes.length).toBeGreaterThan(0);
     expect(glints.length).toBeGreaterThan(0);

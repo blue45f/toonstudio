@@ -436,6 +436,54 @@ describe("Studio live stroke Foley & feel bridge", () => {
     expect(leakedVoiceNodes).toHaveLength(0);
   });
 
+  it("한 획의 이동은 같은 음원을 조절하고 정지·펜 떼기는 오디오 시계로 감쇠한다", () => {
+    const audio = createMockAudioContext();
+    let elapsed = 0;
+    Object.defineProperty(audio.ctx, "currentTime", { get: () => elapsed / 1000 });
+    const controller = new StudioLiveStrokeFoleyController({
+      audioContextFactory: () => audio.ctx, engineFactory: createStudioFoleyAudioEngine, nowMs: () => elapsed,
+    });
+    const brush = { brushId: "pencil", pressure: 0.6, y: 0 };
+    controller.onStrokeStart({ ...brush, x: 0 });
+    elapsed = 40;
+    const slow = controller.onStrokeMove({ ...brush, x: 3 });
+    const sourceFactory = vi.mocked(audio.ctx.createBufferSource);
+    const result = sourceFactory.mock.results[1];
+    if (result?.type !== "return") throw new Error("연속 마찰 음원이 생성되어야 합니다.");
+    const drag = result.value;
+    expect(drag.loop).toBe(true);
+    elapsed = 80;
+    const fast = controller.onStrokeMove({ ...brush, x: 88 });
+    expect(fast?.effectiveGain).toBeGreaterThan(slow?.effectiveGain ?? Infinity);
+    expect(sourceFactory).toHaveBeenCalledTimes(2);
+    expect(audio.ctx.createBuffer).toHaveBeenCalledOnce();
+    const idleStop = vi.mocked(drag.stop).mock.calls.at(-1)?.[0] ?? 0;
+    expect(idleStop).toBeGreaterThan(0.08);
+    elapsed = 86;
+    controller.onStrokeEnd();
+    const liftStop = vi.mocked(drag.stop).mock.calls.at(-1)?.[0] ?? 0;
+    expect(liftStop).toBeGreaterThan(0.086);
+    expect(liftStop).toBeLessThan(idleStop);
+    controller.dispose();
+    expect(audio.nodes.filter(node => node.connected && !node.disconnected)).toHaveLength(0);
+  });
+
+  it("엔진을 기다리는 동안 이미 끝난 획의 접촉음을 뒤늦게 재생하지 않는다", async () => {
+    const pending = Promise.withResolvers<{ createStudioFoleyAudioEngine: typeof createStudioFoleyAudioEngine }>();
+    const audio = createMockAudioContext();
+    const controller = new StudioLiveStrokeFoleyController({
+      moduleLoader: () => pending.promise, audioContextFactory: () => audio.ctx,
+    });
+    controller.onStrokeStart({ x: 0, y: 0, brushId: "gpen" });
+    controller.onStrokeEnd();
+    pending.resolve({ createStudioFoleyAudioEngine });
+    await new Promise<void>(resolveLoad => setTimeout(resolveLoad, 0));
+    expect(audio.ctx.createBufferSource).not.toHaveBeenCalled();
+    expect(controller.onStrokeStart({ x: 0, y: 0, brushId: "pencil" })?.played).toBe(true);
+    expect(audio.ctx.createBufferSource).toHaveBeenCalledOnce();
+    controller.dispose();
+  });
+
   it("동적 import 지연 로딩 경로 및 무오디오(jsdom/headless) 환경에서 예외 없이 graceful no-op으로 동작한다", async () => {
     const loaderSpy = vi.fn(async () => ({ createStudioFoleyAudioEngine }));
     const headlessController = new StudioLiveStrokeFoleyController({

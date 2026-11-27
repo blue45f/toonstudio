@@ -38,7 +38,7 @@ describe("SVG export — impastoRelief GGX 릴리프 오버레이 직렬화", ()
 
     expect(svg).toContain('data-brush-engine="oil-ribbon-carrier-v1"');
     expect(svg).toContain(OVERLAY_MARKER);
-    // dli 라이트 계약: 글린트=공유 화이트 상수 screen, 코어 섀도우=스트로크 색 multiply.
+    // 빛을 받는 마루와 차광된 홈을 각각 중성광으로 합성한다.
     const highlights = [...svg.matchAll(
       /<path data-paint-impasto-relief="highlight"[^>]*\/>/gu,
     )].map(([match]) => match);
@@ -55,7 +55,7 @@ describe("SVG export — impastoRelief GGX 릴리프 오버레이 직렬화", ()
       expect(path).toContain('fill="none"');
     }
     for (const path of shadows) {
-      expect(path).toContain('stroke="#8b3f31"');
+      expect(path).toContain('stroke="#404040"');
       expect(path).toContain("mix-blend-mode:multiply");
       expect(path).toContain('fill="none"');
     }
