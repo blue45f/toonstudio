@@ -58,7 +58,7 @@ export function CharacterShaperHairAdvancedControls({
     <>
       <InspectorSection
         title={t("studio.character.hairParts.title", "앞·옆·뒷머리 조합")}
-        hint={t("studio.character.hairParts.hint", "한 부위씩 커트를 바꾸거나 색을 다르게 칠할 수 있습니다.")}
+        hint={t("studio.character.hairParts.hint", "한 부위씩 커트를 바꾸거나 색을 다르게 칠할 수 있어요.")}
         collapsible
         defaultOpen
       >
@@ -93,7 +93,7 @@ export function CharacterShaperHairAdvancedControls({
         </div>
         <InspectorToggleRow
           label={t("studio.character.hairParts.tint", "부위별 색상")}
-          hint={t("studio.character.hairParts.tintHint", "끄면 세 부위가 헤어 팔레트의 기본색을 따릅니다.")}
+          hint={t("studio.character.hairParts.tintHint", "끄면 세 부위가 헤어 팔레트의 기본색을 따라요.")}
           checked={partColors}
           disabled={locked}
           onToggle={() => {
