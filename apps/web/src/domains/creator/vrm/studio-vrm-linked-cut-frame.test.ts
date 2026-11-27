@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
-import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, readLinkedCutPngSize } from "./studio-vrm-linked-cut-frame";
+import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, readLinkedCutPngSize, resolveVrmCaptureCameraForFrame } from "./studio-vrm-linked-cut-frame";
 import { vrmInsertCaptureSize } from "./studio-vrm-poser-helpers";
 import { createDefaultStudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
@@ -20,6 +20,13 @@ describe("linked placement recapture", () => {
     expect(linkedCutContextMatches(scene, { ...changedLook, expressions: { ...scene.expressions, happy: 0.75 } })).toBe(false);
     expect(linkedCutContextMatches(scene, { ...changedLook, render: { ...scene.render, transparentBackground: !scene.render.transparentBackground } })).toBe(false);
     expect(linkedCutCameraMatches(scene.camera, { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 1 })).toBe(false);
+  });
+  it("identifies the first differing field in each shot setting before pixel capture", () => {
+    const frame = { source: scene, pixels: { width: 200, height: 100 } };
+    const altered = { ...scene, pose: { ...scene.pose, bodyRotationY: scene.pose.bodyRotationY + 0.3 },
+      camera: { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 4 } };
+    expect(() => resolveVrmCaptureCameraForFrame(new PerspectiveCamera(), altered, frame))
+      .toThrow(/자세 \(bodyRotationY\).*카메라 \(fovDegrees\).*기존 이미지를 보존/u);
   });
   it("captures with the stored shot aspect even when the current window is landscape", () => {
     const camera = new PerspectiveCamera(35, 2, .01, 100);
