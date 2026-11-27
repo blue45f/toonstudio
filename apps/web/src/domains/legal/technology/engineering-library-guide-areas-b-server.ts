@@ -214,8 +214,8 @@ export const LIBRARY_AREA_SERVER_DATA: LibraryGuideArea = {
         "The screen and the server share shape definitions from the common contracts package (@toonstudio/contracts), so one exact version is pinned. A DTO-defined request is validated before it reaches a controller and errors come back as a list of messages.",
       ),
       cost: t(
-        "8개 워크스페이스가 같은 버전(4.6.7)에 묶이고 릴리스 검사는 그중 6곳을 확인합니다. 환경변수는 스키마 위반이면 경고만 하지만, 운영의 로그인 서명 비밀이 32바이트 미만이면 부팅이 멈춥니다. 검증 도구 비교 문서는 못 찾았습니다.",
-        "8 workspaces pin the same version (4.6.7) and the release check covers six of them. Environment schema violations only warn, but in production a sign-in signing secret under 32 bytes stops boot. We found no document comparing validators.",
+        "7개 워크스페이스가 같은 버전(4.6.7)에 묶이고 릴리스 검사는 그중 6곳을 확인합니다. 환경변수는 스키마 위반이면 경고만 하지만, 운영의 로그인 서명 비밀이 32바이트 미만이면 부팅이 멈춥니다. 검증 도구 비교 문서는 못 찾았습니다.",
+        "7 workspaces pin the same version (4.6.7) and the release check covers six of them. Environment schema violations only warn, but in production a sign-in signing secret under 32 bytes stops boot. We found no document comparing validators.",
       ),
       paths: [
         `${API}/platform/http/zod-validation.pipe.ts`,
