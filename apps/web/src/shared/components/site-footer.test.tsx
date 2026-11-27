@@ -11,12 +11,13 @@ import { useI18n } from "@/shared/lib/i18n";
 afterEach(() => { cleanup(); useI18n.getState().setLang("ko"); });
 
 describe("공통 브랜드 푸터의 이동 계약", () => {
-  it("긴 서비스 목록은 접어 두고 메뉴·도움말·정책은 바로 제공한다", () => {
+  it("긴 서비스 목록은 접어 두고 도움말·사이트맵·정책은 바로 제공한다", () => {
     const view = render(<MemoryRouter><SiteFooter /></MemoryRouter>);
     const disclosure = view.container.querySelector("details");
     expect(disclosure?.open).toBe(false);
-    const quick = screen.getByRole("navigation", { name: "메뉴와 도움말" });
-    expect(within(quick).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/sitemap", "/help"]);
+    const quick = screen.getByRole("navigation", { name: "도움말과 사이트맵" });
+    expect(within(quick).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]))
+      .toEqual([["도움말", "/help"], ["사이트맵", "/sitemap"]]);
     expect(screen.getByRole("navigation", { name: "이용 정책" }).closest("details")).toBeNull();
     const summary = disclosure?.querySelector("summary");
     if (!summary) throw new Error("서비스 안내 펼치기가 없습니다.");
@@ -29,6 +30,9 @@ describe("공통 브랜드 푸터의 이동 계약", () => {
     useI18n.getState().setLang(locale);
     render(<MemoryRouter initialEntries={["/learn"]}><SiteFooter /></MemoryRouter>);
     const footer = screen.getByRole("contentinfo");
+    const quick = within(footer).getByRole("navigation", { name: locale === "ko" ? "도움말과 사이트맵" : "Help and sitemap" });
+    expect(within(quick).getByRole("link", { name: locale === "ko" ? "사이트맵" : "Sitemap" }).getAttribute("href"))
+      .toBe("/sitemap");
     const links = within(footer).getAllByRole("link");
     const hrefs = new Set(links.map((link) => link.getAttribute("href")));
     const expectedDestinations = [
@@ -51,5 +55,12 @@ describe("공통 브랜드 푸터의 이동 계약", () => {
     expect(brand.getAttribute("href")).toBe("/");
     expect(brand.textContent).toBe("ToonStudio");
     for (const link of links) expect(link.textContent?.trim()).not.toBe("");
+  });
+
+  it("사이트맵의 현재 위치는 사이트맵 링크에 표시한다", () => {
+    render(<MemoryRouter initialEntries={["/sitemap"]}><SiteFooter /></MemoryRouter>);
+    const quick = screen.getByRole("navigation", { name: "도움말과 사이트맵" });
+    expect(within(quick).getByRole("link", { name: "사이트맵" }).getAttribute("aria-current")).toBe("page");
+    expect(within(quick).getByRole("link", { name: "도움말" }).hasAttribute("aria-current")).toBe(false);
   });
 });

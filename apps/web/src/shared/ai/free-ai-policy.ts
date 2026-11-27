@@ -1,5 +1,9 @@
+import { isOpenRouterFreeModel } from "@toonstudio/contracts/studio-openrouter-free";
+
 import { isPrivateOrLocalAiHostname } from "./ai-host-policy";
 import { anthropicConnectionIssue, isAnthropicBaseUrl } from "./assist/assist-protocol";
+
+export { isOpenRouterFreeModel };
 
 export const USER_AI_COST_POLICIES = [
   "unverified",
@@ -17,6 +21,7 @@ export interface FreeAiConnectionLike {
   textModel: string;
   imageModel: string;
   costPolicy: UserAiCostPolicy;
+  openRouterFreeBillingConfirmed?: boolean;
 }
 
 export interface FreeAiPreset {
@@ -226,11 +231,6 @@ export function isLoopbackAiUrl(value: string): boolean {
   return Boolean(url && isPrivateOrLocalAiHostname(url.hostname));
 }
 
-export function isOpenRouterFreeModel(model: string): boolean {
-  const normalized = model.trim().toLowerCase();
-  return normalized === "openrouter/free" || normalized.endsWith(":free");
-}
-
 export function inferLegacyUserAiCostPolicy(
   connection: Pick<FreeAiConnectionLike, "baseUrl" | "textModel" | "imageModel">,
 ): UserAiCostPolicy {
@@ -238,7 +238,7 @@ export function inferLegacyUserAiCostPolicy(
   if (
     url
     && !unsafeCloudUrl(url)
-    && url.hostname === "openrouter.ai"
+    && url.origin === "https://openrouter.ai"
     && normalizedApiPath(url) === "/api/v1"
     && isOpenRouterFreeModel(connection.textModel)
     && !connection.imageModel.trim()
@@ -287,7 +287,7 @@ function reviewedProviderModelIssue(url: URL, model: string): string | null {
   return null;
 }
 
-export function freeAiConnectionPolicyIssue(
+export function freeAiConnectionSetupIssue(
   connection: FreeAiConnectionLike,
   capability?: FreeAiCapability,
 ): string | null {
@@ -309,7 +309,7 @@ export function freeAiConnectionPolicyIssue(
     return capabilityModelIssue(connection, capability);
   }
   if (connection.costPolicy === "openrouter-free") {
-    if (url.hostname !== "openrouter.ai" || normalizedApiPath(url) !== "/api/v1") {
+    if (url.origin !== "https://openrouter.ai" || normalizedApiPath(url) !== "/api/v1") {
       return "OpenRouter 무료 정책은 공식 https://openrouter.ai/api/v1 주소에서만 사용할 수 있습니다.";
     }
     if (capability && capability !== "text") {
@@ -339,6 +339,18 @@ export function freeAiConnectionPolicyIssue(
   const modelIssue = reviewedProviderModelIssue(url, connection.textModel);
   if (modelIssue) return modelIssue;
   return capabilityModelIssue(connection, capability);
+}
+
+export function freeAiConnectionPolicyIssue(
+  connection: FreeAiConnectionLike,
+  capability?: FreeAiCapability,
+): string | null {
+  const issue = freeAiConnectionSetupIssue(connection, capability);
+  if (issue) return issue;
+  if (connection.costPolicy === "openrouter-free" && connection.openRouterFreeBillingConfirmed !== true) {
+    return "설정에서 이 OpenRouter 키의 추가 청구 차단과 계정 강제 유료 플러그인 해제를 확인하세요.";
+  }
+  return null;
 }
 
 export function assertFreeAiConnection(

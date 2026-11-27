@@ -147,9 +147,13 @@ describe("ToonStudio integration closure", () => {
 
   it("mounts recovered import and AI handoffs in the real canvas host", () => {
     const hosts = source("apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorHosts.tsx");
-    expect(hosts).toContain('import { StudioImportHandoffHost } from "./StudioImportHandoffHost"');
+    const handoffEntry = source("apps/web/src/domains/creator/studio-cuttoon-editor/StudioImportHandoffEntry.tsx");
+    expect(hosts).toContain('import { StudioImportHandoffEntry } from "./StudioImportHandoffEntry"');
+    expect(hosts).not.toContain('from "./StudioImportHandoffHost"');
+    expect(handoffEntry).toContain('import("./StudioImportHandoffHost")');
     expect(hosts).toMatch(/import \{ StudioAiProjectHandoffHost \} from "\.\.\/ai\/StudioAiProjectHandoffHost"/u);
-    expect(hosts).toContain("<StudioImportHandoffHost");
+    expect(hosts).toContain("<StudioImportHandoffEntry");
+    expect(hosts).toContain("workspaceReady={importWorkspaceReady}");
     expect(hosts).toContain("<StudioAiProjectHandoffHost");
     expect(hosts).toContain("onBrushPack={handleBrushPackImportFromMenu}");
     expect(hosts).toContain("onProjectJson={handleImportProject}");

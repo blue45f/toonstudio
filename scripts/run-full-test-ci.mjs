@@ -29,7 +29,7 @@ export function runFullTestChild(command, args, environment, spawnChild = spawn)
   });
 }
 
-/** Same root + perf union as pnpm test, with real database mutations serialized first. */
+/** pnpm test의 선행 검사와 실행 범위를 유지하고, 실제 DB 변경을 Vitest 본 실행에서 분리한다. */
 export async function runFullTestCi({
   environment = process.env,
   runDatabase = runPostgresIntegrationTests,
@@ -40,8 +40,10 @@ export async function runFullTestCi({
     runtimeDatabaseRole: target.runtimeDatabaseRole,
     validatedRemoteDatabase: !target.loopback,
   });
+  await runChild(process.execPath, ["scripts/verify-workspace-package-links.mjs"], environment);
   // This retains the PG preflight, every required DB suite, and the marketplace verifier.
   await runDatabase({ arguments_: [], environment });
+  await runChild("pnpm", ["run", "test:cloudflare-static-edge"], childEnvironment);
   await runChild(process.execPath, fullTestRemainderArguments(), childEnvironment);
   await runChild("pnpm", ["run", "test:perf"], childEnvironment);
 }

@@ -1,13 +1,14 @@
 import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowRight, ArrowUpRight, ChevronDown, ChevronRight, Compass, FolderKanban,
+  ArrowRight, ArrowUpRight, ChevronDown, ChevronRight, FolderKanban,
   Lightbulb, MessageCircle, PackageCheck, PencilLine, Search, Users,
 } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { DiscoverHomePreview } from "@/domains/catalog/public/DiscoverHomePreview";
 
 import { HomeNowCard } from "./HomeNowCard";
 import { HomeVividHero } from "./HomeVividHero";
@@ -16,7 +17,6 @@ import "./home-vivid.css";
 
 const LazyHomeLunaPanel = lazyRetry(() => import("./HomeLunaPanel").then((module) => ({ default: module.HomeLunaPanel })), "HomeLunaPanel");
 const LazyHomeVividMore = lazyRetry(() => import("./HomeVividMore").then((module) => ({ default: module.HomeVividMore })), "HomeVividMore");
-const LazyDiscoverHomePreview = lazyRetry(() => import("@/domains/catalog/public/DiscoverHomePreview").then((module) => ({ default: module.DiscoverHomePreview })), "DiscoverHomePreview");
 
 const JOURNEY = [
   { href: "/create?intent=my-story", domain: "character", icon: Lightbulb, ko: "이야기 준비", en: "Plan your story", detailKo: "인물·세계·첫 장면", detailEn: "Cast, world and first scene" },
@@ -30,7 +30,7 @@ const TASKS = [
   { href: "/production", domain: "collab", icon: Users, ko: "함께 완성하기", en: "Create together", detailKo: "수정 요청부터 검수와 인계까지.", detailEn: "Follow revisions, reviews and handoffs.", image: "project-crimson" },
 ] as const;
 
-/** 첫 행동 세 가지를 먼저 보여 주고 탐색·도움·상세 소개는 필요할 때 펼친다. */
+/** 제작·감상 진입과 공개 작품을 먼저 보여 주고 도구와 도움은 필요할 때 펼친다. */
 export function ReferenceCreatorDashboard() {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
   const navigate = useNavigate();
@@ -38,10 +38,8 @@ export function ReferenceCreatorDashboard() {
   const [inputMode, setInputMode] = useState<"create" | "search">("create");
   const [lunaOpen, setLunaOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [discoverOpen, setDiscoverOpen] = useState(false);
   const [lunaVisited, setLunaVisited] = useState(false);
   const [moreVisited, setMoreVisited] = useState(false);
-  const [discoverVisited, setDiscoverVisited] = useState(false);
   const helpersRef = useRef<HTMLDivElement>(null);
   const searching = inputMode === "search";
 
@@ -75,6 +73,9 @@ export function ReferenceCreatorDashboard() {
       <div data-home-band="hero">
         <HomeNowCard>
           <HomeVividHero />
+          <div className="vivid-home-discover" data-home-band="discover">
+            <DiscoverHomePreview />
+          </div>
           <div
             ref={helpersRef}
             className="rd-clarity-helpers"
@@ -139,12 +140,17 @@ export function ReferenceCreatorDashboard() {
         </HomeNowCard>
       </div>
 
-      <div data-home-band="continue" className="vivid-create-section">
-        <nav id="creator-start" data-testid="home-v2-spectrum-launchpad" aria-labelledby="creator-toolkit-title" className="vivid-task-section">
+      <details id="creator-start" data-home-band="continue" className="vivid-disclosure vivid-create-section">
+        <summary id="creator-toolkit-title" className="vivid-disclosure-summary">
+          <PencilLine size={21} aria-hidden="true" />
+          <span><strong>{bi("창작 도구 둘러보기", "Explore creative tools")}</strong></span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <nav data-testid="home-v2-spectrum-launchpad" aria-labelledby="home-tools-title" className="vivid-task-section">
           <div className="vivid-section-heading">
             <div>
               <span className="vivid-section-kicker">{bi("시작은 가볍게", "A little spark, a new beginning")}</span>
-              <h2 id="creator-toolkit-title" tabIndex={-1}>{bi("오늘은 무엇을 만들까요?", "What will you create today?")}</h2>
+              <h2 id="home-tools-title">{bi("오늘은 무엇을 만들까요?", "What will you create today?")}</h2>
             </div>
             <span className="vivid-section-number" aria-hidden="true">01 / 03</span>
           </div>
@@ -176,18 +182,6 @@ export function ReferenceCreatorDashboard() {
             })}
           </ol>
         </nav>
-      </div>
-
-      <details className="vivid-disclosure rd-discover" data-home-band="discover" open={discoverOpen} onToggle={(event) => {
-        if (event.target !== event.currentTarget) return;
-        setDiscoverOpen(event.currentTarget.open);
-        if (event.currentTarget.open) setDiscoverVisited(true);
-      }}>
-        <summary className="vivid-disclosure-summary">
-          <Compass size={21} aria-hidden="true" /><span><strong>{bi("다른 이야기가 궁금하다면", "Find your next inspiration")}</strong><small>{bi("작품을 둘러보고 새로운 영감을 만나세요.", "Discover stories and find a spark for your own.")}</small></span><ChevronDown size={18} aria-hidden="true" />
-        </summary>
-        {discoverVisited && <Suspense fallback={<p className="vivid-loading" role="status">{bi("작품을 불러오는 중…", "Loading stories…")}</p>}><LazyDiscoverHomePreview /></Suspense>}
-        <Link href="/discover" className="vivid-disclosure-link min-h-11">{bi("작품 둘러보기", "Explore stories")}<ArrowRight size={16} aria-hidden="true" /></Link>
       </details>
 
       <details className="rd-more vivid-disclosure" data-home-band="more" open={moreOpen} onToggle={(event) => {

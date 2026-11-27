@@ -173,7 +173,7 @@ export interface StudioProjectArchiveOrchestration {
   readonly handleImportProject: (
     file: File,
     mutationTicket: StudioEditorMutationTicket
-  ) => Promise<void>;
+  ) => Promise<void | "scope-changed">;
   readonly handleImportProjectArchive: (
     file: File,
     mutationTicket: StudioEditorMutationTicket
@@ -530,9 +530,9 @@ export function createStudioProjectArchiveOrchestration({
   async function handleImportProject(
     file: File,
     mutationTicket: StudioEditorMutationTicket
-  ) {
+  ): Promise<void | "scope-changed"> {
     try {
-      if (!canApplyStudioMutation(mutationTicket)) return;
+      if (!canApplyStudioMutation(mutationTicket)) return "scope-changed";
       const text = await file.text();
       const [
         { parseStudioProjectDocument },
@@ -545,9 +545,9 @@ export function createStudioProjectArchiveOrchestration({
         import( "./vrm/studio-vrm-texture-paint-project-library"),
         import("./studio-linked-3d-pass-project-archive"),
       ]);
-      if (!canApplyStudioMutation(mutationTicket)) return;
+      if (!canApplyStudioMutation(mutationTicket)) return "scope-changed";
       const loaded = await parseStudioProjectDocument(text, file.name);
-      if (!canApplyStudioMutation(mutationTicket)) return;
+      if (!canApplyStudioMutation(mutationTicket)) return "scope-changed";
       if (hasStudioLinked3dPassProjectArchiveReferences(loaded.project)) {
         throw new Error(
           "연결형 3D pass가 있는 프로젝트 JSON은 PNG 바이트를 포함하지 않아요. self-contained .toonproject.zip archive로 불러와 주세요.",
@@ -555,8 +555,8 @@ export function createStudioProjectArchiveOrchestration({
       }
       const texturePaintPresentation =
         await auditStudioVrmTexturePaintJsonImport(loaded.project);
-      if (!canApplyStudioMutation(mutationTicket)) return;
-      if (!(await applyStudioProjectSnapshot(loaded.project))) return;
+      if (!canApplyStudioMutation(mutationTicket)) return "scope-changed";
+      if (!(await applyStudioProjectSnapshot(loaded.project))) return canApplyStudioMutation(mutationTicket) ? undefined : "scope-changed";
       projectDocumentSessionRef.current =
         loaded.source === "canonical-envelope"
           ? captureStudioProjectDocumentSession(

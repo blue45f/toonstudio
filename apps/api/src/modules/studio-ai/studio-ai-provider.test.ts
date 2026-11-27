@@ -266,6 +266,20 @@ describe("Studio AI provider resolution", () => {
     })).toEqual([]);
   });
 
+  it("확인된 OpenRouter 무료 키에도 검색 등 추가 변형이 붙은 모델을 허용하지 않는다", () => {
+    const freeEnv = {
+      STUDIO_AI_FREE_POOL_ENABLED: "true",
+      STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true",
+      STUDIO_AI_FREE_OPENROUTER_API_KEY: "free-test-key",
+    };
+    expect(resolveStudioAiProviders("openrouter", {
+      ...freeEnv, STUDIO_AI_FREE_OPENROUTER_MODEL: "vendor/model:online:free",
+    })).toEqual([]);
+    expect(resolveStudioAiProviders("openrouter", {
+      ...freeEnv, STUDIO_AI_FREE_OPENROUTER_MODEL: "vendor/model:free",
+    })).toMatchObject([{ id: "openrouter", freePool: true }]);
+  });
+
   it("공통 timeout을 우선하고 제공자 request ID를 제한해 추출한다", () => {
     expect(resolveStudioAiTimeoutMs("zai", { ZAI_TIMEOUT_MS: "6000" })).toBe(6000);
     expect(resolveStudioAiTimeoutMs("sambanova", {

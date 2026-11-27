@@ -174,6 +174,31 @@ describe("AiQuickKeyPanel", () => {
     expect(register.disabled).toBe(false);
   });
 
+  it("OpenRouter는 키마다 계정 추가 과금 차단을 확인한 뒤 모델 목록만 조회해 등록한다", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => json({ data: [{ id: "vendor/paid" }] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { input } = renderPanel();
+    pasteInto(input, `sk-or-v1-${"a".repeat(64)}`);
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox.closest("label")?.textContent).toMatch(/유료 플러그인|paid plugins/iu);
+    expect((screen.getByRole("button", { name: "등록" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(checkbox);
+    pasteInto(input, `sk-or-v1-${"b".repeat(64)}`);
+    const register = screen.getByRole("button", { name: "키 2개 등록" }) as HTMLButtonElement;
+    expect(register.disabled).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole("checkbox")[1]!);
+    fireEvent.click(register);
+
+    await screen.findAllByText(/OpenRouter 키를 등록했어요/u);
+    const connection = getUserAiSnapshot().configuration.connections[0];
+    expect(connection?.textModel).toBe("openrouter/free");
+    expect(connection?.apiKeys?.map((key) => key.openRouterFreeBillingConfirmed)).toEqual([true, true]);
+    expect(fetchMock.mock.calls.map(([url, init]) => [String(url), init?.method ?? "GET"])).toEqual([
+      ["https://openrouter.ai/api/v1/models", "GET"], ["https://openrouter.ai/api/v1/models", "GET"],
+    ]);
+  });
+
   it("키를 확인하는 동안에는 서비스 선택을 바꿀 수 없다", async () => {
     let release: (response: Response) => void = () => {};
     vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => {

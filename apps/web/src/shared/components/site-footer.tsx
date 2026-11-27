@@ -11,6 +11,8 @@ import { ToonStudioBrand } from "./toonstudio-brand";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { canonicalSitePath } from "@/shared/lib/site-route-authority";
+import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
 
 import "./site-footer.css";
@@ -32,15 +34,16 @@ const POLICY_LINKS = [
   { key: "footer.link.copyright", href: "/copyright" },
 ] as const;
 
-/** 목적지 이름은 단일 지도의 정본 라벨을 그대로 쓴다. 표면별 덮어씀 금지. */
+/** 디렉터리 그룹은 단일 지도를 사용하고 푸터 바로가기는 도착 화면을 명시한다. */
 export function SiteFooter() {
   useBilingualI18nRevision();
   const language = useI18n((state) => state.lang);
   const locale = siteNavigationLocale(language);
   const t = useT();
+  const pathname = canonicalSitePath(usePathname());
+  const current = (href: string) => pathname === href ? "page" : undefined;
   const year = new Date().getFullYear();
-  const make = SITE_NAVIGATION_ITEMS.make;
-  const research = SITE_NAVIGATION_ITEMS.research;
+  const { make, research, help, allMenu: sitemap } = SITE_NAVIGATION_ITEMS;
   /**
    * S1-3: 모바일 메뉴·⌘K와 같은 정책 함수(resolveNavigationGroupsFor)를
    * 소비한다. 그룹 순서와 그룹 안 tier 순서가 표면마다 달라지지 않는다.
@@ -62,9 +65,9 @@ export function SiteFooter() {
           </Link>
         </div>
 
-        <nav className="site-footer__quick [word-break:keep-all]" aria-label={bi("메뉴와 도움말", "Menus and help")}>
-          <Link href="/sitemap">{siteNavigationText(SITE_NAVIGATION_ITEMS.allMenu.label, locale)}<ArrowRight size={15} strokeWidth={1.5} aria-hidden="true" /></Link>
-          <Link href="/help">{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, locale)}</Link>
+        <nav className="site-footer__quick [word-break:keep-all]" aria-label={bi("도움말과 사이트맵", "Help and sitemap")}>
+          <Link href={help.href} aria-current={current(help.href)}>{siteNavigationText(help.label, locale)}</Link>
+          <Link href={sitemap.href} aria-current={current(sitemap.href)}>{t("footer.link.sitemap")}<ArrowRight size={15} strokeWidth={1.5} aria-hidden="true" /></Link>
         </nav>
         <details className="site-footer__more">
           <summary className="min-h-11 [word-break:keep-all]">{bi("서비스 안내 더 보기", "More service information")}<ChevronDown size={16} strokeWidth={1.5} aria-hidden="true" /></summary>

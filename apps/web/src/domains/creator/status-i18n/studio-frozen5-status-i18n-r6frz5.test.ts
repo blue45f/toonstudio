@@ -159,8 +159,7 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "../brush/StudioBrushStudio.tsx": 1686,
   "../StudioLazyPanelStack.tsx": 1194,
   "../vrm/StudioVrmPoserViewport.tsx": 853,
-  // 뷰포트에서 분리한 로딩·오류 표시 컴포넌트에는 신규 파일 상한을 적용한다.
-  "../vrm/StudioVrmViewportStatusOverlay.tsx": 800,
+  "../vrm/StudioVrmViewportStatusOverlay.tsx": 89,
   "../bg3d/StudioBg3dEditorViewport.tsx": 1210,
   "../production-hub/ProductionRoleWorkspace.tsx": 1213,
   "../lift3d/StudioLift3dPage.tsx": 815,

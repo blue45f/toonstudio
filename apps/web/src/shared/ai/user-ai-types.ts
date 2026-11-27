@@ -40,6 +40,8 @@ export interface UserAiApiKeyProfile {
   apiKey: string;
   enabled: boolean;
   priority: number;
+  /** 이 키 계정에서 외부 유료 기능과 추가 청구를 차단했는지 사용자 확인. */
+  openRouterFreeBillingConfirmed?: boolean;
 }
 
 export interface UserAiModelProfile {
@@ -82,6 +84,8 @@ export interface UserAiConnection {
   baseUrl: string;
   /** Compatibility projection of the highest-priority enabled key. */
   apiKey: string;
+  /** 현재 선택된 키 프로필의 무료 OpenRouter 계정 확인 상태. */
+  openRouterFreeBillingConfirmed?: boolean;
   /** Compatibility projection of the highest-priority enabled text model. */
   textModel: string;
   /** Compatibility projection of the highest-priority enabled image model. */
@@ -246,7 +250,7 @@ function normalizeApiKeys(source: Record<string, unknown>): UserAiApiKeyProfile[
   const raw = Array.isArray(source.apiKeys)
     ? source.apiKeys
     : typeof source.apiKey === "string" && source.apiKey.trim()
-      ? [{ id: "key-1", label: "기본 키", apiKey: source.apiKey, enabled: true, priority: 100 }]
+      ? [{ id: "key-1", label: "기본 키", apiKey: source.apiKey, enabled: true, priority: 100, openRouterFreeBillingConfirmed: source.openRouterFreeBillingConfirmed }]
       : [];
   if (raw.length === 0 || raw.length > 12) {
     throw new Error("클라우드 연결마다 1~12개의 API 키를 등록하세요.");
@@ -260,6 +264,7 @@ function normalizeApiKeys(source: Record<string, unknown>): UserAiApiKeyProfile[
       id: cleanId(value.id ?? `key-${index + 1}`, "API 키 프로필 ID를 확인하세요."),
       label: cleanText(value.label ?? `키 ${index + 1}`, 120, "API 키 프로필 이름을 확인하세요."),
       apiKey: cleanSecret(value.apiKey),
+      ...(value.openRouterFreeBillingConfirmed === true ? { openRouterFreeBillingConfirmed: true } : {}),
       enabled: value.enabled !== false,
       priority: integerPriority(value.priority, (index + 1) * 100),
     };
@@ -316,7 +321,7 @@ function sortByPriority<T extends { priority: number; id: string }>(values: read
 export function userAiConnectionApiKeys(connection: UserAiConnection): UserAiApiKeyProfile[] {
   if (connection.apiKeys?.length) return sortByPriority(connection.apiKeys.filter((item) => item.enabled));
   return connection.apiKey.trim()
-    ? [{ id: "key-1", label: "기본 키", apiKey: connection.apiKey, enabled: true, priority: 100 }]
+    ? [{ id: "key-1", label: "기본 키", apiKey: connection.apiKey, enabled: true, priority: 100, openRouterFreeBillingConfirmed: connection.openRouterFreeBillingConfirmed === true }]
     : [];
 }
 
@@ -348,6 +353,7 @@ export function resolvedUserAiRoutes(
       routes.push({
         ...connection,
         apiKey: key.apiKey,
+        openRouterFreeBillingConfirmed: key.openRouterFreeBillingConfirmed === true,
         textModel: capability === "text" ? model.model : connection.textModel,
         imageModel: capability === "image" ? model.model : connection.imageModel,
         apiKeyProfileId: key.id,
@@ -472,6 +478,7 @@ export function normalizeUserAiConfiguration(value: unknown): UserAiConfiguratio
       label,
       baseUrl,
       apiKey: firstKey?.apiKey ?? "",
+      ...(firstKey?.openRouterFreeBillingConfirmed ? { openRouterFreeBillingConfirmed: true } : {}),
       textModel: compatibility.textModel,
       imageModel: compatibility.imageModel,
       imageGenerationPath: validateUserAiPath(cleanText(source.imageGenerationPath, 160, "이미지 생성 경로를 확인하세요.")),

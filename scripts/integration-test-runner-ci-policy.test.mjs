@@ -150,7 +150,7 @@ describe("database integration runner CI policy", () => {
   it("keeps `pnpm test` equal to the root suite plus the quiet perf-budget pass", () => {
     const packageManifest = readJson("package.json");
 
-    // 루트 검사는 작업공간 링크와 Node 전용 엣지 검사를 먼저 실행한 뒤 전체 Vitest를 실행한다.
+    // 루트 테스트는 워크스페이스 링크와 Cloudflare 엣지를 확인한 뒤 Vitest를 실행한다.
     expect(packageManifest.scripts?.["test:root"]).toBe(
       "node scripts/verify-workspace-package-links.mjs && pnpm run test:cloudflare-static-edge && vitest run",
     );

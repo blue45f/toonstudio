@@ -13,7 +13,7 @@ import { StudioVrmProjectArchiveAttestationHost } from "../runtime-leaves/studio
 import { lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import { POSER_CUT_QUERY } from "./studio-poser-cut-handoff";
-import { StudioImportHandoffHost } from "./StudioImportHandoffHost";
+import { StudioImportHandoffEntry } from "./StudioImportHandoffEntry";
 import { StudioMobileBackStackHost } from "./StudioMobileBackStackHost";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
@@ -32,6 +32,7 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
     handleImportProject,
     handleImportProjectArchive,
     handleImportPsd,
+    importWorkspaceReady,
     interchangeImportBusy,
     interchangeImportInputRef,
     onPickImage,
@@ -66,7 +67,8 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
       ready={s.poserCutInsertReady && !collaborationDocumentLocked && !s.pageEditLocked}
       exists={(id) => s.pages.some((page) => page.elements.some((el) => el.id === id))}
       insert={s.insertPoserCut} /></Suspense>}
-    <StudioImportHandoffHost
+    <StudioImportHandoffEntry
+      workspaceReady={importWorkspaceReady}
       brushPackImporting={brushPackImporting}
       collaborationDocumentLocked={collaborationDocumentLocked}
       interchangeImportBusy={interchangeImportBusy}

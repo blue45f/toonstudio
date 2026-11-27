@@ -40,28 +40,33 @@ function episodesHref(project: ProductionProjectSummary): string {
  */
 export function HomeNowCard({ children }: { readonly children?: ReactNode }) {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
-  const { status } = useSession();
+  const { data, ready, status } = useSession();
   const userId = useApp((state) => state.userId);
-  const [projects, setProjects] = useState<readonly ProductionProjectSummary[] | null>(null);
+  const authenticatedUserId = ready && status === "authenticated" ? data.user.id : null;
+  const ownerId = authenticatedUserId && authenticatedUserId === userId ? authenticatedUserId : null;
+  const [projectList, setProjectList] = useState<{
+    readonly ownerId: string;
+    readonly projects: readonly ProductionProjectSummary[];
+  } | null>(null);
+  // 세션과 앱의 계정이 바뀐 렌더부터 이전 원고를 숨긴다.
+  const projects = projectList?.ownerId === ownerId ? projectList.projects : null;
 
   useEffect(() => {
-    if (status !== "authenticated" || !userId) {
-      setProjects(null);
-      return;
-    }
+    setProjectList(null);
+    if (!ownerId) return;
     let active = true;
     void listProductionProjects()
       .then((result) => {
-        if (active) setProjects(result.projects);
+        if (active) setProjectList({ ownerId, projects: result.projects });
       })
       .catch(() => {
-        // 실패 시 projects는 null로 남고 아래에서 기존 스트립으로 폴백한다.
-        if (active) setProjects(null);
+        // 실패한 목록은 기존 개인 스트립으로 이어진다.
+        if (active) setProjectList(null);
       });
     return () => {
       active = false;
     };
-  }, [status, userId]);
+  }, [ownerId]);
 
   const nowCard = useMemo(() => {
     if (!projects) return null;
@@ -106,7 +111,7 @@ export function HomeNowCard({ children }: { readonly children?: ReactNode }) {
 
   // 비동기 목록이 도착해 순서가 바뀌어도 입력·Luna의 DOM과 초점을 보존한다.
   const introduction = children == null ? null : <Fragment key="home-introduction">{children}</Fragment>;
-  if (status !== "authenticated") return introduction;
+  if (!ready || status !== "authenticated" || (userId !== null && ownerId === null)) return introduction;
   if (!nowCard) return <>{introduction}<HomePersonalStrip key="personal-strip" /></>;
   const card = (
     <NowCard

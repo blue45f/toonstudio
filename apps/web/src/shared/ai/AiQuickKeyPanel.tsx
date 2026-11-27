@@ -12,6 +12,9 @@ import { CheckCircle2, CircleAlert, ExternalLink, KeyRound, Plus, Sparkles, Tras
 import { useId, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useInRouterContext } from "react-router-dom";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "./ai-status-i18n";
 import {
   AI_KEY_PROVIDER_PICK_ORDER,
   AI_KEY_PROVIDERS,
@@ -58,6 +61,7 @@ interface PendingKey {
   readonly key: string;
   readonly candidates: readonly AiKeyProviderId[];
   readonly provider: AiKeyProviderId | null;
+  readonly openRouterFreeBillingConfirmed?: boolean;
 }
 
 interface RegisterOutcome {
@@ -93,8 +97,9 @@ function costBadge(kind: "paid" | "free" | "unverified") {
   );
 }
 
-function connectionCostKind(connection: Pick<UserAiConnection, "costPolicy">): "paid" | "free" | "unverified" {
+function connectionCostKind(connection: UserAiConnection): "paid" | "free" | "unverified" {
   if (connection.costPolicy === "user-funded-byok") return "paid";
+  if (connection.costPolicy === "openrouter-free" && !allKeysOf(connection).some((key) => key.openRouterFreeBillingConfirmed)) return "unverified";
   return connection.costPolicy === "unverified" ? "unverified" : "free";
 }
 
@@ -166,9 +171,12 @@ function previewRegistration(
   for (const item of keys) {
     if (!item.provider || !isQuickKeyProvider(item.provider)) continue;
     try {
-      preview = addQuickKey(preview, item.provider, item.key, { allowPaid: true }).configuration;
+      preview = addQuickKey(preview, item.provider, item.key, {
+        allowPaid: true,
+        openRouterFreeBillingConfirmed: item.openRouterFreeBillingConfirmed,
+      }).configuration;
     } catch {
-      // 키·연결 수 상한에 걸린 키는 등록 때도 실패하므로 안내에서도 뺀다.
+      // 계정 확인이 끝나지 않았거나 키·연결 수 상한에 걸린 키는 안내에서도 뺀다.
     }
   }
   return preview;
@@ -181,6 +189,7 @@ function allKeysOf(connection: UserAiConnection) {
 
 export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdvancedWizard }: AiQuickKeyPanelProps) {
   const idBase = useId();
+  const t = useT();
   const snapshot = useUserAi();
   const configuration = snapshot.configuration;
   const [draft, setDraft] = useState("");
@@ -217,7 +226,8 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
     .filter((item) => item.provider && AI_KEY_PROVIDERS[item.provider].cost === "paid")
     .map((item) => item.key));
   const pastedKeyPinned = firstAfterConsent.some((route) => paidPastedKeys.has(route.apiKey));
-  const canRegister = !busy && registrable.length > 0 && !unresolved && (!needsPaidConsent || consent);
+  const openRouterKeysConfirmed = registrable.every((item) => item.provider !== "openrouter" || item.openRouterFreeBillingConfirmed);
+  const canRegister = !busy && registrable.length > 0 && !unresolved && (!needsPaidConsent || consent) && openRouterKeysConfirmed;
 
   const addPending = (raw: string) => {
     const pasted = splitPastedAiKeys(raw);
@@ -292,6 +302,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
           // 확인한 모델은 새 연결을 만들 때만 쓰인다. 이미 있는 연결은 사용자가 고른 모델을 그대로 두고 키만 더한다.
           model: verification.model,
           allowPaid: consent,
+          openRouterFreeBillingConfirmed: item.openRouterFreeBillingConfirmed,
         });
         current = added.configuration;
         if (added.duplicate) {
@@ -418,7 +429,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                 : null;
               return (
                 <li key={item.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card/60 px-3 py-2" data-ai-pending-key={provider ?? "unknown"}>
-                  <code className="text-xs text-fg-2">{maskAiKey(item.key)}</code>
+                  <code className="text-xs text-fg-2" id={`${idBase}-pending-${item.id}`}>{maskAiKey(item.key)}</code>
                   {options ? (
                     <label className="flex min-w-0 items-center gap-2 text-xs text-fg-2">
                       <span>{provider ? "서비스" : "어느 서비스 키인가요?"}</span>
@@ -428,7 +439,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                         disabled={busy}
                         onChange={(event) => {
                           const value = event.target.value as AiKeyProviderId;
-                          setPending((current) => current.map((entry) => (entry.id === item.id ? { ...entry, provider: value || null } : entry)));
+                          setPending((current) => current.map((entry) => (entry.id === item.id ? { ...entry, provider: value || null, openRouterFreeBillingConfirmed: false } : entry)));
                         }}
                       >
                         <option value="">선택해 주세요</option>
@@ -455,6 +466,22 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                   >
                     <X size={16} aria-hidden />
                   </button>
+                  {provider === "openrouter" && (
+                    <label className="flex w-full cursor-pointer items-start gap-2 py-2 text-sm text-fg-2">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        aria-describedby={`${idBase}-pending-${item.id}`}
+                        checked={item.openRouterFreeBillingConfirmed === true}
+                        disabled={busy}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setPending((current) => current.map((entry) => entry.id === item.id ? { ...entry, openRouterFreeBillingConfirmed: checked } : entry));
+                        }}
+                      />
+                      {t("shared.aiStatus.settings.openRouterFreeConfirmation", "OpenRouter 계정에서 이 키의 추가 과금이 차단되고 조직이 강제하는 유료 플러그인이 모두 꺼져 있는지 확인했어요.")}
+                    </label>
+                  )}
                 </li>
               );
             })}
@@ -534,6 +561,9 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                         <code>{maskAiKey(key.apiKey)}</code>
                         <span className="text-fg-3">{key.label}</span>
                         {key.enabled === false && <span className="font-semibold text-warn">꺼짐</span>}
+                        {connection.costPolicy === "openrouter-free" && !key.openRouterFreeBillingConfirmed && (
+                          <span className="text-warn">{t("shared.aiStatus.settings.openRouterFreeSetupRequired", "고급 설정에서 이 키의 무료 계정 조건을 확인해 주세요.")}</span>
+                        )}
                         <button
                           type="button"
                           className={`${ICON_BUTTON} ml-auto`}

@@ -1903,6 +1903,23 @@ describe("StudioMobileEditingDock", () => {
     // 360×640 viewport they sat off the bottom of the sheet at every snap.
     expect(size.compareDocumentPosition(opacity) & follows).toBe(follows);
     expect(opacity.compareDocumentPosition(modeSwitch) & follows).toBe(follows);
+    for (const name of ["펜", "픽셀 펜", "지우개", "도형"]) {
+      const button = within(modeSwitch).getByRole("button", { name });
+      expect(button.textContent?.trim()).toBe(name);
+    }
+  });
+  it.each(["Escape", "닫기"])("지우개에서 연 설정은 %s 후 같은 도크 버튼으로 초점을 돌린다", (method) => {
+    const props = createProps({ isMobile: true, tool: "draw", drawMode: "eraser" });
+    const view = render(<StudioMobileEditingDock {...props} />);
+    const toolbar = screen.getByRole("toolbar", { name: "드로잉 도구" });
+    const eraser = within(toolbar).getByRole("button", { name: "지우개" });
+    fireEvent.click(eraser);
+    view.rerender(<StudioMobileEditingDock {...props} mobileSheet="draw" />);
+    const sheet = screen.getByRole("dialog", { name: "브러시 설정" });
+    if (method === "Escape") fireEvent.keyDown(sheet, { key: "Escape" });
+    else fireEvent.click(within(sheet).getByRole("button", { name: "브러시 설정 닫기" }));
+    expect(props.setMobileSheet).toHaveBeenLastCalledWith(null);
+    expect(document.activeElement).toBe(eraser);
   });
   it("shows the named kneaded eraser identity and low-density opacity on mobile", () => {
     const stableHandlers = createHandlers();

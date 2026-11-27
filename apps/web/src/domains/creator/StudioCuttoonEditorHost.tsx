@@ -21714,7 +21714,7 @@ function clearSelectionForEdit() {
       cancelStudioPointCommentComposer={cancelStudioPointCommentComposer}
       canvasFlipH={canvasFlipH}
       canvasGuides={canvasGuides}
-      canvasH={canvasH} canvasStartGuideReady={projectBackupUnavailableReason === null}
+      canvasH={canvasH} canvasStartGuideReady={projectBackupUnavailableReason === null} importWorkspaceReady={studioAuthReady}
       canvasInteractionBlocked={canvasInteractionBlocked}
       canvasOnlyMode={canvasOnlyMode}
       canvasRotation={canvasRotation}

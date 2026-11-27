@@ -10,7 +10,9 @@ import {
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { createStudioFileChangeEvent } from "./studio-synthetic-file-change-event";
 
-interface StudioImportHandoffHostProps {
+export interface StudioImportHandoffHostProps {
+  readonly handoffToken?: string;
+  readonly workspaceReady: boolean;
   readonly brushPackImporting: boolean;
   readonly collaborationDocumentLocked: boolean;
   readonly interchangeImportBusy: boolean;
@@ -26,11 +28,12 @@ interface StudioImportHandoffHostProps {
 
 type HandoffStatus =
   | Readonly<{ state: "idle" }>
-  | Readonly<{ state: "waiting"; fileName: string }>
+  | Readonly<{ state: "waiting"; fileName: string; workspace: boolean }>
   | Readonly<{ state: "failed"; message: string }>;
 
-function removeHandoffQuery(): void {
+function removeHandoffQuery(token: string): void {
   const url = new URL(window.location.href);
+  if (url.searchParams.get(STUDIO_IMPORT_HANDOFF_QUERY_KEY) !== token) return;
   url.searchParams.delete(STUDIO_IMPORT_HANDOFF_QUERY_KEY);
   const next = `${url.pathname}${url.search}${url.hash}`;
   window.history.replaceState(window.history.state, "", next);
@@ -63,9 +66,15 @@ function invokeHandoff(
 /** Owns the single-use transition from the Studio import front door into existing editor handlers. */
 export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): ReactElement | null {
   const startedTokenRef = useRef<string | null>(null);
+  const mountedRef = useRef(false);
   const latestPropsRef = useRef(props);
   latestPropsRef.current = props;
   const [status, setStatus] = useState<HandoffStatus>({ state: "idle" });
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     const currentProps = latestPropsRef.current;
@@ -74,52 +83,61 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
     const pending = peekStudioImportHandoff(token);
     if (!pending) {
       startedTokenRef.current = token;
-      removeHandoffQuery();
+      removeHandoffQuery(token);
       setStatus({
         state: "failed",
         message: editorShellStatusText("studio.editorShellStatus.importHandoff.handoffExpired", "가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다. 파일을 다시 선택해 주세요."),
       });
       return;
     }
-    if (targetBusy(pending.target, currentProps)) {
+    const waitForWorkspaceOrOperation = (fileName: string, workspace: boolean) => {
       setStatus((prev) => (
-        prev.state === "waiting" && prev.fileName === pending.file.name
+        prev.state === "waiting" && prev.fileName === fileName && prev.workspace === workspace
           ? prev
-          : { state: "waiting", fileName: pending.file.name }
+          : { state: "waiting", fileName, workspace }
       ));
+    };
+    if (!currentProps.workspaceReady || targetBusy(pending.target, currentProps)) {
+      waitForWorkspaceOrOperation(pending.file.name, !currentProps.workspaceReady);
       return;
     }
 
     const timerId = window.setTimeout(() => {
       const liveProps = latestPropsRef.current;
+      if (new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY) !== token) return;
       const stillPending = peekStudioImportHandoff(token);
       if (!stillPending || startedTokenRef.current === token) return;
-      if (targetBusy(stillPending.target, liveProps)) {
-        setStatus((prev) => (
-          prev.state === "waiting" && prev.fileName === stillPending.file.name
-            ? prev
-            : { state: "waiting", fileName: stillPending.file.name }
-        ));
+      if (!liveProps.workspaceReady || targetBusy(stillPending.target, liveProps)) {
+        waitForWorkspaceOrOperation(stillPending.file.name, !liveProps.workspaceReady);
         return;
       }
       const handoff = consumeStudioImportHandoff(token);
       if (!handoff) return;
       startedTokenRef.current = token;
-      removeHandoffQuery();
       setStatus({ state: "idle" });
-      try {
-        const result = invokeHandoff(handoff.target, createStudioFileChangeEvent(handoff.file), liveProps);
-        void Promise.resolve(result).catch((error: unknown) => {
-          setStatus({
-            state: "failed",
-            message: error instanceof Error ? error.message : editorShellStatusText("studio.editorShellStatus.importHandoff.importStartFailed", "파일 가져오기를 시작하지 못했습니다."),
-          });
-        });
-      } catch (error) {
+      const isCurrentToken = () => mountedRef.current && startedTokenRef.current === token
+        && (latestPropsRef.current.handoffToken ?? token) === token;
+      // 처리 중에 새 문서로 이동하면 남은 주소가 사라진 파일의 재선택 안내를 연다.
+      const finishFailure = (error: unknown) => {
+        if (!isCurrentToken()) return;
+        removeHandoffQuery(token);
         setStatus({
           state: "failed",
           message: error instanceof Error ? error.message : editorShellStatusText("studio.editorShellStatus.importHandoff.importStartFailed", "파일 가져오기를 시작하지 못했습니다."),
         });
+      };
+      try {
+        const result = invokeHandoff(handoff.target, createStudioFileChangeEvent(handoff.file), liveProps);
+        void Promise.resolve(result).then((outcome) => {
+          if (!isCurrentToken()) return;
+          removeHandoffQuery(token);
+          if (outcome === "scope-changed") setStatus({
+            state: "failed",
+            message: editorShellStatusText("studio.editorShellStatus.importHandoff.scopeChanged", "작업공간이 바뀌어 파일을 열지 못했어요. 파일을 다시 선택해 주세요."),
+          });
+        }).catch(finishFailure);
+      } catch (error) {
+        finishFailure(error);
       }
     }, 0);
 
@@ -127,6 +145,8 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       window.clearTimeout(timerId);
     };
   }, [
+    props.handoffToken,
+    props.workspaceReady,
     props.brushPackImporting,
     props.collaborationDocumentLocked,
     props.interchangeImportBusy,
@@ -142,7 +162,9 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
         className="mx-3 mt-2 flex shrink-0 items-center gap-2 rounded-xl border border-warning/35 bg-warning-soft/20 px-3 py-2 text-xs font-medium text-warning"
       >
         <LoaderCircle size={15} className="animate-spin" aria-hidden="true" />
-        기존 가져오기 작업이 끝나면 {status.fileName} 파일을 이어서 처리합니다.
+        {status.fileName} · {status.workspace
+          ? editorShellStatusText("studio.editorShellStatus.importHandoff.workspaceChecking", "작업공간을 확인한 뒤 파일을 열어요.")
+          : editorShellStatusText("studio.editorShellStatus.importHandoff.operationWaiting", "기존 가져오기 작업이 끝나면 파일을 열어요.")}
       </div>
     );
   }

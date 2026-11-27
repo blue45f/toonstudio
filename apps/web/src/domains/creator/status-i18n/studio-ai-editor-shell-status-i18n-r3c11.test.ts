@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import "@/shared/ai/ai-status-i18n";
 import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
+import {
+  getLocaleCandidates,
+  i18nDict,
+  NORMALIZED_LOCALE_OPTIONS,
+  resolveTranslationForDisplay,
+} from "@/shared/lib/i18n";
 
 /**
  * ai·cuttoon-editor·studio-shell·shared/ai 로딩·실패·빈 상태 문구 i18n 키 이관
@@ -145,6 +152,9 @@ const EDITOR_SHELL_KEYS = [
   "studio.editorShellStatus.workspace.brushLibraryOpening",
   "studio.editorShellStatus.importHandoff.handoffExpired",
   "studio.editorShellStatus.importHandoff.importStartFailed",
+  "studio.editorShellStatus.importHandoff.workspaceChecking",
+  "studio.editorShellStatus.importHandoff.operationWaiting",
+  "studio.editorShellStatus.importHandoff.scopeChanged",
   "studio.editorShellStatus.floatingLayout.storageChecking",
 ] as const;
 
@@ -155,6 +165,15 @@ const EDITOR_SHELL_CONSUMERS = [
   "studio-cuttoon-editor/StudioCuttoonEditorWorkspace.tsx",
   "studio-cuttoon-editor/StudioImportHandoffHost.tsx",
   "studio-shell/StudioShellFloatingLayoutManager.tsx",
+] as const;
+
+const OPENROUTER_SETTINGS_KEYS = [
+  "shared.aiStatus.settings.openRouterTransfer",
+  "shared.aiStatus.settings.openRouterFreeConfirmation",
+  "shared.aiStatus.settings.openRouterFreeSetupRequired",
+  "shared.aiStatus.settings.openRouterFreeCheckRequired",
+  "shared.aiStatus.settings.openRouterPaidConnection",
+  "shared.aiStatus.settings.openRouterFreeModelRequired",
 ] as const;
 
 const SHARED_AI_KEYS = [
@@ -173,12 +192,19 @@ const SHARED_AI_KEYS = [
   "shared.aiStatus.recovery.retry",
   "shared.aiStatus.settings.processFailed",
   "shared.aiStatus.settings.legacyEmpty",
+  ...OPENROUTER_SETTINGS_KEYS,
 ] as const;
 
 const SHARED_AI_CONSUMERS = [
   "ai/AiCapabilityStatusBoard.tsx",
   "ai/AiRecoveryNotice.tsx",
   "ai/UnifiedAiAdvancedSettings.tsx",
+] as const;
+
+const OPENROUTER_SETTINGS_CONSUMERS = [
+  "ai/AiQuickKeyPanel.tsx",
+  "ai/UnifiedAiSettings.tsx",
+  "ai/ai-quick-key.ts",
 ] as const;
 
 describe("studio ai/editor-shell/shared-ai status i18n r3c11", () => {
@@ -232,8 +258,8 @@ describe("studio ai/editor-shell/shared-ai status i18n r3c11", () => {
 
   it("shared.aiStatus 등록 모듈의 ko/en 키가 패리티를 이루고 en에 한글이 없다", () => {
     const blocks = parseRegisterModule(readSharedSource("ai/ai-status-i18n.ts"));
-    expect(Object.keys(blocks.ko).sort()).toEqual(Object.keys(blocks.en).sort());
-    expect(Object.keys(blocks.ko).length).toBe(SHARED_AI_KEYS.length);
+    expect(Object.keys(blocks.ko).sort()).toEqual([...SHARED_AI_KEYS].sort());
+    expect(Object.keys(blocks.en).sort()).toEqual([...SHARED_AI_KEYS].sort());
     expectParity(blocks, SHARED_AI_KEYS);
     expect(blocks.ko["shared.aiStatus.recovery.httpError"]).toBe("AI 요청을 완료하지 못했어요");
     expect(blocks.ko["shared.aiStatus.capability.checking"]).toBe("확인 중");
@@ -241,13 +267,27 @@ describe("studio ai/editor-shell/shared-ai status i18n r3c11", () => {
 
   it("shared.aiStatus 키가 소비 파일에서 실제로 참조되고 미등록 참조가 없다", () => {
     const blocks = parseRegisterModule(readSharedSource("ai/ai-status-i18n.ts"));
-    const consumerSource = SHARED_AI_CONSUMERS.map((file) => readSharedSource(file)).join("\n");
+    const consumerSource = [...SHARED_AI_CONSUMERS, ...OPENROUTER_SETTINGS_CONSUMERS]
+      .map((file) => readSharedSource(file)).join("\n");
     expectConsumed(
       consumerSource,
       SHARED_AI_KEYS,
       blocks.ko,
       /"(shared\.aiStatus\.[A-Za-z0-9.]+)"/g,
     );
+  });
+
+  it("모든 선택 언어에서 OpenRouter 설정 문구를 등록된 번역 또는 영어 폴백으로 표시한다", () => {
+    const blocks = parseRegisterModule(readSharedSource("ai/ai-status-i18n.ts"));
+    const authoredDictionaries: Readonly<Record<string, Record<string, string>>> = { ...i18nDict, ...blocks };
+    for (const locale of NORMALIZED_LOCALE_OPTIONS) {
+      const candidates = getLocaleCandidates(locale, []).map((candidate) => authoredDictionaries[candidate]);
+      for (const key of OPENROUTER_SETTINGS_KEYS) {
+        const authored = candidates.map((dictionary) => dictionary?.[key]).find(Boolean);
+        const expected = authored ?? blocks.en[key];
+        expect(resolveTranslationForDisplay(locale, key), `${locale}: ${key}`).toBe(expected);
+      }
+    }
   });
 
   it("이관한 소비 파일에 하드코딩된 로딩·실패 상태 문구가 남지 않는다", () => {
