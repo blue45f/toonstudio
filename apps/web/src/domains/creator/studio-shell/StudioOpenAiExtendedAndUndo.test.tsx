@@ -24,6 +24,7 @@ import {
   writeStudioAssistantSessionState,
 } from "./guided-flow/studio-assistant-session-store";
 import { StudioOpenAiAssistResultCard } from "./StudioOpenAiAssistResultCard";
+import { StudioOpenAiExtendedResultBody } from "./StudioOpenAiExtendedResultBody";
 import { StudioProjectAssistantPanel } from "./StudioProjectAssistantPanel";
 
 const EXTENDED_RESULTS: readonly StudioOpenAiExtendedStructuredResult[] = [
@@ -255,6 +256,38 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
       view.unmount();
     }
   });
+
+  it("자동 단계가 없는 매크로는 수동 대기와 복사할 재개 조건을 표시한다", () => {
+    const summary = "분필 가루 레이어의 실제 ID를 확인한 뒤 편집기에서 불투명도를 19%로 맞추세요.";
+    const result: StudioOpenAiExtendedStructuredResult = {
+      mode: "mcp-workflow-macro", data: { macroTitle: "분필 가루", summary, zeroCostSafe: true, steps: [] },
+    };
+    expect(isValidStudioOpenAiStructuredResult(result)).toBe(true);
+    const onCopy = vi.fn();
+    render(<StudioOpenAiExtendedResultBody result={result} copiedKey={null} onCopy={onCopy} />);
+    expect(screen.getByText("자동 단계 없음 · 수동 확인 대기")).toBeTruthy();
+    expect(screen.getByText(summary)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "재개 조건 복사" }));
+    expect(onCopy).toHaveBeenCalledWith("mcp-macro", summary);
+  });
+
+  it.each([[null, "엔딩 점수 미평가"], [0, "엔딩 흡인력 AI 추정 0/100"]] as const)(
+    "엔딩 점수 %s를 저장·복원한 뒤 편집 추정과 미평가를 구별해 표시한다", (score, label) => {
+      const previous = EXTENDED_RESULTS.find(result => result.mode === "scroll-pacing-auditor");
+      if (!previous || previous.mode !== "scroll-pacing-auditor") throw new Error("스크롤 예시 누락");
+      const response = makeSuccess({ mode: previous.mode, data: { ...previous.data, cliffhangerScore: score } });
+      writeStudioAssistantSessionState("saved-ending", {
+        prompt: "원고", openAiMode: previous.mode, lastResult: response,
+      }, window.sessionStorage);
+      const restored = readStudioAssistantSessionState("saved-ending", window.sessionStorage)?.lastResult;
+      if (!restored) throw new Error("저장된 엔딩 결과 누락");
+      render(<StudioOpenAiAssistResultCard response={restored} />);
+      const card = screen.getByTestId("openai-extended-result-scroll-pacing-auditor");
+      expect(card.textContent).toContain(label);
+      expect(card.textContent).toContain(previous.data.cliffhangerTip);
+      if (score === null) expect(card.textContent).not.toContain("/100");
+    },
+  );
 
   const comparisonProjectId = "project-original-input";
   const originalInput = "서연의 캐릭터 바이블을 정리해 줘";

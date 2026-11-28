@@ -354,7 +354,10 @@ export function StudioOpenAiExtendedResultBody({
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-panel/70 p-3 tabular-nums">
             <p className="font-semibold text-fg">{data.rhythmVerdict}</p>
             <span className="rounded-full bg-accent-soft px-2.5 py-0.5 font-extrabold text-accent">
-              평균 여백 {data.averageGapPx}px · 엔딩 흡인력 {data.cliffhangerScore}/100
+              {bt(`평균 권장 여백 ${data.averageGapPx}px`, `Suggested mean gap ${data.averageGapPx}px`)} ·{" "}
+              {data.cliffhangerScore === null
+                ? bt("엔딩 점수 미평가", "Ending unscored")
+                : bt(`엔딩 흡인력 AI 추정 ${data.cliffhangerScore}/100`, `AI ending estimate ${data.cliffhangerScore}/100`)}
             </span>
           </div>
           <p className="rounded-xl border border-line bg-panel/55 p-3 text-fg-2">
@@ -486,12 +489,13 @@ export function StudioOpenAiExtendedResultBody({
             <CopyButton
               copyKey="mcp-macro"
               copiedKey={copiedKey}
-              label={bt("매크로 JSON 복사", "Copy macro JSON")}
+              label={data.steps.length ? bt("매크로 JSON 복사", "Copy macro JSON") : bt("재개 조건 복사", "Copy resume instructions")}
               copiedLabel={copiedLabel}
-              value={macroJson}
+              value={data.steps.length ? macroJson : data.summary}
               onCopy={onCopy}
             />
           </div>
+          {data.steps.length === 0 && <p>{bt("자동 단계 없음 · 수동 확인 대기", "No automated steps · awaiting manual review")}</p>}
           <ol className="space-y-1.5 tabular-nums">
             {data.steps.map((step) => (
               <li

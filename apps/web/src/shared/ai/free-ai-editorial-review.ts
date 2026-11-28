@@ -62,7 +62,9 @@ export function summarizeFreeAiEditorialReview(result: OpenAiAssistStructuredRes
           `구간 평균 ${averageGapPx}px`,
           ...beatPacing.map(({ section, pacing, recommendedGapPx, readerRetentionNote }) =>
             `${section} · ${recommendedGapPx}px — ${readerRetentionNote} · ${pacing}`),
-          isCloudReview ? `엔딩 몰입도 ${cliffhangerScore}/100 · ${cliffhangerTip}` : cliffhangerTip,
+          isCloudReview && cliffhangerScore !== null
+            ? `엔딩 흡인력 AI 추정 ${cliffhangerScore}/100 · ${cliffhangerTip}`
+            : `엔딩 점수 미평가 · ${cliffhangerTip}`,
         ],
       };
     }

@@ -1,11 +1,13 @@
+import { buildLocalWorkflowMacro } from "@toonstudio/contracts/studio-assist-local-macro";
 import { buildLocalDialogueLayout, buildLocalScriptCuts } from "@toonstudio/contracts/studio-assist-local-script";
-import { validateAssistModeStructuredOutput } from "@toonstudio/contracts/studio-openai-assist-result";
+import { MODE_OUTPUT_SCHEMAS, validateAssistModeStructuredOutput } from "@toonstudio/contracts/studio-openai-assist-result";
 import { redactCreatorSensitiveText } from "@toonstudio/contracts/studio-pii-redactor";
-import { buildLocalColorMood } from "@toonstudio/studio-project-model/character-art-style";
+import { buildLocalColorMood, buildLocalPhotoshopFx } from "@toonstudio/studio-project-model/character-art-style";
 
 import { withCsrfProtection } from "@/shared/lib/csrf";
 import { useApp } from "@/shared/lib/store";
 
+import { formatExportPreflightReview } from "./export-preflight-review-scope";
 import { summarizeFreeAiEditorialReview } from "./free-ai-editorial-review";
 import { summarizeFreeAiProductionDirections } from "./free-ai-production-directions";
 import {
@@ -434,13 +436,20 @@ const localReviewHeadlines: Partial<Record<FreeAiZeroBillModeId, string>> = {
   "scroll-pacing-auditor": "스크롤 호흡 예시 · 모바일 미리보기에서 컷 사이 여백과 엔딩 호흡을 확인하세요.",
 };
 
-function summarizeServerResult(mode: FreeAiZeroBillModeId, data: Record<string, unknown>, isCloudReview: boolean) {
+const knownResponseFields = new Set(Object.values(MODE_OUTPUT_SCHEMAS).flatMap((schema) => Object.keys(schema.shape)));
+
+function summarizeServerResult(mode: FreeAiZeroBillModeId, data: Record<string, unknown>, isCloudReview: boolean, acceptPartial = true) {
   const result = validateAssistModeStructuredOutput(mode, data);
   if (result) {
     const review = summarizeFreeAiEditorialReview(result, isCloudReview) ?? summarizeFreeAiProductionDirections(result);
     if (review) return review;
+  } else {
+    const schemaFields = MODE_OUTPUT_SCHEMAS[mode].shape;
+    const fields = Object.keys(data);
+    const recognized = fields.filter((field) => knownResponseFields.has(field));
+    if (!acceptPartial || mode === "localization-glossary-check" || !recognized.length ||
+      !recognized.every((field) => Object.hasOwn(schemaFields, field))) return null;
   }
-  if (mode === "localization-glossary-check") return null;
   return summarizeStructuredData(mode, data);
 }
 
@@ -566,7 +575,7 @@ export function buildLocalZeroCostAssistResult(
   const snippet = masked.inputText.slice(0, 64) || "장면 초안";
   const title = masked.projectTitle || "현재 원고";
 
-  type TemplateMode = Exclude<FreeAiZeroBillModeId, "script-to-cuts" | "dialogue-polish" | "color-mood-director">;
+  type TemplateMode = Exclude<FreeAiZeroBillModeId, "script-to-cuts" | "dialogue-polish" | "color-mood-director" | "photoshop-fx-recipe" | "mcp-workflow-macro">;
   const bulletsByMode: Record<TemplateMode, readonly string[]> = {
     "idea-remix": [
       `[통념 뒤집기] "${snippet}"에서 조력자의 숨은 동기를 먼저 암시하세요.`,
@@ -595,13 +604,9 @@ export function buildLocalZeroCostAssistResult(
       "탁—! / タンッ！ / SNAP! — 동작선 끝점에 12도 기울기 굵은 고딕 배치",
       "두근… / ドキッ… / BA-DUMP… — 클로즈업 하단 여백에 자간 넓은 명조 배치",
     ],
-    "photoshop-fx-recipe": [
-      "[레이어 FX] Outer Glow(screen, 38%, 18px) + Gradient Overlay(soft-light, 24%)",
-      "[Camera Raw] Exposure +0.15 · Contrast +12 · Clarity +14 · Dehaze +8 · Grain 9%",
-    ],
     "scroll-pacing-auditor": [
       "[여백 예시] 같은 두 컷 사이의 간격을 좁히고 넓혀, 대사 뒤에 어떤 호흡이 어울리는지 비교하세요.",
-      "[엔딩 훅] 마지막 컷 직전 420px 낙하 여백 후 클로즈업 1컷으로 마무리하세요.",
+      "[엔딩 점수 미평가] 마지막 컷에서 해결된 일과 다음 화에 남겨 둔 질문을 따로 적어 보세요.",
     ],
     "thumbnail-hook-optimizer": [
       `[A안] ${title}: 그날 아무도 말하지 않은 비밀 (호기심 질문형)`,
@@ -611,21 +616,17 @@ export function buildLocalZeroCostAssistResult(
       `[용어 통일] '${title}' 영문 Title Case·일문 가타카나 표기를 전 회차 고정하세요.`,
       "[말풍선 폭] 영문 번역 시 폭이 25~35% 넓어지므로 여유 패딩을 확보하세요.",
     ],
-    "mcp-workflow-macro": [
-      "1. studio.canvas.create → 800×1280 웹툰 캔버스 초기화",
-      "2. studio.bg3d.compose_scene → 35mm 골든아워 3D 카메라 블로킹",
-      "3. studio.photoshop.apply_layer_fx → 비파괴 림라이트 적용",
-      "4. studio.export.preflight_check → Rights BOM 및 규격 최종 점검",
-    ],
   };
 
   let structuredData: Record<string, unknown> = {};
   let bulletsKo: readonly string[];
   let headlineKo: string;
-  if (input.mode === "script-to-cuts" || input.mode === "dialogue-polish" || input.mode === "color-mood-director") {
+  if (input.mode === "script-to-cuts" || input.mode === "dialogue-polish" || input.mode === "color-mood-director" || input.mode === "photoshop-fx-recipe" || input.mode === "mcp-workflow-macro") {
     const source = masked.inputText.slice(0, 6_000);
     if (input.mode === "script-to-cuts") structuredData = buildLocalScriptCuts(source, title.slice(0, 120));
     else if (input.mode === "dialogue-polish") structuredData = buildLocalDialogueLayout(source);
+    else if (input.mode === "mcp-workflow-macro") structuredData = buildLocalWorkflowMacro(source, title);
+    else if (input.mode === "photoshop-fx-recipe") structuredData = buildLocalPhotoshopFx(source);
     else structuredData = buildLocalColorMood(source);
     const summary = summarizeServerResult(input.mode, structuredData, false) ?? summarizeStructuredData(input.mode, structuredData);
     ({ bulletsKo, headlineKo } = summary);
@@ -634,6 +635,7 @@ export function buildLocalZeroCostAssistResult(
     headlineKo = localReviewHeadlines[input.mode]
       ?? `[로컬 무과금 코치 · ₩0] ${modeSpec?.labelKo ?? input.mode} 초안이 준비되었어요.`;
   }
+  if (input.mode === "export-preflight-coach") headlineKo = formatExportPreflightReview(headlineKo);
 
   return {
     ok: true,
@@ -651,7 +653,7 @@ export function buildLocalZeroCostAssistResult(
       ...structuredData,
       mode: input.mode,
       title,
-      summary: headlineKo,
+      summary: structuredData.summary ?? headlineKo,
       recommendations: bulletsKo,
       costUsdGuaranteed: "$0.00",
     },
@@ -734,7 +736,11 @@ export async function runFreeAiZeroBillAssist(
 
     const data = payload.result?.data;
     const isCloudReview = payload.providerTier === "cloud-free" && payload.provider !== "local-zero-cost-fallback";
-    const summary = data && typeof data === "object" ? summarizeServerResult(input.mode, data, isCloudReview) : null;
+    const responseMode = payload.result?.mode;
+    const matchesRequest = responseMode === undefined || responseMode === input.mode;
+    const summary = matchesRequest && data && typeof data === "object" && !Array.isArray(data)
+      ? summarizeServerResult(input.mode, data, isCloudReview, responseMode === input.mode)
+      : null;
     if (!data || !summary) {
       return buildLocalZeroCostAssistResult(
         input,
@@ -742,6 +748,9 @@ export async function runFreeAiZeroBillAssist(
       );
     }
 
+    const headlineKo = payload.provider === "local-zero-cost-fallback"
+      ? localReviewHeadlines[input.mode] ?? summary.headlineKo
+      : summary.headlineKo;
     return {
       ok: true,
       providerId: payload.provider ?? "local-zero-cost-fallback",
@@ -752,9 +761,7 @@ export async function runFreeAiZeroBillAssist(
       costGuaranteedZeroUsd: 0,
       paidBillingBlocked: true,
       piiRedactedCount: masked.redactedCount + (payload.privacy?.piiRedactedCount ?? 0),
-      headlineKo: payload.provider === "local-zero-cost-fallback"
-        ? localReviewHeadlines[input.mode] ?? summary.headlineKo
-        : summary.headlineKo,
+      headlineKo: input.mode === "export-preflight-coach" ? formatExportPreflightReview(headlineKo) : headlineKo,
       bulletsKo: summary.bulletsKo,
       rawData: data,
       fallbackNoticeKo:

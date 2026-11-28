@@ -31,6 +31,16 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     }
   });
 
+  it("오프라인 매크로는 지정한 레이어·단위를 수동 확인 조건과 복사 목록에 보존한다", async () => {
+    const result = await runFreeAiZeroBillAssist({
+      mode: "mcp-workflow-macro", inputText: "반사광 레이어의 불투명도 12.5% 조정. studio.photoshop.apply_layer_fx만 허용.",
+    }, { fetchImpl: async () => { throw new Error("offline"); } });
+    expect(result.rawData.steps).toEqual([]);
+    expect(result.rawData.summary).toEqual(expect.stringContaining("반사광 레이어의 불투명도 12.5%"));
+    expect(result.bulletsKo).toContain("자동 단계 없음 · 수동 확인 대기");
+    expect(result.bulletsKo).toContain(result.rawData.summary);
+  });
+
   it("서버 연결이 끊겨도 6컷 원고의 화자, 무언 연기, 마지막 컷을 화면과 복사 결과에 담는다", async () => {
     const result = await runFreeAiZeroBillAssist({
       mode: "script-to-cuts", projectTitle: "우산",
@@ -105,6 +115,16 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     expect(many.bulletsKo.join("\n")).not.toContain("#999");
   });
 
+  it("기기에서 국소 보정할 위치와 제외 영역을 복사 목록에 남기고 전체 노출은 중립값으로 시작한다", () => {
+    const result = buildLocalZeroCostAssistResult({
+      mode: "photoshop-fx-recipe", inputText: "가장자리의 작은 기포에만 빛을 더한다. 검은 활자와 여백은 그대로 둔다.",
+    });
+    expect(result.rawData.cameraRaw).toMatchObject({ exposure: 0, grainPct: 0 });
+    expect(result.rawData.summary).toBe(result.bulletsKo[0]);
+    expect(result.bulletsKo.some((line) => line.includes("작은 기포") && line.includes("1px"))).toBe(true);
+    expect(result.bulletsKo.some((line) => line.includes("검은 활자와 여백") && line.includes("보호 영역"))).toBe(true);
+  });
+
   it("전송 전에 이메일·전화번호·API 키를 클라이언트에서 먼저 마스킹한다", () => {
     const fakeKey = ["sk", "test", "abcdefghijklmnopqr"].join("-");
     const masked = maskCreatorInputBeforeAiSend(
@@ -143,7 +163,8 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     }));
     const result = await runFreeAiZeroBillAssist({ mode, inputText: "게시 전 확인해 주세요." }, { fetchImpl });
     expect(fetchImpl).toHaveBeenCalledOnce();
-    expect(result.headlineKo).toBe(data.readinessSummary);
+    expect(result.headlineKo).toContain("납품 파일의 실제 내용은 확인 전");
+    expect(result.headlineKo.split("\n").at(-1)).toBe(data.readinessSummary);
     expect(result.bulletsKo).toHaveLength(11);
     expect(result.bulletsKo[0]).toContain(data.episodeBlurbSuggestion);
     checks.forEach(({ category, severity, detail }, i) => {
@@ -167,11 +188,16 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     expect(result.bulletsKo.at(-1)).toBe("[필수 수정] 소품 · 12컷 오른손 — 접힌 우산을 펼쳐 든다. · 수정안 · 우산을 펴는 컷을 먼저 둔다.");
   });
 
-  it.each(["cloud-free", "local-fallback"] as const)("스크롤 구간별 권장 간격을 보존하고 실제 평가만 점수로 표시한다 (%s)", async (tier) => {
+  it.each([
+    ["cloud-free", 0, "엔딩 흡인력 AI 추정 0/100"],
+    ["cloud-free", null, "엔딩 점수 미평가"],
+    ["local-fallback", 82, "엔딩 점수 미평가"],
+    ["local-fallback", null, "엔딩 점수 미평가"],
+  ] as const)("스크롤 구간별 권장 간격과 엔딩 평가 상태를 보존한다 (%s, %s)", async (tier, score, scoreLabel) => {
     const mode = "scroll-pacing-auditor";
     const gaps = [40, 60, 80, 100, 120];
     const data = {
-      rhythmVerdict: "빈 좌석이 보이는 순간을 길게 유지하세요.", cliffhangerScore: 73,
+      rhythmVerdict: "빈 좌석이 보이는 순간을 길게 유지하세요.", cliffhangerScore: score,
       cliffhangerTip: "마지막 표정을 한 컷 더 잡으세요.", averageGapPx: 80,
       beatPacing: gaps.map((recommendedGapPx, i) => ({
         section: `${i + 1}번째 전환`, pacing: "steady", recommendedGapPx, readerRetentionNote: `전환 ${i + 1}을 확인하세요.`,
@@ -185,7 +211,8 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     for (const beat of data.beatPacing) expect(text).toContain(`${beat.section} · ${beat.recommendedGapPx}px`);
     expect(text).toContain("구간 평균 80px");
     expect(text).toContain(data.cliffhangerTip);
-    expect(text.includes("73/100")).toBe(tier === "cloud-free");
+    expect(text).toContain(scoreLabel);
+    if (tier === "local-fallback" || score === null) expect(text).not.toContain("/100");
   });
 
   it("필수 번역이 누락된 용어집은 완성된 검수 결과로 표시하지 않고 기기 내 안내로 전환한다", async () => {

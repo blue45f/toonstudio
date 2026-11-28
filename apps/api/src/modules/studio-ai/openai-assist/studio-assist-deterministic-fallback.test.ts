@@ -84,6 +84,113 @@ describe("로컬 창작 보조의 원문 보존", () => {
     expect(result.data.balloons[0].line).toBe(inputText);
   });
 
+  it("소품의 문구 뒤에 표시된 화자의 발화를 대사로 선택하고 원문의 부정과 높임말을 유지한다", () => {
+    const inputText = "1컷. 액자 뒷면의 보증문. ‘그림은 예 또는 아니오로만 답합니다.’\n2컷: 영애: “오늘은 오지 마세요.” 초상화: “묻지 않겠습니다.”";
+    const result = buildDeterministicAssistResult("dialogue-polish", { inputText });
+    if (result.mode !== "dialogue-polish") throw new Error("대사 모드 필요");
+    expect(result.data.balloons).toHaveLength(3);
+    for (const balloon of result.data.balloons) expect(balloon).toMatchObject({ line: "오늘은 오지 마세요.", subBubble: "" });
+    expect(result.data.readabilityNote).toContain("첫 대사");
+  });
+
+  it("화자가 직접 말한다고 명시된 첫 발화는 뒤의 이름표가 있는 대사보다 먼저 고른다", () => {
+    const result = buildDeterministicAssistResult("dialogue-polish", { inputText: "언니가 묻는다. “너도 갈래?” 동생: “아니.”" });
+    if (result.mode !== "dialogue-polish") throw new Error("대사 모드 필요");
+    expect(result.data.balloons[0].line).toBe("너도 갈래?");
+  });
+
+  it("작가가 화자의 첫 발화를 작은따옴표로 썼을 때도 문답 순서를 보존한다", () => {
+    const result = buildDeterministicAssistResult("dialogue-polish", { inputText: "민서: ‘안 갈래요.’ 정우: “정말?”" });
+    if (result.mode !== "dialogue-polish") throw new Error("대사 모드 필요");
+    expect(result.data.balloons[0].line).toBe("안 갈래요.");
+  });
+
+  it("콘티의 한 컷에 함께 나오는 문답은 화자 순서를 지키고 뒤의 지문·소품·무언 컷은 말풍선에서 제외한다", () => {
+    const inputText = "1컷. 안내문: ‘촉수 엄금.’\n2컷. 영애: “검은 옷 입은 거 싫어요?” 초상화: “아니오.” 영애가 치맛단의 흙을 턴다.\n3컷. 그림의 눈을 가린다.";
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["", "영애: 검은 옷 입은 거 싫어요?\n초상화: 아니오.", ""]);
+    expect(result.data.cuts[1].visualAction).toContain("영애가 치맛단의 흙을 턴다.");
+    expect(validateAssistModeStructuredOutput(result.mode, result.data)).not.toBeNull();
+  });
+
+  it("인물이 제목을 인용하거나 낱말을 강조할 때 화자의 문장을 끊지 않는다", () => {
+    for (const source of ["‘내일’은 안 돼.", "“정말?”이라는 제목은 어때?"]) {
+      const result = buildDeterministicAssistResult("script-to-cuts", { inputText: "민서: " + source });
+      if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+      expect(result.data.cuts[0].dialogue).toBe(source);
+    }
+  });
+
+  it("같은 줄의 따옴표 없는 후속 대사도 끝까지 보존한다", () => {
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText: "민서: “조심해.” 정우: 알았어, 천천히 갈게." });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts[0].dialogue).toContain("정우: 알았어, 천천히 갈게.");
+  });
+
+  it("끝부호를 생략한 두 발화도 다음 화자 표기까지 한 사람씩 읽는다", () => {
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText: "민서: “응” 정우: “그래”" });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts[0].dialogue).toBe("민서: 응\n정우: 그래");
+  });
+
+  it("한 화자의 연속 말풍선은 지문이나 다음 화자 표기가 나올 때까지 원래 순서로 보존한다", () => {
+    const result = buildDeterministicAssistResult("script-to-cuts", {
+      inputText: "1컷: 민지: “가지 마.” “내 말 들려?”\n2컷: 민지: “응” “알았어” 정우: “난 남을게.” “정말이야.”",
+    });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["가지 마.\n내 말 들려?", "민지: 응\n알았어\n정우: 난 남을게.\n정말이야."]);
+  });
+
+  it("연속 발화 뒤 지문·소품 인용과 낱말 뒤에 붙은 조사를 같은 화자의 대사로 옮기지 않는다", () => {
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText: [
+      "1컷: 민지: “기다려.” 민지가 안내판을 본다. “출입 금지.”",
+      "2컷: 민지: “저기 봐.” ‘출입 금지.’",
+      "3컷: 민지: “저기 봐.” “출입 금지.”라고 적혀 있다.",
+      "4컷: 민지: “저기 봐.” “출입 금지.” 라고 적혀 있다.",
+    ].join("\n") });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["기다려.", "저기 봐.", "저기 봐.", "저기 봐."]);
+    expect(result.data.cuts.every(cut => cut.visualAction.includes("출입 금지."))).toBe(true);
+  });
+
+  it("독립된 원고 표지 위의 브리프에서 명시한 컷 수를 적용하고 작화 지시는 컷에 넣지 않는다", () => {
+    const inputText = "[창작자 입력]\r\n정확히 2컷으로 나눠 주세요.\r\n시작과 결말을 지켜 주세요.\r\n\r\n [원고] \r\n1컷. 비가 온다.\r\n2컷. 문이 열린다.\r\n3컷. 해가 난다.";
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.visualAction)).toEqual(["비가 온다.\n문이 열린다.", "해가 난다."]);
+    expect(result.data.cuts.map(cut => cut.cutNumber)).toEqual([1, 2]);
+  });
+
+  it("본문 속 표기와 원고 안의 컷 수 대사를 지시로 사용하지 않는다", () => {
+    const inputText = "1컷. 민서는 [원고] 단추를 누른다.\n2컷. 정우: “2컷으로 나눠 주세요.”\n3컷. 조명이 꺼진다.";
+    for (const manuscript of [inputText, "원문을 보존하세요.\n[원고]\n" + inputText]) {
+      const result = buildDeterministicAssistResult("script-to-cuts", { inputText: manuscript });
+      if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+      expect(result.data.cuts).toHaveLength(3);
+      expect(result.data.cuts[0].visualAction).toBe("민서는 [원고] 단추를 누른다.");
+      expect(result.data.cuts[1].dialogue).toBe("2컷으로 나눠 주세요.");
+    }
+  });
+
+  it("①부터 이어지는 원고의 한 줄 컷 번호를 따르고 대사·소품 속 순번을 보존한다", () => {
+    const inputText = "① 영애: “정답은 ② 번이에요.” ② 벽의 안내문. ‘① 들어오기 ② 기다리기.’ ③ 영애가 눈을 감는다.";
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.visualAction)).toEqual([
+      "영애: “정답은 ② 번이에요.”", "벽의 안내문. ‘① 들어오기 ② 기다리기.’", "영애가 눈을 감는다.",
+    ]);
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["정답은 ② 번이에요.", "", ""]);
+  });
+
+  it.each(["민서는 ① 카드와 ② 카드를 찾는다.", "① 첫 카드만 확인한다.", "① 첫 카드와 ③ 마지막 카드를 찾는다."])(
+    "문장 안의 순번과 불연속 번호는 컷 표지에서 제외한다 (%s)", (inputText) => {
+      const result = buildDeterministicAssistResult("script-to-cuts", { inputText });
+      if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+      expect(result.data.cuts.map(cut => cut.visualAction)).toEqual([inputText]);
+    },
+  );
+
   it("장문의 단일 발화는 결과 계약과 이모지 경계를 지키고 생략을 알린다", () => {
     const result = buildDeterministicAssistResult("dialogue-polish", { inputText: "가" + "🎨".repeat(300) });
     if (result.mode !== "dialogue-polish") throw new Error("대사 모드 필요");

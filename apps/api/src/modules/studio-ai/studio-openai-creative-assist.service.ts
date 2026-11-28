@@ -14,6 +14,7 @@ import type { ApprovedDialoguePair } from "@toonstudio/contracts/studio-approved
 
 import { prepareApprovedDialogueReview } from "./openai-assist/approved-dialogue-review";
 import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
+import { checkScrollEndingEvidence, withoutUnverifiedEndingScore } from "./openai-assist/studio-scroll-ending-evidence";
 import {
   DEFAULT_OPENAI_MODEL,
   isOpenAiFreeShareModel,
@@ -222,7 +223,7 @@ export class StudioOpenAiCreativeAssistService {
 
     let structured: OpenAiAssistStructuredResult;
     try {
-      structured = this.parseModeOutput(input.mode, cascade.content);
+      structured = this.parseModeOutput(input.mode, cascade.content, maskedInput.inputText);
     } catch (error) {
       quota.release();
       throw error;
@@ -258,14 +259,15 @@ export class StudioOpenAiCreativeAssistService {
       return this.assistWithZeroBillCascade(actorIdentifier, input, options);
     }
 
+    const prepared = this.prepareMaskedUserPrompt(input);
     return this.requestStructuredCompletion(actorIdentifier, {
-      ...this.prepareMaskedUserPrompt(input),
+      ...prepared,
       systemInstruction: buildModeSystemInstruction(input.mode),
       schemaSpec: MODE_JSON_SCHEMAS[input.mode],
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       assistMode: input.mode,
       rawInputLength: input.inputText.length,
-      parse: (raw) => this.parseModeOutput(input.mode, raw),
+      parse: (raw) => this.parseModeOutput(input.mode, raw, prepared.maskedInput.inputText),
     }, options);
   }
 
@@ -545,6 +547,7 @@ export class StudioOpenAiCreativeAssistService {
   private parseModeOutput(
     mode: StudioOpenAiAssistMode,
     rawContent: string,
+    maskedInputText: string,
   ): OpenAiAssistStructuredResult {
     let parsedJson: unknown;
     try {
@@ -563,18 +566,25 @@ export class StudioOpenAiCreativeAssistService {
         message: "AI 보조 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
       });
     }
-    if (validated.mode === "scroll-pacing-auditor" && validated.data.beatPacing.length > 0) {
-      const meanGap = Math.round(
-        validated.data.beatPacing.reduce((sum, item) => sum + item.recommendedGapPx, 0) /
-          validated.data.beatPacing.length,
-      );
-      const syncedAverageGapPx = Math.min(1_600, Math.max(16, meanGap));
-      if (syncedAverageGapPx !== validated.data.averageGapPx) {
-        return {
-          mode: "scroll-pacing-auditor",
-          data: { ...validated.data, averageGapPx: syncedAverageGapPx },
-        };
-      }
+    if (validated.mode === "scroll-pacing-auditor") {
+      const data = validated.data;
+      const totalGapPx = data.beatPacing.reduce((sum, item) => sum + item.recommendedGapPx, 0);
+      const averageGapPx = Math.round(totalGapPx / data.beatPacing.length);
+      const evidence = checkScrollEndingEvidence(maskedInputText, data.cliffhangerTip);
+      const cliffhangerScore = evidence === "matched" ? data.cliffhangerScore : null;
+      const pendingTip = "엔딩 근거를 원문과 대조할 수 없어 점수를 보류했습니다. 평가할 회차 하나의 마지막 컷이나 끝 문장을 알려 주세요.";
+      return {
+        mode: validated.mode,
+        data: {
+          ...data,
+          averageGapPx,
+          cliffhangerScore,
+          ...(cliffhangerScore === null ? {
+            rhythmVerdict: withoutUnverifiedEndingScore(data.rhythmVerdict, "구간별 권장 여백을 확인하세요.", maskedInputText),
+            cliffhangerTip: evidence === "unmatched" ? pendingTip : withoutUnverifiedEndingScore(data.cliffhangerTip, pendingTip, maskedInputText),
+          } : {}),
+        },
+      };
     }
     return validated;
   }

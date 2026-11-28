@@ -201,7 +201,7 @@ export interface StudioOpenAiPhotoshopFxRecipeData {
 export interface StudioOpenAiScrollPacingAuditorData {
   readonly rhythmVerdict: string;
   readonly averageGapPx: number;
-  readonly cliffhangerScore: number;
+  readonly cliffhangerScore: number | null;
   readonly cliffhangerTip: string;
   readonly beatPacing: readonly {
     readonly section: string;

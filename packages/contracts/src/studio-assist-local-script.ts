@@ -6,9 +6,28 @@ type LocalData<M extends OpenAiAssistStructuredResult["mode"]> =
   Extract<OpenAiAssistStructuredResult, { mode: M }>["data"];
 
 const quotedText = /“([^”]+)”|‘([^’]+)’|"([^"]+)"|「([^」]+)」|'([^'\n]+)'/gu;
+const stageLabel = /(?:장면|지문|배경|효과음|쪽지|메모|자막|간판|회상|현재|과거|시간|장소|줄거리|제목|설명|연출|보증문|안내문|전광판|단말기|화면|SFX)$/iu;
+const speakerPrefix = /(?:^|[\n.!?。！？”’"'」]|(?:컷\s*\d{1,2}|\d{1,2}\s*컷)\s*[:：])[ \t]*([\p{L}][\p{L}\p{N}_ ·]{0,18})\s*[:：][ \t]*$/u;
+const writtenCue = /(?:보증문|안내문|자막|간판|시간표|영수증|화면|전광판|(?:적혀|쓰여|새겨져|인쇄되어)\s*있다)[.:：]$/u;
 
 function quoteBody(match: RegExpMatchArray): string {
   return match.slice(1).find((body) => body !== undefined)?.trim() ?? "";
+}
+
+function isWholeUtterance(input: string, quote: RegExpMatchArray): boolean {
+  const tail = input.slice((quote.index ?? 0) + quote[0].length);
+  const next = tail.trimStart();
+  if (!next || next.startsWith(quote[0][0])) return true;
+  if (/^(?:이?라고|이?라는)\s*(?:적|쓰|써|새겨|인쇄|표시|문구|글씨)/u.test(next)) return false;
+  const nextSpeaker = next.match(spokenLine);
+  if (nextSpeaker && !stageLabel.test(nextSpeaker[1].trim())) return true;
+  // ‘내일’은 안 돼처럼 발화 안에서 한 낱말만 인용한 경우에는 대사 전체를 보존한다.
+  return /^\s/u.test(tail) && (/^[\r\n]/u.test(tail) || /[.!?…。！？]$/u.test(quoteBody(quote)));
+}
+
+function speakerOfQuote(input: string, quote: RegExpMatchArray): string | undefined {
+  const speaker = input.slice(0, quote.index).match(speakerPrefix)?.[1].trim();
+  return speaker && !stageLabel.test(speaker) && isWholeUtterance(input, quote) ? speaker : undefined;
 }
 
 // 결과 계약은 UTF-16 길이를 검사하므로 이모지의 서로게이트 쌍 중간에서는 자르지 않는다.
@@ -40,12 +59,18 @@ const conversationalForms: Readonly<Record<string, string>> = {
 };
 
 export function buildLocalDialogueLayout(input: string): LocalData<"dialogue-polish"> {
-  const quotes = [...input.matchAll(quotedText)].filter((match) => {
+  const candidates = [...input.matchAll(quotedText)].flatMap((match) => {
     const before = input.slice(0, match.index).trimEnd();
     const after = input.slice(match.index + match[0].length).trimStart();
-    return (!before && !after) || /(?:대사|말한다|묻는다|대답한다)\s*[:：.]?$/u.test(before)
-      || ((before.length === 0 || /[.!?。！？]$/u.test(before)) && /[.!?…。！？]$/u.test(quoteBody(match)));
-  }).map(quoteBody).filter(Boolean);
+    const text = quoteBody(match);
+    const introduced = /(?:대사|말한다|묻는다|대답한다)\s*[:：.]?$/u.test(before);
+    const standalone = (!before && !after) || ((!before || /[.!?。！？]$/u.test(before)) && /[.!?…。！？]$/u.test(text));
+    if (!text || !(introduced || standalone || speakerOfQuote(input, match))) return [];
+    return [{ text, written: writtenCue.test(before) }];
+  });
+  // 소품에 적혔다고 명시한 인용은 다른 발화 후보가 있을 때만 뒤로 보낸다.
+  const speech = candidates.filter((candidate) => !candidate.written);
+  const quotes = (speech.length ? speech : candidates).map((candidate) => candidate.text);
   const source = (quotes[0] || input.replace(/^\s*대사\s*[:：]\s*/u, "") || input).replace(/\s+/gu, " ").trim();
   // 최장 300 + 240자에 경계 이모지 하나의 여지를 둔다.
   const text = excerpt(source, 539);
@@ -84,10 +109,30 @@ export function buildLocalDialogueLayout(input: string): LocalData<"dialogue-pol
 const cutHeader = /^\s*(?:컷\s*\d{1,2}|\d{1,2}\s*컷)(?=[\s.:：)\]-]|$)\s*[.:：)\]-]?\s*/u;
 const requestedCutCount = /^\s*(?:정확히\s*)?(\d{1,2})\s*컷(?:으로|로)\s*(?:나눠|나누어|분할해|구성해)\s*주세요[.!]?\s*/u;
 const spokenLine = /^([\p{L}][\p{L}\p{N}_ ·]{0,18})\s*[:：]\s*(.+)$/u;
-const stageLabel = /(?:장면|지문|배경|효과음|쪽지|메모|자막|간판|회상|현재|과거|시간|장소|줄거리|제목|설명|연출|SFX)$/iu;
 
 function spokenText(beat: string): string {
   const labeled = beat.match(spokenLine);
+  const turns: Array<{ speaker: string; text: string }> = [];
+  let lastEnd = 0;
+  let opening = "";
+  for (const quote of beat.matchAll(quotedText)) {
+    const speaker = speakerOfQuote(beat, quote);
+    const lastTurn = turns.at(-1);
+    if (speaker) {
+      turns.push({ speaker, text: quoteBody(quote) });
+    } else if (lastTurn && opening === quote[0][0] && !beat.slice(lastEnd, quote.index).trim() && isWholeUtterance(beat, quote)) {
+      lastTurn.text += "\n" + quoteBody(quote);
+    } else {
+      continue;
+    }
+    lastEnd = quote.index + quote[0].length;
+    opening = quote[0][0];
+  }
+  // 따옴표 없이 화자가 이어 말하는 대본은 기존 원문 전체를 보존한다.
+  const hasPlainSpeaker = /(?:^|[.!?。！？”’"'」])\s*[\p{L}][\p{L}\p{N}_ ·]{0,18}[:：]\s*[^\s“‘"「']/u.test(beat);
+  if (turns.length && !hasPlainSpeaker) {
+    return turns.map(({ speaker, text }) => turns.length === 1 ? text : `${speaker}: ${text}`).join("\n");
+  }
   if (labeled && !stageLabel.test(labeled[1].trim())) {
     const body = labeled[2].trim();
     const quote = [...body.matchAll(quotedText)][0];
@@ -133,10 +178,25 @@ function splitSceneSentences(line: string): string[] {
     !(/(?:인물|대사|사건|장면)/u.test(beat) && /(?:추가하지|넣지)\s*마세요[.!]?$/u.test(beat)));
 }
 
+function expandCircledCutHeaders(script: string): string {
+  if (!/^①\s/u.test(script)) return script;
+  // 인용문은 한 토큰으로 읽으므로 대사·소품 안에 적힌 순번은 구분자가 되지 않는다.
+  const tokens = new RegExp(quotedText.source + "|(?<!\\S)[①-⑳](?=\\s)", "gu");
+  const markers = [...script.matchAll(tokens)].filter((match) => match[0].length === 1);
+  if (markers.length < 2 || markers.some((marker, i) => marker[0].charCodeAt(0) !== 0x2460 + i)) return script;
+  return markers.map((marker, i) =>
+    `${i + 1}컷. ${script.slice(marker.index + 1, markers[i + 1]?.index).trim()}`,
+  ).join("\n");
+}
+
 export function buildLocalScriptCuts(input: string, title: string): LocalData<"script-to-cuts"> {
-  const requested = input.match(requestedCutCount);
-  const script = input.slice(requested?.[0].length ?? 0).trim();
-  const lines = script.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
+  const marker = /^[ \t]*\[원고\][ \t]*(?:\r?\n|$)/mu.exec(input);
+  const requested = marker
+    ? input.slice(0, marker.index).split(/\r?\n/u).map((line) => line.match(requestedCutCount)).find(Boolean)
+    : input.match(requestedCutCount);
+  const scriptStart = marker ? marker.index + marker[0].length : requested?.[0].length ?? 0;
+  const script = input.slice(scriptStart).trim();
+  const lines = expandCircledCutHeaders(script).split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
   const beats: string[] = [];
   if (lines.some((line) => cutHeader.test(line))) {
     for (const line of lines) {

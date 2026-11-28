@@ -656,7 +656,9 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
         mode,
         projectTitle: "옥상 우산",
         genreOrTone: "잔잔한 일상",
-        inputText: "담당자 writer@example.test\n1컷. 서리가 옥상 문을 연다.\n2컷. 민서: 우산은 여기 두고 갈게.",
+        inputText: mode === "mcp-workflow-macro"
+          ? "담당자 writer@example.test\n새 캔버스 920×1440px를 만들고 출고 점검"
+          : "담당자 writer@example.test\n1컷. 서리가 옥상 문을 연다.\n2컷. 민서: 우산은 여기 두고 갈게.",
       });
       const { request, response } = createRequestResponseHarness();
       const guestResult = await freeController.creativeAssist(undefined, body, request, response);
@@ -1031,6 +1033,10 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(dialogueInstruction).toContain("총 3개");
     expect(dialogueInstruction).toContain("각각 한 번씩");
     expect(dialogueInstruction).toContain("숫자나 끝자리를 지어내지");
+    const cutsInstruction = buildModeSystemInstruction("script-to-cuts");
+    expect(cutsInstruction).toContain("단서가 처음 공개되는 컷");
+    expect(cutsInstruction).toContain("서로 맞지 않는 실측값");
+    expect(cutsInstruction).toContain("발화가 없는 컷");
     expect(buildModeSystemInstruction("mcp-workflow-macro")).toContain("240자 이내");
     expect(buildModeSystemInstruction("export-preflight-coach")).toContain("연속성 fix");
     expect(buildModeSystemInstruction("idea-remix")).toContain("메타 식별자");
