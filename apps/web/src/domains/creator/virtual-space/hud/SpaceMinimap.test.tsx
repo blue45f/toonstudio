@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { studioVirtualCampusManifest } from "../studio-virtual-space-campus-world";
 import { studioVirtualToonHqManifest } from "../office2d/hq/toon-hq-manifest";
+import type { StudioVirtualSpaceWalkReport } from "../studio-virtual-space-engine-bridge";
+import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { SpaceMinimap } from "./SpaceMinimap";
 import { spaceMinimapPeerTarget } from "./space-minimap-labels";
 
@@ -11,6 +13,42 @@ afterEach(cleanup);
 const campus = studioVirtualCampusManifest(false);
 
 describe("SpaceMinimap quick travel", () => {
+  it("막힌 목적지를 다시 확인할 때 검색·현재 위치·조작을 유지한다", async () => {
+    const manifest = studioVirtualToonHqManifest(false);
+    const onMoveTo = vi.fn();
+    const onWalkAccepted = vi.fn();
+    const cancel = vi.fn();
+    const onRequestWalk = vi.fn((_point: StudioVirtualSpacePoint, _report: StudioVirtualSpaceWalkReport) => cancel);
+    const { unmount } = render(<SpaceMinimap manifest={manifest} self={{ x: 336, y: 1470 }} people={[]} currentRoomId="hq-lobby"
+      variant="full" onMoveTo={onMoveTo} onRequestWalk={onRequestWalk} onWalkAccepted={onWalkAccepted} />);
+    fireEvent.click(screen.getByRole("button", { name: "목적지 목록" }));
+    const input = screen.getByRole("searchbox", { name: "방·좌석·도구 검색" }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Review seat 2" } });
+    fireEvent.click(screen.getByRole("button", { name: "PD 리뷰 좌석 2로 걸어가기" }));
+    expect(screen.getByText("경로를 확인하고 있어요.")).toBeTruthy();
+    expect(onWalkAccepted).not.toHaveBeenCalled();
+    act(() => onRequestWalk.mock.calls[0]![1]("unreachable"));
+    expect(screen.getByText("이 목적지에는 지금 갈 수 없어요.")).toBeTruthy();
+    expect(input.value).toBe("Review seat 2");
+    expect(screen.getByText("현재 위치", { exact: true })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "경로 다시 확인" }));
+    expect(onRequestWalk.mock.calls[1]?.[0]).toEqual(onRequestWalk.mock.calls[0]?.[0]);
+    act(() => onRequestWalk.mock.calls[0]![1]("walking"));
+    expect(onWalkAccepted).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "다른 목적지 고르기" }));
+    await waitFor(() => expect(document.activeElement).toBe(input));
+    expect(input.value).toBe("Review seat 2");
+    expect(cancel).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "PD 리뷰 좌석 2로 걸어가기" }));
+    act(() => onRequestWalk.mock.calls[2]![1]("walking"));
+    expect(onWalkAccepted).toHaveBeenCalledOnce();
+    expect(onMoveTo).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "PD 리뷰 좌석 2로 걸어가기" }));
+    unmount();
+    expect(cancel).toHaveBeenCalledTimes(2);
+    act(() => onRequestWalk.mock.calls[3]![1]("arrived"));
+    expect(onWalkAccepted).toHaveBeenCalledOnce();
+  });
   it("구역 걸어가기는 스폰으로 걷고, 번개 버튼은 바로 가기를 요청한다", () => {
     const onMoveTo = vi.fn(), onJumpTo = vi.fn();
     render(<SpaceMinimap manifest={campus} self={{ x: 448, y: 540 }} people={[]}

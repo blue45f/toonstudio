@@ -1,5 +1,5 @@
 import { Footprints, LocateFixed, MapPin, Search, Star, Zap } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, type RefObject } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
@@ -14,13 +14,14 @@ export interface SpaceMapRoom {
 
 const searchText = (text: string) => text.normalize("NFKC").trim().toLocaleLowerCase();
 
-export function SpaceMapDestinations({ manifest, rooms, currentRoomId, recommended, onMoveTo, onJumpTo }: {
+export function SpaceMapDestinations({ manifest, rooms, currentRoomId, recommended, onMoveTo, onJumpTo, searchRef }: {
   readonly manifest: StudioVirtualSpaceWorldManifest;
   readonly rooms: readonly SpaceMapRoom[];
   readonly currentRoomId: string | null;
   readonly recommended: ReadonlySet<string>;
   readonly onMoveTo: (point: StudioVirtualSpacePoint) => void;
   readonly onJumpTo?: (point: StudioVirtualSpacePoint) => void;
+  readonly searchRef?: RefObject<HTMLInputElement | null>;
 }) {
   const bt = useBilingual("SpaceMapDestinations");
   const listId = useId();
@@ -58,7 +59,7 @@ export function SpaceMapDestinations({ manifest, rooms, currentRoomId, recommend
   return <section className="space-map-directory" aria-label={bt("목적지 목록", "Destinations")}>
     <label className="space-map-directory__search">
       <Search size={17} aria-hidden />
-      <input type="search" value={query} maxLength={120} autoComplete="off"
+      <input ref={searchRef} type="search" value={query} maxLength={120} autoComplete="off"
         aria-label={bt("방·좌석·도구 검색", "Search rooms, seats and tools")}
         placeholder={bt("방·좌석·도구 검색", "Search rooms, seats and tools")}
         onChange={event => setQuery(event.target.value)} />

@@ -59,6 +59,14 @@ export interface StudioVirtualSpaceConversationFocus {
   readonly npcId?: string;
 }
 
+export type StudioVirtualSpaceWalkResult = "walking" | "arrived" | "already-there" | "unreachable" | "cancelled";
+export type StudioVirtualSpaceWalkReport = (result: StudioVirtualSpaceWalkResult) => void;
+
+interface StudioVirtualSpaceMoveRequest {
+  readonly point: StudioVirtualSpacePoint;
+  readonly report: StudioVirtualSpaceWalkReport | undefined;
+}
+
 export class StudioVirtualSpaceEngineBridge {
   static activeInstance: StudioVirtualSpaceEngineBridge | null = null;
   /** 사용자 줌 목표. HUD(버튼·메뉴·단축키)가 바꾸고 캔버스(휠·매 프레임)가 읽는다. 값은 이 기기에 저장된다. */
@@ -66,7 +74,7 @@ export class StudioVirtualSpaceEngineBridge {
   /** 카메라 둘러보기(끌어서 옮기기·내 위치로). 입력이 끌기를 쌓고 캔버스가 매 프레임 반영한다. 저장하지 않는다. */
   readonly cameraPan = new StudioCameraPanStore();
   private joystick: StudioVirtualSpacePoint = { x: 0, y: 0 };
-  private moveTarget: StudioVirtualSpacePoint | null = null;
+  private moveTarget: StudioVirtualSpaceMoveRequest | null = null;
   private followingPeerId: string | null = null;
   private followConfig: StudioFollowConfig = DEFAULT_STUDIO_FOLLOW_CONFIG;
   private stopRevision = 0;
@@ -122,19 +130,39 @@ export class StudioVirtualSpaceEngineBridge {
   getJoystick(): StudioVirtualSpacePoint {
     return this.joystick;
   }
-  requestMove(point: StudioVirtualSpacePoint): void {
-    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
-    this.moveTarget = { x: point.x, y: point.y };
+  requestMove(point: StudioVirtualSpacePoint, report?: StudioVirtualSpaceWalkReport): (() => void) | undefined {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      report?.("unreachable");
+      return undefined;
+    }
+    const request = { point: { x: point.x, y: point.y }, report };
     this.followingPeerId = null;
+    this.replaceMoveRequest(request);
+    return report ? () => {
+      if (this.moveTarget === request) this.replaceMoveRequest(null);
+    } : undefined;
   }
-  consumeMoveTarget(): StudioVirtualSpacePoint | null {
+  private replaceMoveRequest(request: StudioVirtualSpaceMoveRequest | null): void {
+    const previous = this.moveTarget;
+    this.moveTarget = request;
+    previous?.report?.("cancelled");
+  }
+  consumeMoveRequest(): StudioVirtualSpaceMoveRequest | null {
     const target = this.moveTarget;
     this.moveTarget = null;
     return target;
   }
+  consumeMoveTarget(): StudioVirtualSpacePoint | null {
+    const request = this.consumeMoveRequest();
+    if (request?.report) {
+      request.report("cancelled");
+      return null;
+    }
+    return request?.point ?? null;
+  }
   setFollowingPeer(sessionId: string | null): void {
     this.followingPeerId = sessionId;
-    if (sessionId) this.moveTarget = null;
+    if (sessionId) this.replaceMoveRequest(null);
   }
   getFollowingPeer(): string | null {
     return this.followingPeerId;
@@ -199,7 +227,7 @@ export class StudioVirtualSpaceEngineBridge {
   requestTeleport(point: StudioVirtualSpacePoint): void {
     if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
     this.teleportTarget = { x: point.x, y: point.y };
-    this.moveTarget = null;
+    this.replaceMoveRequest(null);
   }
   /** Canvas 전용. */
   consumeTeleport(): StudioVirtualSpacePoint | null {
@@ -219,9 +247,9 @@ export class StudioVirtualSpaceEngineBridge {
   clearMovement(): void {
     this.stopRevision += 1;
     this.joystick = { x: 0, y: 0 };
-    this.moveTarget = null;
     this.teleportTarget = null;
     this.followingPeerId = null;
+    this.replaceMoveRequest(null);
   }
   /** 고스트 모드 켜기/끄기 (G키 토글). 트랙3의 통과 판정이 이 플래그를 읽는다. */
   setGhostMode(enabled: boolean): void {

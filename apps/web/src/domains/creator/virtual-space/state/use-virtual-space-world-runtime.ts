@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { StudioLiveCollaborationContextValue } from "../../live/studio-live-collaboration-context";
-import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
+import type { StudioVirtualSpaceEngineBridge, StudioVirtualSpaceWalkReport } from "../studio-virtual-space-engine-bridge";
 import { isStudioVirtualCampusRoom, resolveStudioVirtualBuiltinWorld, studioVirtualCampusZoneMeta } from "../studio-virtual-space-campus-world";
 import { studioCharacterAppearanceForAvatarIndex, STUDIO_CHARACTER_SKINS } from "../studio-virtual-space-character-skins";
 import { studioVirtualDecorationNavigationWorld } from "../studio-virtual-space-decoration-layout";
@@ -270,12 +270,16 @@ export function useVirtualSpaceWorldRuntime(input: UseVirtualSpaceWorldRuntimeIn
     updatePosition(next.point, next.facing, next.zoneId);
   }, [markMoved, setMoveDestination, updatePosition, writeLocalPoseRef]);
 
-  const queuePathTo = useCallback((point: StudioVirtualSpacePoint) => {
-    if (!worldReady) return;
+  const queuePathTo = useCallback((point: StudioVirtualSpacePoint, report?: StudioVirtualSpaceWalkReport) => {
+    if (!worldReady) {
+      report?.("cancelled");
+      return undefined;
+    }
     cancelSlotsAndApproach();
     setFollowingPeer(null);
-    engineBridge.requestMove(point);
+    const cancel = engineBridge.requestMove(point, report);
     if (!engineReportsDestination) setMoveDestination(point);
+    return cancel;
   }, [cancelSlotsAndApproach, engineBridge, engineReportsDestination, setFollowingPeer, setMoveDestination, worldReady]);
 
   const quickTravelTo = useCallback((point: StudioVirtualSpacePoint) => {

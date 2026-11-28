@@ -6,7 +6,7 @@
  * 기존 Phaser·3D 스테이지와 같은 계약(StudioVirtualSpacePhaserCanvasProps)을 따른다.
  */
 import { StudioCameraPanRuntime } from "../studio-virtual-space-camera-pan";
-import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
+import type { StudioVirtualSpaceEngineBridge, StudioVirtualSpaceWalkResult } from "../studio-virtual-space-engine-bridge";
 import {
   STUDIO_VIRTUAL_SPACE_NEARBY_NPC_LIMIT,
   STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS,
@@ -285,15 +285,20 @@ export class Office2dRuntime {
     this.options.bridge.userZoom.apply(deltaY < 0 ? "in" : "out");
   }
 
-  private approach(target: StudioVirtualSpacePoint, pending: { readonly kind: "interaction" | "npc"; readonly id: string } | null): void {
+  private approach(
+    target: StudioVirtualSpacePoint,
+    pending: { readonly kind: "interaction" | "npc"; readonly id: string } | null,
+  ): StudioVirtualSpaceWalkResult {
     this.coworkers.vacateNear(target, this.now());
     const free = this.physics.nearestFreePoint(target.x, target.y, SELF_RADIUS, 160);
-    if (!free) return;
+    if (!free) return "unreachable";
     if (this.options.bridge.getFollowingPeer()) this.options.getCallbacks().onCancelFollow();
     const start = this.physics.navigationStart(this.self, SELF_RADIUS);
     const route = start ? findStudioWorldPath(this.options.manifest, start, free, SELF_RADIUS) : [];
     this.path = route.filter((point) => length(point.x - this.self.x, point.y - this.self.y) > 6);
     this.pending = route.length ? pending : null;
+    if (!route.length) return "unreachable";
+    return this.path.length ? "walking" : "already-there";
   }
 
   private inputVector(): { readonly x: number; readonly y: number } {
@@ -325,12 +330,18 @@ export class Office2dRuntime {
     const { bridge, manifest } = this.options;
     const teleport = bridge.consumeTeleport();
     if (teleport) this.teleport(teleport);
-    const move = bridge.consumeMoveTarget();
+    const move = bridge.consumeMoveRequest();
     if (move) {
-      const distance = length(move.x - this.self.x, move.y - this.self.y);
-      const crossRoom = studioWorldRoomAt(manifest, move) !== studioWorldRoomAt(manifest, this.self);
-      if (distance > 900 && crossRoom) this.teleport(move);
-      else this.approach(move, null);
+      const { point, report } = move;
+      const distance = length(point.x - this.self.x, point.y - this.self.y);
+      const crossRoom = studioWorldRoomAt(manifest, point) !== studioWorldRoomAt(manifest, this.self);
+      if (distance > 900 && crossRoom) {
+        const arrived = this.teleport(point, !report);
+        report?.(arrived ? "arrived" : "unreachable");
+      } else {
+        const result = this.approach(point, null);
+        report?.(result);
+      }
     }
     if (bridge.consumeUnstuck()) this.teleport(studioWorldSpawn(manifest).point);
     const emote = bridge.consumeEmote();
@@ -343,9 +354,11 @@ export class Office2dRuntime {
     if (effect && !this.options.getReducedMotion()) this.particles.emit("confetti", effect.point.x, effect.point.y - 30, 24, 1.2);
   }
 
-  private teleport(point: StudioVirtualSpacePoint): void {
+  private teleport(point: StudioVirtualSpacePoint, allowSpawnFallback = true): boolean {
     this.coworkers.vacateNear(point, this.now());
-    const free = this.physics.nearestFreePoint(point.x, point.y, SELF_RADIUS) ?? studioWorldSpawn(this.options.manifest).point;
+    const nearest = this.physics.nearestFreePoint(point.x, point.y, SELF_RADIUS);
+    if (!nearest && !allowSpawnFallback) return false;
+    const free = nearest ?? studioWorldSpawn(this.options.manifest).point;
     this.physics.teleport(SELF_BODY, free.x, free.y);
     this.presentedSelf = free;
     this.self.x = free.x;
@@ -358,6 +371,7 @@ export class Office2dRuntime {
     this.teleportVeil.trigger(this.now());
     this.particles.emit("ring", free.x, free.y, 1, 2);
     if (this.stuck.reset()) this.options.getCallbacks().onStuckChange?.(false);
+    return true;
   }
 
   private showEmote(actor: Office2dActor, kind: string, nowMs: number): void {
