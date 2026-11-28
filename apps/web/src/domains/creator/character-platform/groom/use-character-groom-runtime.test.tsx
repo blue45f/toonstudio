@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { MToonMaterial } from "@pixiv/three-vrm";
 import { Group, Mesh, Scene, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -42,14 +43,15 @@ function fixture(metaVersion: "0" | "1" = "1") {
 describe("useCharacterGroomRuntime 준비와 복원", () => {
   // 두 원본 배포 VRM의 rest 머리 회전과 얼굴 전방으로 구버전 가이드와 신형 가이드를 한 그룹에서 재생한다.
   it.each([
-    { name: "루미", meta: "1" as const, rotation: [0.5, 0.5, 0.5, 0.5] as const, front: 1 },
-    { name: "시온", meta: "0" as const, rotation: [0, 0, 0, 1] as const, front: -1 },
-  ])("$name 원본 축에서 새 가이드의 정수리·이마·폭을 맞추고 이전 가이드의 원시 좌표를 보존한다", async ({ meta, rotation, front }) => {
+    { name: "루미", meta: "1" as const, rotation: [0.5, 0.5, 0.5, 0.5] as const, front: 1, originalHairColor: "#6d4b3a" },
+    { name: "시온", meta: "0" as const, rotation: [0, 0, 0, 1] as const, front: -1, originalHairColor: "#131b2a" },
+  ])("$name 원본 축에서 새 가이드의 정수리·이마·폭을 맞추고 이전 가이드의 원시 좌표를 보존한다", async ({ meta, rotation, front, originalHairColor }) => {
     const f = fixture(meta);
     f.head.quaternion.set(...rotation);
     f.head.position.y = f.normalizedHead.position.y = 1.4;
     vi.mocked(executeCharacterAuthoringTaskInBrowser).mockImplementation(async (task) => executeCharacterAuthoringTask(task));
-    const hook = renderHook(({ document }) => useCharacterGroomRuntime({ h: f.h, document, modelKey: "model:test" }), { initialProps: { document: f.document } });
+    const originalHairMaterial = { baseColor: originalHairColor, rimColor: "#000000" };
+    const hook = renderHook(({ document }) => useCharacterGroomRuntime({ h: f.h, document, modelKey: "model:test", originalHairMaterial }), { initialProps: { document: f.document } });
     await waitFor(() => expect(hook.result.current.status).toBe("ready"));
     const fit = hook.result.current.readGuideHeadFit?.();
     if (!fit) throw new Error("두상 실측 결과가 없습니다.");
@@ -83,6 +85,47 @@ describe("useCharacterGroomRuntime 준비와 복원", () => {
     expect(front * tip.center.z).toBeGreaterThan(fit.faceFront);
     expect(tip.width).toBeLessThan(root.width * 0.3);
     expect(Math.abs(root.across.x)).toBeGreaterThan(0.85);
+    expect(root.width).toBeLessThan(worldRow(newMesh, 6).width * 0.5);
+    expect(root.center.y).toBeLessThan(f.normalizedHead.position.y + fit.center[1] + fit.radiusY * 0.92);
+    if (!(oldMesh.material instanceof MToonMaterial) || !(newMesh.material instanceof MToonMaterial)) throw new Error("원본과 신규 가닥의 MToon 재질이 필요합니다.");
+    expect(oldMesh.material.color.getHexString()).toBe("32251f");
+    expect(newMesh.material.color.getHexString()).toBe(originalHairColor.slice(1));
+    expect(newMesh.material.parametricRimColorFactor.getHexString()).toBe("000000");
+
+    const geometry = newMesh.geometry;
+    const indices = geometry.getIndex();
+    if (!indices) throw new Error("삼각형 인덱스가 없습니다.");
+    const positions = geometry.getAttribute("position");
+    const normals = geometry.getAttribute("normal");
+    for (let index = 0; index < indices.count; index += 3) {
+      const a = new Vector3().fromBufferAttribute(positions, indices.getX(index));
+      const b = new Vector3().fromBufferAttribute(positions, indices.getX(index + 1));
+      const c = new Vector3().fromBufferAttribute(positions, indices.getX(index + 2));
+      const faceNormal = b.sub(a).cross(c.sub(a)).normalize();
+      expect(faceNormal.dot(new Vector3().fromBufferAttribute(normals, indices.getX(index)))).toBeGreaterThan(0.75);
+    }
+    for (let row = 0; row < positions.count; row += 2) {
+      const left = new Vector3().fromBufferAttribute(positions, row);
+      const across = new Vector3().fromBufferAttribute(positions, row + 1).sub(left).normalize();
+      expect(new Vector3().fromBufferAttribute(normals, row).dot(across)).toBeLessThan(-0.2);
+      expect(new Vector3().fromBufferAttribute(normals, row + 1).dot(across)).toBeGreaterThan(0.2);
+    }
+
+    const dyed = { ...restored, look: { ...restored.look, colors: { ...restored.look.colors, hairBase: "#c19684" } } };
+    hook.rerender({ document: dyed });
+    const currentMaterial = () => {
+      const mesh = f.head.children[0]?.children[1];
+      if (!(mesh instanceof Mesh) || !(mesh.material instanceof MToonMaterial)) throw new Error("헤어 재질을 찾을 수 없습니다.");
+      return mesh.material;
+    };
+    await waitFor(() => expect(currentMaterial().color.getHexString()).toBe("c19684"));
+    hook.rerender({ document: { ...dyed, look: { ...dyed.look, materialOverrides: [{
+      materialId: mixed.groups[0].materialId, baseColor: "#885544", shadowColor: "#332211", outlineColor: "#2b2131", opacity: 0.6,
+    }] } } });
+    await waitFor(() => expect(currentMaterial().color.getHexString()).toBe("885544"));
+    expect(currentMaterial().shadeColorFactor.getHexString()).toBe("332211");
+    expect(currentMaterial().outlineColorFactor.getHexString()).toBe("2b2131");
+    expect(currentMaterial().opacity).toBeCloseTo(0.6);
   });
 
   it("문서 복원 전에는 Worker와 파생 메시를 만들지 않고 복원 후 실제 준비를 표시한다", async () => {

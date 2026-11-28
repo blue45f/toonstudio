@@ -36,10 +36,10 @@ export function createCharacterHeadLocalGroomGuide(guideId: string, offset = 0, 
     return {
       guideId, status: "valid", coordinateSpace: "anatomical-head",
       points: [
-        { position: [fit.frontSign * cx + width * (side * 0.55 + 0.12), cy + height * 0.99, forward + depth * 0.24], width: 0.65, twist: 0 },
-        { position: [fit.frontSign * cx + width * (side * 0.72 + 0.06), cy + height * 0.76, forward + depth * 0.77], width: 0.88, twist: 0 },
-        { position: [fit.frontSign * cx + width * (side * 0.91 - 0.07), cy + height * 0.42, fringe], width: 0.64, twist: 0 },
-        { position: [fit.frontSign * cx + width * (side - 0.15), fit.eyeCenter[1] + height * 0.17, fringe + depth * 0.02], width: 0.20, twist: 0 },
+        { position: [fit.frontSign * cx + width * (side * 0.61 + 0.10), cy + height * 0.89, forward + depth * 0.32], width: 0.13, twist: 0 },
+        { position: [fit.frontSign * cx + width * (side * 0.72 + 0.06), cy + height * 0.72, forward + depth * 0.76], width: 0.54, twist: 0 },
+        { position: [fit.frontSign * cx + width * (side * 0.91 - 0.07), cy + height * 0.42, fringe], width: 0.41, twist: 0 },
+        { position: [fit.frontSign * cx + width * (side - 0.15), fit.eyeCenter[1] + height * 0.17, fringe + depth * 0.02], width: 0.10, twist: 0 },
       ],
     };
   }

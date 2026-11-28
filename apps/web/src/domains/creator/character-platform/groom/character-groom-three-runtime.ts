@@ -12,6 +12,7 @@ import { resolveCharacterGroomSurfaceBinding } from "./character-groom-surface-b
 import type { CharacterGroomSurfaceBinding } from "./character-groom-surface-binding";
 import type { CharacterMaterialOverrideV3 } from "../document/character-document-v3";
 import type { Material, Matrix4, Object3D, Scene } from "three";
+import type { CharacterOriginalHairColors } from "../../character-shaper/character-shaper-contract";
 
 export interface CharacterGroomSurfaceContext {
   readonly scene: Scene;
@@ -20,6 +21,7 @@ export interface CharacterGroomSurfaceContext {
 
 export interface CharacterGroomRenderOptions {
   readonly anatomicalToRawHead?: Matrix4;
+  readonly originalHairMaterial?: CharacterOriginalHairColors["dominantMaterial"];
   readonly surface?: CharacterGroomSurfaceContext;
   readonly onSurfaceInvalidated?: (guideId: string, reason: string) => void;
   readonly materialOverrides?: readonly CharacterMaterialOverrideV3[];
@@ -40,7 +42,7 @@ export interface CharacterGroomRuntimeResult {
 }
 
 /** 리본 단면 법선을 좌우 가장자리로 완만히 굽혀 납작한 종이띠 대신 둥근 머리카락 다발처럼 음영이 잡히게 한다. */
-function crownGroomRibbonNormals(geometry: BufferGeometry): void {
+function crownGroomRibbonNormals(geometry: BufferGeometry, anatomical: boolean): void {
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
   const uv = geometry.getAttribute("uv");
@@ -59,7 +61,7 @@ function crownGroomRibbonNormals(geometry: BufferGeometry): void {
       const index = row + offset;
       current.fromBufferAttribute(normal, index);
       if (current.lengthSq() < 1e-10) continue;
-      const sideSign = uv.getX(index) < 0.5 ? -1 : 1;
+      const sideSign = (anatomical ? uv.getY(index) : uv.getX(index)) < 0.5 ? -1 : 1;
       current.normalize().addScaledVector(across, sideSign * 0.42).normalize();
       normal.setXYZ(index, current.x, current.y, current.z);
     }
@@ -142,21 +144,23 @@ async function buildGroup(
         geometry.setAttribute("normal", new BufferAttribute(new Float32Array(payload.normals), 3));
         geometry.setAttribute("uv", new BufferAttribute(new Float32Array(payload.uvs), 2));
         geometry.setIndex(new BufferAttribute(new Uint32Array(payload.indices), 1));
-        crownGroomRibbonNormals(geometry);
+        const anatomical = !surfaceBinding && guide.coordinateSpace === "anatomical-head";
+        crownGroomRibbonNormals(geometry, anatomical);
         // 중심선과 함께 리본 폭·법선까지 실제 머리 본의 축으로 변환한다.
-        if (!surfaceBinding && guide.coordinateSpace === "anatomical-head" && options.anatomicalToRawHead) {
+        if (anatomical && options.anatomicalToRawHead) {
           geometry.applyMatrix4(options.anatomicalToRawHead);
         }
         geometry.computeBoundingBox();
         geometry.computeBoundingSphere();
         const override = options.materialOverrides?.find((entry) => entry.materialId === source.materialId);
-        const requestedColor = override?.baseColor ?? color;
+        const inherited = anatomical && source.materialId === "material:hair" && !override?.baseColor ? options.originalHairMaterial : undefined;
+        const requestedColor = override?.baseColor ?? inherited?.baseColor ?? color;
         const colorAlpha = /^#[0-9a-f]{8}$/iu.test(requestedColor) ? Number.parseInt(requestedColor.slice(7), 16) / 255 : 1;
         const opacity = (override?.opacity ?? 1) * colorAlpha;
         const baseColor = new Color(requestedColor.slice(0, 7));
         const shadeColor = override?.shadowColor
           ? new Color(override.shadowColor.slice(0, 7))
-          : baseColor.clone().multiply(new Color("#c8d0e8")).multiplyScalar(0.66);
+          : inherited ? baseColor.clone().multiplyScalar(0.86) : baseColor.clone().multiply(new Color("#c8d0e8")).multiplyScalar(0.66);
         const outlineColor = override?.outlineColor
           ? new Color(override.outlineColor.slice(0, 7))
           : shadeColor.clone().multiplyScalar(0.38).lerp(new Color("#14101a"), 0.52);
@@ -170,7 +174,7 @@ async function buildGroup(
           shadingToonyFactor: 0.86,
           shadingShiftFactor: -0.08,
           giEqualizationFactor: 0.88,
-          parametricRimColorFactor: baseColor.clone().lerp(new Color("#fff7ee"), 0.62),
+          parametricRimColorFactor: inherited ? new Color(inherited.rimColor) : baseColor.clone().lerp(new Color("#fff7ee"), 0.62),
           rimLightingMixFactor: 0.42,
           parametricRimFresnelPowerFactor: 4.5,
           parametricRimLiftFactor: 0.08,

@@ -392,6 +392,7 @@ export function buildCharacterGroomRibbon(
   validateProfile(profile);
   guide.points.forEach(validatePoint);
   const points = sampledGuidePoints(guide, profile);
+  const anatomical = guide.coordinateSpace === "anatomical-head" && !guide.points.some((point) => point.surfaceAnchor);
   const positions: number[] = [];
   const normals: number[] = [];
   const uvs: number[] = [];
@@ -438,7 +439,12 @@ export function buildCharacterGroomRibbon(
     uvs.push(u, 0, u, 1);
     if (index < points.length - 1) {
       const offset = index * 2;
-      indices.push(offset, offset + 2, offset + 1, offset + 2, offset + 3, offset + 1);
+      if (anatomical) {
+        // 정면의 삼각형 감김이 가닥의 바깥 법선과 일치해야 MToon 뒷면 외곽선이 정면을 덮지 않는다.
+        indices.push(offset, offset + 1, offset + 2, offset + 2, offset + 1, offset + 3);
+      } else {
+        indices.push(offset, offset + 2, offset + 1, offset + 2, offset + 3, offset + 1);
+      }
     }
   });
   return Object.freeze({

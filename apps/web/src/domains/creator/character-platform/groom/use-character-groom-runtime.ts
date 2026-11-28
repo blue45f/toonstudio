@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Matrix4, Object3D, Scene } from "three";
 
-import { CharacterGroomThreeRuntime } from "./character-groom-three-runtime";
+import { CharacterGroomThreeRuntime, type CharacterGroomRenderOptions } from "./character-groom-three-runtime";
 import { measureStudioVrmHeadFit } from "../../vrm/studio-vrm-head-measure";
 import { isStudioVrmCustomPart } from "../../vrm/studio-vrm-authored-attachment";
 
@@ -35,10 +35,11 @@ function headBone(h: StudioVrmPoserHost): Object3D | null {
   return head instanceof Object3D ? head : null;
 }
 
-export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true }: {
+export function useCharacterGroomRuntime({ h, document, modelKey, originalHairMaterial, enabled = true }: {
   readonly h: StudioVrmPoserHost;
   readonly document: CharacterDocumentV3;
   readonly modelKey: string;
+  readonly originalHairMaterial?: CharacterGroomRenderOptions["originalHairMaterial"];
   readonly enabled?: boolean;
 }): CharacterGroomRuntimeState {
   const head = h.status === "ready" ? headBone(h) : null;
@@ -53,10 +54,10 @@ export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true
   const [retryRevision, setRetryRevision] = useState(0);
   const input = useMemo(() => ({
     groom: document.groom, topologyRevision: document.topology.revision,
-    color: document.look.colors.hairBase, materialOverrides: document.look.materialOverrides,
+    color: document.look.colors.hairBase, originalHairMaterial, materialOverrides: document.look.materialOverrides,
     head, modelKey, enabled, retryRevision, sceneGeneration: h.captureSceneGeneration, model: h.vrm,
   }), [document.groom, document.topology.revision, document.look.colors.hairBase, document.look.materialOverrides,
-    head, modelKey, enabled, retryRevision, h.captureSceneGeneration, h.vrm]);
+    head, modelKey, enabled, retryRevision, h.captureSceneGeneration, h.vrm, originalHairMaterial]);
   type RuntimeView = Omit<CharacterGroomRuntimeState, "retry" | "supported" | "reason">;
   const [rendered, setRendered] = useState<{ readonly input: typeof input; readonly state: RuntimeView } | null>(null);
   const runtimeRef = useRef<CharacterGroomThreeRuntime | null>(null);
@@ -95,7 +96,7 @@ export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true
         if (readGuideHeadFit().frontSign < 0) anatomicalToRawHead.multiply(new Matrix4().makeRotationY(Math.PI));
       }
       void runtime.update(document.groom, document.topology.revision, document.look.colors.hairBase ?? "#32251f", {
-        anatomicalToRawHead,
+        anatomicalToRawHead, originalHairMaterial: document.look.colors.hairBase ? undefined : originalHairMaterial,
         ...(scene ? { surface: { scene, modelKey } } : {}), materialOverrides: document.look.materialOverrides,
         onSurfaceInvalidated: (guideId, notice) => {
           queueMicrotask(() => {
@@ -128,7 +129,7 @@ export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true
       modelRoot?.removeEventListener("removed", clear);
     };
   }, [document.groom, document.look.colors.hairBase, document.look.materialOverrides, document.topology.revision,
-    head, normalizedHead, readGuideHeadFit, h.captureRef, h.captureSceneGeneration, h.vrm, invalidateRef, modelKey, retryRevision, enabled, input]);
+    head, normalizedHead, readGuideHeadFit, h.captureRef, h.captureSceneGeneration, h.vrm, invalidateRef, modelKey, retryRevision, enabled, input, originalHairMaterial]);
   const retry = useCallback(() => setRetryRevision((revision) => revision + 1), []);
   return {
     ...(rendered?.input === input ? rendered.state : {
