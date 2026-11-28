@@ -25,4 +25,6 @@ it("매크로 프롬프트의 네 도구 인자와 열거값을 실제 로컬 MC
   expect(prompt).toContain("대상 ID가 아직 없거나 지원하지 않는 작업");
   expect(prompt).toContain("실행 가능한 단계만 steps에");
   expect(prompt).toContain("정확한 높이와 레이어 가시성은 수동 확인");
+  expect(prompt).toContain('"requireCleanRightsBom":true');
+  expect(prompt).toContain('"rightsBomClean":false');
 });

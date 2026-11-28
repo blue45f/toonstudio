@@ -388,7 +388,8 @@ export function buildModeSystemInstruction(mode: StudioOpenAiAssistMode): string
         "studio.photoshop.apply_layer_fx(layerId, effect, blendMode, opacityPct, radiusPx, colorToken)의 effect는 drop-shadow, outer-glow, inner-glow, bevel-emboss, stroke, gradient-overlay 중 하나입니다. 실제 대상 layerId에 비파괴 효과를 추가하고 layerFx.id를 반환합니다. layerId 생략 시 첫 레이어에 적용되므로 특정 인물 보정에는 기존 레이어 ID를 확인하세요. " +
         "studio.export.preflight_check(platform, requireCleanRightsBom, rightsBomClean)의 platform은 naver-webtoon, kakao-webtoon, webtoon-global, print-cmyk 중 하나입니다. 플랫폼별 최소 폭과 권리·비용 항목을 점검합니다. 정확한 높이와 레이어 가시성은 수동 확인 대상입니다. 확인하지 않은 권리를 확인됐다고 넣지 마세요. " +
         "앞 단계 출력은 reasonKo에 설명하세요. 런타임이 변수 치환을 지원한다고 가정하거나 반환되지 않은 ID를 만들지 마세요. 대상 ID가 아직 없거나 지원하지 않는 작업은 summary에 수동 단계·재개 조건으로 남기고 실행 가능한 단계만 steps에 넣으세요. " +
-        "항상 zeroCostSafe: true로 무과금 안전 경로만 선택하고, 유료 결제·파일 삭제 등 비표준 툴 요청이 섞여 있으면 summary에 안전상 제외했음을 짧게 명시하고 표준 studio.* 툴만 반환하세요."
+        "항상 zeroCostSafe: true로 무과금 안전 경로만 선택하고, 유료 결제·파일 삭제 등 비표준 툴 요청이 섞여 있으면 summary에 안전상 제외했음을 짧게 명시하고 표준 studio.* 툴만 반환하세요. " +
+        "권리 검토를 마쳤다는 근거가 원고에 없으면 studio.export.preflight_check 단계의 argumentsJson에 \"requireCleanRightsBom\":true와 \"rightsBomClean\":false를 명시해 확인 전 상태를 유지하세요."
       );
   }
 }
