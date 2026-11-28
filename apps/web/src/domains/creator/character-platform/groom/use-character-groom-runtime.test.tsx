@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { Group, Scene } from "three";
+import { Group, Mesh, Scene, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createCharacterDocumentV2 } from "../document/character-document-v2";
-import { migrateCharacterDocumentV2ToV3 } from "../document/character-document-v3";
+import { migrateCharacterDocumentV2ToV3, parseCharacterDocumentV3, serializeCharacterDocumentV3 } from "../document/character-document-v3";
 import { executeCharacterAuthoringTaskInBrowser } from "../runtime/character-authoring-worker-client";
 import { executeCharacterAuthoringTask } from "../runtime/character-authoring-worker-runtime";
-import { addCharacterGroomGroup } from "./character-groom-edit";
+import { addCharacterGroomGroup, addCharacterGroomGuide } from "./character-groom-edit";
 import { useCharacterGroomRuntime } from "./use-character-groom-runtime";
 
 import type { StudioVrmPoserHost } from "../../vrm/StudioVrmPoserHost";
@@ -16,12 +16,16 @@ import type { CharacterAuthoringWorkerResultPayload } from "../runtime/character
 vi.mock("../runtime/character-authoring-worker-client", () => ({ executeCharacterAuthoringTaskInBrowser: vi.fn() }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
-function fixture() {
+function fixture(metaVersion: "0" | "1" = "1") {
   const scene = new Scene();
   const modelRoot = new Group();
   const head = new Group();
-  modelRoot.add(head); scene.add(modelRoot);
-  const h = { status: "ready", vrm: { scene: modelRoot, humanoid: { getRawBoneNode: () => head } },
+  const normalizedHead = new Group();
+  modelRoot.add(head, normalizedHead); scene.add(modelRoot);
+  const h = { status: "ready", vrm: { scene: modelRoot, meta: { metaVersion }, humanoid: {
+    getRawBoneNode: () => head,
+    getNormalizedBoneNode: (bone: string) => bone === "head" ? normalizedHead : null,
+  } },
     captureRef: { current: { scene } }, texturePaintInvalidateRef: { current: vi.fn() }, captureSceneGeneration: 1,
   } as unknown as StudioVrmPoserHost;
   const initial = migrateCharacterDocumentV2ToV3(createCharacterDocumentV2({
@@ -32,10 +36,55 @@ function fixture() {
     colors: { skin: null, hairBase: null, hairTip: null, iris: null, top: null, bottom: null, shoes: null },
   }));
   const document = { ...initial, groom: addCharacterGroomGroup(initial.groom, "헤어") };
-  return { scene, modelRoot, head, h, document };
+  return { scene, modelRoot, head, normalizedHead, h, document };
 }
 
 describe("useCharacterGroomRuntime 준비와 복원", () => {
+  // 두 원본 배포 VRM의 rest 머리 회전과 얼굴 전방으로 구버전 가이드와 신형 가이드를 한 그룹에서 재생한다.
+  it.each([
+    { name: "루미", meta: "1" as const, rotation: [0.5, 0.5, 0.5, 0.5] as const, front: 1 },
+    { name: "시온", meta: "0" as const, rotation: [0, 0, 0, 1] as const, front: -1 },
+  ])("$name 원본 축에서 새 가이드의 정수리·이마·폭을 맞추고 이전 가이드의 원시 좌표를 보존한다", async ({ meta, rotation, front }) => {
+    const f = fixture(meta);
+    f.head.quaternion.set(...rotation);
+    f.head.position.y = f.normalizedHead.position.y = 1.4;
+    vi.mocked(executeCharacterAuthoringTaskInBrowser).mockImplementation(async (task) => executeCharacterAuthoringTask(task));
+    const hook = renderHook(({ document }) => useCharacterGroomRuntime({ h: f.h, document, modelKey: "model:test" }), { initialProps: { document: f.document } });
+    await waitFor(() => expect(hook.result.current.status).toBe("ready"));
+    const fit = hook.result.current.readGuideHeadFit?.();
+    if (!fit) throw new Error("두상 실측 결과가 없습니다.");
+    expect(fit.frontSign).toBe(front);
+    const mixed = addCharacterGroomGuide(f.document.groom, f.document.groom.groups[0].groupId, fit);
+    const [legacy, added] = mixed.groups[0].guides;
+    expect(legacy).toEqual(f.document.groom.groups[0].guides[0]);
+    expect(added.coordinateSpace).toBe("anatomical-head");
+    const saved = serializeCharacterDocumentV3({ ...f.document, groom: mixed });
+    const restored = parseCharacterDocumentV3(JSON.parse(saved));
+    expect(restored.groom).toEqual(mixed);
+    hook.rerender({ document: restored });
+    await waitFor(() => expect(hook.result.current.guideCount).toBe(2));
+    const [oldMesh, newMesh] = f.head.children[0].children;
+    if (!(oldMesh instanceof Mesh) || !(newMesh instanceof Mesh)) throw new Error("새 가이드와 이전 가이드가 모두 필요합니다.");
+    function worldRow(mesh: Mesh, row: number) {
+      const pos = mesh.geometry.getAttribute("position");
+      const left = mesh.localToWorld(new Vector3().fromBufferAttribute(pos, row * 2));
+      const right = mesh.localToWorld(new Vector3().fromBufferAttribute(pos, row * 2 + 1));
+      return { center: left.clone().lerp(right, 0.5), width: left.distanceTo(right), across: right.sub(left).normalize() };
+    }
+    const legacyRoot = f.head.localToWorld(new Vector3(...legacy.points[0].position));
+    expect(worldRow(oldMesh, 0).center.distanceTo(legacyRoot)).toBeLessThan(1e-6);
+    const root = worldRow(newMesh, 0);
+    const tip = worldRow(newMesh, newMesh.geometry.getAttribute("position").count / 2 - 1);
+    const [x, y, z] = added.points[0].position;
+    const expected = f.normalizedHead.localToWorld(new Vector3(front * x, y, front * z));
+    expect(root.center.distanceTo(expected)).toBeLessThan(1e-6);
+    expect(root.center.y - tip.center.y).toBeGreaterThan(fit.radiusY * 0.8);
+    expect(tip.center.y).toBeGreaterThan(f.normalizedHead.position.y + fit.eyeCenter[1]);
+    expect(front * tip.center.z).toBeGreaterThan(fit.faceFront);
+    expect(tip.width).toBeLessThan(root.width * 0.3);
+    expect(Math.abs(root.across.x)).toBeGreaterThan(0.85);
+  });
+
   it("문서 복원 전에는 Worker와 파생 메시를 만들지 않고 복원 후 실제 준비를 표시한다", async () => {
     const f = fixture();
     vi.mocked(executeCharacterAuthoringTaskInBrowser).mockImplementation(async (task) => executeCharacterAuthoringTask(task));

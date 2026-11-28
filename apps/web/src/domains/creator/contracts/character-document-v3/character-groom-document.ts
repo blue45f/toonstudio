@@ -21,6 +21,8 @@ export interface CharacterGroomGuidePoint {
 
 export interface CharacterGroomGuideCurve {
   readonly guideId: string;
+  /** 정규화한 머리의 위(+Y)·얼굴 앞(+Z) 기준. 생략된 기존 가이드는 원래 본 좌표를 쓴다. */
+  readonly coordinateSpace?: "anatomical-head";
   readonly points: readonly CharacterGroomGuidePoint[];
   readonly status: "valid" | "needs-reprojection" | "orphaned";
 }
@@ -221,6 +223,9 @@ export function validateCharacterGroomDocument(
     }
     const guides = group.guides.map((guide: CharacterGroomGuideCurve) => {
       assertId(guide.guideId, "guideId");
+      if (guide.coordinateSpace !== undefined && guide.coordinateSpace !== "anatomical-head") {
+        throw new CharacterGroomDocumentError("CHARACTER_GROOM_POINT_INVALID", "헤어 가이드 좌표계를 확인할 수 없습니다.");
+      }
       if (guideIds.has(guide.guideId)) {
         throw new CharacterGroomDocumentError("CHARACTER_GROOM_DUPLICATE_ID", `중복 Groom 가이드 ID가 있습니다: ${guide.guideId}`);
       }

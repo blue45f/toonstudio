@@ -133,7 +133,7 @@ export function CharacterGroomPanel({ authoring, runtime, previewPrefix, compact
     </label>
     <div className="flex flex-wrap gap-2">
       <button type="button" className={BUTTON} disabled={disabled} onClick={() => change((current) => {
-        const next = addCharacterGroomGroup(current, `${t("studio.character.groom.newGroup", "헤어 그룹")} ${current.groups.length + 1}`);
+        const next = addCharacterGroomGroup(current, `${t("studio.character.groom.newGroup", "헤어 그룹")} ${current.groups.length + 1}`, runtime.readGuideHeadFit?.());
         setSelectedGroupId(next.groups.at(-1)?.groupId ?? null); setSelectedGuideId(null); setPointIndex(0); return next;
       })}>{t("studio.character.groom.addGroup", "그룹 추가")}</button>
       <button type="button" className={BUTTON} disabled={groupDisabled} onClick={() => group && change((current) => {
@@ -155,7 +155,7 @@ export function CharacterGroomPanel({ authoring, runtime, previewPrefix, compact
       </select></label>
       <div className="flex flex-wrap gap-2">
         <button type="button" className={BUTTON} disabled={groupDisabled || group.scalpRegionId !== "scalp:head-local"} onClick={() => change((current) => {
-          const next = addCharacterGroomGuide(current, group.groupId); setSelectedGuideId(next.groups.find((entry) => entry.groupId === group.groupId)?.guides.at(-1)?.guideId ?? null); setPointIndex(0); return next;
+          const next = addCharacterGroomGuide(current, group.groupId, runtime.readGuideHeadFit?.()); setSelectedGuideId(next.groups.find((entry) => entry.groupId === group.groupId)?.guides.at(-1)?.guideId ?? null); setPointIndex(0); return next;
         })}>{t("studio.character.groom.addGuide", "가이드 추가")}</button>
         <button type="button" className={BUTTON} disabled={groupDisabled || !guide || anchored} onClick={() => guide && change((current) => {
           const next = duplicateCharacterGroomGuide(current, group.groupId, guide.guideId); setSelectedGuideId(next.groups.find((entry) => entry.groupId === group.groupId)?.guides.at(-1)?.guideId ?? null); return next;

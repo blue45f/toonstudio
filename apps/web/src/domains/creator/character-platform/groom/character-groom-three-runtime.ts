@@ -11,7 +11,7 @@ import { resolveCharacterGroomSurfaceBinding } from "./character-groom-surface-b
 
 import type { CharacterGroomSurfaceBinding } from "./character-groom-surface-binding";
 import type { CharacterMaterialOverrideV3 } from "../document/character-document-v3";
-import type { Material, Object3D, Scene } from "three";
+import type { Material, Matrix4, Object3D, Scene } from "three";
 
 export interface CharacterGroomSurfaceContext {
   readonly scene: Scene;
@@ -19,6 +19,7 @@ export interface CharacterGroomSurfaceContext {
 }
 
 export interface CharacterGroomRenderOptions {
+  readonly anatomicalToRawHead?: Matrix4;
   readonly surface?: CharacterGroomSurfaceContext;
   readonly onSurfaceInvalidated?: (guideId: string, reason: string) => void;
   readonly materialOverrides?: readonly CharacterMaterialOverrideV3[];
@@ -118,7 +119,8 @@ async function buildGroup(
           }
           surfaceBinding = resolved.binding;
           renderGuide = surfaceBinding.guide;
-        } else if (guide.status !== "valid" || valid.topologyRevision !== topologyRevision || source.scalpRegionId !== "scalp:head-local") {
+        } else if (guide.status !== "valid" || valid.topologyRevision !== topologyRevision || source.scalpRegionId !== "scalp:head-local"
+          || (guide.coordinateSpace === "anatomical-head" && !options.anatomicalToRawHead)) {
           skippedGuideCount += 1;
           notices.add("머리 본 좌표 또는 토폴로지를 확인할 수 없어 표시를 보류했습니다. 원본은 보존됩니다.");
           continue;
@@ -141,6 +143,10 @@ async function buildGroup(
         geometry.setAttribute("uv", new BufferAttribute(new Float32Array(payload.uvs), 2));
         geometry.setIndex(new BufferAttribute(new Uint32Array(payload.indices), 1));
         crownGroomRibbonNormals(geometry);
+        // 중심선과 함께 리본 폭·법선까지 실제 머리 본의 축으로 변환한다.
+        if (!surfaceBinding && guide.coordinateSpace === "anatomical-head" && options.anatomicalToRawHead) {
+          geometry.applyMatrix4(options.anatomicalToRawHead);
+        }
         geometry.computeBoundingBox();
         geometry.computeBoundingSphere();
         const override = options.materialOverrides?.find((entry) => entry.materialId === source.materialId);
