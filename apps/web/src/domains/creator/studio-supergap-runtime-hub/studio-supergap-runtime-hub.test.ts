@@ -603,16 +603,16 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("createFullStudioSupergapRuntimeHub가 Wave 68~122 실전 확장까지 61종 전체를 오류 0건으로 진단한다", async () => {
+  it("createFullStudioSupergapRuntimeHub가 Wave 68~128 실전 확장까지 67종 전체를 오류 0건으로 진단한다", async () => {
     const hub = createFullStudioSupergapRuntimeHub({
       loopbackConfig: { fetchImpl: unreachableFetch },
     });
-    expect(hub.getRegisteredSubsystems().length).toBe(61);
+    expect(hub.getRegisteredSubsystems().length).toBe(67);
 
     const report = await hub.runDiagnosticSelfCheck();
     expect(report.allHealthy).toBe(true);
     expect(report.errorCount).toBe(0);
-    expect(report.subsystems.length).toBe(61);
+    expect(report.subsystems.length).toBe(67);
 
     const byId = new Map(report.subsystems.map((item) => [item.id, item]));
     expect(byId.get("wave68ShallowWaterFluid")?.status).toBe("live-connected");
@@ -673,6 +673,12 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(byId.get("wave120VectorInkIntersection4k")?.status).toBe("live-connected");
     expect(byId.get("wave121XpbdClothHairWindBaker")?.status).toBe("live-connected");
     expect(byId.get("wave122CinematicLensOpticsBokeh")?.status).toBe("live-connected");
+    expect(byId.get("wave123WardrobeContinuityBible")?.status).toBe("live-connected");
+    expect(byId.get("wave124CurvatureCrossHatching")?.status).toBe("live-connected");
+    expect(byId.get("wave125Eyeline180RuleSolver")?.status).toBe("live-connected");
+    expect(byId.get("wave126ScrollSyncBgmCrossfade")?.status).toBe("live-connected");
+    expect(byId.get("wave127BookImpositionCreep")?.status).toBe("live-connected");
+    expect(byId.get("wave128DialogueProsodyVoiceCast")?.status).toBe("live-connected");
   }, 20_000);
 
   it("StudioSupergapRuntimeHubLazyHost가 열기 전 0 DOM 유지 후 토글 시 11종 허브 드로어를 지연 마운트한다", async () => {
