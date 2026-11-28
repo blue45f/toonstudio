@@ -25,6 +25,7 @@ import {
 import { StudioAsset3dInspectorWorkbench } from "./StudioAsset3dInspectorWorkbench";
 
 import { getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { LEGACY_POSER_CUT_KEY, readLegacyPoserCut, stagePoserCut } from "../studio-cuttoon-editor/studio-poser-cut-handoff";
 import { useStudioPoserCutDestination } from "./useStudioPoserCutDestination";
 import { useI18n } from "@/shared/lib/i18n";
@@ -45,6 +46,8 @@ const JOINT_SOLVERS = [
 export function StudioPoserPage(): ReactElement {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { data: session, ready: authReady } = useSession();
+  const owner = session?.user.id ?? null;
   const lang = useI18n((state) => state.lang);
   const isKo = lang.startsWith("ko");
   const pickLang = (ko: string, en: string) => (isKo ? ko : en);
@@ -75,13 +78,16 @@ export function StudioPoserPage(): ReactElement {
   });
   const prepareCut = useCallback((raster: StudioMannequinCaptureResult) => {
     if (!destination.href) throw new Error(isKo ? "삽입할 원고를 선택해 주세요." : "Select a destination manuscript.");
+    if (!authReady || getAuthUserId() !== owner) {
+      throw new Error(isKo ? "계정을 확인한 뒤 포즈를 다시 캡처해 주세요." : "Check your account, then retake the pose.");
+    }
     try {
-      return stagePoserCut(destination.href, getAuthUserId(), raster);
+      return stagePoserCut(destination.href, owner, raster);
     } catch (cause) {
       throw new Error(isKo ? "포즈 컷을 보관하지 못했습니다. 저장 공간을 확보한 뒤 다시 시도하거나 PNG로 저장해 주세요."
         : "Could not store the pose. Free up storage and retry, or save it as a PNG.", { cause });
     }
-  }, [destination.href, isKo]);
+  }, [authReady, destination.href, isKo, owner]);
   const handleClose = useCallback(() => {
     navigate(preparedHref.current ?? "/studio", { replace: true });
   }, [navigate]);

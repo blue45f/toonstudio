@@ -9,6 +9,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const publicRoot = resolve(root, "apps/web/public");
 const legacyBrandRoot = "brand/spectrum-ribbon-v2";
 const brandRoot = "brand/jewel-atelier-v1";
+const paperInstallColor = "#f7f5ef";
 const pngSizes = new Map([
   ["favicon-32.png", 32], ["favicon-96.png", 96],
   ["apple-touch-icon.png", 180], ["icon-192.png", 192],
@@ -232,8 +233,8 @@ brandIconChecks.push(["Manifest: cache-rotated paths, real dimensions and separa
   const manifest = JSON.parse(read("manifest.webmanifest").toString("utf8"));
   assert.equal(manifest.id, "/");
   assert.equal(manifest.start_url, "/studio");
-  assert.equal(manifest.theme_color, "#10182d");
-  assert.equal(manifest.background_color, "#10182d");
+  assert.equal(manifest.theme_color, paperInstallColor);
+  assert.equal(manifest.background_color, paperInstallColor);
   assert.equal(manifest.icons.length, 5);
   for (const icon of manifest.icons) {
     const url = new URL(icon.src, "https://www.toonstudio.cloud");
@@ -253,6 +254,15 @@ brandIconChecks.push(["Manifest: cache-rotated paths, real dimensions and separa
       assert.equal(icon.type, "image/svg+xml");
     }
   }
+}]);
+
+brandIconChecks.push(["Draw App manifest: Paper 설치 색상과 독립 앱 식별자", () => {
+  const manifest = JSON.parse(read("draw-app/manifest.webmanifest").toString("utf8"));
+  const studioManifest = JSON.parse(read("manifest.webmanifest").toString("utf8"));
+  assert.equal(manifest.id, "/draw-app");
+  assert.equal(manifest.theme_color, paperInstallColor);
+  assert.equal(manifest.background_color, paperInstallColor);
+  assert.deepEqual(manifest.icons, studioManifest.icons);
 }]);
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

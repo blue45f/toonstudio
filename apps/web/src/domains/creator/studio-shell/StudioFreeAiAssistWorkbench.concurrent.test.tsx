@@ -26,8 +26,10 @@ function setup() {
   return { pending, fetchImpl, view };
 }
 
-const selectCuts = () => fireEvent.click(screen.getByRole("button", { name: /대본 → 컷 분할/ }));
-const selectDialogue = () => fireEvent.click(screen.getByRole("button", { name: /말풍선 대사 다듬기/ }));
+const modes = () => screen.getByRole("combobox", { name: "작업 모드" });
+const selectMode = (mode: string) => fireEvent.change(modes(), { target: { value: mode } });
+const selectCuts = () => selectMode("script-to-cuts");
+const selectDialogue = () => selectMode("dialogue-polish");
 const edit = (draft: string) => fireEvent.change(screen.getByRole("textbox"), { target: { value: draft } });
 const run = () => fireEvent.click(screen.getByTestId("free-ai-workbench-run-btn"));
 const result = () => screen.getByTestId("studio-free-ai-workbench-result");
@@ -47,17 +49,27 @@ it("두 원고를 따로 실행하고 늦게 끝난 다른 모드의 결과가 �
   selectCuts();
   expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe(manuscript);
   expect(pending).toHaveLength(0);
+  expect(screen.queryByText(/다른 모드 \d+개 분석 중/u)).toBeNull();
 
   run();
+  expect(within(modes()).getByRole("option", { name: /대본 → 컷 분할 · 분석 중/u })).toBeTruthy();
+  expect(screen.queryByText(/다른 모드 \d+개 분석 중/u)).toBeNull();
   selectDialogue();
   expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe(dialogue);
+  expect(screen.getByText("다른 모드 1개 분석 중").getAttribute("aria-live")).toBe("polite");
   run();
+  selectMode("character-bible-forge");
+  expect(screen.getByText("다른 모드 2개 분석 중")).toBeTruthy();
+  selectDialogue();
+  expect(screen.getByText("다른 모드 1개 분석 중")).toBeTruthy();
   expect(pending.map(({ mode, inputText }) => [mode, inputText])).toEqual([
     ["script-to-cuts", manuscript], ["dialogue-polish", dialogue],
   ]);
   await finish(pending[1]);
   expect(result().textContent).toContain("노란 등대");
+  expect(screen.getByText("다른 모드 1개 분석 중")).toBeTruthy();
   await finish(pending[0]);
+  expect(screen.queryByText(/다른 모드 \d+개 분석 중/u)).toBeNull();
   expect(result().textContent).toContain("노란 등대");
   expect(result().textContent).not.toContain("푸른 우체통");
 
@@ -116,7 +128,7 @@ it("빈 원고도 유지하고 작업대를 닫으면 모든 요청을 취소해
   run();
   selectCuts();
   expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("");
-  fireEvent.click(screen.getByRole("button", { name: "초보자 예시 채우기" }));
+  fireEvent.click(screen.getByRole("button", { name: "예시 채우기" }));
   run();
   expect(pending).toHaveLength(2);
   view.unmount();
@@ -124,4 +136,36 @@ it("빈 원고도 유지하고 작업대를 닫으면 모든 요청을 취소해
   const callsAtUnmount = fetchImpl.mock.calls.length;
   for (const request of pending) await finish(request);
   expect(fetchImpl).toHaveBeenCalledTimes(callsAtUnmount);
+});
+
+
+it("같은 모드의 늦은 로컬 결과는 입력이 바뀌면 숨기고 정확히 되돌렸을 때만 다시 사용할 수 있다", async () => {
+  const { pending } = setup();
+  const manuscript = "1컷: 푸른 우체통이 열린다.\n2컷: 달이 보인다.";
+  const revised = "1컷: 밤기차가 떠난다.";
+  expect(within(modes()).getAllByRole("option")).toHaveLength(14);
+  expect(screen.getByText("할당량과 처리 방식").closest("details")?.open).toBe(false);
+
+  edit(manuscript);
+  run();
+  expect(pending[0].inputText).toBe(manuscript);
+  edit(revised);
+  selectDialogue();
+  edit("노란 등대 앞에서 만나자.");
+  run();
+  await finish(pending[0]);
+  expect(screen.queryByText(/입력이 바뀌었어요/u)).toBeNull();
+  await finish(pending[1]);
+  expect(result().textContent).toContain("노란 등대");
+
+  selectCuts();
+  expect(screen.getByRole<HTMLTextAreaElement>("textbox").value).toBe(revised);
+  expect(screen.getByRole("status").textContent).toContain("입력이 바뀌었어요.");
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+  expect(screen.queryByRole("button", { name: "결과 복사" })).toBeNull();
+
+  edit(manuscript);
+  expect(screen.queryByText(/입력이 바뀌었어요/u)).toBeNull();
+  expect(result().textContent).toContain("푸른 우체통");
+  expect(within(result()).getByRole("button", { name: "결과 복사" })).toBeTruthy();
 });

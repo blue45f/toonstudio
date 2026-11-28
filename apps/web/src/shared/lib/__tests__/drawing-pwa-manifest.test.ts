@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { getThemePreset } from "../theme-presets";
+
 interface ManifestIcon {
   src: string;
   sizes: string;
@@ -39,6 +41,18 @@ function source(path: string): string {
   return readFileSync(join(root, path), "utf8");
 }
 
+describe("설치 앱의 시작화면 색상", () => {
+  it.each([
+    "manifest.webmanifest",
+    "brand/jewel-atelier-v1/manifest.webmanifest",
+    "draw-app/manifest.webmanifest",
+  ])("%s의 시작 색상과 배경은 페이퍼를 사용한다", (path) => {
+    const candidate: unknown = JSON.parse(readFileSync(join(publicRoot, path), "utf8"));
+    const paper = getThemePreset("light").chrome;
+    expect(candidate).toMatchObject({ theme_color: paper, background_color: paper });
+  });
+});
+
 describe("ToonStudio Draw PWA", () => {
   it("has a distinct identity while starting the canonical Studio runtime", () => {
     expect(manifest.id).toBe("/draw-app");
@@ -66,6 +80,11 @@ describe("ToonStudio Draw PWA", () => {
     const installer = readFileSync(join(drawingAppRoot, "install.html"), "utf8");
     const installerScript = readFileSync(join(drawingAppRoot, "install.js"), "utf8");
     expect(installer).toContain('rel="manifest" href="/draw-app/manifest.webmanifest"');
+    expect(installer).toContain('media="(prefers-color-scheme: light)"');
+    expect(installer).toContain('media="(prefers-color-scheme: dark)"');
+    expect(readFileSync(join(drawingAppRoot, "install.css"), "utf8")).toContain(
+      "@media (prefers-color-scheme: dark)",
+    );
     expect(installer).toContain('id="install-app"');
     expect(installer).toContain('href="/studio">브라우저에서 작품 보관함 열기');
     expect(manifest.shortcuts.map(({ url }) => new URL(url, appOrigin).searchParams.get("view"))).toEqual([null, "archived"]);

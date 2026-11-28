@@ -46,6 +46,7 @@ describe("다국어 번역 용어집·문화 검수", () => {
         expect(line).toContain(note.adaptationTip);
       });
       expect(result.textContent).toContain("en, ja");
+      expect(within(result).getByText("무료 클라우드", { exact: true })).toBeTruthy();
       fireEvent.click(within(result).getByRole("button", { name: "결과 복사" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledOnce());
       const [copied] = writeText.mock.calls[0];
@@ -72,7 +73,7 @@ describe("서버에 연결할 수 없는 창작 보조 워크벤치", () => {
       fireEvent.change(screen.getByRole("textbox"), { target: { value: input } });
       fireEvent.click(screen.getByRole("button", { name: "₩0 무료 AI 실행" }));
       const result = await screen.findByTestId("studio-free-ai-workbench-result");
-      expect(result.textContent).toContain("local-zero-cost-fallback");
+      expect(within(result).getByText("로컬 코치", { exact: true })).toBeTruthy();
       expect(result.textContent).toContain(expected);
       fireEvent.click(within(result).getByRole("button", { name: "결과 복사" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining(expected)));
@@ -80,5 +81,38 @@ describe("서버에 연결할 수 없는 창작 보조 워크벤치", () => {
       if (previous) Object.defineProperty(navigator, "clipboard", previous);
       else Reflect.deleteProperty(navigator, "clipboard");
     }
+  });
+});
+
+describe("창작 보조 처리 경로와 세부 정보", () => {
+  it.each([
+    { tier: "local-fallback", label: "로컬 코치", provider: "local-zero-cost-fallback", model: "toonstudio-deterministic-coach-v2" },
+    { tier: "cloud-free", label: "무료 클라우드", provider: "github-models-free", model: "openai/gpt-4o-mini" },
+  ])("$tier 응답은 읽기 쉬운 처리 경로를 표시하고 공급자 ID와 모델을 펼쳐 볼 수 있다", async ({ tier, label, provider, model }) => {
+    const fetchImpl = vi.fn<typeof fetch>((_url, init) => Promise.resolve(
+      init?.method === "POST"
+        ? Response.json({
+          provider, providerTier: tier, model,
+          result: { mode: "script-to-cuts", data: {
+            episodeGoal: "밤기차 이야기의 첫 장면을 보여준다.",
+            pacingTip: "기차가 출발하기 전 여백을 둔다.",
+            cuts: [{ cutNumber: 1, beatKind: "setup", shotType: "전경", visualAction: "밤기차 출발", dialogue: "", scrollGapHint: "아래 여백 200px" }],
+          } },
+        })
+        : new Response(null, { status: 503 }),
+    ));
+    render(<StudioFreeAiAssistWorkbench initialMode="script-to-cuts" fetchImpl={fetchImpl} />);
+    expect(screen.getAllByText("창작자 이용료 ₩0 · 무료 경로만 사용")).toHaveLength(1);
+    const run = screen.getByRole("button", { name: "₩0 무료 AI 실행" });
+    fireEvent.click(run);
+    const result = await screen.findByTestId("studio-free-ai-workbench-result");
+    expect(within(result).getByText(label, { exact: true })).toBeTruthy();
+    const summary = within(result).getByText("처리 정보", { exact: true });
+    const details = summary.closest("details");
+    expect(details?.open).toBe(false);
+    expect(within(result).getByText(provider, { exact: true }).closest("details")).toBe(details);
+    expect(within(result).getByText(model, { exact: true }).closest("details")).toBe(details);
+    fireEvent.click(summary);
+    expect(details?.open).toBe(true);
   });
 });

@@ -12,6 +12,7 @@ import {
 } from "../brush/studio-tactile-physical-relief-runtime";
 import {
   isStudioSupergapRuntimeHubOpen,
+  STUDIO_SUPERGAP_RUNTIME_HUB_PANEL_ID,
   subscribeStudioSupergapRuntimeHubOpen,
   toggleStudioSupergapRuntimeHub,
 } from "../runtime-leaves/studio-supergap-runtime-hub-lazy-bridge";
@@ -193,25 +194,23 @@ export function StudioLiveFoleyFeelControls({
       <button
         type="button"
         className="studio-drawing-ergonomics-chip [word-break:keep-all]"
-        aria-pressed={supergapHubOpen}
+        aria-expanded={supergapHubOpen}
+        aria-controls={STUDIO_SUPERGAP_RUNTIME_HUB_PANEL_ID}
         data-studio-supergap-hub-trigger="true"
         data-studio-aux-control="true"
         data-studio-compact-icon-chip="true"
-        onClick={() => {
-          const nextOpen = toggleStudioSupergapRuntimeHub();
+        onClick={(event) => {
+          const nextOpen = toggleStudioSupergapRuntimeHub(event.currentTarget);
           onPushCue?.(
             "E",
-            bt("초격차 엔진 허브", "Super-Gap Engine Hub"),
+            bt("엔진 상태", "Engine status"),
             nextOpen ? bt("열림", "Open") : bt("닫힘", "Closed"),
           );
         }}
-        title={bt(
-          "데스크톱 네이티브 GPU/NPU 브릿지 및 초격차 런타임 엔진 허브 열기",
-          "Open Desktop Native GPU/NPU Bridge and Super-Gap Runtime Engine Hub",
-        )}
+        title={bt("엔진 연결 상태와 진단 보기", "View engine connection and diagnostics")}
       >
         <Cpu size={15} aria-hidden />
-        <span>{bt("엔진 허브", "Engine Hub")}</span>
+        <span>{bt("엔진 상태", "Engine status")}</span>
       </button>
 
       {hidePressureChip ? null : (

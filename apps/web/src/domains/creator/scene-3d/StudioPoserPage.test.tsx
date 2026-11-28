@@ -7,10 +7,13 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { StrictMode, useState } from "react";
 import { StudioPoserCutHandoffHost } from "../studio-cuttoon-editor/StudioPoserCutHandoffHost";
 import { POSER_CUT_QUERY, type PoserCutRaster } from "../studio-cuttoon-editor/studio-poser-cut-handoff";
+import { resolveStudioLiveInstantWorkIdForTab } from "../live/studio-live-jam-session";
+import { StudioDocumentLayoutContext, type StudioDocumentLayoutRuntime } from "../studio-router/studio-document-layout-context";
 import { createStudioProject } from "../studio-project-library-store";
 import { createStudioProjectDocument } from "../studio-project-document-store";
 import { StudioPoserPage } from "./StudioPoserPage";
 
+import { SessionContext, type SessionContextValue } from "@/domains/auth/public/session/auth-session-store";
 import { useI18n } from "@/shared/lib/i18n";
 import { useToastStore } from "@/shared/lib/toast-store";
 
@@ -72,17 +75,34 @@ function LocationProbe(): React.JSX.Element {
 function CutEditorProbe() {
   const location = useLocation();
   const [layers, setLayers] = useState<ReadonlyMap<string, PoserCutRaster>>(new Map());
-  const token = new URLSearchParams(location.search).get(POSER_CUT_QUERY);
-  return <><LocationProbe />{token && <StudioPoserCutHandoffHost ready id={token} owner={null} exists={(id) => layers.has(id)}
-    insert={(cut, id) => { setLayers((previous) => new Map(previous).set(id, cut)); return true; }} />}
+  const params = new URLSearchParams(location.search);
+  const token = params.get(POSER_CUT_QUERY);
+  const room = params.get("room");
+  const [instantWorkId] = useState(() => resolveStudioLiveInstantWorkIdForTab({
+    workId: null, remixId: null, roomId: room, storage: sessionStorage, navigationType: "navigate",
+  }));
+  const runtime: StudioDocumentLayoutRuntime = {
+    documentKey: "test", documentId: null, draftId: null, documentWorkspace: null, draftSessionEpoch: 0,
+    instantWorkId, liveRoomParam: room, liveInviteRoleParam: null,
+    projectId: null, remixId: null, workId: null,
+  };
+  return <><LocationProbe />{token && (
+    <StudioDocumentLayoutContext value={runtime}>
+      <StudioPoserCutHandoffHost ready id={token} owner={null} exists={(id) => layers.has(id)}
+        insert={(cut, id) => { setLayers((previous) => new Map(previous).set(id, cut)); return true; }} />
+    </StudioDocumentLayoutContext>
+  )}
     {[...layers].map(([id, cut]) => <img key={id} alt="포즈 레이어" src={cut.pngDataUrl} width={cut.width} height={cut.height} />)}</>;
 }
 
-function renderPage(initialEntry = "/studio/poser"): void {
+const readyGuest: SessionContextValue = {
+  data: null, ready: true, status: "unauthenticated", update: async () => null,
+};
+function renderPage(initialEntry = "/studio/poser", session = readyGuest): void {
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
-        <Route path="/studio/poser" element={<StudioPoserPage />} />
+        <Route path="/studio/poser" element={<SessionContext value={session}><StudioPoserPage /></SessionContext>} />
         <Route path="/studio" element={<LocationProbe />} />
         <Route path="/studio/canvas" element={<StrictMode><CutEditorProbe /></StrictMode>} />
         <Route path="/studio/p/:project/d/:document" element={<StrictMode><CutEditorProbe /></StrictMode>} />
@@ -137,12 +157,28 @@ describe("StudioPoserPage (/studio/poser)", () => {
   it("저장 공간이 부족하면 포저를 유지하고 같은 화면에서 다시 캡처한다", () => {
     useToastStore.setState({ toasts: [] });
     renderPage();
-    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new DOMException("quota", "QuotaExceededError"); });
+    const setItem = Storage.prototype.setItem;
+    let quotaExceeded = false;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key, value) {
+      if (key.startsWith("toonstudio:poser:cut:") && !quotaExceeded) {
+        quotaExceeded = true;
+        throw new DOMException("quota", "QuotaExceededError");
+      }
+      setItem.call(this, key, value);
+    });
     fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
     expect(screen.getByTestId("poser-panel")).toBeTruthy();
     expect(useToastStore.getState().toasts.at(-1)?.tone).toBe("error");
     fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
     expect(screen.getByAltText("포즈 레이어")).toBeTruthy();
+  });
+
+  it("계정 확인 전에는 전달을 등록하지 않는다", () => {
+    renderPage("/studio/poser", { ...readyGuest, ready: false });
+    fireEvent.click(screen.getByRole("button", { name: "캡처 저장" }));
+    expect(screen.getByTestId("poser-panel")).toBeTruthy();
+    expect(useToastStore.getState().toasts.at(-1)?.message).toContain("계정을 확인한 뒤");
+    expect(Object.keys(sessionStorage).some((key) => key.startsWith("toonstudio:poser:cut:"))).toBe(false);
   });
 
   it("이전 판본의 목적지 없는 캡처는 원고를 선택해 명시적으로 복구한다", () => {
