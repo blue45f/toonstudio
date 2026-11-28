@@ -834,7 +834,7 @@ export function resolvePropAttachment(
   const fit = getPropFitStatus(def, instance, metrics);
   const baseScale = clamp(finite(def.defaultScale) ?? 1, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
   const scale = clamp(baseScale * fit.fitScale * deltaScale, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
-  const measuredGrip = measuredPropGripSocket(def.id, anchor, targetHand, metrics, scale);
+  const measuredGrip = measuredPropGripSocket(def.id, anchor, targetHand, metrics, scale, rig.mode === "auto");
   const activeSocket = measuredGrip ?? handSocket ?? headwearSocket ?? faceSocket;
   const socketBasis = activeSocket
     ? new THREE.Quaternion(...activeSocket.rotationQuaternion).normalize()

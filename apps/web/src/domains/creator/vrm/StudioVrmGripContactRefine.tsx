@@ -14,9 +14,10 @@ import {
   type StudioVrmGripDigitOrdinal,
 } from "./studio-vrm-grip-contact-targets";
 import { usesDefaultFittedThumbGrip } from "./studio-vrm-microphone-grip";
-import { createFittedThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
+import { createFittedDigitContactPass } from "./studio-vrm-microphone-thumb-contact";
 import { createAutoGripFingerOverrides, resolvePropAttachment, resolveSecondaryPropTarget } from "./studio-vrm-prop-rig";
 import { propDefById } from "./studio-vrm-props";
+import { useStudioVrmIdleBookClearance } from "./use-studio-vrm-idle-book-clearance";
 import {
   createStudioVrmVirtualFingertipProbe,
   sampleStudioVrmVirtualFingertip,
@@ -53,8 +54,8 @@ export function createStudioVrmGripContactPasses(
   const passes: StudioVrmGripContactPass[] = [];
   for (const item of items) {
     const def = propDefById(item.propId);
-    // Flat, precision-pinch and support poses keep their own authored profiles.
-    if (!item.rig?.autoFingerPose || !def?.grip || !["cylinder", "handle"].includes(def.grip.kind)) continue;
+    const book = item.propId === "book" && usesDefaultFittedThumbGrip(item, metrics);
+    if (!item.rig?.autoFingerPose || !def?.grip || (!book && !["cylinder", "handle"].includes(def.grip.kind))) continue;
     let resolved: ResolvedPropAttachment;
     try { resolved = resolvePropAttachment(def, item, metrics); } catch { continue; }
     if (!resolved.usesSmartRig) continue;
@@ -76,8 +77,15 @@ export function createStudioVrmGripContactPasses(
       const handSize = side === "left" ? metrics.leftHand : metrics.rightHand;
       if (![radius, handSize].every((value) => Number.isFinite(value) && value > 0)) continue;
 
+      if (book) {
+        for (const digit of DIGITS) {
+          const pass = createFittedDigitContactPass(vrm, side, resolved, handSize, locked, digit.name);
+          if (pass) passes.push(pass);
+        }
+        continue;
+      }
       const thumbContact = usesDefaultFittedThumbGrip(item, metrics)
-        ? createFittedThumbContactPass(vrm, side, resolved, handSize, locked) : null;
+        ? createFittedDigitContactPass(vrm, side, resolved, handSize, locked) : null;
       if (thumbContact) passes.push(thumbContact);
 
       hand.updateWorldMatrix(true, true);
@@ -281,7 +289,7 @@ export function createStudioVrmGripContactPasses(
 
 const NO_LOCKS: readonly string[] = [];
 
-export function StudioVrmGripContactRefine({ vrm, items, metrics, rigRevision, lockedBones = NO_LOCKS, disabled = false, capturePaused = false }: {
+export function StudioVrmGripContactRefine({ vrm, items, metrics, rigRevision, lockedBones = NO_LOCKS, disabled = false, capturePaused = false, idleBookPoseId }: {
   vrm: VRM;
   items: readonly PropInstance[];
   metrics: VrmPropRigMetrics;
@@ -289,8 +297,10 @@ export function StudioVrmGripContactRefine({ vrm, items, metrics, rigRevision, l
   lockedBones?: readonly string[];
   disabled?: boolean;
   capturePaused?: boolean;
+  idleBookPoseId?: string;
 }) {
   const invalidate = useThree((state) => state.invalidate);
+  useStudioVrmIdleBookClearance(vrm, items, metrics, lockedBones, disabled ? undefined : idleBookPoseId, rigRevision, capturePaused);
   const passes = useMemo(() => {
     void rigRevision;
     return disabled ? [] : createStudioVrmGripContactPasses(vrm, items, metrics, lockedBones);

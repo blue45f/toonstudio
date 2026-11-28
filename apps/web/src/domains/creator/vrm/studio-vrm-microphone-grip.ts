@@ -45,7 +45,8 @@ export function usesDefaultFittedThumbGrip(item: PropInstance, metrics: VrmPropR
   const rig = item.rig;
   const hand = item.bone;
   const fittedAnchor = (item.propId === "mic" && rig?.anchorId === "palm-grip")
-    || (item.propId === "mug" && rig?.anchorId === "handle-grip");
+    || (item.propId === "mug" && rig?.anchorId === "handle-grip")
+    || (item.propId === "book" && rig?.anchorId === "cover-grip");
   return fittedAnchor && (hand === "rightHand" || hand === "leftHand")
     && metrics.handSockets[hand].source === "measured" && rig?.mode === "auto"
     && rig.autoScale && rig.autoFingerPose && rig.gripFit === 1 && rig.deltaScale === 1

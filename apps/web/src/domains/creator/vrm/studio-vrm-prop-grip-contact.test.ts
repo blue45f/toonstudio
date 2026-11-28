@@ -34,44 +34,67 @@ async function load(file: string) {
 
 describe("VRM prop grip contact", () => {
   it.each([
-    ["sample-vrm", "apps/web/public/vrm/sample.vrm"],
-    ["shino", MODEL.file],
-  ])("%s의 대기 자세에서 머그 입구가 수평이고 검지·중지가 고리 안을 지난다", async (id, file) => {
+    ["sample-vrm", "apps/web/public/vrm/sample.vrm", 6],
+    ["shino", MODEL.file, 6],
+    ["jennifer", "apps/web/public/vrm/Jennifer.vrm", 9],
+    ["ts-vrm-hero-v1-chibi-mascot", "apps/web/public/vrm/toonstudio-hero-v1/chibi-mascot.vrm", 8],
+    ["ts-vrm-hero-v1-academy-female-blazer", "apps/web/public/vrm/toonstudio-hero-v1/academy-female-blazer.vrm", 8],
+  ] as const)("%s의 대기 자세에서 양손 검지·중지가 머그 고리를 통과하고 입구가 수평에 가깝다", async (id, file, tiltLimit) => {
     const vrm = await load(file);
-    const pose = pickNaturalIdlePose(id);
-    applyPoseToVrm(vrm, stripFingerBones(pose.bones), pose.yOffset ?? 0, undefined, { skipPalmCorrect: true });
     const metrics = measureVrmPropRigMetrics(vrm);
-    const mug = createPropInstance("mug", "test-handle")!;
-    applyFingerRotations(vrm, createAutoGripFingerOverrides([mug], propDefById, metrics));
-    correctVrmHangingHandPalmTwist(vrm);
-    createStudioVrmGripContactPasses(vrm, [mug], metrics, []).forEach(pass => pass.run());
-    const hand = vrm.humanoid.getNormalizedBoneNode("rightHand")!;
-    const fit = resolvePropAttachment(propDefById("mug")!, mug, metrics);
-    const rotation = hand.getWorldQuaternion(new THREE.Quaternion()).multiply(
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(
-        THREE.MathUtils.degToRad(fit.rotationDeg[0]),
-        THREE.MathUtils.degToRad(fit.rotationDeg[1]),
-        THREE.MathUtils.degToRad(fit.rotationDeg[2]),
-      )),
-    );
-    expect(new THREE.Vector3(0, 1, 0).applyQuaternion(rotation).y).toBeGreaterThan(Math.cos(6 * Math.PI / 180));
-    const grip = hand.localToWorld(new THREE.Vector3(...fit.socketPosition));
-    const inverse = rotation.clone().invert();
-    for (const finger of ["Index", "Middle"] as const) {
-      const chain = (["Proximal", "Intermediate", "Distal"] as const).map(segment =>
-        vrm.humanoid.getNormalizedBoneNode(`right${finger}${segment}`)!.getWorldPosition(new THREE.Vector3())
-          .sub(grip).applyQuaternion(inverse).divideScalar(fit.scale).add(new THREE.Vector3(...fit.anchor.position)),
+    const pose = pickNaturalIdlePose(id);
+    for (const side of ["right", "left"] as const) {
+      applyPoseToVrm(vrm, stripFingerBones(pose.bones), pose.yOffset ?? 0, undefined, { skipPalmCorrect: true });
+      const bone = `${side}Hand` as const;
+      const mug = { ...createPropInstance("mug", "test-handle")!, bone };
+      applyFingerRotations(vrm, createAutoGripFingerOverrides([mug], propDefById, metrics));
+      correctVrmHangingHandPalmTwist(vrm);
+      createStudioVrmGripContactPasses(vrm, [mug], metrics, []).forEach(pass => pass.run());
+      const hand = vrm.humanoid.getNormalizedBoneNode(bone)!;
+      const fit = resolvePropAttachment(propDefById("mug")!, mug, metrics);
+      const rotation = hand.getWorldQuaternion(new THREE.Quaternion()).multiply(
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(
+          THREE.MathUtils.degToRad(fit.rotationDeg[0]),
+          THREE.MathUtils.degToRad(fit.rotationDeg[1]),
+          THREE.MathUtils.degToRad(fit.rotationDeg[2]),
+        )),
       );
-      // GLB 손잡이 고리는 XY 평면에서 반지름 26mm, 튜브 두께 반지름 6.5mm다.
-      const throughOpening = chain.slice(1).some((end, i) => {
-        const start = chain[i]!;
-        if (start.z * end.z > 0 || start.z === end.z) return false;
-        const crossing = start.clone().lerp(end, start.z / (start.z - end.z));
-        return Math.hypot(crossing.x - 0.045, crossing.y) < 0.026 - 0.0065;
-      });
-      expect(throughOpening, finger).toBe(true);
+      expect(new THREE.Vector3(0, 1, 0).applyQuaternion(rotation).y, side)
+        .toBeGreaterThan(Math.cos(THREE.MathUtils.degToRad(tiltLimit)));
+      const grip = hand.localToWorld(new THREE.Vector3(...fit.socketPosition));
+      const inverse = rotation.clone().invert();
+      for (const finger of ["Index", "Middle"] as const) {
+        const chain = (["Proximal", "Intermediate", "Distal"] as const).map(segment =>
+          vrm.humanoid.getNormalizedBoneNode(`${side}${finger}${segment}`)!.getWorldPosition(new THREE.Vector3())
+            .sub(grip).applyQuaternion(inverse).divideScalar(fit.scale).add(new THREE.Vector3(...fit.anchor.position)),
+        );
+        // 고리 안쪽 반지름 19.5mm에서 손가락 피부가 들어갈 4.5mm를 남긴다.
+        const throughOpening = chain.slice(1).some((end, i) => {
+          const start = chain[i]!;
+          if (start.z * end.z > 0 || start.z === end.z) return false;
+          const crossing = start.clone().lerp(end, start.z / (start.z - end.z));
+          return Math.hypot(crossing.x - 0.045, crossing.y) < 0.015;
+        });
+        expect(throughOpening, `${side}${finger}`).toBe(true);
+      }
     }
   }, 120_000);
+
+  it("수동 머그 장착과 불완전한 손가락 리그는 기존 손바닥 기준점을 유지한다", async () => {
+    const vrm = await load(MODEL.file);
+    const metrics = measureVrmPropRigMetrics(vrm);
+    const partialMetrics = { ...metrics, boneWorldPositions: { ...metrics.boneWorldPositions } };
+    delete partialMetrics.boneWorldPositions.rightMiddleIntermediate;
+    const item = createPropInstance("mug", "manual-grip");
+    const def = propDefById("mug");
+    if (!item?.rig || !def) throw new Error("머그 기본 장착점이 없습니다.");
+    const manual = { ...item, rig: { ...item.rig, mode: "custom" as const, autoScale: false } };
+    const stored = resolvePropAttachment(def, manual, metrics);
+    expect(resolvePropAttachment(def, manual, partialMetrics)).toEqual(stored);
+    const auto = { ...manual, rig: { ...manual.rig, mode: "auto" as const } };
+    expect(resolvePropAttachment(def, auto, partialMetrics).socketPosition).toEqual(stored.socketPosition);
+    expect(resolvePropAttachment(def, auto, metrics).socketPosition).not.toEqual(stored.socketPosition);
+  });
 
   it("lands the anchor on the palm socket and wraps fingers around the grip", async () => {
     const { createAutoGripFingerOverrides, measureVrmPropRigMetrics, resolvePropAttachment } =
