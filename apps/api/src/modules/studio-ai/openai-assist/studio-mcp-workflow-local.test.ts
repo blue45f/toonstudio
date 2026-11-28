@@ -25,6 +25,9 @@ describe("원고에 근거한 로컬 제작 계획", () => {
     "새 캔버스 1360×760px, 카메라 렌즈 91mm. webtoon-global 출고 점검. 허용 도구 studio.canvas.create, studio.bg3d.compose_scene, studio.export.preflight_check.",
     "새 캔버스 1360×760px\n카메라 렌즈 91mm\nwebtoon-global 출고 점검",
     "새 캔버스 1360×760px.\r\n카메라 렌즈 91mm.\r\nwebtoon-global 출고 점검.",
+    "새 캔버스 1360×760px.\n카메라 렌즈 91mm.\nwebtoon-global 출고 점검.\n허용 도구 studio.canvas.create, studio.bg3d.compose_scene, studio.export.preflight_check.",
+    "허용 도구: studio.canvas.create,\nstudio.bg3d.compose_scene,\nstudio.export.preflight_check.\n새 캔버스 1360×760px, 카메라 렌즈 91mm, webtoon-global 출고 점검",
+    "새 캔버스 1360×760px, 카메라 렌즈 91mm, webtoon-global 출고 점검, 허용 도구: studio.canvas.create, studio.bg3d.compose_scene, studio.export.preflight_check.",
   ])("새 장면의 규격·렌즈를 실제 MCP에 전달하고 미확인 권리에서 멈춘다 (%s)", (instructions) => {
     const data = plan("연출 목표: 물 위 부표와 먼 방파제의 거리감\n" + instructions);
     expect(data.steps.map((step) => step.toolName)).toEqual(["studio.canvas.create", "studio.bg3d.compose_scene", "studio.export.preflight_check"]);
@@ -40,7 +43,7 @@ describe("원고에 근거한 로컬 제작 계획", () => {
   });
 
   it("특정 레이어의 수치·단위를 수동 단계에 남기고 확인 후 점검으로 재개한다", () => {
-    const data = plan("새 캔버스 730×1240픽셀. 잔물결 레이어의 불투명도 17.5%. 외곽광선 반경 6px. 허용 도구는 studio.canvas.create, studio.photoshop.apply_layer_fx, studio.export.preflight_check.");
+    const data = plan("새 캔버스 730×1240픽셀. 잔물결 레이어의 불투명도 17.5%. 외곽광선 반경 6px. 보정 후 출고 점검. 허용 도구는 studio.canvas.create, studio.photoshop.apply_layer_fx, studio.export.preflight_check.");
     expect(data.steps.map((entry) => entry.toolName)).toEqual(["studio.canvas.create", "studio.export.preflight_check"]);
     expect(data.summary).toContain("잔물결 레이어의 불투명도 17.5%");
     expect(data.summary).toContain("외곽광선 반경 6px");
@@ -110,6 +113,15 @@ describe("원고에 근거한 로컬 제작 계획", () => {
     const data = plan(request + "\n카메라 렌즈 91mm\nwebtoon-global 출고 점검");
     expect(data.steps).toEqual([]);
     expect(data.summary).toContain("수동 확인 대기");
+  });
+
+  it("명시적인 허용 목록은 권한만 제한하고 기존 원고에 작업을 추가하지 않는다", () => {
+    const allowed = "허용 도구 studio.canvas.create, studio.bg3d.compose_scene, studio.export.preflight_check.";
+    expect(plan(allowed).steps).toEqual([]);
+    expect(plan("현재 캔버스의 폭을 보존하세요.\n" + allowed).steps).toEqual([]);
+    expect(plan("승인하면:\n" + allowed + "\n새 캔버스 1360×760px. 카메라 렌즈 91mm.").steps).toEqual([]);
+    expect(plan("새 캔버스 1360×760px.\n" + allowed + "\n생성 취소.").steps).toEqual([]);
+    expect(plan("새 캔버스 1360×760px 생성. studio.canvas.create를 호출.\n허용 도구 studio.export.preflight_check.").steps).toEqual([]);
   });
 
   it("다음 행에서 취소한 캔버스의 매크로는 실제 MCP 세션의 원본 문서와 장면을 보존한다", () => {

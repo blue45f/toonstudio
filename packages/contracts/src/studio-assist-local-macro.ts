@@ -10,6 +10,14 @@ function excerpt(value: string, limit: number): string {
 
 const PIXEL_SIZE = /(?<![\d.-])(\d{1,6})\s*(?:px|픽셀)?\s*[×xX*]\s*(\d{1,6})(?![\d.])(?:[ \t]*(px|픽셀|[a-z]+|밀리미터|센티미터|인치|포인트|미터|%))?/giu;
 
+const TOOL_NAME = /studio\.[a-z0-9_]+\.[a-z0-9_]+/gu;
+const ALLOWED_TOOL_LIST = new RegExp([
+  "(?<![\\p{L}\\p{N}])허용(?:한|된)?[ \\t]*도구(?:[ \\t]*목록)?(?:는|은)?[ \\t:：]*\\s*",
+  `(${TOOL_NAME.source}(?:(?:[ \\t]*,\\s*|[ \\t]*\\r?\\n[ \\t]*)${TOOL_NAME.source})*)`,
+  "(?:[ \\t]*(?:[0-9]+|한|두|세|네)[ \\t]*가지(?:입니다)?)?[ \\t]*",
+  "(?=$|[.。](?=\\s|$)|\\r?\\n|,(?!\\s*studio\\.))",
+].join(""), "gu");
+
 function readCanvasSize(clauses: readonly string[]) {
   const sizes = new Map<string, { width: number; height: number }>();
   for (const part of clauses) {
@@ -39,7 +47,8 @@ function requestedCanvasClauses(brief: string) {
   for (const sentence of sentences) {
     const normalizedSentence = sentence.replace(PIXEL_SIZE, "규격값");
     if (!/(?:새로운|새|신규|가상)\s*캔버스|캔버스(?:를|는)?\s*(?:규격값(?:으로|로|을|를)?\s*)?(?:새로\s*)?(?:만들|만든|만듭|생성|초기화)|규격값\s*(?:\d+화\s*)?캔버스(?:를)?\s*만들/u.test(normalizedSentence)) continue;
-    const [first, ...rest] = sentence.trim().split(/\s*(?:,|\r?\n)\s*/u);
+    const [first, ...rest] = sentence.trim().split(/\s*(?:,|\r?\n)\s*/u).filter(Boolean);
+    if (!first) continue;
     // 쉼표와 줄바꿈 뒤에는 독립된 제작 수치나 점검 지시만 허용한다.
     if (!rest.every((part) => /^(?:(?:카메라\s*)?(?:시작\s*)?(?:렌즈|초점거리)(?:는|를)?\s*\d+(?:\.\d+)?\s*mm|(?:별도\s*)?(?:효과\s*)?레이어(?:의)?\s*불투명도(?:\s*시작값은|는)?\s*\d+(?:\.\d+)?\s*%)(?:입니다)?$/iu.test(part)
       || /^(?:(?:naver-webtoon|kakao-webtoon|webtoon-global|print-cmyk)\s*)?(?:출고|사전|내보내기)\s*점검$/iu.test(part))) return null;
@@ -78,12 +87,19 @@ function readLensValues(clauses: readonly string[]) {
 }
 
 export function buildLocalWorkflowMacro(input: string, projectTitle: string): MacroData {
-  const source = input.split(/^[ \t]*(?:\[원고\](?=\s|$)|\d+\s*컷[.:：](?=\s|$))/mu, 1)[0];
+  const brief = input.split(/^[ \t]*(?:\[원고\](?=\s|$)|\d+\s*컷[.:：](?=\s|$))/mu, 1)[0];
+  const allowlists: Set<string>[] = [];
+  const source = brief.replace(ALLOWED_TOOL_LIST, (_declaration, names: string) => {
+    allowlists.push(new Set(names.match(TOOL_NAME)));
+    return "";
+  });
   const title = excerpt(projectTitle, 120) || "현재 원고";
   const clauses = source.replace(/(\d),(?=\d{3}(?:\D|$))/gu, "$1")
     .split(/(?:[.!?。](?=\s|$)|[,;\n])/u).map((part) => part.trim()).filter(Boolean);
-  const namedTools = new Set(source.match(/studio\.[a-z0-9_]+\.[a-z0-9_]+/gu) ?? []);
-  const canPlan = (tool: string) => namedTools.size === 0 || namedTools.has(tool);
+  const namedTools = new Set(source.match(TOOL_NAME) ?? []);
+  const canPlan = (tool: string) => allowlists.length
+    ? allowlists.every((allowed) => allowed.has(tool))
+    : namedTools.size === 0 || namedTools.has(tool);
   const steps: MacroData["steps"] = [];
   const notes: string[] = [];
   const addStep = (toolName: string, reasonKo: string, args: Record<string, unknown>) => {
@@ -151,7 +167,7 @@ export function buildLocalWorkflowMacro(input: string, projectTitle: string): Ma
     addStep(addLayer, `현재 작업면에 ‘${layer.name}’ 레이어를 추가합니다${setting}. 실제 ID는 반환된 layer.id에서 확인하세요.`,
       { name: layer.name, ...opacity });
   }
-  const fxRequested = /림라이트|외곽광선|그림자 효과|레이어 스타일|효과(?:의|\s*자체의)?\s*(?:불투명도|강도)|layer[_ ]fx|outer-glow|drop-shadow|opacityPct|radiusPx/iu.test(source);
+  const fxRequested = /효과\s*레이어|림라이트|외곽광선|그림자 효과|레이어 스타일|효과(?:의|\s*자체의)?\s*(?:불투명도|강도)|layer[_ ]fx|outer-glow|drop-shadow|opacityPct|radiusPx/iu.test(source);
   if (layersRequested && (!createLayer || fxRequested)) {
     const settings = clauses.filter((part) => /불투명도|opacityPct|반경|반지름|radiusPx/iu.test(part));
     const values = settings.length ? `원고 설정 ‘${excerpt(settings.join(", "), 100)}’의 대상과 단위를 대조하세요. ` : "";
