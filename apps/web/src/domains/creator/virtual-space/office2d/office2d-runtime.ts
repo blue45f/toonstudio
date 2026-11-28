@@ -6,7 +6,7 @@
  * 기존 Phaser·3D 스테이지와 같은 계약(StudioVirtualSpacePhaserCanvasProps)을 따른다.
  */
 import { StudioCameraPanRuntime } from "../studio-virtual-space-camera-pan";
-import type { StudioVirtualSpaceEngineBridge, StudioVirtualSpaceWalkResult } from "../studio-virtual-space-engine-bridge";
+import type { StudioVirtualSpaceWalkResult } from "../studio-virtual-space-engine-bridge";
 import {
   STUDIO_VIRTUAL_SPACE_NEARBY_NPC_LIMIT,
   STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS,
@@ -18,7 +18,7 @@ import {
 import { STUDIO_INTERACT_KEY_CODES } from "../studio-virtual-space-interact-prompt";
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { studioNpcActivityLabel, studioNpcInteraction, studioNpcLabel } from "../studio-virtual-space-npc-director";
-import { nearestInteraction, type StudioVirtualSpacePhaserCanvasProps } from "../studio-virtual-space-phaser-canvas-model";
+import { nearestInteraction } from "../studio-virtual-space-phaser-canvas-model";
 import { studioPoseSeatAnchors } from "../studio-virtual-space-pose-controller";
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
 import { findStudioWorldPath } from "../studio-virtual-space-world-pathfinding";
@@ -27,7 +27,6 @@ import {
   studioWorldPortals,
   studioWorldRoomAt,
   studioWorldSpawn,
-  type StudioVirtualSpaceWorldManifest,
   type StudioWorldInteractionDefinition,
   type StudioWorldPortalDefinition,
 } from "../studio-virtual-space-world-manifest";
@@ -42,7 +41,8 @@ import { createOffice2dNpc, stepOffice2dNpc, type Office2dNpcState } from "./off
 import { Office2dParticles } from "./office2d-particles";
 import { OFFICE2D_CATEGORY, Office2dPhysicsWorld } from "./office2d-physics";
 import type { Office2dCanvas2D } from "./office2d-procedural-art";
-import { Office2dRenderer, type Office2dPropVisual, type Office2dRendererHost } from "./office2d-renderer";
+import { Office2dRenderer, type Office2dPropVisual } from "./office2d-renderer";
+import type { Office2dRuntimeOptions } from "./office2d-runtime-contract";
 import { office2dSceneFor, type Office2dScene, type Office2dSeatVisual } from "./office2d-scene";
 import { Office2dSelfPose } from "./office2d-self-pose";
 import { studioUserStatusLabel } from "./office2d-status";
@@ -51,35 +51,7 @@ import { Office2dTeleportVeil } from "./office2d-teleport-veil";
 import { office2dAccentFor, office2dCharacterForAvatar, office2dCharacterForNpc, office2dHashIndex, type Office2dCharacterKey } from "./office2d-sprite-catalog";
 import { kickOffice2dNearbyProp, office2dDaylight, office2dPathSpeedMultiplier, Office2dStageExtensions } from "./office2d-stage-extensions";
 
-export type Office2dRuntimeCallbacks = Pick<StudioVirtualSpacePhaserCanvasProps,
-  | "onLocalState" | "onInteract" | "onNearbyInteractionChange" | "onPeerSelect" | "onCancelFollow" | "onPortal" | "onZoneChange"
-  | "onNearbyNpcsChange" | "onStuckChange" | "onGhostModeChange" | "onNpcInteract" | "onSelfImpact" | "onRuntimeMetrics"
-  | "onObjectStateChange" | "onTileEffectTrigger" | "onGuideTourChange">;
-
-export type Office2dStageProps = Pick<StudioVirtualSpacePhaserCanvasProps,
-  "atmosphere" | "spaceTheme" | "decorations" | "placedFixtures" | "tileEffects" | "waveActorIds" | "guideTourRequest">;
-
-export interface Office2dRuntimeOptions {
-  readonly manifest: StudioVirtualSpaceWorldManifest;
-  readonly bridge: StudioVirtualSpaceEngineBridge;
-  readonly host: Office2dRendererHost;
-  readonly selfIdentity: string;
-  readonly getSnapshot: () => StudioVirtualSpaceSnapshot;
-  readonly getSelfName: () => string;
-  readonly getSeatedActors: () => NonNullable<StudioVirtualSpacePhaserCanvasProps["seatedActors"]>;
-  readonly getCallbacks: () => Office2dRuntimeCallbacks;
-  readonly getStageProps?: () => Office2dStageProps;
-  readonly getLanguage: () => "ko" | "en";
-  readonly getReducedMotion: () => boolean;
-  /** 스테이지 상단 음소거 토글 상태(없으면 소리 허용). */
-  readonly getSoundMuted?: () => boolean;
-  /** 실제 시계(ms). 테스트는 고정 값을 넣는다. */
-  readonly clock?: () => number;
-  /** 참가자 아바타 번호 + 신원 → 직군 시트. 없으면 번호를 시트 수로 나눈 나머지로 고른다. */
-  readonly getAvatarCharacter?: (avatarIndex: number, identity: string) => Office2dCharacterKey;
-  /** 빈 작업실을 채우는 상주 동료를 둘지(기본 true). */
-  readonly ambientCoworkers?: boolean;
-}
+export type { Office2dRuntimeCallbacks, Office2dRuntimeOptions, Office2dStageProps } from "./office2d-runtime-contract";
 
 const SELF_BODY = "actor:self";
 const SELF_RADIUS = 12;
