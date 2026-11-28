@@ -64,12 +64,16 @@ export const HUMAN_EVALUATION_RUBRIC = {
   note: "모델명을 가린 실제 응답을 사례별로 비교해야 한다. 자동 계약 통과는 한국어 품질 점수가 아니며, 10개 사례로 일반 성능 우열을 추정하지 않는다.",
 } as const;
 
+function normalizeForComparison(text: string): string {
+  return text.normalize("NFC").trim().replace(/\s+/gu, " ");
+}
+
 export function evaluateCreditOutput(result: OpenAiAssistStructuredResult): readonly { name: string; passed: boolean }[] {
   if (result.mode === "dialogue-polish") {
     const { balloons } = result.data;
     const labels = new Set(balloons.map((item) => item.toneLabel));
     // 말풍선 경계나 줄바꿈만 옮긴 문장은 같은 대안이다. 비교할 때만 공백을 정리한다.
-    const lines = balloons.map(({ line, subBubble }) => `${line} ${subBubble}`.normalize("NFC").trim().replace(/\s+/gu, " "));
+    const lines = balloons.map(({ line, subBubble }) => normalizeForComparison(`${line} ${subBubble}`));
     return [{
       name: "three-tone-alternatives",
       passed: balloons.length === DIALOGUE_TONE_LABELS.length
@@ -79,6 +83,14 @@ export function evaluateCreditOutput(result: OpenAiAssistStructuredResult): read
     }];
   }
   if (result.mode === "script-to-cuts") return [{ name: "four-sequential-cuts", passed: result.data.cuts.length === 4 && result.data.cuts.every((cut, index) => cut.cutNumber === index + 1) }];
-  if (result.mode === "idea-remix") return [{ name: "five-distinct-lenses", passed: result.data.angles.length === 5 && new Set(result.data.angles.map((angle) => angle.lens)).size === 5 }];
+  if (result.mode === "idea-remix") {
+    const { angles } = result.data;
+    const pitches = angles.map(({ pitch }) => normalizeForComparison(pitch));
+    return [
+      { name: "five-distinct-lenses", passed: angles.length === 5 && new Set(angles.map(({ lens }) => lens)).size === 5 },
+      { name: "distinct-idea-pitches", passed: pitches.every((pitch) => /\p{L}/u.test(pitch)) && new Set(pitches).size === angles.length },
+      { name: "first-cut-per-idea", passed: angles.every(({ firstCutHint }) => /\p{L}/u.test(firstCutHint)) },
+    ];
+  }
   return [{ name: "service-schema", passed: true }];
 }
