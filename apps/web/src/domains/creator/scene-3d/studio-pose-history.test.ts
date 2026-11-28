@@ -133,4 +133,19 @@ describe("studio-pose-history (되돌리기/다시실행)", () => {
       handContacts: { right: "chin" },
     });
   });
+
+  it("몸만 바꾼 단계는 양방향 이력에 별도로 편집한 손가락 상태를 끼워 넣지 않는다", () => {
+    const hands = { fingerPose: { right: { index: [12, 30, 42] as const } }, leftSplayDeg: {}, rightSplayDeg: { index: 8 } };
+    const handHistory = recordStudioPoseHistory(createStudioPoseHistory(), poseWithSpine(0), { hands });
+    const bodyHistory = recordStudioPoseHistory(handHistory, poseWithSpine(12), { contrapposto: "left" });
+    const liveHands = { ...hands, leftSplayDeg: { index: -9 } };
+    const undone = undoStudioPoseHistory(bodyHistory, poseWithSpine(24), { contrapposto: "right", hands: liveHands });
+    if (!undone) throw new Error("몸 포즈의 되돌리기 단계가 없습니다.");
+    expect(undone.meta).toEqual({ contrapposto: "left" });
+    expect(undone.history.futureMeta).toEqual([{ contrapposto: "right" }]);
+
+    const redone = redoStudioPoseHistory(undone.history, undone.pose, { contrapposto: "left", hands: liveHands });
+    expect(redone?.meta).toEqual({ contrapposto: "right" });
+    expect(redone?.history.pastMeta).toEqual([{ hands }, { contrapposto: "left" }]);
+  });
 });

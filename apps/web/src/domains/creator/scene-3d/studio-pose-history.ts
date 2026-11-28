@@ -7,6 +7,7 @@
  * 쓸 필요가 없다. Three.js import 없음 — 단위 테스트 가능하다.
  */
 
+import type { StudioMannequinHandState } from "./studio-mannequin-ecorche-anatomy";
 import type {
   StudioMannequinContrappostoSide,
   StudioMannequinHandContactMap,
@@ -18,6 +19,8 @@ export const STUDIO_POSE_HISTORY_MAX_DEPTH = 30 as const;
 
 /** 포즈 스냅샷과 함께 오가는 선택적 의미론적 접촉·동세 메타데이터. */
 export interface StudioMannequinPoseSemanticMeta {
+  /** 손가락까지 변경한 명령만 양손의 굽힘과 벌림을 함께 되돌린다. */
+  readonly hands?: StudioMannequinHandState;
   readonly handContacts?: StudioMannequinHandContactMap;
   readonly contrapposto?: StudioMannequinContrappostoSide | null;
 }
@@ -46,6 +49,7 @@ function trimTail<T>(entries: readonly T[]): readonly T[] {
 
 function normalizeHistoryMeta(
   meta: StudioMannequinPoseSemanticMeta | undefined,
+  includeHands = true,
 ): StudioMannequinPoseSemanticMeta | undefined {
   if (!meta) return undefined;
   const left = meta.handContacts?.left;
@@ -61,8 +65,10 @@ function normalizeHistoryMeta(
     meta.contrapposto === "left" || meta.contrapposto === "right"
       ? meta.contrapposto
       : undefined;
-  if (!handContacts && !contrapposto) return undefined;
+  const hands = includeHands ? meta.hands : undefined;
+  if (!handContacts && !contrapposto && !hands) return undefined;
   return {
+    ...(hands ? { hands } : {}),
     ...(handContacts ? { handContacts } : {}),
     ...(contrapposto ? { contrapposto } : {}),
   };
@@ -126,7 +132,7 @@ export function undoStudioPoseHistory(
   const nextPast = history.past.slice(0, -1);
   const nextFuture = trimTail([current, ...history.future]);
 
-  const normalizedCurrentMeta = normalizeHistoryMeta(currentMeta);
+  const normalizedCurrentMeta = normalizeHistoryMeta(currentMeta, Boolean(meta?.hands));
   const hasAnyMeta =
     Boolean(history.pastMeta?.some(Boolean)) ||
     Boolean(history.futureMeta?.some(Boolean)) ||
@@ -172,7 +178,7 @@ export function redoStudioPoseHistory(
   const meta = history.futureMeta?.[0];
   const nextPast = trimTail([...history.past, current]);
 
-  const normalizedCurrentMeta = normalizeHistoryMeta(currentMeta);
+  const normalizedCurrentMeta = normalizeHistoryMeta(currentMeta, Boolean(meta?.hands));
   const hasAnyMeta =
     Boolean(history.pastMeta?.some(Boolean)) ||
     Boolean(history.futureMeta?.some(Boolean)) ||
