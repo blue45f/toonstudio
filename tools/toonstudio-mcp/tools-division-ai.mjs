@@ -591,13 +591,13 @@ export function createDivisionAndAiMcpTools({ state, persistState, apiUrl, remot
             enum: ["naver-webtoon", "kakao-webtoon", "webtoon-global", "print-cmyk"],
           },
           requireCleanRightsBom: { type: "boolean" },
-          rightsBomClean: { type: "boolean" },
+          rightsBomClean: { type: "boolean", description: "기본값은 미확인입니다. 권리 검토 완료를 확인한 경우에만 true를 전달하세요." },
         },
       },
       handler: (args = {}) => {
         const platform = String(args.platform || "naver-webtoon");
         const requireBom = args.requireCleanRightsBom !== false;
-        const bomClean = args.rightsBomClean !== false;
+        const bomClean = args.rightsBomClean === true;
         const checks = [];
 
         const minWidth = platform === "print-cmyk" ? 2_400 : 800;
@@ -606,13 +606,15 @@ export function createDivisionAndAiMcpTools({ state, persistState, apiUrl, remot
           status: state.canvas.width >= minWidth ? "pass" : "fix",
           detail: `현재 폭 ${state.canvas.width}px (기준 ${minWidth}px · ${platform})`,
         });
-        checks.push({
-          id: "rights-bom",
-          status: !requireBom || bomClean ? "pass" : "blocked",
-          detail: bomClean
-            ? "Rights BOM 상업 라이선스 검증 통과"
-            : "Rights BOM 미확인 에셋이 있어 출고를 차단합니다.",
-        });
+        if (requireBom) {
+          checks.push({
+            id: "rights-bom",
+            status: bomClean ? "pass" : "blocked",
+            detail: bomClean ? "입력에서 Rights BOM 권리 검토 완료를 확인했습니다." : "Rights BOM 권리 검토가 확인되지 않아 출고를 차단합니다.",
+          });
+        } else {
+          checks.push({ id: "rights-bom", status: "skipped", detail: "요청에 따라 Rights BOM 검사를 생략했습니다." });
+        }
         checks.push({
           id: "zero-bill-ai-provenance",
           status: "pass",

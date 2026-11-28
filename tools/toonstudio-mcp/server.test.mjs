@@ -184,7 +184,32 @@ test("6. 기존 분업 OS 4종 · 무과금 AI & 현지화 5종 MCP 툴이 시�
   });
   assert.equal(assist.run.inputPreview.includes(fakeKey), false);
   assert.equal(callTool(engine, 28, "studio.localization.translate_episode", { targetLocales: ["en", "ja"] }).ok, true);
-  assert.equal(callTool(engine, 29, "studio.export.preflight_check", { platform: "naver-webtoon" }).verdict, "ready");
+  assert.equal(callTool(engine, 29, "studio.export.preflight_check", { platform: "naver-webtoon" }).verdict, "blocked");
+});
+
+test("필수 Rights BOM은 명시적으로 확인한 경우만 통과하고 생략한 검사는 구분한다", () => {
+  const engine = createToonStudioMcpEngine({ dryRun: true, env: {} });
+  const preflight = (args = {}) => callTool(engine, 1, "studio.export.preflight_check", args);
+  for (const input of [{}, { requireCleanRightsBom: true }, { rightsBomClean: null }, { rightsBomClean: "true" }, { rightsBomClean: false }]) {
+    const result = preflight(input);
+    assert.equal(result.ok, false);
+    assert.equal(result.verdict, "blocked");
+    assert.equal(result.checks.find((item) => item.id === "rights-bom").status, "blocked");
+  }
+  const verified = preflight({ rightsBomClean: true });
+  assert.equal(verified.verdict, "ready");
+  assert.equal(verified.checks.find((item) => item.id === "rights-bom").status, "pass");
+  for (const rightsBomClean of [undefined, false, true]) {
+    const skipped = preflight({ requireCleanRightsBom: false, rightsBomClean });
+    assert.equal(skipped.verdict, "ready");
+    const check = skipped.checks.find((item) => item.id === "rights-bom");
+    assert.equal(check.status, "skipped");
+    assert.match(check.detail, /생략/);
+  }
+  const narrow = preflight({ platform: "print-cmyk", rightsBomClean: true });
+  assert.equal(narrow.verdict, "needs-fix");
+  assert.equal(narrow.checks.find((item) => item.id === "canvas-resolution").status, "fix");
+  assert.equal(preflight({ platform: "print-cmyk" }).verdict, "blocked");
 });
 
 test("7. toonstudio_preflight_6platforms가 6대 플랫폼 규격·Rights BOM·미지원 입력을 점검한다", () => {
