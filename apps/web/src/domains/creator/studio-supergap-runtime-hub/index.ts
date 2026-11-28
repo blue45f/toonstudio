@@ -47,3 +47,9 @@ export {
   StudioSupergapStatusDrawer,
   type StudioSupergapStatusDrawerProps,
 } from "./StudioSupergapStatusDrawer";
+
+export {
+  createFullStudioSupergapRuntimeHub,
+  createWave68To70ExtensionSubsystems,
+  registerWave68To70Extensions,
+} from "./wave68-70-extensions";

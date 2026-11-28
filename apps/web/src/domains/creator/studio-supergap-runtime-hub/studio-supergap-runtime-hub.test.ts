@@ -22,9 +22,15 @@ import {
   LoopbackBridgeTransportError,
   StudioSupergapStatusDrawer,
   assertValidLoopbackBaseUrl,
+  createFullStudioSupergapRuntimeHub,
   createStudioSupergapRuntimeHub,
   probeDesktopLoopbackBridge,
 } from "./index";
+import { StudioSupergapRuntimeHubLazyHost } from "../runtime-leaves/studio-supergap-runtime-hub-lazy";
+import {
+  closeStudioSupergapRuntimeHub,
+  toggleStudioSupergapRuntimeHub,
+} from "../runtime-leaves/studio-supergap-runtime-hub-lazy-bridge";
 
 afterEach(() => {
   cleanup();
@@ -595,5 +601,43 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
 
     fireEvent.click(screen.getByRole("button", { name: "초격차 런타임 허브 닫기" }));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("createFullStudioSupergapRuntimeHub가 Wave 68·69·70 실전 확장까지 11종 전체를 오류 0건으로 진단한다", async () => {
+    const hub = createFullStudioSupergapRuntimeHub({
+      loopbackConfig: { fetchImpl: unreachableFetch },
+    });
+    expect(hub.getRegisteredSubsystems().length).toBe(11);
+
+    const report = await hub.runDiagnosticSelfCheck();
+    expect(report.allHealthy).toBe(true);
+    expect(report.errorCount).toBe(0);
+    expect(report.subsystems.length).toBe(11);
+
+    const byId = new Map(report.subsystems.map((item) => [item.id, item]));
+    expect(byId.get("wave68ShallowWaterFluid")?.status).toBe("live-connected");
+    expect(byId.get("wave68ShallowWaterFluid")?.metrics.withinTwoPercentBudget).toBe(true);
+    expect(byId.get("wave68ShallowWaterFluid")?.metrics.wgslAllPassed).toBe(true);
+    expect(byId.get("wave69MotionToon60fps")?.status).toBe("live-connected");
+    expect(byId.get("wave69MotionToon60fps")?.metrics.zeroBlackBorderSafe).toBe(true);
+    expect(byId.get("wave70NeuralDistillVault")?.status).toBe("live-connected");
+    expect(byId.get("wave70NeuralDistillVault")?.metrics.isMedicalOrBiometric).toBe(false);
+    expect(byId.get("wave70NeuralDistillVault")?.metrics.merkleLedgerValid).toBe(true);
+  });
+
+  it("StudioSupergapRuntimeHubLazyHost가 열기 전 0 DOM 유지 후 토글 시 11종 허브 드로어를 지연 마운트한다", async () => {
+    closeStudioSupergapRuntimeHub();
+    render(createElement(StudioSupergapRuntimeHubLazyHost));
+    expect(screen.queryByTestId("studio-supergap-status-drawer")).toBeNull();
+
+    toggleStudioSupergapRuntimeHub();
+    await waitFor(() => {
+      expect(screen.getByTestId("studio-supergap-status-drawer")).toBeTruthy();
+    });
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByTestId("studio-supergap-status-drawer")).toBeNull();
+    });
   });
 });

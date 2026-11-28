@@ -1,4 +1,4 @@
-import { Brush, Gauge, PenTool, Volume1, Volume2, VolumeX } from "lucide-react";
+import { Brush, Cpu, Gauge, PenTool, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -10,6 +10,11 @@ import {
   subscribeStudioTactileReliefMode,
   type StudioTactileReliefMode,
 } from "../brush/studio-tactile-physical-relief-runtime";
+import {
+  isStudioSupergapRuntimeHubOpen,
+  subscribeStudioSupergapRuntimeHubOpen,
+  toggleStudioSupergapRuntimeHub,
+} from "../runtime-leaves/studio-supergap-runtime-hub-lazy-bridge";
 import { clearStudioDynamicCoverageCommittedCache } from "../studio-dynamic-brush-coverage-renderer";
 
 import {
@@ -95,10 +100,14 @@ export function StudioLiveFoleyFeelControls({
   const [tactileReliefMode, setTactileReliefMode] = useState<StudioTactileReliefMode>(() =>
     getStudioTactileReliefMode(),
   );
+  const [supergapHubOpen, setSupergapHubOpen] = useState<boolean>(() =>
+    isStudioSupergapRuntimeHubOpen(),
+  );
 
   useEffect(() => subscribeLiveFoleyState(setFoleyState), []);
   useEffect(() => subscribeStudioPressureCurve(setPressureCurve), []);
   useEffect(() => subscribeLiveNibVfxMode(setNibVfxMode), []);
+  useEffect(() => subscribeStudioSupergapRuntimeHubOpen(setSupergapHubOpen), []);
   useEffect(() => {
     setTactileReliefMode(hydrateInteractiveStudioTactileReliefMode());
     return subscribeStudioTactileReliefMode(setTactileReliefMode);
@@ -179,6 +188,30 @@ export function StudioLiveFoleyFeelControls({
       >
         <Brush size={15} aria-hidden />
         <span>{`${bt("실물 질감", "Tactile")} · ${tactileReliefShort}`}</span>
+      </button>
+
+      <button
+        type="button"
+        className="studio-drawing-ergonomics-chip [word-break:keep-all]"
+        aria-pressed={supergapHubOpen}
+        data-studio-supergap-hub-trigger="true"
+        data-studio-aux-control="true"
+        data-studio-compact-icon-chip="true"
+        onClick={() => {
+          const nextOpen = toggleStudioSupergapRuntimeHub();
+          onPushCue?.(
+            "E",
+            bt("초격차 엔진 허브", "Super-Gap Engine Hub"),
+            nextOpen ? bt("열림", "Open") : bt("닫힘", "Closed"),
+          );
+        }}
+        title={bt(
+          "데스크톱 네이티브 GPU/NPU 브릿지 및 초격차 런타임 엔진 허브 열기",
+          "Open Desktop Native GPU/NPU Bridge and Super-Gap Runtime Engine Hub",
+        )}
+      >
+        <Cpu size={15} aria-hidden />
+        <span>{bt("엔진 허브", "Engine Hub")}</span>
       </button>
 
       {hidePressureChip ? null : (
