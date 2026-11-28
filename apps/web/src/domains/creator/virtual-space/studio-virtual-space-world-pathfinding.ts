@@ -32,8 +32,8 @@ interface StudioWorldPathfindingCache {
   readonly occupancy: Uint8Array;
   /** 격자점 사이 직선 통과 캐시. 키 = from 셀 × 셀 수 + to 셀. */
   readonly lines: Map<number, boolean>;
-  /** 시작 키 → 목표 키 → 경로. 좌표는 0.5px 단위로 반올림한다. */
-  readonly paths: Map<number, Map<number, readonly StudioVirtualSpacePoint[]>>;
+  /** 충돌 경계 양쪽과 서로 다른 도착 좌표가 같은 결과를 공유하지 않도록 실제 좌표 쌍을 쓴다. */
+  readonly paths: Map<string, Map<string, readonly StudioVirtualSpacePoint[]>>;
   pathCount: number;
 }
 
@@ -65,7 +65,7 @@ function gridCell(
   if (point.x < radius || point.y < radius || point.x > manifest.width - radius || point.y > manifest.height - radius) return null;
   const gx = point.x / lattice.grid, gy = point.y / lattice.grid;
   const rx = Math.round(gx), ry = Math.round(gy);
-  if (Math.abs(gx - rx) > 1e-6 || Math.abs(gy - ry) > 1e-6) return null;
+  if (gx !== rx || gy !== ry) return null;
   if (rx < 0 || ry < 0 || rx >= lattice.columns || ry >= lattice.rows) return null;
   return ry * lattice.columns + rx;
 }
@@ -369,19 +369,10 @@ function arrivalCell(
   return cellFree(manifest, cache, colliders, gx, gy, radius) ? gy * lattice.columns + gx : null;
 }
 
-function roundedPointKey(point: StudioVirtualSpacePoint): number {
-  // 0.5px 단위. 월드 최대 10000px → 20001 이하 두 값을 하나의 안전한 정수로 묶는다.
-  return Math.round(point.x * 2) * 32_768 + Math.round(point.y * 2);
-}
-
-function cachedPath(cache: StudioWorldPathfindingCache, start: number, target: number): readonly StudioVirtualSpacePoint[] | undefined {
-  return cache.paths.get(start)?.get(target);
-}
-
 function storePath(
   cache: StudioWorldPathfindingCache,
-  start: number,
-  target: number,
+  start: string,
+  target: string,
   path: readonly StudioVirtualSpacePoint[],
   max = MAX_PATH_CACHE,
 ): readonly StudioVirtualSpacePoint[] {
@@ -408,13 +399,13 @@ export function findStudioWorldPath(
 ): readonly StudioVirtualSpacePoint[] {
   if (![start.x, start.y, target.x, target.y, radius].every(Number.isFinite) || radius <= 0) return [];
   const cache = cacheFor(manifest, radius);
-  const startKey = roundedPointKey(start);
-  const targetKey = roundedPointKey(target);
-  const cached = cachedPath(cache, startKey, targetKey);
-  if (cached) return cached;
-  const colliders = studioWorldCollisionRects(manifest);
   const boundedStart = clampStudioWorldPoint(manifest, start, radius);
   const boundedTarget = clampStudioWorldPoint(manifest, target, radius);
+  const startKey = `${boundedStart.x},${boundedStart.y}`;
+  const targetKey = `${boundedTarget.x},${boundedTarget.y}`;
+  const cached = cache.paths.get(startKey)?.get(targetKey);
+  if (cached) return cached;
+  const colliders = studioWorldCollisionRects(manifest);
 
   if (!canOccupyWithColliders(manifest, colliders, boundedStart, radius)) {
     return storePath(cache, startKey, targetKey, EMPTY_PATH);
@@ -468,12 +459,13 @@ export function findStudioWorldPath(
       let cursor = current;
       while (cameFrom[cursor]! >= 0) {
         cursor = cameFrom[cursor]!;
-        if (cursor === startCell) break;
-        reversed.push(cellPoint(manifest, lattice, cursor, radius));
+        const point = cellPoint(manifest, lattice, cursor, radius);
+        if (cursor !== startCell || point.x !== boundedStart.x || point.y !== boundedStart.y) reversed.push(point);
       }
       reversed.reverse();
       const targetPoint = cellPoint(manifest, lattice, targetCell, radius);
-      if (canOccupyWithColliders(manifest, colliders, boundedTarget, radius)
+      if ((targetPoint.x !== boundedTarget.x || targetPoint.y !== boundedTarget.y)
+        && canOccupyWithColliders(manifest, colliders, boundedTarget, radius)
         && lineWalkable(manifest, colliders, targetPoint, boundedTarget, radius)) {
         reversed.push(boundedTarget);
       }
@@ -486,6 +478,7 @@ export function findStudioWorldPath(
     const currentG = gScore[current]!;
     const cx = current % columns, cy = Math.floor(current / columns);
 
+    const currentPoint = cellPoint(manifest, lattice, current, radius);
     for (const [dx, dy] of DIRECTIONS) {
       const nx = cx + dx, ny = cy + dy;
       if (!cellFree(manifest, cache, colliders, nx, ny, radius)) continue;
@@ -499,6 +492,7 @@ export function findStudioWorldPath(
       const speed = cache.uniformSurface ? 1 : studioSemanticSurfaceAt(manifest, cellPoint(manifest, lattice, next, radius)).speedMultiplier;
       const tentative = currentG + (dx !== 0 && dy !== 0 ? SQRT2 : 1) * (1 / Math.max(.35, speed));
       if (tentative >= gScore[next]!) continue;
+      if (!lineWalkable(manifest, colliders, currentPoint, cellPoint(manifest, lattice, next, radius), radius)) continue;
       cameFrom[next] = current;
       gScore[next] = tentative;
       const score = tentative + Math.hypot(targetX - nx, targetY - ny);

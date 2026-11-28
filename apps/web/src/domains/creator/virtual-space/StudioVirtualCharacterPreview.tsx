@@ -14,7 +14,7 @@ const LazyStudioScene3dExpansionPanel = lazyRetry(
   "StudioScene3dExpansionPanel",
 );
 
-export function StudioVirtualCharacterPreview({ skin, facing = "down", motion = "idle", frameIndex, crop = "frame", className, style, alt = "" }: {
+interface StudioVirtualCharacterPreviewProps {
   readonly skin: StudioCharacterSkin;
   readonly facing?: StudioVirtualSpaceFacing;
   readonly motion?: StudioCharacterMotionState;
@@ -31,9 +31,11 @@ export function StudioVirtualCharacterPreview({ skin, facing = "down", motion = 
   readonly className?: string;
   readonly style?: CSSProperties;
   readonly alt?: string;
-}) {
+}
+
+/** 버튼·상태창 안에서도 중첩 조작 요소 없이 사용할 수 있는 캐릭터 그림. */
+export function StudioVirtualCharacterPortrait({ skin, facing = "down", motion = "idle", frameIndex, crop = "frame", className, style, alt = "" }: StudioVirtualCharacterPreviewProps) {
   const clipId = useId();
-  const [expansionOpen, setExpansionOpen] = useState(false);
   const base = studioCharacterStaticAsset(skin, facing, motion);
   const asset = frameIndex !== undefined && Number.isSafeInteger(frameIndex) && frameIndex >= 0
     ? { ...base, frame: frameIndex }
@@ -44,7 +46,7 @@ export function StudioVirtualCharacterPreview({ skin, facing = "down", motion = 
   const viewFrame = bust ? (frame ? studioCharacterBustFrame(asset) : null) : frame;
   // 축소 사본은 원본과 같은 비율이라 같은 좌표계(atlas 크기)에 늘려 그려도 칸 좌표가 그대로 맞는다. 원본 시트를 쓰는 자산에만 적용한다.
   const previewHref = skin.previewTextureUrl && asset.url === skin.directional[facing] ? skin.previewTextureUrl : asset.url;
-  const previewNode = asset.type === "image" && !skin.sharedAtlas
+  return asset.type === "image" && !skin.sharedAtlas
     ? <img className={classes} style={style} src={asset.url} alt={alt} draggable={false} decoding="async" data-character-crop={bust ? "bust" : undefined} />
     : <svg className={classes} style={style} viewBox={viewFrame ? `${viewFrame.x} ${viewFrame.y} ${viewFrame.width} ${viewFrame.height}` : "0 0 1 1"}
       preserveAspectRatio={bust ? "xMidYMid slice" : "xMidYMax meet"} overflow="hidden" focusable="false" role={alt ? "img" : undefined} aria-label={alt || undefined} aria-hidden={!alt || undefined}
@@ -55,9 +57,13 @@ export function StudioVirtualCharacterPreview({ skin, facing = "down", motion = 
         <image href={previewHref} x="0" y="0" width={asset.atlas.width} height={asset.atlas.height} preserveAspectRatio="none" clipPath={`url(#${clipId})`} />
       </> : null}
     </svg>;
+}
+
+export function StudioVirtualCharacterPreview(props: StudioVirtualCharacterPreviewProps) {
+  const [expansionOpen, setExpansionOpen] = useState(false);
   return (
     <>
-      {previewNode}
+      <StudioVirtualCharacterPortrait {...props} />
       <details
         data-testid="studio-scene3d-expansion-disclosure"
         className="mt-2 rounded-xl border border-line bg-panel p-2 text-left"

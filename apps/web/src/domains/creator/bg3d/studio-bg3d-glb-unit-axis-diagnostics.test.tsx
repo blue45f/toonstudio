@@ -3,10 +3,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 import {
   StudioBg3dPlacementPreviewBar,
   StudioBg3dSnapAndAxisQuickCard,
 } from "./StudioBg3dPlacementAndAxisHud";
+import { getStudioBg3dEnvironmentAsset } from "./studio-bg3d-environment-catalog";
 import {
   diagnoseStudioBg3dGlbUnitAndAxis,
   standUpZUpRotation,
@@ -17,8 +20,11 @@ import {
   type StudioBg3dSnapSettings,
 } from "./studio-bg3d-object-ops";
 
+const initialLanguage = useI18n.getState().lang;
+
 afterEach(() => {
   cleanup();
+  useI18n.setState({ lang: initialLanguage });
 });
 
 describe("P2-18 GLB 단위·축 진단 및 3D 배치 HUD", () => {
@@ -108,7 +114,7 @@ describe("P2-18 GLB 단위·축 진단 및 3D 배치 HUD", () => {
     });
     render(
       <StudioBg3dPlacementPreviewBar
-        assetName="카페 의자.glb"
+        asset={{ modelId: "cafe-chair", name: "카페 의자.glb" }}
         targetKind="ground"
         glbDiagnostics={report}
         viewportButtonClassName="btn"
@@ -120,6 +126,56 @@ describe("P2-18 GLB 단위·축 진단 및 3D 배치 HUD", () => {
     const alert = screen.getByTestId("bg3d-glb-unit-axis-preview-alert");
     expect(alert.textContent).toContain("GLB 밀리미터");
     expect(alert.textContent).toContain("위쪽 축(Z-up → Y-up) 오류 의심");
+  });
+
+  it("번들 카드와 같은 이름을 사용하고 직접 보관한 모델의 이름과 데스크톱 조작 안내를 유지한다", () => {
+    const bundle = getStudioBg3dEnvironmentAsset("ts-bg3d-hero-v1-kr_modern_apartment_living-desktop");
+    if (!bundle) throw new Error("한국 현대 거실 번들 필요");
+    const modelLibrary = [
+      { id: bundle.id, name: bundle.name, source: "sample" },
+      { id: "custom-chair", name: "라이브러리 이전 이름", source: "sqlite-opfs" },
+    ] as const;
+    const controls = {
+      targetKind: "surface" as const,
+      modelLibrary,
+      viewportButtonClassName: "btn",
+      onRotateCounterClockwise: vi.fn(),
+      onRotateClockwise: vi.fn(),
+      onCancel: vi.fn(),
+    };
+    const view = render(<StudioBg3dPlacementPreviewBar {...controls}
+      asset={{ modelId: bundle.id, name: "kr_modern_apartment_living" }} />);
+
+    const group = screen.getByRole("group", { name: "한국 현대 원룸·아파트 거실 배치" });
+    expect(group.getAttribute("aria-describedby")).toBe(screen.getByText("표면 ·", { exact: false }).id);
+    expect(screen.queryByText("kr_modern_apartment_living 배치")).toBeNull();
+    expect(screen.getByText("클릭 확정 · Shift 축 고정 · [ ] 15° 회전").className).toContain("pointer-coarse:hidden");
+    expect(screen.getByText("장면을 탭해 배치 · 버튼으로 15° 회전").className).toContain("hidden pointer-coarse:inline");
+
+    view.rerender(<StudioBg3dPlacementPreviewBar {...controls}
+      asset={{ modelId: "custom-chair", name: "내 작업용 의자.glb" }} />);
+    expect(screen.getByRole("group", { name: "내 작업용 의자.glb 배치" })).toBeTruthy();
+    expect(screen.queryByText("라이브러리 이전 이름 배치")).toBeNull();
+    view.rerender(<StudioBg3dPlacementPreviewBar {...controls}
+      asset={{ modelId: "missing-library-record", name: "등록 목록 없는 책상.glb" }} />);
+    expect(screen.getByRole("group", { name: "등록 목록 없는 책상.glb 배치" })).toBeTruthy();
+  });
+
+  it("영어 모드도 사용자 모델 이름을 보존하고 배치 문맥과 조작을 영어로 안내한다", () => {
+    useI18n.setState({ lang: "en" });
+    render(<StudioBg3dPlacementPreviewBar
+      asset={{ modelId: "custom-chair", name: "오후 빛의 의자.glb" }}
+      targetKind="ground"
+      viewportButtonClassName="btn"
+      onRotateCounterClockwise={vi.fn()}
+      onRotateClockwise={vi.fn()}
+      onCancel={vi.fn()}
+    />);
+    expect(screen.getByRole("group", { name: "Place 오후 빛의 의자.glb" })).toBeTruthy();
+    expect(screen.getByText("Floor ·", { exact: false })).toBeTruthy();
+    expect(screen.getByText("Click to place · Hold Shift to lock the axis · [ ] to rotate 15°")).toBeTruthy();
+    expect(screen.getByText("Tap the scene to place · Use the buttons to rotate 15°")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel 3D model placement" })).toBeTruthy();
   });
 
   it("스냅이 꺼져 있어도 축 고정·바닥 맞춤·Z-up 원클릭 세우기가 동작한다", () => {

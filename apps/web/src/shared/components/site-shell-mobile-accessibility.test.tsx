@@ -299,20 +299,21 @@ describe("mobile site shell accessibility", () => {
     expect(document.documentElement.style.overflow).toBe("");
   });
 
-  it("reserves the fixed quick-navigation height below the mobile footer", () => {
-    const { container } = render(
-      <MemoryRouter>
+  it.each([
+    ["/", "pb-[env(safe-area-inset-bottom)]"],
+    ["/discover", "pb-[calc(3.75rem+env(safe-area-inset-bottom))]"],
+  ])("uses the route-specific mobile footer padding on %s", (pathname, mobilePadding) => {
+    render(
+      <MemoryRouter initialEntries={[pathname]}>
         <SiteFooter />
       </MemoryRouter>
     );
 
-    const footer = container.querySelector("footer");
+    const footer = screen.getByRole("contentinfo");
     // S1-3: 푸터도 전체 메뉴·⌘K와 같은 목적지 집합을 쓰므로 "제작 기술"을 더 이상 따로 빼지 않는다.
     expect(screen.getByRole("link", { name: "제작 기술" }).getAttribute("href")).toBe("/about/technology");
-    expect(footer?.className).toContain(
-      "pb-[calc(3.75rem+env(safe-area-inset-bottom))]"
-    );
-    expect(footer?.className).toContain("md:pb-0");
+    expect(Array.from(footer.classList).filter((className) => className.startsWith("pb-"))).toEqual([mobilePadding]);
+    expect(footer.classList.contains("md:pb-0")).toBe(true);
   });
 
   it("closes the mobile full-menu when clicking a link that points to the current pathname", async () => {

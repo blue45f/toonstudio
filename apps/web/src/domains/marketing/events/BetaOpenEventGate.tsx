@@ -4,11 +4,12 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
+import { useElementHeight } from "@/shared/lib/overlay-clearance";
 import Link from "@/shared/navigation/router-link";
 import { betaOpenEventGateVariant } from "./beta-open-event-gate-policy";
 import { BETA_OPEN_EVENT, resolveMarketingEventStatus } from "./event-catalog";
@@ -52,6 +53,7 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
   const { data: session, ready, status } = useSession();
   const [visible, setVisible] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const compactAsideRef = useRef<HTMLElement>(null);
   const userId = status === "authenticated" ? session?.user?.id ?? null : null;
   const signupMonths = BETA_OPEN_EVENT.signupFreeMonths;
   const publicContentCount = BETA_OPEN_EVENT.minimumPublicContentCount;
@@ -60,6 +62,7 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
   const gateVariant = active ? betaOpenEventGateVariant(pathname) : null;
   const eligible = gateVariant !== null;
   const compact = gateVariant === "compact";
+  useElementHeight(compactAsideRef, "--beta-open-compact-height", visible && compact);
 
   const dismiss = useCallback(() => {
     markMarketingEventSeen(BETA_OPEN_EVENT.id, userId);
@@ -129,6 +132,7 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
   if (compact) {
     return createPortal(
       <aside
+        ref={compactAsideRef}
         role="region"
         aria-live="polite"
         aria-label={text({ ko: "베타 오픈 혜택", en: "Beta opening benefit" })}

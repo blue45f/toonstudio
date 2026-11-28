@@ -27,6 +27,7 @@ import { office2dAtlasDrawFrame, office2dAtlasImageMatches } from "./office2d-at
 import { Office2dActorSmoothingCache, resolveOffice2dEmoteTransform } from "./office2d-emote-motion";
 import { resolveOffice2dStandingExpression } from "./office2d-standing-expression";
 import type { Office2dCamera } from "./office2d-camera";
+import { paintOffice2dRouteGuide } from "./office2d-route-guide";
 import { office2dSignAlpha, type Office2dLabelBox } from "./office2d-label-layout";
 import { drawOffice2dKeycap, drawOffice2dOverlay, planOffice2dOverlay, type Office2dOverlayPlan } from "./office2d-overlay";
 import type { Office2dParticles } from "./office2d-particles";
@@ -117,6 +118,7 @@ export interface Office2dRenderFrame {
   readonly props: readonly Office2dPropVisual[];
   readonly nearbyInteractionId: string | null;
   readonly destination: StudioVirtualSpacePoint | null;
+  readonly waypoints?: readonly StudioVirtualSpacePoint[];
   readonly locateTarget: StudioVirtualSpacePoint | null;
   /** 0 = 밤, 1 = 낮. */
   readonly daylight: number;
@@ -180,6 +182,8 @@ export class Office2dRenderer {
     ctx.setTransform(scale, 0, 0, scale, (viewport.width / 2 - camera.x * camera.zoom) * pixelRatio, (viewport.height / 2 - camera.y * camera.zoom) * pixelRatio);
     ctx.imageSmoothingEnabled = true;
     const visible = camera.visibleRect(96);
+    const selfActor = frame.actors.find((actor) => actor.id === frame.selfId) ?? null;
+    const schematic = this.scene.kind === "toon-hq" && (frame.schematicMode ?? frame.extensions?.schematicMode);
     this.actorSmoothing.beginFrame(frame.time, frame.now, frame.reducedMotion);
     // 이름표 자리를 먼저 정해(측정만) 겹치는 벽 명판을 흐리게 그릴 수 있게 한다.
     const overlay = planOffice2dOverlay(ctx, frame);
@@ -187,6 +191,9 @@ export class Office2dRenderer {
     paintOffice2dRoomAmbientEffects(ctx, this.scene, visible, frame.time, frame.reducedMotion, (url) => this.host.image(url));
     frame.extensions?.drawFloorTileEffects(ctx, frame.tileEffects, visible, frame.time, frame.reducedMotion);
     this.drawPortals(ctx, frame);
+    if (!schematic && frame.destination && selfActor) {
+      paintOffice2dRouteGuide(ctx, selfActor, frame.waypoints ?? [], frame.destination, visible, camera.zoom, frame.time, frame.reducedMotion);
+    }
     this.drawShadows(ctx, frame, visible);
     this.drawSorted(ctx, frame, visible, overlay.boxes);
     this.actorSmoothing.endFrame();
@@ -198,12 +205,11 @@ export class Office2dRenderer {
       frame.language,
       (sprite, x, y, width, tone) => this.drawObjectSprite(ctx, sprite, undefined, x, y, width, undefined, tone, false),
     );
-    this.drawGuides(ctx, frame);
+    this.drawGuides(ctx, frame, selfActor);
     if (!frame.reducedMotion) frame.particles.draw(ctx);
     this.drawLighting(ctx, frame, visible);
-    const selfActor = frame.actors.find((actor) => actor.id === frame.selfId) ?? null;
     paintOffice2dPrivateRoomFocus(ctx, this.scene, selfActor, visible, frame.reducedMotion);
-    if (frame.schematicMode ?? frame.extensions?.schematicMode) {
+    if (schematic) {
       paintOffice2dSchematicOverlay(
         ctx,
         this.scene,
@@ -212,6 +218,9 @@ export class Office2dRenderer {
         frame.language,
         frame.extensions?.claimedSeatId ?? null,
       );
+      if (frame.destination && selfActor) {
+        paintOffice2dRouteGuide(ctx, selfActor, frame.waypoints ?? [], frame.destination, visible, camera.zoom, frame.time, frame.reducedMotion);
+      }
     }
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     if (frame.viewVeil !== undefined && frame.viewVeil > 0.01) {
@@ -659,15 +668,14 @@ export class Office2dRenderer {
     ctx.globalAlpha = 1;
   }
 
-  private drawGuides(ctx: Office2dCanvas2D, frame: Office2dRenderFrame): void {
-    const self = frame.actors.find((actor) => actor.id === frame.selfId) ?? null;
+  private drawGuides(ctx: Office2dCanvas2D, frame: Office2dRenderFrame, self: Office2dActor | null): void {
     const occupiedSeats = new Set(frame.actors.flatMap((actor) => (actor.seat ? [actor.seat.id] : [])));
     paintOffice2dDoorwayAndSeatPreview(
       ctx,
       this.scene,
       self,
       occupiedSeats,
-      frame.time,
+      frame.reducedMotion ? 0 : frame.time,
       frame.language,
       frame.extensions?.claimedSeatId ?? null,
     );
@@ -680,14 +688,6 @@ export class Office2dRenderer {
       ctx.strokeStyle = `rgba(255, 210, 120, ${pulse})`;
       ctx.lineWidth = 3;
       office2dRoundRect(ctx, footprint.x - 8, footprint.y - 6, footprint.width + 16, footprint.height + 14, 10);
-      ctx.stroke();
-    }
-    if (frame.destination) {
-      const t = frame.reducedMotion ? 0.5 : (frame.time * 1.6) % 1;
-      ctx.strokeStyle = `rgba(92, 195, 201, ${1 - t * 0.7})`;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.ellipse(frame.destination.x, frame.destination.y, 8 + t * 10, (8 + t * 10) * 0.45, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
     if (frame.locateTarget && self) {

@@ -290,7 +290,7 @@ export function VirtualSpaceExperience({
     markMoved: () => markCoachProxyRef.current("moved"),
     setPanel: (p) => setPanelProxyRef.current(p),
     setMapOpen: (o) => setMapOpenProxyRef.current(o),
-    moveDestination: moveDestinationState, setMoveDestination: setMoveDestinationState,
+    moveDestination: moveDestinationState, setMoveDestination: setMoveDestinationState, engineReportsDestination: stageKind === "office2d",
     selectedPeerId, socialFocused: activity === "focused" || activity === "away" || atmosphere === "focus",
     cancelFollowing: () => cancelFollowingProxyRef.current(),
     locationPathname: location.pathname, locationSearch: location.search, navigate, notify, bt,
@@ -505,6 +505,7 @@ export function VirtualSpaceExperience({
   const peopleBadge = { nearby: personal ? 0 : snapshot.nearbyPeers.length, incoming: incomingRequests.length };
   const selfDock = { identity: fallbackIdentity, name: localName, activity: snapshot.self.activity, userStatus: snapshot.self.userStatus, avatarIndex: snapshot.self.avatarIndex, appearance: snapshot.self.appearance };
   const moreItems = spaceMoreItems({ personal, desktop, panel: overlays.panel, proximityVideoOn: socialAndMedia.proximity.enabled, pose: localPose, zoomLevel: userZoom.available ? userZoom.level : null }, {
+    openWorkChoices: !personal && workProject.resumeHref ? () => overlays.setDockPopover("work") : undefined,
     toggleProximityVideo: socialAndMedia.mediaAvailable ? () => { if (socialAndMedia.proximity.enabled) socialAndMedia.proximity.stop(); else overlays.setMediaConsentOpen(true); } : undefined,
     openPanel: overlays.setPanel, openSeats: () => openOfficeSeatsRef.current(), openSearch: () => overlays.setSearchOpen(true),
     capturePhoto: captureVirtualPhoto, unstuck: () => engineBridge.requestUnstuck(), openHelp: () => overlays.setHelpOpen(true),
@@ -530,7 +531,7 @@ export function VirtualSpaceExperience({
   ], [boothConfig.roomId, worldRuntime.worldManifest.rooms]);
 
   const workLauncher = (
-    <SpaceWorkLauncher project={workProject} open={overlays.dockPopover === "work"} sheet={touch} onOpenChange={(o) => overlays.setDockPopover(o ? "work" : null)} trigger={(t) => <button type="button" {...t} data-workspace-primary-action="true" />}>
+    <SpaceWorkLauncher project={workProject} personal={personal} open={overlays.dockPopover === "work"} sheet={touch} onOpenChange={(o) => overlays.setDockPopover(o ? "work" : null)} trigger={(t) => <button type="button" {...t} data-workspace-primary-action="true" />}>
       <StudioVirtualSpaceOfficeStart snapshot={operations.snapshot} workId={projectId} showHeader={false} personal={personal} peerCount={snapshot.peers.length} onRefresh={operations.refresh} rolePreset={spaceRole} onGuidePlace={worldRuntime.moveToRoomOrPlace}
         onOpenWork={() => { overlays.setDockPopover(null); overlays.setPanel("work"); }} onOpenPeople={() => { overlays.setDockPopover(null); overlays.setPanel("people"); }} onOpenSeats={() => openOfficeSeatsRef.current()}
         onGuide={(d) => { overlays.setDockPopover(null); worldRuntime.moveToRoomOrPlace(d === "story" ? "writers" : d); }} />

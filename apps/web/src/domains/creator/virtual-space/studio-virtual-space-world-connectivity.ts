@@ -17,8 +17,6 @@ export interface StudioWorldConnectivityBounds {
 const MIN_NAVIGATION_GRID = 6;
 /** 월드 전체 격자 셀 수가 이 값을 넘지 않게 격자 간격을 넓힌다. */
 const TARGET_NAVIGATION_CELLS = 40_000;
-/** 선분 충돌 표본 간격. 격자 간격과 무관하게 얇은 벽을 건너뛰지 않게 고정한다. */
-const LINE_SAMPLE_STEP = 6;
 const MAX_CONNECTIVITY_EXPANSIONS = 40_000;
 const MAX_VALIDATION_EXPANSIONS = MAX_CONNECTIVITY_EXPANSIONS * 4;
 /** 충돌체 공간 해시 버킷 크기(px). */
@@ -133,14 +131,46 @@ export function studioWorldLineCanOccupy(
   to: StudioWorldConnectivityPoint,
   radius: number,
 ): boolean {
-  const distance = Math.hypot(to.x - from.x, to.y - from.y);
-  const steps = Math.max(1, Math.ceil(distance / LINE_SAMPLE_STEP));
-  for (let index = 1; index <= steps; index += 1) {
-    const progress = index / steps;
-    if (!studioWorldCircleCanOccupy(bounds, colliders, {
-      x: from.x + (to.x - from.x) * progress,
-      y: from.y + (to.y - from.y) * progress,
-    }, radius)) return false;
+  const minX = Math.min(from.x, to.x), maxX = Math.max(from.x, to.x);
+  const minY = Math.min(from.y, to.y), maxY = Math.max(from.y, to.y);
+  if (!(minX >= radius && minY >= radius && maxX <= bounds.width - radius && maxY <= bounds.height - radius)) return false;
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const radiusSquared = radius * radius;
+  const cornerHits = (x: number, y: number) => {
+    const rx = x - from.x, ry = y - from.y;
+    const along = rx * dx + ry * dy;
+    if (along <= 0 || along >= lengthSquared) return false;
+    const cross = rx * dy - ry * dx;
+    return cross * cross < radiusSquared * lengthSquared;
+  };
+  const hits = (rect: StudioWorldConnectivityRect) => {
+    const right = rect.x + rect.width, bottom = rect.y + rect.height;
+    const gapX = Math.max(0, rect.x - maxX, minX - right);
+    const gapY = Math.max(0, rect.y - maxY, minY - bottom);
+    if (gapX * gapX + gapY * gapY >= radiusSquared) return false;
+    // 축에 평행한 이동은 위 두 구간 거리의 합이 곧 선분과 사각형의 최소 거리다.
+    if (dx === 0 || dy === 0) return true;
+    if (circleHitsRect(rect, from.x, from.y, radiusSquared) || circleHitsRect(rect, to.x, to.y, radiusSquared)) return true;
+    if (gapX === 0 && gapY === 0) {
+      // x·y 투영이 겹치므로 선분 법선에 대한 분리축만 남는다. 사각형 중심을 기준으로 투영한다.
+      const centerCross = (rect.x + right - 2 * from.x) * dy - (rect.y + bottom - 2 * from.y) * dx;
+      if (Math.abs(centerCross) <= rect.width * Math.abs(dy) + rect.height * Math.abs(dx)) return true;
+    }
+    // 중심선이 사각형을 비껴 가면 최근접 쌍은 선분 끝점 또는 사각형 꼭짓점을 포함한다.
+    return cornerHits(rect.x, rect.y) || cornerHits(right, rect.y) || cornerHits(rect.x, bottom) || cornerHits(right, bottom);
+  };
+  const bx0 = Math.floor((minX - radius) / COLLIDER_BUCKET), bx1 = Math.floor((maxX + radius) / COLLIDER_BUCKET);
+  const by0 = Math.floor((minY - radius) / COLLIDER_BUCKET), by1 = Math.floor((maxY + radius) / COLLIDER_BUCKET);
+  if (colliders.length < COLLIDER_HASH_THRESHOLD || (bx1 - bx0 + 1) * (by1 - by0 + 1) > colliders.length) {
+    return !colliders.some(hits);
+  }
+  const { buckets } = colliderHash(colliders);
+  for (let by = by0; by <= by1; by += 1) {
+    for (let bx = bx0; bx <= bx1; bx += 1) {
+      const bucket = buckets.get(bucketKey(bx, by));
+      if (bucket) for (const index of bucket) if (hits(colliders[index]!)) return false;
+    }
   }
   return true;
 }
@@ -227,10 +257,13 @@ export class StudioWorldConnectivityIndex {
   private forEachNeighbor(index: number, visit: (next: number) => void): void {
     const gx = index % this.lattice.columns;
     const gy = Math.floor(index / this.lattice.columns);
+    const from = nodePoint(this.bounds, this.lattice.grid, gx, gy, this.radius);
     for (const [dx, dy] of CONNECTIVITY_DIRECTIONS) {
       const nx = gx + dx, ny = gy + dy;
       if (!this.free(nx, ny)) continue;
       if (dx !== 0 && dy !== 0 && (!this.free(gx + dx, gy) || !this.free(gx, gy + dy))) continue;
+      const to = nodePoint(this.bounds, this.lattice.grid, nx, ny, this.radius);
+      if (!studioWorldLineCanOccupy(this.bounds, this.colliders, from, to, this.radius)) continue;
       visit(this.cellIndex(nx, ny));
     }
   }

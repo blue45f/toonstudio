@@ -23,7 +23,7 @@ import {
   type ToonHqPhysicsProp,
 } from "./hq/toon-hq-blueprint";
 import { isToonHqManifest, toonHqFootprintRect, toonHqSeats, toonHqWallSegments, type ToonHqWallSegment } from "./hq/toon-hq-manifest";
-import { isOffice2dSpriteKey, OFFICE2D_SPRITE_SPECS, type Office2dSpriteKey } from "./office2d-sprite-catalog";
+import { isOffice2dSpriteKey, OFFICE2D_SPRITE_SPECS, office2dObjectUrl, type Office2dSpriteKey } from "./office2d-sprite-catalog";
 
 export type Office2dFloorKind = ToonHqFloor | "generic";
 
@@ -264,4 +264,16 @@ export function office2dSceneSpriteKeys(scene: Office2dScene): readonly Office2d
   for (const seat of scene.seats) if (seat.chair) keys.add(seat.chair);
   for (const prop of scene.physicsProps) keys.add(prop.sprite);
   return [...keys];
+}
+
+/** 배경·러그처럼 실제 바닥 청크에 구워지는 이미지만 추적한다. */
+export function office2dFloorAssetUrls(scene: Office2dScene): ReadonlySet<string> {
+  const urls = new Set<string>();
+  if (scene.backgroundUrl) urls.add(scene.backgroundUrl);
+  for (const object of scene.objects) {
+    if (object.layer !== "floor") continue;
+    const url = object.sprite ? office2dObjectUrl(object.sprite) : object.imageUrl;
+    if (url) urls.add(url);
+  }
+  return urls;
 }

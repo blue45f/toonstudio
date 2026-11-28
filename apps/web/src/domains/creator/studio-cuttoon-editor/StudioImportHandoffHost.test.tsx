@@ -169,6 +169,93 @@ describe("StudioImportHandoffHost", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("가져오기를 예약한 직후 전달이 만료되면 같은 작업 주소에서 파일 재선택을 안내한다", async () => {
+    vi.useFakeTimers();
+    try {
+      const file = new File(["{}"], "manuscript.json", { type: "application/json" });
+      const handoff = registerStudioImportHandoff(file, "json");
+      const path = `/studio/canvas?room=fixture-room&importHandoff=${handoff.token}&language=ko#page-2`;
+      window.history.replaceState({ keep: true }, "", path);
+      vi.setSystemTime(handoff.expiresAt - 1);
+      const input = props({ handoffToken: handoff.token });
+      const view = render(<StudioImportHandoffHost {...input} />);
+
+      expect(peekStudioImportHandoff(handoff.token)?.file).toBe(file);
+      expect(location.pathname + location.search + location.hash).toBe(path);
+      expect(view.queryByRole("alert")).toBeNull();
+      vi.setSystemTime(handoff.expiresAt + 1);
+      await act(async () => { await vi.runOnlyPendingTimersAsync(); });
+
+      expect(input.onProjectJson).not.toHaveBeenCalled();
+      expect(location.pathname + location.search + location.hash).toBe("/studio/canvas?room=fixture-room&language=ko#page-2");
+      expect(history.state).toEqual({ keep: true });
+      expect(view.getByRole("alert").textContent).toContain("가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다");
+      expect(view.getByRole("link", { name: "파일 다시 선택" }).getAttribute("href")).toBe("/studio/import");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    { waiting: "작업공간을 확인한 뒤 파일을 열어요", overrides: { workspaceReady: false } },
+    { waiting: "기존 가져오기 작업이 끝나면 파일을 열어요", overrides: { projectArchiveBusy: true } },
+  ])("$waiting 대기 중에도 만료 시 파일 재선택을 안내한다", async ({ waiting, overrides }) => {
+    vi.useFakeTimers();
+    try {
+      const file = new File(["{}"], "manuscript.json", { type: "application/json" });
+      const handoff = registerStudioImportHandoff(file, "json");
+      const path = `/studio/canvas?room=fixture-room&importHandoff=${handoff.token}&language=ko#page-2`;
+      window.history.replaceState({ keep: true }, "", path);
+      vi.setSystemTime(handoff.expiresAt - 10);
+      const input = props({ ...overrides, handoffToken: handoff.token });
+      const view = render(<StudioImportHandoffHost {...input} />);
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(9); });
+      expect(view.getByRole("status").textContent).toContain(waiting);
+      expect(location.pathname + location.search + location.hash).toBe(path);
+      expect(input.onProjectJson).not.toHaveBeenCalled();
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+      expect(view.queryByRole("status")).toBeNull();
+      expect(view.getByRole("link", { name: "파일 다시 선택" }).getAttribute("href")).toBe("/studio/import");
+      expect(view.getByRole("alert").textContent).toContain("가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다");
+      expect(location.pathname + location.search + location.hash).toBe("/studio/canvas?room=fixture-room&language=ko#page-2");
+      expect(history.state).toEqual({ keep: true });
+
+      view.rerender(<StudioImportHandoffHost {...input} workspaceReady projectArchiveBusy={false} />);
+      await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+      expect(input.onProjectJson).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("대기 중 새 주소를 열면 이전 파일의 만료가 새 파일의 가져오기에 영향을 주지 않는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const old = registerStudioImportHandoff(new File(["{}"], "previous.json", { type: "application/json" }), "json");
+      vi.setSystemTime(old.expiresAt - 10);
+      window.history.replaceState(null, "", `/studio/canvas?importHandoff=${old.token}`);
+      const input = props({ workspaceReady: false, handoffToken: old.token });
+      const view = render(<StudioImportHandoffHost {...input} />);
+
+      const next = registerStudioImportHandoff(new File(["{}"], "next.json", { type: "application/json" }), "json");
+      window.history.replaceState(null, "", `/studio/canvas?importHandoff=${next.token}`);
+      await act(async () => { await vi.advanceTimersByTimeAsync(10); });
+      expect(view.queryByRole("alert")).toBeNull();
+      expect(input.onProjectJson).not.toHaveBeenCalled();
+      expect(peekStudioImportHandoff(next.token)).toBe(next);
+      expect(new URLSearchParams(location.search).get("importHandoff")).toBe(next.token);
+
+      view.rerender(<StudioImportHandoffHost {...input} workspaceReady handoffToken={next.token} />);
+      await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+      expect(input.onProjectJson).toHaveBeenCalledOnce();
+      expect(vi.mocked(input.onProjectJson).mock.calls[0]?.[0].currentTarget.files?.[0]).toBe(next.file);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("처리 중인 전달은 다시 연 편집기에서 파일 재선택 안내로 이어지고 다시 적용되지 않는다", async () => {
     const file = new File(["{}"], "manuscript.json", { type: "application/json" });
     const handoff = registerStudioImportHandoff(file, "json");

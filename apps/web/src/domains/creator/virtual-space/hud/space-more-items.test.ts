@@ -12,6 +12,13 @@ function actions() {
 }
 
 describe("spaceMoreItems", () => {
+  it("주 버튼이 원고를 이어가는 공간에서도 더보기에서 다른 업무를 선택한다", () => {
+    const openWorkChoices = vi.fn();
+    const items = spaceMoreItems({ personal: false, desktop: false }, { ...actions(), openWorkChoices });
+    items.find((item) => item.id === "work-choices")?.onSelect();
+    expect(openWorkChoices).toHaveBeenCalledOnce();
+  });
+
   it("프로젝트 데스크톱 메뉴는 작업 도구와 연결 진단을 두고 도크에 있는 대화·꾸미기·나가기는 뺀다", () => {
     const ids = spaceMoreItems({ personal: false, desktop: true }, actions()).map((item) => item.id);
     expect(ids).toEqual(["today", "work", "sessions", "board", "annotation", "team", "seats", "town", "megaphone", "poll", "pose", "places", "search", "photo", "settings", "rtc", "unstuck", "help"]);

@@ -10,6 +10,27 @@
 @media(prefers-reduced-motion:reduce){.workspace-live-actions>:is(a,button)[data-workspace-primary-action="true"]{transition:none}.workspace-live-actions>:is(a,button)[data-workspace-primary-action="true"]:hover{transform:none}}
 @media(forced-colors:active){.workspace-live-actions>:is(a,button)[data-workspace-primary-action="true"]{border:2px solid ButtonText;box-shadow:none}}
 
+.space-work-recent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  margin-block: 4px 12px;
+  padding: 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: 12px;
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+  cursor: pointer;
+  text-align: start;
+}
+.space-work-recent > svg { flex: none; color: var(--color-accent); }
+.space-work-recent > span { display: grid; min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.space-work-recent small { color: var(--color-accent); font-weight: 700; }
+.space-work-recent > span > span { color: var(--color-fg-2); font-size: .8125rem; }
+.space-work-recent:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
 /* 공간 아트 스타일 카드: 작은 색 칩 대신 각 스타일의 실제 월드 미리보기를 보여 준다. */
 .studio-vspace-art-style-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .studio-vspace-art-style-picker .studio-vspace-art-style-grid>button{position:relative;display:grid;min-width:0;min-height:5.5rem;align-content:end;overflow:hidden;border:1px solid var(--color-line);border-radius:12px;padding:0;background:var(--color-card);color:var(--color-fg);text-align:left;cursor:pointer}

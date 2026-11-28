@@ -37,3 +37,23 @@ describe("3D 작업면의 잠금 상태 가독성", () => {
     expect(disabled).not.toContain("pointer-events");
   });
 });
+
+it("3D 참조 작업면과 캐릭터 셰이퍼에 도메인 조작 색을 연결하고 고대비 색을 유지한다", () => {
+  const reference = ':root[data-theme] [data-studio-3d-reference="tooncraft"]';
+  const shaper = ':root[data-theme] [data-studio-3d-reference="tooncraft"][data-character-shaper="true"]';
+  const lightReference = ':root[data-theme="light"] [data-studio-3d-reference="tooncraft"]';
+  expect(css).toContain(`@media (forced-colors: none) {\n  ${reference} {`);
+  expect(css.indexOf(reference)).toBeGreaterThan(css.indexOf(lightReference));
+  for (const [selector, pigment] of [[reference, "3d"], [shaper, "character"]] as const) {
+    const palette = block(selector);
+    expect(palette).toContain(`--color-accent: var(--spectrum-pigment-${pigment});`);
+    expect(palette).toContain(`--color-accent-soft: var(--spectrum-pigment-${pigment}-soft);`);
+    expect(palette).toContain(`--color-on-accent: var(--spectrum-pigment-${pigment}-on);`);
+  }
+  const contrastSelector = ':root[data-theme][data-design-theme="contrast"] [data-studio-3d-reference="tooncraft"]';
+  const contrastPalette = block(contrastSelector);
+  expect(css.indexOf(contrastSelector)).toBeGreaterThan(css.indexOf(shaper));
+  expect(contrastPalette).toContain("--color-accent: var(--ui-palette-accent);");
+  expect(contrastPalette).toContain("--color-on-accent: var(--ui-palette-on-accent);");
+  expect(css).toContain("--color-on-accent: HighlightText;");
+});

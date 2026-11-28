@@ -529,12 +529,21 @@ body:has([data-studio-beta-notice-host="true"]) > [data-beta-open-prompt="engage
 }
 
 @media (min-width: 768px) {
+  :root {
+    --site-beta-open-wide-bottom: calc(max(1rem, var(--service-status-overlay-clearance, 0px)) + 4rem);
+  }
   /* 넓은 화면의 안내 카드도 알림 열의 맨 위(칩·OST 알약 위)에 놓아 오른쪽 아래 ⚙ 행·맨 위로 버튼을 가리지 않는다. */
   [data-beta-open-prompt="engaged"] {
     left: 1rem;
     right: auto;
-    bottom: calc(max(1rem, var(--service-status-overlay-clearance, 0px)) + 4rem);
+    bottom: var(--site-beta-open-wide-bottom);
     margin-inline: 0;
+  }
+  :root:has([data-beta-open-prompt="engaged"][data-beta-open-variant="compact"]) .site-footer__meta:last-child {
+    padding-block-end: max(
+      calc(6rem + env(safe-area-inset-bottom)),
+      calc(var(--site-beta-open-wide-bottom) + var(--beta-open-compact-height, 0px) + 0.75rem)
+    );
   }
   /* 좌측 작업공간 사이드바(.workspace-sidebar)가 있는 화면에서는 고정형 OST 알약과 홍보 카드가
      하단 도움말·⚙ 설정 링크를 덮지 않도록 레일 폭 뒤쪽으로 비켜 놓는다. */

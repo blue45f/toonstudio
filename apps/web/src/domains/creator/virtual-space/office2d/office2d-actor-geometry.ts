@@ -43,3 +43,16 @@ export function office2dActorHeadY(actor: GeometryActor): number {
   const ratio = !seat ? HEAD_RATIO.stand : seat.facing === "up" || seat.facing === "down" ? HEAD_RATIO.sitWork : HEAD_RATIO.sitSide;
   return foot.y - OFFICE2D_ACTOR_HEIGHT * ratio;
 }
+
+/** 팀원·NPC를 클릭할 때 착석 발 위치와 눕기 방향을 스프라이트와 동일하게 반영한다. */
+export function office2dActorContainsPoint(actor: Office2dActor, point: StudioVirtualSpacePoint): boolean {
+  const foot = office2dActorFoot(actor);
+  const hitHalfWidth = 22.5;
+  if (actor.pose === "lie" && !actor.moving && !actor.seat) {
+    const rest = office2dActorRestTransform(actor);
+    return Math.abs(point.x - foot.x) <= OFFICE2D_ACTOR_HEIGHT / 2 + 3 &&
+      Math.abs(point.y - (foot.y + rest.offsetY + 3)) <= hitHalfWidth;
+  }
+  const headY = actor.seat ? office2dActorHeadY(actor) : foot.y - OFFICE2D_ACTOR_HEIGHT;
+  return Math.abs(point.x - foot.x) < hitHalfWidth && point.y > headY - 2 && point.y < foot.y + 8;
+}

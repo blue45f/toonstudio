@@ -132,10 +132,11 @@ describe("purpose-first product UX foundation", () => {
     expect(palette).not.toContain('href: "/make"');
   });
 
-  it("exposes searchable help and accessibility destinations", () => {
+  it("exposes help, accessibility, and sitemap entry routes", () => {
     const routes = readFileSync(LEGAL_ROUTES, "utf8");
-    expect(routes).toContain('path: "/help"');
-    expect(routes).toContain('path: "/accessibility"');
+    for (const path of ["/help", "/accessibility", "/sitemap", "/sitemap/all", "/sitemap/:section"]) {
+      expect(routes).toContain(`path: "${path}"`);
+    }
   });
 
   it("keeps a single seller-center entrance in the marketplace header", () => {

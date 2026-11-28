@@ -3,7 +3,7 @@ import { office2dCharacterForNpc } from "../office2d/office2d-sprite-catalog";
 import type { StudioVirtualStageKind } from "../office2d/studio-virtual-space-stage-mode";
 import { memo } from "react";
 
-import { StudioVirtualCharacterPreview } from "../StudioVirtualCharacterPreview";
+import { StudioVirtualCharacterPortrait } from "../StudioVirtualCharacterPreview";
 import type { StudioVirtualArtStyleKey } from "../studio-virtual-space-art-style";
 import { studioNpcCastSkinByKey } from "../studio-virtual-space-npc-cast";
 import type { SpaceNpcExpression } from "./space-npc-portrait";
@@ -23,6 +23,6 @@ export const SpaceNpcPortrait = memo(function SpaceNpcPortrait({ skinKey, expres
   readonly size?: "sm" | "md" | "lg";
 }) {
   return <span className="space-npc-portrait" data-size={size} data-expression={expression}>
-    {stageKind === "office2d" ? <Office2dCharacterPreview character={office2dCharacterForNpc(skinKey)} crop="bust" alt={alt} className="space-npc-portrait__bust" /> : <StudioVirtualCharacterPreview skin={studioNpcCastSkinByKey(skinKey, artStyle)} crop="bust" alt={alt} className="space-npc-portrait__bust" />}
+    {stageKind === "office2d" ? <Office2dCharacterPreview character={office2dCharacterForNpc(skinKey)} crop="bust" alt={alt} className="space-npc-portrait__bust" /> : <StudioVirtualCharacterPortrait skin={studioNpcCastSkinByKey(skinKey, artStyle)} crop="bust" alt={alt} className="space-npc-portrait__bust" />}
   </span>;
 });
