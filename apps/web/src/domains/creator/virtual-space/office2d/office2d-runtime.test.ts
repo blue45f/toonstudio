@@ -402,9 +402,12 @@ describe("Office2dRuntime", () => {
     const { runtime, bridge, run } = setup({ manifest: { ...hq, colliders } });
     runtime.start();
     const start = runtime.debugState().self;
-    bridge.requestMove({ x: 500, y: 1470 });
+    const report = vi.fn();
+    bridge.requestMove({ x: 500, y: 1470 }, report);
+    expect(report).not.toHaveBeenCalled();
     run(0.4);
     expect(runtime.debugState().self).toEqual(start);
+    expect(report).toHaveBeenCalledExactlyOnceWith("unreachable");
 
     runtime.keyDown("KeyD");
     run(0.6);
@@ -419,6 +422,44 @@ describe("Office2dRuntime", () => {
     const render = vi.spyOn(runtime.renderer, "render").mockImplementation(() => undefined);
     runtime.draw(new FakeContext(), 1);
     expect(render.mock.calls[0]?.[1]).toMatchObject({ destination: null, waypoints: [] });
+  });
+
+  it("지도 이동 요청을 사용하기 전 취소할 수 있고 실제 경로를 만든 프레임에 한 번만 응답한다", () => {
+    const { runtime, bridge, run } = setup();
+    runtime.start();
+    const replaced = vi.fn();
+    const report = vi.fn();
+    const point = { x: 470, y: 1500 };
+    bridge.requestMove({ x: 470, y: 1460 }, replaced);
+    const cancel = bridge.requestMove(point, report);
+    expect(replaced).toHaveBeenCalledExactlyOnceWith("cancelled");
+    expect(report).not.toHaveBeenCalled();
+    run(2.5);
+    cancel?.();
+    expect(report).toHaveBeenCalledExactlyOnceWith("walking");
+    const position = runtime.debugState().self;
+    expect(Math.hypot(position.x - point.x, position.y - point.y)).toBeLessThan(16);
+    const withdrawn = vi.fn();
+    bridge.requestMove({ x: 336, y: 1470 }, withdrawn)?.();
+    expect(withdrawn).toHaveBeenCalledExactlyOnceWith("cancelled");
+    run(0.2);
+    expect(runtime.debugState().self).toEqual(position);
+  });
+
+  it("이미 도착한 지도 위치를 따로 보고하고 레거시 렌더러로 요청을 넘기지 않는다", () => {
+    const { runtime, bridge, run } = setup();
+    runtime.start();
+    const position = runtime.debugState().self;
+    const atDestination = vi.fn();
+    bridge.requestMove(position, atDestination);
+    run(0.1);
+    expect(atDestination).toHaveBeenCalledExactlyOnceWith("already-there");
+    expect(runtime.debugState().self).toEqual(position);
+
+    const cancelledByStageChange = vi.fn();
+    bridge.requestMove({ x: 470, y: 1500 }, cancelledByStageChange);
+    expect(bridge.consumeMoveTarget()).toBeNull();
+    expect(cancelledByStageChange).toHaveBeenCalledExactlyOnceWith("cancelled");
   });
 
   it("지도에서 찾은 도구는 가구 밖의 실제 도착점을 HUD에 보고하고 도착하면 표식을 지운다", () => {

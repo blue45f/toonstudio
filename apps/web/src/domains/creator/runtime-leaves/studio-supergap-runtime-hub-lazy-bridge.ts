@@ -6,8 +6,12 @@
  */
 
 type OpenStateListener = (open: boolean) => void;
+type Launcher = HTMLElement | (() => HTMLElement | null);
+
+export const STUDIO_SUPERGAP_RUNTIME_HUB_PANEL_ID = "studio-runtime-engine-status";
 
 let supergapRuntimeHubOpen = false;
+let returnFocusTarget: { readonly ownerDocument: Document | undefined; readonly resolve: () => HTMLElement | null } | null = null;
 const openStateListeners = new Set<OpenStateListener>();
 
 function emitOpenState(): void {
@@ -20,8 +24,10 @@ export function isStudioSupergapRuntimeHubOpen(): boolean {
   return supergapRuntimeHubOpen;
 }
 
-export function openStudioSupergapRuntimeHub(): void {
+export function openStudioSupergapRuntimeHub(launcher?: Launcher): void {
   if (!supergapRuntimeHubOpen) {
+    const resolve = typeof launcher === "function" ? launcher : () => launcher ?? null;
+    returnFocusTarget = launcher ? { ownerDocument: resolve()?.ownerDocument, resolve } : null;
     supergapRuntimeHubOpen = true;
     emitOpenState();
   }
@@ -29,14 +35,22 @@ export function openStudioSupergapRuntimeHub(): void {
 
 export function closeStudioSupergapRuntimeHub(): void {
   if (supergapRuntimeHubOpen) {
+    const target = returnFocusTarget;
+    const panel = target?.ownerDocument?.getElementById(STUDIO_SUPERGAP_RUNTIME_HUB_PANEL_ID);
+    const returnFocus = panel?.contains(panel.ownerDocument.activeElement);
+    returnFocusTarget = null;
     supergapRuntimeHubOpen = false;
     emitOpenState();
+    if (returnFocus) {
+      const launcher = target?.resolve();
+      if (launcher?.isConnected) launcher.focus({ preventScroll: true });
+    }
   }
 }
 
-export function toggleStudioSupergapRuntimeHub(): boolean {
-  supergapRuntimeHubOpen = !supergapRuntimeHubOpen;
-  emitOpenState();
+export function toggleStudioSupergapRuntimeHub(launcher?: HTMLElement): boolean {
+  if (supergapRuntimeHubOpen) closeStudioSupergapRuntimeHub();
+  else openStudioSupergapRuntimeHub(launcher);
   return supergapRuntimeHubOpen;
 }
 

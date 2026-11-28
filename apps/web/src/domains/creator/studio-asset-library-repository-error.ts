@@ -128,3 +128,32 @@ export class StudioAssetLibraryCommitAggregateError extends AggregateError {
     this.subcode = subcode;
   }
 }
+
+export function errorDetail(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export function asRepositoryError(
+  error: unknown,
+  operation: StudioAssetLibraryOperationCode,
+): StudioAssetLibraryRepositoryError {
+  if (error instanceof StudioAssetLibraryRepositoryError) return error;
+  const detail = errorDetail(error);
+  const errorCode = typeof error === "object" && error !== null && "code" in error
+    ? (error as { readonly code?: unknown }).code
+    : null;
+  if (errorCode === "QUOTA_EXCEEDED" || /quota|SQLITE_FULL|disk is full|space/i.test(detail)) {
+    return new StudioAssetLibraryRepositoryError(
+      "quota-exceeded",
+      "quotaExceeded",
+      { operation },
+      { cause: error },
+    );
+  }
+  return new StudioAssetLibraryRepositoryError(
+    "unavailable",
+    "operationFailed",
+    { operation, detail },
+    { cause: error },
+  );
+}

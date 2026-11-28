@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useLayoutEffect, type ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_EXPANDED_ECOSYSTEM_COMMANDS } from "../shortcuts/studio-expanded-ecosystem-commands";
@@ -17,8 +18,30 @@ import {
   formatShortcutKeycaps,
 } from "./studio-expanded-tools-catalog";
 
+const commitEscape = vi.hoisted(() => ({ armed: false, sent: false }));
+
+vi.mock("./StudioExpandedToolRunnerHost", async (importOriginal) => {
+  const { StudioExpandedToolRunnerHost: Runner } =
+    await importOriginal<typeof import("./StudioExpandedToolRunnerHost")>();
+  return {
+    StudioExpandedToolRunnerHost: function RunnerCommitProbe(props: ComponentProps<typeof Runner>) {
+      useLayoutEffect(() => {
+        if (!commitEscape.armed) return;
+        commitEscape.armed = false;
+        commitEscape.sent = true;
+        screen.getByTestId("studio-expanded-tool-runner").dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+        );
+      }, []);
+      return <Runner {...props} />;
+    },
+  };
+});
+
 afterEach(() => {
   cleanup();
+  commitEscape.armed = false;
+  commitEscape.sent = false;
   clearEcosystemLazyLoaderOverrides();
 });
 
@@ -197,5 +220,35 @@ describe("StudioExpandedToolsDrawer", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("studio-expanded-tools-drawer")).toBeNull();
     });
+  });
+
+  it("실행 패널이 붙는 프레임의 첫 Escape에서 서랍을 닫지 않고 목록과 카드 포커스를 복구한다", async () => {
+    const headCmd = STUDIO_EXPANDED_ECOSYSTEM_COMMANDS.find((cmd) => cmd.panelLoaderId === "head-mixer-3d-panel");
+    if (!headCmd) throw new Error("head-mixer-3d-panel 커맨드를 찾을 수 없습니다.");
+    const cardId = `expanded-tool-card-${headCmd.id}`;
+    async function openDrawerAndLaunch() {
+      fireEvent.click(screen.getByTestId("studio-expanded-tools-launcher"));
+      await screen.findByTestId("studio-expanded-tools-drawer");
+      fireEvent.click(screen.getByTestId("expanded-tools-tab-all"));
+      fireEvent.click(screen.getByTestId(cardId));
+    }
+
+    const warm = render(<StudioCommandSearchHost />);
+    await openDrawerAndLaunch();
+    await screen.findByTestId("studio-expanded-tool-runner");
+    warm.unmount();
+
+    render(<StudioCommandSearchHost />);
+    commitEscape.armed = true;
+    await openDrawerAndLaunch();
+    await waitFor(() => {
+      expect(commitEscape.sent).toBe(true);
+      expect(screen.getByTestId("studio-expanded-tools-launcher").getAttribute("aria-expanded")).toBe("true");
+      expect(screen.queryByTestId("studio-expanded-tool-runner")).toBeNull();
+      expect(document.activeElement).toBe(screen.getByTestId(cardId));
+    });
+
+    fireEvent.keyDown(document.activeElement ?? window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("studio-expanded-tools-drawer")).toBeNull());
   });
 });

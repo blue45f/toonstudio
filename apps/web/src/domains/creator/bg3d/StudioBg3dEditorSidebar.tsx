@@ -21,6 +21,7 @@ import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { bg3dPanelStatusText } from "../studio-bg3d-panel-status-i18n";
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { hasStudioBg3dTemplateContent } from "./studio-bg3d-measurement-template";
 
 const LazyVerifiedScenesPanel = createSidebarLazy(() =>
@@ -40,6 +41,7 @@ const LazySidebarModelingProDrawer = createSidebarLazy(() =>
 
 export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro = () => {} }: { h: Record<string, any>; experienceMode?: "simple" | "pro"; onOpenPro?: () => void }) {
   const t = useT();
+  const bt = useBilingual("StudioBg3dEditorSidebar");
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -721,13 +723,16 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               }}
               sharedStageUpdateBlockedReason={sharedStageUpdateBlockedReason}
               onOpenSharedStage={() => setActivePanelTab("layers")}
-              error={error} outputUnavailableReason={h.sixPassLtInsertUnavailableReason}
+              error={error} outputUnavailableReason={placementActive
+                ? bt("장면에서 배치를 확정하거나 배치 도구에서 취소한 뒤 계속하세요.", "Finish the placement in the scene or cancel it from the placement controls to continue.")
+                : h.sixPassLtInsertUnavailableReason}
               saveNotice={librarySaveNotice}
               isCapturing={isCapturing}
               deletingModelInProgress={deletingModelId !== null}
               saveDisabled={
                 (primitives.length === 0 && customModels.length === 0)
                 || isCapturing
+                || placementActive
                 || insertBlocked
                 || immersiveSceneActive
               }
@@ -739,6 +744,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 sharedCharacterCaptureElementIds.length === 0 &&
                 !mayApplyEmptySharedStageMutation
               ) || isCapturing
+                || placementActive
                 || insertBlocked
                 || immersiveSceneActive
                 || sharedStageUpdateBlockedReason !== null || Boolean(h.sixPassLtInsertUnavailableReason)}

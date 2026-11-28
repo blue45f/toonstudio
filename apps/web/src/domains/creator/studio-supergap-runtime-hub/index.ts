@@ -73,3 +73,28 @@ export {
   createWave93To98ExtensionSubsystems,
   registerWave93To98Extensions,
 } from "./wave93-98-extensions";
+
+export {
+  createWave99To104ExtensionSubsystems,
+  registerWave99To104Extensions,
+} from "./wave99-104-extensions";
+
+export {
+  createWave105To110ExtensionSubsystems,
+  registerWave105To110Extensions,
+} from "./wave105-110-extensions";
+
+export {
+  createWave111To116ExtensionSubsystems,
+  registerWave111To116Extensions,
+} from "./wave111-116-extensions";
+
+export {
+  createWave117To122ExtensionSubsystems,
+  registerWave117To122Extensions,
+} from "./wave117-122-extensions";
+
+export {
+  createWave123To128ExtensionSubsystems,
+  registerWave123To128Extensions,
+} from "./wave123-128-extensions";

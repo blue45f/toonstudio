@@ -27,6 +27,7 @@ interface StudioBg3dAssistantFinishStepProps {
   readonly aspectSelectRef: Ref<HTMLSelectElement>;
   readonly onAspectRatio: ((aspectRatio: number | null) => void) | undefined;
   readonly onViewCrop: (() => void) | undefined;
+  readonly saveDisabled: boolean;
   readonly onSaveToLibrary: () => void;
 }
 
@@ -40,6 +41,7 @@ export function StudioBg3dAssistantFinishStep({
   aspectSelectRef,
   onAspectRatio,
   onViewCrop,
+  saveDisabled,
   onSaveToLibrary,
 }: StudioBg3dAssistantFinishStepProps) {
   const bt = useBilingual("StudioBg3dAssistantFinishStep");
@@ -131,7 +133,7 @@ export function StudioBg3dAssistantFinishStep({
         <div><Check size={14} aria-hidden /><span>캔버스에서 다시 편집 가능</span></div>
       </section>
 
-      <button type="button" className="scene-assistant__save" disabled={busy || !hasScene} onClick={onSaveToLibrary}>
+      <button type="button" className="scene-assistant__save" disabled={busy || !hasScene || saveDisabled} onClick={onSaveToLibrary}>
         <Save size={16} aria-hidden /><span><strong>장면을 소재로도 저장</strong><small>다른 컷과 다음 화에서 다시 사용합니다.</small></span>
       </button>
     </div>

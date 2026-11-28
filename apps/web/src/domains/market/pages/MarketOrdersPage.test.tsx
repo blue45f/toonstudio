@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
 import type { CommerceOrderPublicEntry } from "@toonstudio/core/commerce";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MarketOrdersPage } from "./MarketOrdersPage";
+import { formatMarketDateTime } from "../models/market-kind";
 
 const mocks = vi.hoisted(() => ({
   useSession: vi.fn(),
@@ -202,6 +203,54 @@ describe("MarketOrdersPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /취소·실패/ }));
     expect(screen.queryByText("로판 성당 3D 배경 세트")).toBeNull();
     expect(screen.getByText("액션 이펙트 브러시 팩")).toBeTruthy();
+  });
+
+  it("부분 환불 후 결제액을 합산하고 취소·실패 주문과 구별한다", async () => {
+    const canceledAt = "2026-10-21T10:00:00.000Z";
+    mocks.useSession.mockReturnValue(buyerSession("buyer-refunds"));
+    mocks.listMyCommerceOrders.mockResolvedValue({ items: [
+      { ...buyerOrder("legacy-paid", "이전 결제 주문"), balanceAmount: undefined },
+      { ...buyerOrder("partial", "부분 환불된 브러시"), amount: 1000, balanceAmount: 700, status: "PARTIAL_CANCELED", canceledAt },
+      { ...buyerOrder("unknown-partial", "환불 금액 미확인 주문"), amount: 9100, balanceAmount: null, status: "PARTIAL_CANCELED" },
+      { ...buyerOrder("full", "전체 취소 주문"), amount: 5000, balanceAmount: 0, status: "CANCELED" },
+      { ...buyerOrder("pending", "입금 대기 주문"), amount: 4200, balanceAmount: 4200, status: "WAITING_FOR_DEPOSIT" },
+    ] });
+
+    render(ordersPage());
+    const partialHeading = await screen.findByRole("heading", { name: "부분 환불된 브러시" });
+    const partialCard = partialHeading.closest("li");
+    if (!partialCard) throw new Error("부분 환불 주문 카드가 필요합니다.");
+    const card = within(partialCard);
+    expect(card.getByText("환불 후 결제액")).toBeTruthy();
+    expect(card.getByText("₩700")).toBeTruthy();
+    expect(card.getByText(/취소 시각/).textContent).toContain(formatMarketDateTime(canceledAt));
+    expect(card.getByRole("link", { name: "영수증" }).getAttribute("href")).toBe("https://receipt.example.com/partial");
+    expect(card.getByRole("link", { name: "에셋 상세" }).getAttribute("href")).toBe("/market/resource/resource-partial");
+    expect(screen.getByText("환불 반영 결제액").parentElement?.textContent).toContain("₩12,700");
+    expect(screen.getByText("조회된 주문 중 확인된 금액만 포함")).toBeTruthy();
+    expect(screen.getByText("금액 확인 필요")).toBeTruthy();
+    expect(screen.queryByText("₩9,100")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /부분 환불/ }));
+    expect(screen.getByRole("heading", { name: "부분 환불된 브러시" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "환불 금액 미확인 주문" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "전체 취소 주문" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /취소·실패/ }));
+    expect(screen.queryByRole("heading", { name: "부분 환불된 브러시" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "전체 취소 주문" })).toBeTruthy();
+  });
+
+  it("남은 결제액을 모르는 부분 환불 주문만 있으면 합계를 0원으로 표시하지 않는다", async () => {
+    mocks.useSession.mockReturnValue(buyerSession("buyer-unconfirmed"));
+    mocks.listMyCommerceOrders.mockResolvedValue({ items: [
+      { ...buyerOrder("unknown-partial", "환불 금액 미확인 주문"), balanceAmount: null, status: "PARTIAL_CANCELED" },
+    ] });
+
+    render(ordersPage());
+    await screen.findByRole("heading", { name: "환불 금액 미확인 주문" });
+    const summary = screen.getByText("환불 반영 결제액").parentElement;
+    expect(summary?.textContent).toContain("금액 확인 필요");
+    expect(summary?.textContent).not.toContain("₩0");
   });
 
   it("비로그인 사용자에게 로그인 안내를 보여주고 주문 API를 호출하지 않는다", () => {

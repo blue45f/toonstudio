@@ -13,7 +13,7 @@ import { StudioSupergapRuntimeHubLazyHost } from "../runtime-leaves/studio-super
 import { StudioVrmProjectArchiveAttestationHost } from "../runtime-leaves/studio-vrm-archive-attestation-lazy";
 import { lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
-import { POSER_CUT_QUERY } from "./studio-poser-cut-handoff";
+import { POSER_CUT_QUERY } from "../studio-workspace-route";
 import { StudioImportHandoffEntry } from "./StudioImportHandoffEntry";
 import { StudioMobileBackStackHost } from "./StudioMobileBackStackHost";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";

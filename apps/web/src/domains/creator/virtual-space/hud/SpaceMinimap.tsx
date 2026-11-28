@@ -1,11 +1,12 @@
 import { List, LocateFixed, Map as MapIcon, Maximize2, Zap } from "lucide-react";
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { STUDIO_VIRTUAL_CAMPUS_COMMONS_ID, studioVirtualCampusZoneMeta } from "../studio-virtual-space-campus-world";
 import { buildStudioMapIllustrationPlan } from "../studio-virtual-space-map-illustration";
 import { createMinimapViewport, minimapToWorld } from "../studio-virtual-space-minimap";
+import type { StudioVirtualSpaceWalkReport } from "../studio-virtual-space-engine-bridge";
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { studioVirtualPlaceById, studioVirtualPlaceIdFromPortalHref } from "../studio-virtual-space-place-world";
 import { clampStudioWorldPoint } from "../studio-virtual-space-world-pathfinding";
@@ -84,7 +85,8 @@ function minimapGates(manifest: StudioVirtualSpaceWorldManifest, bt: (ko: string
  * 지도를 누르면 그 지점으로 걷고, 큰 지도(full)에서는 구역 라벨 버튼으로 그 구역 입구까지 걷는다.
  */
 export const SpaceMinimap = memo(function SpaceMinimap({
-  manifest, self, people, currentRoomId, variant = "mini", expanded = true, onToggleExpanded, onOpenFull, onMoveTo, destination = null, onJumpTo, onJumpToPlace, highlightRoomIds = [],
+  manifest, self, people, currentRoomId, variant = "mini", expanded = true, onToggleExpanded, onOpenFull, onMoveTo,
+  onRequestWalk, onWalkAccepted, destination = null, onJumpTo, onJumpToPlace, highlightRoomIds = [],
 }: {
   readonly manifest: StudioVirtualSpaceWorldManifest;
   readonly self: StudioVirtualSpacePoint;
@@ -95,6 +97,8 @@ export const SpaceMinimap = memo(function SpaceMinimap({
   readonly onToggleExpanded?: () => void;
   readonly onOpenFull?: () => void;
   readonly onMoveTo: (point: StudioVirtualSpacePoint) => void;
+  readonly onRequestWalk?: (point: StudioVirtualSpacePoint, report: StudioVirtualSpaceWalkReport) => (() => void) | undefined;
+  readonly onWalkAccepted?: () => void;
   /** 클릭 이동 목적지 마커 (null이면 숨김). */
   readonly destination?: StudioVirtualSpacePoint | null;
   /** 구역 "바로 가기"(확인 없이 즉시, 큰 지도 전용 작은 버튼). 걷기와 구분해 번개 아이콘으로 표기한다. */
@@ -112,6 +116,12 @@ export const SpaceMinimap = memo(function SpaceMinimap({
   const full = variant === "full";
   const [listView, setListView] = useState(false);
   const listToggle = useRef<HTMLButtonElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const pendingWalk = useRef<{ cancel?: () => void } | null>(null);
+  const [walkFeedback, setWalkFeedback] = useState<{
+    readonly point: StudioVirtualSpacePoint;
+    readonly status: "pending" | "unreachable" | "already-there";
+  } | null>(null);
   const showMap = full ? !listView : expanded;
   // 접힌 미니맵과 목록 보기에서는 지도 이미지를 요청하지 않는다.
   const illustrationUrl = useStudioMapIllustration(showMap ? buildStudioMapIllustrationPlan(manifest) : null);
@@ -121,6 +131,45 @@ export const SpaceMinimap = memo(function SpaceMinimap({
     const timeout = globalThis.setTimeout(() => setArmedGateId(null), 3500);
     return () => globalThis.clearTimeout(timeout);
   }, [armedGateId]);
+  useLayoutEffect(() => () => {
+    const previous = pendingWalk.current;
+    pendingWalk.current = null;
+    previous?.cancel?.();
+  }, []);
+  const cancelWalk = () => {
+    const previous = pendingWalk.current;
+    pendingWalk.current = null;
+    previous?.cancel?.();
+    setWalkFeedback(null);
+  };
+  const moveTo = (point: StudioVirtualSpacePoint) => {
+    if (!full || !onRequestWalk) {
+      onMoveTo(point);
+      return;
+    }
+    const previous = pendingWalk.current;
+    const request: { cancel?: () => void } = {};
+    pendingWalk.current = request;
+    previous?.cancel?.();
+    setWalkFeedback({ point, status: "pending" });
+    const cancel = onRequestWalk(point, (result) => {
+      if (pendingWalk.current !== request) return;
+      pendingWalk.current = null;
+      const showFeedback = result === "unreachable" || result === "already-there";
+      setWalkFeedback(showFeedback ? { point, status: result } : null);
+      if (result === "walking" || result === "arrived") onWalkAccepted?.();
+    });
+    if (cancel) request.cancel = cancel;
+  };
+  const chooseDestination = () => {
+    cancelWalk();
+    setListView(true);
+    globalThis.requestAnimationFrame(() => search.current?.focus({ preventScroll: true }));
+  };
+  const jumpTo = onJumpTo ? (point: StudioVirtualSpacePoint) => {
+    cancelWalk();
+    onJumpTo(point);
+  } : undefined;
   const currentZone = zones.find((zone) => zone.id === currentRoomId) ?? null;
   const moveFromClick = (event: MouseEvent<HTMLElement>) => {
     // 키보드 Enter·Space가 만드는 합성 클릭은 detail이 0이고 좌표가 없어
@@ -142,7 +191,7 @@ export const SpaceMinimap = memo(function SpaceMinimap({
         Math.abs(rawPoint.x - (zone.x + zone.width / 2)) <= zone.width * 0.26
         && Math.abs(rawPoint.y - (zone.y + zone.height / 2)) <= zone.height * 0.26)
       : undefined;
-    onMoveTo(clampStudioWorldPoint(manifest, tappedZone ? tappedZone.spawn : rawPoint));
+    moveTo(clampStudioWorldPoint(manifest, tappedZone ? tappedZone.spawn : rawPoint));
   };
   // 미니맵 라벨이 232px 폭에서도 11px 이상이 되도록 월드 크기에 비례해 정한다.
   const labelSize = Math.max(manifest.width, manifest.height) / (full ? 48 : 20);
@@ -186,7 +235,7 @@ export const SpaceMinimap = memo(function SpaceMinimap({
           onClick={(event) => event.stopPropagation()}
           onDoubleClick={(event) => {
             event.stopPropagation();
-            onMoveTo(clampStudioWorldPoint(manifest, spaceMinimapPeerTarget({ x: cluster.x, y: cluster.y }, cluster.id)));
+            moveTo(clampStudioWorldPoint(manifest, spaceMinimapPeerTarget({ x: cluster.x, y: cluster.y }, cluster.id)));
           }}>
           <title>{cluster.names.join(", ")}</title>
           <circle className="space-minimap__peer" r={labelSize * (cluster.count > 1 ? 0.48 : 0.38)} />
@@ -215,12 +264,12 @@ export const SpaceMinimap = memo(function SpaceMinimap({
           data-role-recommended={highlightRooms.has(zone.id) || undefined}
           style={{ "--space-zone-tone": zone.tone } as CSSProperties}
           title={zone.label}
-          onClick={() => onMoveTo(zone.spawn)}
+          onClick={() => moveTo(zone.spawn)}
           aria-label={`${displaySign} · ${bt(`${spaceKoParticle(zone.label, "으로")} 걸어가기`, `Walk to ${zone.label}`)}`}>
           <span aria-hidden>{displaySign}</span>
         </button>
-        {onJumpTo ? <button type="button" className="space-minimap__zone-jump"
-          onClick={() => onJumpTo(zone.spawn)}
+        {jumpTo ? <button type="button" className="space-minimap__zone-jump"
+          onClick={() => jumpTo(zone.spawn)}
           aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 바로 가기`, `Quick travel to ${zone.label}`)}
           title={bt("바로 가기", "Quick travel")}>
           <Zap size={12} aria-hidden />
@@ -244,8 +293,22 @@ export const SpaceMinimap = memo(function SpaceMinimap({
           <span className="sr-only">{bt("현재 위치", "Current location")} </span>{currentZone.label}
         </span> : null}
       </div>
+      {walkFeedback ? <section className="space-map-walk-feedback" data-status={walkFeedback.status} aria-label={bt("이동 경로", "Walking route")}>
+        <p role="status">{{
+          pending: bt("경로를 확인하고 있어요.", "Checking the route."),
+          unreachable: bt("이 목적지에는 지금 갈 수 없어요.", "This destination is currently unreachable."),
+          "already-there": bt("이미 이 목적지에 있어요.", "You are already at this destination."),
+        }[walkFeedback.status]}</p>
+        {walkFeedback.status === "already-there" ? null : <div>
+          <button type="button" onClick={chooseDestination}>{bt("다른 목적지 고르기", "Choose another destination")}</button>
+          <button type="button" aria-disabled={walkFeedback.status === "pending"}
+            onClick={() => { if (walkFeedback.status === "unreachable") moveTo(walkFeedback.point); }}>
+            {bt("경로 다시 확인", "Check route again")}
+          </button>
+        </div>}
+      </section> : null}
       {listView ? <SpaceMapDestinations key={manifest.id} manifest={manifest} rooms={zones} currentRoomId={currentRoomId}
-        recommended={highlightRooms} onMoveTo={onMoveTo} onJumpTo={onJumpTo} /> : stage}
+        recommended={highlightRooms} onMoveTo={moveTo} onJumpTo={jumpTo} searchRef={search} /> : stage}
       {!listView && gates.length ? <div className="space-minimap__gates" role="group" aria-label={bt("다른 장소 게이트", "Gates to other places")}>
         {gates.map((gate) => {
           const armed = armedGateId === gate.id;
@@ -257,8 +320,8 @@ export const SpaceMinimap = memo(function SpaceMinimap({
                 : `${visibleGateText} · ${bt(`${spaceKoParticle(gate.labelKo, "으로")} 바로 가기`, `Quick travel to ${gate.labelEn}`)}`)
               : bt(`${gate.labelKo} 게이트까지 걷기`, `Walk to the ${gate.labelEn} gate`)}
             onClick={() => {
-              if (!onJumpToPlace) { onMoveTo(gate.point); return; }
-              if (armed) { setArmedGateId(null); onJumpToPlace(gate.placeId); }
+              if (!onJumpToPlace) { moveTo(gate.point); return; }
+              if (armed) { cancelWalk(); setArmedGateId(null); onJumpToPlace(gate.placeId); }
               else setArmedGateId(gate.id);
             }}>
             {onJumpToPlace ? <Zap size={12} aria-hidden /> : null}

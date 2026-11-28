@@ -209,7 +209,7 @@ describe("Studio ToolBelt content module boundary", () => {
     expect(toolBelt.source).not.toContain('"use no memo"');
   });
 
-  it("preserves all 80 stable handlers without key drift", () => {
+  it("preserves all 81 stable handlers without key drift", () => {
     const page = moduleShape("./StudioCuttoonEditorHost.tsx");
     const toolBelt = moduleShape("./StudioToolBeltContent.tsx");
     const handlerNames = propertyNames(
@@ -230,12 +230,14 @@ describe("Studio ToolBelt content module boundary", () => {
     //      onSavedAsset 으로 내려간다.
     // 77 = 76 + 진행 중인 AI 대사 요청을 중단하는 cancelSuggestDialogueLines.
     // 80 = 77 + 배경·캐릭터 생성과 팔레트 추천을 중단하는 핸들러 3개.
+    // 81 = 80 + 로컬 3D 소재 삽입 시 현재 권한과 컷을 확인하는 핸들러.
     // 개수는 변경을 알아차리게 하는 래칫이고, 계약 본체는 선언된 핸들러와 호스트가 배선한 핸들러가
     // 정확히 같다는 아래 동등 단언이다.
-    expect(handlerNames).toHaveLength(80);
-    expect(wiredHandlerNames).toHaveLength(80);
+    expect(handlerNames).toHaveLength(81);
+    expect(wiredHandlerNames).toHaveLength(81);
     expect(wiredHandlerNames).toEqual(handlerNames);
     expect(handlerNames).toContain("onSavedLocalAsset");
+    expect(handlerNames).toContain("insertSavedBg3dMaterial");
     expect(handlerNames).toContain("cancelSuggestDialogueLines");
     expect(handlerNames).toEqual(
       expect.arrayContaining(["onCancelAiBackground", "onCancelAiCharacter", "onCancelSuggestColorPalette"]),
