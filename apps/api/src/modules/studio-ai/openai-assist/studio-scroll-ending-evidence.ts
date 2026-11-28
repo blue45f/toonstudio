@@ -4,6 +4,7 @@ const editorialNotes = /(?:(?:^|[\n.!?。！？])[ \t]*(?:요청(?:사항)?|검�
 const editorialSection = /(?:^|\n)[ \t]*\[(?:요청(?:사항)?|검토 요청|(?:편집 |작가 )?메모|참고|\/(?:원고|대본|콘티))\][ \t]*/u;
 const episodeMarker = /(?:^|[\s[→])(?:제[ \t]*)?(\d{1,3})[ \t]*화(?:의|에서(?:는)?|에는|는|와|를)?(?=[\s.:：\]→]|$)/gu;
 const manuscriptHeader = /(?:^|\n)[ \t]*(?:\[(?:원고|대본|콘티)\]|(?:원고|대본|콘티)[ \t]*[:：])[ \t]*/u;
+const quotedPassage = /“[^”]*”|‘[^’]*’|「[^」]*」|『[^』]*』|"(?:\\[\s\S]|[^"\\])*"|(?<![a-zA-Z])'(?:\\[\s\S]|(?<=[a-zA-Z])'(?=[a-zA-Z])|[^'\\])*'(?![a-zA-Z])/gu;
 const sentenceSegmenter = new Intl.Segmenter("ko", { granularity: "sentence" });
 const requestEnding = /(?:주세요|주십시오|부탁(?:해요|합니다|드립니다)|분석해\s*줘|점검해\s*줘)[.!?。！？]*$/u;
 const proposedEdit = /(?:추가|삭제|편집|수정|조정|분할|생략|교체|검토|점검)(?:할|해도\s*될|해야\s*할|하면\s*어떨)까(?:요)?[?？]$/u;
@@ -24,26 +25,36 @@ function isTrailingRequest(segment: string): boolean {
 }
 
 function endingPassage(inputText: string): string {
-  const sections = inputText.normalize("NFC").split(manuscriptHeader);
-  const source = sections.at(-1) ?? "";
-  const [beforeSection, section] = source.split(editorialSection, 2);
-  const [body, notes] = beforeSection.split(editorialNotes, 2);
-  const sentences = Array.from(sentenceSegmenter.segment(body), part => part.segment)
-    .filter(sentence => sentence.trim().length > 0);
-  while (sentences.length && isTrailingRequest(sentences.at(-1) ?? "")) sentences.pop();
-  const manuscript = sentences.join("").trim();
-  const episodes = new Set(Array.from(manuscript.matchAll(episodeMarker), match => Number(match[1])));
+  const source = inputText.normalize("NFC");
+  // 구조 표기만 읽는 사본에서 대사를 가린다. 이모지와 줄바꿈을 포함한 UTF-16 위치는 원문과 같다.
+  const outsideQuotes = source.replace(quotedPassage, passage => "·".repeat(passage.length));
+  const sections = outsideQuotes.split(manuscriptHeader);
+  const sectionText = sections.at(-1) ?? "";
+  const sourceStart = source.length - sectionText.length;
+  const [beforeSection, section] = sectionText.split(editorialSection, 2);
+  const [structure, notes] = beforeSection.split(editorialNotes, 2);
+  const body = source.slice(sourceStart, sourceStart + structure.length);
+  const sentences = Array.from(sentenceSegmenter.segment(body)).filter(part => part.segment.trim().length > 0);
+  let last = sentences.at(-1);
+  while (last && isTrailingRequest(structure.slice(last.index, last.index + last.segment.length))) {
+    sentences.pop();
+    last = sentences.at(-1);
+  }
+  if (!last) return "";
+  const end = last.index + last.segment.length;
+  const manuscriptStructure = structure.slice(0, end);
+  const episodes = new Set(Array.from(manuscriptStructure.matchAll(episodeMarker), match => Number(match[1])));
   if (episodes.size > 1) return "";
 
-  const numbered = Array.from(manuscript.matchAll(panelMarker));
-  const circled = Array.from(manuscript.matchAll(/(?:^|\s)([①-⑳])(?=\s)/gu));
+  const numbered = Array.from(manuscriptStructure.matchAll(panelMarker));
+  const circled = Array.from(manuscriptStructure.matchAll(/(?:^|\s)([①-⑳])(?=\s)/gu));
   const ordered = circled.length >= 2 && circled.every((entry, i) => entry[1].charCodeAt(0) === 0x2460 + i);
   const lastPanel = ordered ? circled.at(-1) : numbered.at(-1);
-  if (lastPanel) return manuscript.slice(lastPanel.index + lastPanel[0].length);
+  if (lastPanel) return body.slice(lastPanel.index + lastPanel[0].length, end);
 
   // 산문은 원고/요청 경계가 있거나 장면 서술이 여러 문장일 때 끝 문장을 대조한다.
   if (sections.length === 1 && notes === undefined && section === undefined && sentences.length < 2) return "";
-  return sentences.at(-1)?.trim() ?? "";
+  return last.segment.trim();
 }
 
 export function checkScrollEndingEvidence(inputText: string, cliffhangerTip: string): "matched" | "unmatched" | "uncited" {
