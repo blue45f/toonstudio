@@ -27,12 +27,14 @@ import { cn } from "@/shared/lib/utils";
 const BUTTON = cn("min-h-11 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-40", STUDIO_FOCUS_RING);
 const INPUT = cn("min-h-11 w-full rounded-lg border border-line bg-panel px-2 text-sm text-fg disabled:opacity-40", STUDIO_FOCUS_RING);
 
-export function CharacterGroomPanel({ authoring, runtime }: {
+export function CharacterGroomPanel({ authoring, runtime, previewPrefix, compactPreview }: {
   readonly authoring: CharacterAuthoringAuthorityHookResult;
   readonly runtime: CharacterGroomRuntimeState;
+  readonly previewPrefix: string;
+  readonly compactPreview: boolean;
 }) {
   const t = useT();
-  const prefix = `groom-preview/${useId()}`;
+  const ownerPrefix = `${previewPrefix}${useId()}/`;
   const sequence = useRef(0);
   const [draft, setDraft] = useState<{ readonly base: CharacterDocumentV3; readonly groom: CharacterGroomDocument } | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -53,22 +55,22 @@ export function CharacterGroomPanel({ authoring, runtime }: {
   const shaperCalibratedUv = calibrateShaperHairBaseZoneUv([0.5, 0.5], shaperZoneIndex);
   const selectedPointIndex = guide ? Math.min(pointIndex, guide.points.length - 1) : 0;
   const point = guide?.points[selectedPointIndex];
-  const ownPreview = snapshot.previewCommandId?.startsWith(prefix) === true;
+  const ownPreview = snapshot.previewCommandId?.startsWith(ownerPrefix) === true;
   const foreignPreview = snapshot.previewDocument !== null && !ownPreview;
   const disabled = !authoring.hydrated || !runtime.supported || foreignPreview;
   const groupDisabled = disabled || !group || group.locked;
   const anchored = guide?.points.some((entry) => entry.surfaceAnchor) === true;
   const anchorAttached = guide !== undefined && runtime.attachedGuideIds?.includes(guide.guideId) === true;
   useEffect(() => () => {
-    if (authoring.authority.getSnapshot().previewCommandId?.startsWith(prefix)) {
+    if (authoring.authority.getSnapshot().previewCommandId?.startsWith(ownerPrefix)) {
       authoring.authority.cancelPreview();
     }
-  }, [authoring.authority, prefix]);
+  }, [authoring.authority, ownerPrefix]);
 
   function preview(next: CharacterGroomDocument): boolean {
     if (ownPreview) authoring.cancelPreview();
     const receipt = authoring.beginPreview({
-      commandId: `${prefix}/${++sequence.current}`,
+      commandId: `${ownerPrefix}${++sequence.current}`,
       label: t("studio.character.groom.editLabel", "헤어 가이드 편집"),
       source: "user",
       expectedDocumentId: snapshot.document.documentId,
@@ -118,7 +120,7 @@ export function CharacterGroomPanel({ authoring, runtime }: {
   ] as const;
 
   return <section aria-label={t("studio.character.groom.panel", "헤어 가이드 편집")} className="space-y-3">
-    <p className="text-xs leading-relaxed text-fg-3">{t("studio.character.groom.description", "새 가이드는 머리 본 로컬 좌표(m)로 편집합니다. 불러온 두피 루트 앵커는 확인된 원본 표면과 스킨을 따라 표시합니다. 미리보기를 적용하면 원본 가이드와 곡선 설정이 저장됩니다.")}</p>
+    {!compactPreview ? <><p className="text-xs leading-relaxed text-fg-3">{t("studio.character.groom.description", "새 가이드는 머리 본 로컬 좌표(m)로 편집합니다. 불러온 두피 루트 앵커는 확인된 원본 표면과 스킨을 따라 표시합니다. 미리보기를 적용하면 원본 가이드와 곡선 설정이 저장됩니다.")}</p>
     {!authoring.hydrated ? <p role="status" className="text-xs text-fg-3">{t("studio.character.groom.restoring", "저장된 캐릭터 원본을 복원하는 중입니다.")}</p> : null}
     {!runtime.supported ? <p role="status" className="text-xs text-warn">{t("studio.character.groom.unsupported", "실제 머리 본이 있는 VRM 모델에서 헤어를 편집할 수 있습니다.")}</p> : null}
     {foreignPreview ? <p role="status" className="text-xs text-warn">{t("studio.character.groom.otherPreview", "다른 도구의 미리보기를 적용하거나 취소한 뒤 편집할 수 있습니다.")}</p> : null}
@@ -201,16 +203,18 @@ export function CharacterGroomPanel({ authoring, runtime }: {
       {anchored || group.scalpRegionId !== "scalp:head-local" ? <p role="status" className="text-xs text-warn">{anchorAttached
         ? t("studio.character.groom.anchorAttached", "두피 루트 앵커가 원본 표면에 부착되었습니다. 포즈·표정 변형을 따라 표시하며 길이·폭·표시를 편집할 수 있습니다. 앵커 좌표 재배치와 자동 재투영은 지원하지 않습니다.")
         : t("studio.character.groom.anchorPending", "불러온 두피 표면과 루트 앵커를 확인하기 전에는 메시로 표시하지 않습니다. 다른 topology, 여러 점의 앵커, 별도 primitive는 원본을 보존합니다.")}</p> : null}
-    </> : null}
-    <div className="flex flex-wrap gap-2 border-t border-line pt-3">
-      <button type="button" className={BUTTON} disabled={disabled || !activeDraft} onClick={() => preview(groom)}>{t("studio.character.groom.preview", "헤어 미리보기")}</button>
+    </> : null}</> : null}
+    <div className={cn("flex flex-wrap gap-2", !compactPreview && "border-t border-line pt-3")}>
+      {!compactPreview ? <button type="button" className={BUTTON} disabled={disabled || !activeDraft} onClick={() => preview(groom)}>{t("studio.character.groom.preview", "헤어 미리보기")}</button> : null}
       <button type="button" className={cn(BUTTON, "border-accent/50 text-accent")} disabled={disabled || !ownPreview || runtime.status !== "ready"} onClick={() => {
         const receipt = authoring.commitPreview();
         if (receipt?.status === "applied") { setDraft(null); setError(null); }
         else setError(receipt?.reason ?? t("studio.character.groom.applyFailure", "헤어를 적용하지 못했습니다."));
       }}>{t("studio.character.groom.apply", "헤어 적용")}</button>
       <button type="button" className={BUTTON} disabled={!activeDraft && !ownPreview} onClick={cancel}>{t("studio.character.groom.cancel", "헤어 취소")}</button>
-      <button type="button" className={BUTTON} disabled={!authoring.hydrated || foreignPreview || !snapshot.canUndo} onClick={() => { cancel(); authoring.undo(); }}>{t("studio.character.groom.undo", "저작 실행 취소")}</button>
+      {compactPreview
+        ? <button type="button" className={BUTTON} onClick={authoring.cancelPreview}>{t("studio.character.groom.editLabel", "헤어 가이드 편집")}</button>
+        : <button type="button" className={BUTTON} disabled={!authoring.hydrated || foreignPreview || !snapshot.canUndo} onClick={() => { cancel(); authoring.undo(); }}>{t("studio.character.groom.undo", "저작 실행 취소")}</button>}
     </div>
     <p role="status" className="text-xs text-fg-3">{runtime.status === "building" ? t("studio.character.groom.building", "실제 헤어 메시 생성 중…") : ownPreview ? t("studio.character.groom.previewing", "미리보기 중 · 적용 전 원본은 유지됩니다.") : activeDraft ? t("studio.character.groom.draft", "수정 중 · 헤어 미리보기로 실제 모양을 확인하세요.") : t("studio.character.groom.saved", "적용한 원본 가이드는 캐릭터 저장·내보내기에 포함됩니다.")} {runtime.guideCount} {t("studio.character.groom.guideCount", "가이드")} · {runtime.triangleCount} {t("studio.character.groom.triangleCount", "삼각형")}</p>
     {runtime.notices?.map((notice) => <p key={notice} role="status" className="text-xs text-warn">{notice}</p>)}

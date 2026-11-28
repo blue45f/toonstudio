@@ -407,7 +407,8 @@
   bottom: auto;
   height: calc(var(--studio-3d-viewport-height, 100dvh) - max(0.5rem, env(safe-area-inset-top)) - max(0.5rem, env(safe-area-inset-bottom)));
 }
-[data-character-authoring-workbench="true"][data-drawing="true"] {
+[data-character-authoring-workbench="true"][data-drawing="true"],
+[data-character-authoring-workbench="true"][data-groom-preview="true"] {
   top: auto;
   bottom: max(0.5rem, env(safe-area-inset-bottom));
   height: auto;

@@ -16,7 +16,7 @@ import type { CharacterGroomRuntimeState } from "../groom/use-character-groom-ru
 vi.mock("@/shared/lib/i18n", () => ({ useT: () => (_key: string, fallback: string) => fallback }));
 afterEach(cleanup);
 
-function fixture(options: { readonly supported?: boolean; readonly hydrated?: boolean; readonly anchored?: boolean; readonly anchorAttached?: boolean; readonly notices?: readonly string[] } = {}) {
+function fixture(options: { readonly supported?: boolean; readonly hydrated?: boolean; readonly anchored?: boolean; readonly anchorAttached?: boolean; readonly notices?: readonly string[]; readonly compact?: boolean } = {}) {
   const document = migrateCharacterDocumentV2ToV3(createCharacterDocumentV2({
     documentId: "character:groom-ui",
     model: { assetId: "model:hero", assetVersion: "1", contentSha256: null, mode: "canonical", topologyFamily: "family:test", topologyRevision: "topology:test", rigRevision: "rig:1", morphRevision: "morph:1", rendererRevision: "renderer:1" },
@@ -47,7 +47,8 @@ function fixture(options: { readonly supported?: boolean; readonly hydrated?: bo
       undo: () => authority.undo(), redo: () => authority.redo(), exportJson: () => "", importJson: async () => false,
       saveNow: async () => true, retryRestore: () => undefined, setRuntimeSyncPending: () => undefined,
     };
-    return <CharacterGroomPanel authoring={hook} runtime={runtime} />;
+    return <CharacterGroomPanel authoring={hook} runtime={runtime} previewPrefix="groom-preview/test/"
+      compactPreview={options.compact === true && snapshot.previewCommandId?.startsWith("groom-preview/test/") === true} />;
   }
   render(<Harness />);
   return authority;
@@ -64,6 +65,24 @@ function ribbon(authority: CharacterAuthoringAuthority) {
 }
 
 describe("CharacterGroomPanel", () => {
+  it("작은 화면에서 미리보기를 편집하면 초안을 이어가고 적용·취소는 원본과 이력을 구분한다", () => {
+    const authority = fixture({ compact: true });
+    click("그룹 추가"); click("가이드 추가"); click("헤어 미리보기");
+    expect(screen.queryByRole("button", { name: "그룹 추가" })).toBeNull();
+    click("헤어 가이드 편집");
+    expect(authority.getSnapshot().previewDocument).toBeNull();
+    expect(screen.getByRole("combobox", { name: "헤어 가이드" }).querySelectorAll("option")).toHaveLength(2);
+    expect(authority.getSnapshot().canUndo).toBe(false);
+    click("헤어 미리보기"); click("헤어 적용");
+    const savedGroom = authority.getSnapshot().document.groom;
+    expect(savedGroom.groups[0]?.guides).toHaveLength(2);
+    click("가이드 추가"); click("헤어 미리보기"); click("헤어 취소");
+    expect(authority.getSnapshot().previewDocument).toBeNull();
+    expect(authority.getSnapshot().document.groom).toEqual(savedGroom);
+    click("저작 실행 취소");
+    expect(authority.getSnapshot().document.groom.groups).toHaveLength(0);
+  });
+
   it("부착된 임포트 가이드의 profile·표시를 V3 preview/apply/undo로 편집하며 앵커 원본을 보존한다", () => {
     const authority = fixture({ anchored: true, anchorAttached: true });
     const anchor = authority.getSnapshot().document.groom.groups[0]?.guides[0]?.points[0]?.surfaceAnchor;

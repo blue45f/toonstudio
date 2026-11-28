@@ -213,6 +213,10 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
     error: t("studio.character.persistence.error", "저장소 오류"),
   };
   const drawing = open && workbench.surfaceInk.active;
+  const groomPreviewPrefix = `groom-preview/${tabIds}/`;
+  const compactGroomPreview = open && shellCompact && tab === "groom"
+    && workbench.authoring.snapshot.previewCommandId?.startsWith(groomPreviewPrefix) === true;
+  const viewportOverlay = drawing || compactGroomPreview;
   const shaperContextStatusGuide = resolveShaperContextKeycapStatusGuide({
     tab,
     drawingActive: drawing,
@@ -265,7 +269,7 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
   useEffect(() => {
     if (!open) return;
     panelRef.current?.focus({ preventScroll: true });
-  }, [open, drawing]);
+  }, [open, viewportOverlay]);
 
   useEffect(() => {
     if (!open) return;
@@ -275,9 +279,10 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
         event.preventDefault();
         event.stopImmediatePropagation();
         if (drawing) workbench.surfaceInk.setActive(false);
+        else if (compactGroomPreview) workbench.authoring.cancelPreview();
         else close();
         return true;
-      } else if (event.key === "Tab" && !drawing) {
+      } else if (event.key === "Tab" && !viewportOverlay) {
         const panel = panelRef.current;
         if (!panel) return false;
         const controls = Array.from(panel.querySelectorAll<HTMLElement>(
@@ -655,13 +660,13 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
 
   const panel = open ? (
     <>
-      {!drawing ? <div aria-hidden className="fixed inset-0 z-[94] bg-black/25" onPointerDown={close} /> : null}
-      <div ref={panelRef} role="dialog" aria-modal={!drawing} data-character-authoring-workbench="true" data-drawing={drawing ? "true" : undefined} data-studio-vrm-child-tool="true" data-studio-vrm-child-history={drawing || tab === "ink" ? "surface-ink" : undefined} aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className={cn("fixed right-2 z-[95] flex w-[min(31rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.04_0.01_70/0.65)] outline-none", drawing ? "bottom-2" : "inset-y-2")}>
-        <header className="flex items-center gap-3 border-b border-line px-3 py-2.5">
-          <div className="min-w-0 flex-1"><p className="text-[0.62rem] font-bold tracking-wide text-accent">CHARACTER PLATFORM V3 · WEB FIRST</p><h2 id={titleId} className="truncate text-base font-bold text-fg">캐릭터 품질 워크벤치</h2><p data-testid="workbench-vroid-subroute" className="truncate text-[0.62rem] text-fg-3">{activeSubRoute.koLabel} · <code>{activeSubRoute.vroidRoutePattern}</code></p><p id={descriptionId} className="sr-only">공식 캐릭터, 파츠 프리셋, Pose, 3D 펜선, 렌더 패스, 브라우저 저작 코어를 관리합니다.</p></div>
+      {!viewportOverlay ? <div aria-hidden className="fixed inset-0 z-[94] bg-black/25" onPointerDown={close} /> : null}
+      <div ref={panelRef} role="dialog" aria-modal={!viewportOverlay} data-character-authoring-workbench="true" data-drawing={drawing ? "true" : undefined} data-groom-preview={compactGroomPreview ? "true" : undefined} data-studio-vrm-child-tool="true" data-studio-vrm-child-history={drawing || tab === "ink" ? "surface-ink" : undefined} aria-labelledby={titleId} aria-describedby={compactGroomPreview ? undefined : descriptionId} tabIndex={-1} className={cn("fixed right-2 z-[95] flex w-[min(31rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.04_0.01_70/0.65)] outline-none", viewportOverlay ? "bottom-2" : "inset-y-2", compactGroomPreview && "max-h-[40dvh]")}>
+        <header className={cn("flex shrink-0 items-center gap-3 border-b border-line px-3", compactGroomPreview ? "py-1" : "py-2.5")}>
+          {compactGroomPreview ? <h2 id={titleId} className="min-w-0 flex-1 text-sm font-bold text-fg">{t("studio.character.groom.preview", "헤어 미리보기")}</h2> : <div className="min-w-0 flex-1"><p className="text-[0.62rem] font-bold tracking-wide text-accent">CHARACTER PLATFORM V3 · WEB FIRST</p><h2 id={titleId} className="truncate text-base font-bold text-fg">캐릭터 품질 워크벤치</h2><p data-testid="workbench-vroid-subroute" className="truncate text-[0.62rem] text-fg-3">{activeSubRoute.koLabel} · <code>{activeSubRoute.vroidRoutePattern}</code></p><p id={descriptionId} className="sr-only">공식 캐릭터, 파츠 프리셋, Pose, 3D 펜선, 렌더 패스, 브라우저 저작 코어를 관리합니다.</p></div>}
           <button type="button" aria-label="캐릭터 품질 워크벤치 닫기" className={ICON_BUTTON} onClick={close}><X size={17} aria-hidden /></button>
         </header>
-        {!drawing ? <nav aria-label="단계별 연관 이동 동선" data-testid="workbench-onward-bridge" className="flex flex-wrap items-center gap-1.5 border-b border-line bg-card/50 px-3 py-1.5 text-[0.62rem]">
+        {!viewportOverlay ? <nav aria-label="단계별 연관 이동 동선" data-testid="workbench-onward-bridge" className="flex flex-wrap items-center gap-1.5 border-b border-line bg-card/50 px-3 py-1.5 text-[0.62rem]">
           <span className="font-bold text-fg-3">다음 동선:</span>
           {onwardBridges.map((bridge) => (
             <a key={bridge.id} href={bridge.href} className="rounded-full border border-line bg-panel px-2 py-0.5 font-semibold text-fg-2 hover:border-accent/60 hover:text-accent">
@@ -674,7 +679,7 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
         {drawing ? <div className="flex items-center gap-3 p-3">
           <p className="min-w-0 flex-1 text-[0.68rem] leading-relaxed text-fg-3">캐릭터 표면에 그리세요. 그리기를 종료하면 펜선 도구로 돌아갑니다.</p>
           <button type="button" className={PRIMARY_BUTTON} onClick={() => workbench.surfaceInk.setActive(false)}>그리기 종료</button>
-        </div> : <><div role="tablist" aria-label="캐릭터 품질 기능" className="grid grid-cols-4 gap-1 border-b border-line px-2 py-2">
+        </div> : <>{!compactGroomPreview ? <div role="tablist" aria-label="캐릭터 품질 기능" className="grid grid-cols-4 gap-1 border-b border-line px-2 py-2">
           {TABS.map((item) => {
             const Icon = item.icon;
             return <button key={item.id} id={`${tabIds}-${item.id}`} type="button" role="tab"
@@ -693,9 +698,9 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
                 document.getElementById(`${tabIds}-${next.id}`)?.focus({ preventScroll: true });
               }} className={cn("flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[0.62rem] font-semibold", STUDIO_FOCUS_RING, tab === item.id ? "bg-accent-soft text-accent" : "text-fg-3 hover:bg-raised hover:text-fg")}><Icon size={15} aria-hidden /><span className="truncate">{item.label}</span></button>;
           })}
-        </div>
-        <div id={`${tabIds}-panel`} role="tabpanel" aria-labelledby={`${tabIds}-${tab}`} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
-          {tab === "quality" ? qualityPanel : tab === "presets" ? presetsPanel : tab === "groom" ? <CharacterGroomPanel authoring={workbench.authoring} runtime={workbench.groom} /> : tab === "pose" ? posePanel : tab === "ink" ? inkPanel : tab === "render" ? renderPanel : runtimePanel}
+        </div> : null}
+        <div id={`${tabIds}-panel`} role={compactGroomPreview ? undefined : "tabpanel"} aria-labelledby={compactGroomPreview ? undefined : `${tabIds}-${tab}`} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+          {tab === "quality" ? qualityPanel : tab === "presets" ? presetsPanel : tab === "groom" ? <CharacterGroomPanel authoring={workbench.authoring} runtime={workbench.groom} previewPrefix={groomPreviewPrefix} compactPreview={compactGroomPreview} /> : tab === "pose" ? posePanel : tab === "ink" ? inkPanel : tab === "render" ? renderPanel : runtimePanel}
         </div></>}
         {workbench.renderExtras?.status === "building" ? <p role="status" className="border-t border-line px-3 py-2 text-xs text-fg-3">{t("studio.character.authoring.extrasBuilding", "재질과 입체선을 화면에 적용하는 중입니다.")}</p> : null}
         {workbench.renderExtras?.warnings.length ? <p role="status" className="border-t border-line px-3 py-2 text-xs text-warn">{workbench.renderExtras.warnings.join(" · ")}</p> : null}
@@ -707,14 +712,14 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
         </div> : null}
         {fileError ? <p role="alert" className="border-t border-line px-3 py-2 text-xs text-bad">{fileError}</p> : null}
         {workbench.notice ? <p role="status" className="border-t border-line bg-card px-3 py-2 text-[0.68rem] font-semibold text-accent">{workbench.notice}</p> : null}
-        <footer data-testid="workbench-shaper-context-statusbar" className="flex min-h-6 flex-wrap items-center gap-2 border-t border-line bg-[#121212] px-3 py-1 text-[0.6rem] text-[#b0b0b0]">
+        {!compactGroomPreview ? <footer data-testid="workbench-shaper-context-statusbar" className="flex min-h-6 flex-wrap items-center gap-2 border-t border-line bg-[#121212] px-3 py-1 text-[0.6rem] text-[#b0b0b0]">
           {shaperContextStatusGuide.map((item) => (
             <span key={item.keycap} className="inline-flex items-center gap-1">
               <kbd className="rounded border border-[#666666] bg-[#333333] px-1 py-0.5 font-mono text-[0.56rem] font-bold text-[#ffff00]">{item.keycap}</kbd>
               <span>{item.actionKo}</span>
             </span>
           ))}
-        </footer>
+        </footer> : null}
         <input ref={fileInputRef} type="file" accept="application/json,.json" tabIndex={-1} aria-label="캐릭터 품질 데이터 파일 선택" className="sr-only" onChange={onFileChange} />
       </div>
     </>
