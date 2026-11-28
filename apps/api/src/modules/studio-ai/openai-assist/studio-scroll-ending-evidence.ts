@@ -32,7 +32,7 @@ function endingPassage(inputText: string): string {
   const circled = Array.from(manuscript.matchAll(/(?:^|\s)([①-⑳])(?=\s)/gu));
   const ordered = circled.length >= 2 && circled.every((entry, i) => entry[1].charCodeAt(0) === 0x2460 + i);
   const lastPanel = ordered ? circled.at(-1) : numbered.at(-1);
-  if (lastPanel) return manuscript.slice(lastPanel.index + lastPanel[0].length).split(/\n[ \t]*\n/u, 1)[0];
+  if (lastPanel) return manuscript.slice(lastPanel.index + lastPanel[0].length);
 
   // 산문은 원고/요청 경계가 있거나 장면 서술이 여러 문장일 때 끝 문장을 대조한다.
   if (sections.length === 1 && notes === undefined && sentences.length < 2) return "";

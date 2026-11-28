@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assist.service";
 
 const mode = "scroll-pacing-auditor";
+const multilineEnding = "1컷: 복도를 걷는다.\n2컷: 민서가 손잡이를 잡는다.\n\n민서: “문 뒤에 누가 있어.”";
 const beat = {
   section: "도입",
   pacing: "tight" as const,
@@ -86,6 +87,10 @@ describe("스크롤 호흡 감사 응답 계약", () => {
     ["표찰", "컷 1: 수아가 빈 화분을 옮긴다.\n컷 2: 표찰에서 동생의 이름을 읽는다.", "동생의 이름을 읽는다", true],
     ["폐관", "전시실의 문이 닫힌다. 마지막 컷: 반납함에서 벨이 두 번 울린다.", "벨이 두 번 울린다", true],
     ["줄바꿈", "1컷에서 수표를 편다. 2컷에서는 🎨 파란\n  도장이 번진다.", "🎨 파란 도장이 번진다", true],
+    ["끝컷의 둘째 문단 대사", multilineEnding, "문 뒤에 누가 있어", true],
+    ["별도 메모 앞의 둘째 문단 대사", multilineEnding + "\n\n편집 메모: 밤하늘을 추가할까요?", "문 뒤에 누가 있어", true],
+    ["둘째 문단 뒤 편집 메모", multilineEnding + "\n\n편집 메모: 밤하늘을 추가할까요?", "밤하늘을 추가할까요", false],
+    ["둘째 문단 뒤 독립 요청", multilineEnding + "\n\n보라색 그림자를 추가해 주세요.", "보라색 그림자", false],
     ["앞 컷 인용", "1컷: 복도에 젖은 발자국이 있다.\n2컷: 모래를 털고 돌아선다.", "젖은 발자국", false],
     ["새로 지어낸 대사", "1컷: 무대의 불이 꺼진다.\n2컷: 관객들이 외투를 챙긴다.", "우린 떠나지 않아", false],
     ["편집 지시 재인용", "1컷: 빨간 단추를 줍는다.\n2컷: 단추를 주머니에 넣는다.\n요청: 사라진 가방을 상상해 주세요.", "사라진 가방", false],

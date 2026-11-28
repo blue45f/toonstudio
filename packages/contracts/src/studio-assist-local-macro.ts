@@ -33,17 +33,23 @@ function requestedCanvasClauses(brief: string) {
     .replace(/^[ \t]*(?:\[창작자 입력\]|(?:연출 목표|검수 대상|장면 목표|담당자)[ \t:：]+[^\r\n]*)[ \t]*$/gmu, "")
     .replace(/^\s*>[^\n]*$/gmu, "인용문")
     .replace(/“[^”]*(?:”|$)|‘[^’]*(?:’|$)|「[^」]*(?:」|$)|『[^』]*(?:』|$)|`[^`]*(?:`|$)|"[^"]*(?:"|$)|'[^']*(?:'|$)/gu, "인용문");
-  const sentences = unquoted.split(/[.!。](?=\s|$)/u);
+  // 행 끝의 마침표는 이어지는 행의 조건·취소 여부를 확인한 뒤에만 경계로 인정한다.
+  const sentences = unquoted.replace(/[.!。][ \t]*(?=\r?\n)/gu, "").split(/[.!。](?=\s|$)/u);
   const requests: string[] = [];
   for (const sentence of sentences) {
-    const [first, ...rest] = sentence.trim().split(/\s*,\s*/u);
-    // 쉼표 뒤에는 지정된 연출 수치만 이어질 수 있다. 조건·선택지가 붙으면 수동 판단한다.
-    if (!rest.every((part) => /^(?:(?:카메라\s*)?(?:시작\s*)?(?:렌즈|초점거리)(?:는|를)?\s*\d+(?:\.\d+)?\s*mm|(?:별도\s*)?(?:효과\s*)?레이어(?:의)?\s*불투명도(?:\s*시작값은|는)?\s*\d+(?:\.\d+)?\s*%)(?:입니다)?$/iu.test(part))) continue;
+    const normalizedSentence = sentence.replace(PIXEL_SIZE, "규격값");
+    if (!/(?:새로운|새|신규|가상)\s*캔버스|캔버스(?:를|는)?\s*(?:규격값(?:으로|로|을|를)?\s*)?(?:새로\s*)?(?:만들|만든|만듭|생성|초기화)|규격값\s*(?:\d+화\s*)?캔버스(?:를)?\s*만들/u.test(normalizedSentence)) continue;
+    const [first, ...rest] = sentence.trim().split(/\s*(?:,|\r?\n)\s*/u);
+    // 쉼표와 줄바꿈 뒤에는 독립된 제작 수치나 점검 지시만 허용한다.
+    if (!rest.every((part) => /^(?:(?:카메라\s*)?(?:시작\s*)?(?:렌즈|초점거리)(?:는|를)?\s*\d+(?:\.\d+)?\s*mm|(?:별도\s*)?(?:효과\s*)?레이어(?:의)?\s*불투명도(?:\s*시작값은|는)?\s*\d+(?:\.\d+)?\s*%)(?:입니다)?$/iu.test(part)
+      || /^(?:(?:naver-webtoon|kakao-webtoon|webtoon-global|print-cmyk)\s*)?(?:출고|사전|내보내기)\s*점검$/iu.test(part))) return null;
     const normalized = first.replace(PIXEL_SIZE, "규격값").trim();
     const specification = /^(?:새로운|새|신규|가상)\s*캔버스(?:는|의\s*규격은)?\s*규격값(?:입니다)?$/u;
     const directCommand = /^(?:(?:새로운|새|신규|가상)\s*)?(?:캔버스(?:를|는)?\s*규격값(?:으로|로|을|를)?|규격값\s*(?:\d+화\s*)?캔버스(?:를)?)\s*(?:새로\s*)?(?:만들어\s*(?:주세요|줘)|만든다|만듭니다|생성(?:해\s*(?:주세요|줘)|한다|합니다)?|만들고\s*(?:출고|사전)\s*점검)$/u;
-    if (specification.test(normalized) || directCommand.test(normalized)) requests.push(first);
+    if (!specification.test(normalized) && !directCommand.test(normalized)) return null;
+    requests.push(first);
   }
+  if (requests.length && /취소|철회|보류/u.test(unquoted)) return null;
   return requests;
 }
 
@@ -108,8 +114,10 @@ export function buildLocalWorkflowMacro(input: string, projectTitle: string): Ma
 
   const canvasClauses = clauses.filter((part) => part.includes("캔버스"));
   const createRequests = requestedCanvasClauses(source.replace(/(\d),(?=\d{3}(?:\D|$))/gu, "$1"));
-  const unidentifiedSize = canvasClauses.some((part) => /^(?:새로운|새|신규|가상)\s*캔버스/u.test(part)) && !readCanvasSize(canvasClauses);
-  if ((createRequests.length || unidentifiedSize) && canPlan(canvas)) {
+  if (createRequests === null || (createRequests.length && !canPlan(canvas))) {
+    return summary("수동 확인 대기. 새 작업면을 만들지 먼저 정한 뒤 허용 도구와 픽셀 규격을 확인하세요. 작업면이 확정되면 연출과 점검을 재개하세요.");
+  }
+  if (createRequests.length) {
     if (canvasClauses.some((part) => /(?:기존|현재|열린|작업 중인)\s*캔버스/u.test(part))) {
       return summary("수동 확인 대기. 기존 원고를 보존할 작업본을 먼저 준비하고, 새 캔버스에서 진행할 작업을 지정해 재개하세요.");
     }

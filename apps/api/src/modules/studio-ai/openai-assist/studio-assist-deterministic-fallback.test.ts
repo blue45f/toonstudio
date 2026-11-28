@@ -142,6 +142,30 @@ describe("로컬 창작 보조의 원문 보존", () => {
     expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["가지 마.\n내 말 들려?", "민지: 응\n알았어\n정우: 난 남을게.\n정말이야."]);
   });
 
+  it("화자가 연속해서 말할 때 괄호 안 연기는 지문에 두고 두 발화를 말풍선으로 옮긴다", () => {
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText: [
+      "1컷: 민서: “조심해.” (정우를 보며) “꼭 돌아와.”",
+      "2컷: 정우: “응” （고개를 끄덕이며） “다녀올게.”",
+    ].join("\n") });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["조심해.\n꼭 돌아와.", "응\n다녀올게."]);
+    expect(result.data.cuts[0].visualAction).toContain("(정우를 보며)");
+    expect(result.data.cuts[1].visualAction).toContain("（고개를 끄덕이며）");
+  });
+
+  it("새 화자·소품 글·주어가 바뀌는 괄호 지문은 앞사람의 대사에 붙이지 않는다", () => {
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText: [
+      "1컷: 민서: “조심해.” (정우를 보며) 정우: “알았어.”",
+      "2컷: 민서: “저기 봐.” (안내판을 보며) “출입 금지.”",
+      "3컷: 민서: “기다려.” (정우가 뒤돌아보며) “누구세요?”",
+      "4컷: 민서: “조심해.” (잠시 후) “꼭 돌아와.”",
+    ].join("\n") });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["민서: 조심해.\n정우: 알았어.", "저기 봐.", "기다려.", "조심해."]);
+    expect(result.data.cuts[1].visualAction).toContain("출입 금지.");
+    expect(result.data.cuts[2].visualAction).toContain("누구세요?");
+  });
+
   it("연속 발화 뒤 지문·소품 인용과 낱말 뒤에 붙은 조사를 같은 화자의 대사로 옮기지 않는다", () => {
     const result = buildDeterministicAssistResult("script-to-cuts", { inputText: [
       "1컷: 민지: “기다려.” 민지가 안내판을 본다. “출입 금지.”",

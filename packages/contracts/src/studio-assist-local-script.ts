@@ -7,7 +7,7 @@ type LocalData<M extends OpenAiAssistStructuredResult["mode"]> =
 
 const quotedText = /“([^”]+)”|‘([^’]+)’|"([^"]+)"|「([^」]+)」|'([^'\n]+)'/gu;
 const stageLabel = /(?:장면|지문|배경|효과음|쪽지|메모|자막|간판|회상|현재|과거|시간|장소|줄거리|제목|설명|연출|보증문|안내문|전광판|단말기|화면|SFX)$/iu;
-const speakerPrefix = /(?:^|[\n.!?。！？”’"'」]|(?:컷\s*\d{1,2}|\d{1,2}\s*컷)\s*[:：])[ \t]*([\p{L}][\p{L}\p{N}_ ·]{0,18})\s*[:：][ \t]*$/u;
+const speakerPrefix = /(?:^|[\n.!?。！？”’"'」)）]|(?:컷\s*\d{1,2}|\d{1,2}\s*컷)\s*[:：])[ \t]*([\p{L}][\p{L}\p{N}_ ·]{0,18})\s*[:：][ \t]*$/u;
 const writtenCue = /(?:보증문|안내문|자막|간판|시간표|영수증|화면|전광판|(?:적혀|쓰여|새겨져|인쇄되어)\s*있다)[.:：]$/u;
 
 function quoteBody(match: RegExpMatchArray): string {
@@ -18,6 +18,10 @@ function isWholeUtterance(input: string, quote: RegExpMatchArray): boolean {
   const tail = input.slice((quote.index ?? 0) + quote[0].length);
   const next = tail.trimStart();
   if (!next || next.startsWith(quote[0][0])) return true;
+  if (next.startsWith("(") || next.startsWith("（")) {
+    const followingQuote = next.indexOf(quote[0][0]);
+    if (followingQuote > 0 && connectsSpeakerBalloons(next.slice(0, followingQuote))) return true;
+  }
   if (/^(?:이?라고|이?라는)\s*(?:적|쓰|써|새겨|인쇄|표시|문구|글씨)/u.test(next)) return false;
   const nextSpeaker = next.match(spokenLine);
   if (nextSpeaker && !stageLabel.test(nextSpeaker[1].trim())) return true;
@@ -110,6 +114,15 @@ const cutHeader = /^\s*(?:컷\s*\d{1,2}|\d{1,2}\s*컷)(?=[\s.:：)\]-]|$)\s*[.:�
 const requestedCutCount = /^\s*(?:정확히\s*)?(\d{1,2})\s*컷(?:으로|로)\s*(?:나눠|나누어|분할해|구성해)\s*주세요[.!]?\s*/u;
 const spokenLine = /^([\p{L}][\p{L}\p{N}_ ·]{0,18})\s*[:：]\s*(.+)$/u;
 
+function connectsSpeakerBalloons(gap: string): boolean {
+  const cue = gap.trim().normalize("NFKC");
+  if (!cue) return true;
+  // 명시된 화자의 주어가 생략된 시선·연기 지시 하나만 인정한다. 지문은 visualAction에 그대로 남는다.
+  if (/^\(\s*(?:고개를\s*(?:끄덕이며|숙이며)|(?:잠시\s*)?숨을\s*고르(?:며|고)|웃으며|속삭이듯)\s*\)$/u.test(cue)) return true;
+  const target = /^\(\s*([\p{L}]+)[을를]\s*(?:바라|돌아)?보며\s*\)$/u.exec(cue)?.[1];
+  return Boolean(target && !stageLabel.test(target) && !/(?:판|표지|팻말|글씨|문구|문서|서류|종이|영수증|편지|책)$/u.test(target));
+}
+
 function spokenText(beat: string): string {
   const labeled = beat.match(spokenLine);
   const turns: Array<{ speaker: string; text: string }> = [];
@@ -120,7 +133,7 @@ function spokenText(beat: string): string {
     const lastTurn = turns.at(-1);
     if (speaker) {
       turns.push({ speaker, text: quoteBody(quote) });
-    } else if (lastTurn && opening === quote[0][0] && !beat.slice(lastEnd, quote.index).trim() && isWholeUtterance(beat, quote)) {
+    } else if (lastTurn && opening === quote[0][0] && connectsSpeakerBalloons(beat.slice(lastEnd, quote.index)) && isWholeUtterance(beat, quote)) {
       lastTurn.text += "\n" + quoteBody(quote);
     } else {
       continue;
@@ -129,7 +142,7 @@ function spokenText(beat: string): string {
     opening = quote[0][0];
   }
   // 따옴표 없이 화자가 이어 말하는 대본은 기존 원문 전체를 보존한다.
-  const hasPlainSpeaker = /(?:^|[.!?。！？”’"'」])\s*[\p{L}][\p{L}\p{N}_ ·]{0,18}[:：]\s*[^\s“‘"「']/u.test(beat);
+  const hasPlainSpeaker = /(?:^|[.!?。！？”’"'」)）])\s*[\p{L}][\p{L}\p{N}_ ·]{0,18}[:：]\s*[^\s“‘"「']/u.test(beat);
   if (turns.length && !hasPlainSpeaker) {
     return turns.map(({ speaker, text }) => turns.length === 1 ? text : `${speaker}: ${text}`).join("\n");
   }

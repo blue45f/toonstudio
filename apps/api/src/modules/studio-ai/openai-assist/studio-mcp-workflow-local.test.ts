@@ -14,16 +14,25 @@ function plan(inputText: string) {
   return result.data;
 }
 
+function dryRunBatch(steps: readonly { tool: string; arguments: Record<string, unknown> }[]) {
+  const cli = resolve(__dirname, "../../../../../../tools/toonstudio-mcp/cli.mjs");
+  const run = spawnSync(process.execPath, [cli, "batch", "--dry-run", "--json", JSON.stringify(steps)], { encoding: "utf8", env: {} });
+  return { status: run.status, results: JSON.parse(run.stdout).results };
+}
+
 describe("원고에 근거한 로컬 제작 계획", () => {
-  it("새 장면의 가로 규격과 렌즈를 실제 MCP에 전달하고 현재 캔버스의 미확인 권리에서 멈춘다", () => {
-    const data = plan("연출 목표: 물 위 부표와 먼 방파제의 거리감\n새 캔버스 1360×760px, 카메라 렌즈 91mm. webtoon-global 출고 점검. 허용 도구 studio.canvas.create, studio.bg3d.compose_scene, studio.export.preflight_check.");
+  it.each([
+    "새 캔버스 1360×760px, 카메라 렌즈 91mm. webtoon-global 출고 점검. 허용 도구 studio.canvas.create, studio.bg3d.compose_scene, studio.export.preflight_check.",
+    "새 캔버스 1360×760px\n카메라 렌즈 91mm\nwebtoon-global 출고 점검",
+    "새 캔버스 1360×760px.\r\n카메라 렌즈 91mm.\r\nwebtoon-global 출고 점검.",
+  ])("새 장면의 규격·렌즈를 실제 MCP에 전달하고 미확인 권리에서 멈춘다 (%s)", (instructions) => {
+    const data = plan("연출 목표: 물 위 부표와 먼 방파제의 거리감\n" + instructions);
     expect(data.steps.map((step) => step.toolName)).toEqual(["studio.canvas.create", "studio.bg3d.compose_scene", "studio.export.preflight_check"]);
     expect(data.steps[2].reasonKo).toContain("물 위 부표와 먼 방파제의 거리감");
     const payload = data.steps.map((step) => ({ tool: step.toolName, arguments: JSON.parse(step.argumentsJson) }));
-    const cli = resolve(__dirname, "../../../../../../tools/toonstudio-mcp/cli.mjs");
-    const batch = spawnSync(process.execPath, [cli, "batch", "--dry-run", "--json", JSON.stringify(payload)], { encoding: "utf8", env: {} });
+    const batch = dryRunBatch(payload);
     expect(batch.status).toBe(1);
-    expect(JSON.parse(batch.stdout).results).toMatchObject([
+    expect(batch.results).toMatchObject([
       { ok: true, result: { canvas: { width: 1360, height: 760 } } },
       { ok: true, result: { scene: { camera: { lensMm: 91 } } } },
       { ok: false, result: { platform: "webtoon-global", verdict: "blocked", checks: expect.arrayContaining([{ id: "rights-bom", status: "blocked", detail: expect.any(String) }]) } },
@@ -59,10 +68,9 @@ describe("원고에 근거한 로컬 제작 계획", () => {
       ...data.steps.map((entry) => ({ tool: entry.toolName, arguments: JSON.parse(entry.argumentsJson) })),
       { tool: "studio.session.snapshot", arguments: {} },
     ];
-    const cli = resolve(__dirname, "../../../../../../tools/toonstudio-mcp/cli.mjs");
-    const run = spawnSync(process.execPath, [cli, "batch", "--dry-run", "--json", JSON.stringify(payload)], { encoding: "utf8", env: {} });
+    const run = dryRunBatch(payload);
     expect(run.status).toBe(0);
-    const canvas = JSON.parse(run.stdout).results.at(-1).result.state.canvas;
+    const canvas = run.results.at(-1).result.state.canvas;
     expect(canvas).toMatchObject({ title: "원본 그림", width: 1200, height: 1800 });
     expect(canvas.strokes).toHaveLength(1);
     expect(canvas.layers).toHaveLength(2);
@@ -92,6 +100,28 @@ describe("원고에 근거한 로컬 제작 계획", () => {
     "레이어만 점검하세요.\n[원고]\n새 캔버스 960×1200px를 만들어 주세요.",
   ])("조건·제외·인용·극중 지시에서는 문서를 초기화하지 않는다 (%s)", (source) => {
     expect(plan(source).steps.map((step) => step.toolName)).not.toContain("studio.canvas.create");
+  });
+
+  it.each([
+    "승인하면:\n새 캔버스 1360×760px", "새 캔버스 1360×760px\n생성 없이 작업한다",
+    "새 캔버스 1360×760px.\n취소", "새 캔버스 1360×760px를 만들까요?",
+    "새 캔버스 규격 미정", "새 캔버스 1360×760px. 허용 도구 studio.bg3d.compose_scene, studio.export.preflight_check",
+  ])("새 작업면이 확정되지 않으면 현재 문서의 후속 자동 단계도 함께 보류한다 (%s)", (request) => {
+    const data = plan(request + "\n카메라 렌즈 91mm\nwebtoon-global 출고 점검");
+    expect(data.steps).toEqual([]);
+    expect(data.summary).toContain("수동 확인 대기");
+  });
+
+  it("다음 행에서 취소한 캔버스의 매크로는 실제 MCP 세션의 원본 문서와 장면을 보존한다", () => {
+    const data = plan("새 캔버스 1360×760px.\n생성 취소.\n카메라 렌즈 91mm.\nwebtoon-global 출고 점검.");
+    const batch = dryRunBatch([
+      { tool: "studio.canvas.create", arguments: { title: "작가 원본", width: 920, height: 1470 } },
+      ...data.steps.map((step) => ({ tool: step.toolName, arguments: JSON.parse(step.argumentsJson) })),
+      { tool: "studio.session.snapshot", arguments: {} },
+    ]);
+    expect(batch.status).toBe(0);
+    expect(batch.results).toHaveLength(2);
+    expect(batch.results[1].result.state).toMatchObject({ canvas: { title: "작가 원본", width: 920, height: 1470 }, bg3d: { scenes: [] } });
   });
 
   it.each(["새 캔버스 960×1200px", "캔버스를 960×1200px로 만들어 주세요.", "새 캔버스 960×1200px 생성"])(
