@@ -1,0 +1,91 @@
+/**
+ * Wasm64 Wave 98 공개 배럴 진입점 (`wasm64-wave98-centennial-deterministic-c2pa-archive`).
+ *
+ * - `centennial-archive-container-and-crypto`: 순수 ES2017 SHA-256, HMAC-SHA256, IEEE 802.3 CRC-32,
+ *   정규 JSON 직렬화, 도메인 분리 이진 Merkle 트리, 빅엔디안 `TSVA` v1 바이너리 컨테이너 코덱
+ * - `c2pa-provenance-chain-and-deterministic-replay`: C2PA 서명 출처 체인, 2026↔2126 순수 정수
+ *   결정론적 픽셀 재생 오라클, 100년 보존 준비도 전수 감사기 및 원스톱 봉인 빌더
+ * - `centennial-seal-certificate-svg-and-audit`: 인쇄 안전 OKLCH 봉인 인증서 SVG 및 한국어 감사 보고서
+ */
+
+export {
+  CentennialArchiveError,
+  MANDATORY_PRESERVATION_CHUNK_KINDS,
+  TSVA_FLAG_HAS_PARITY_ECC,
+  TSVA_FORMAT_VERSION,
+  TSVA_HEADER_LENGTH,
+  TSVA_MAGIC_ASCII,
+  buildCentennialChunkMerkleLeaf,
+  buildCentennialMerkleTree,
+  bytesToHexCentennial,
+  canonicalSerializeCentennial,
+  computeXorParityEccBlock,
+  constantTimeEqualHex,
+  crc32Centennial,
+  decodeCentennialArchive,
+  decodeUtf8Centennial,
+  detectExternalNetworkUrls,
+  encodeCentennialArchive,
+  encodeUtf8Centennial,
+  generateCentennialMerkleProof,
+  hexToBytesCentennial,
+  hmacSha256CentennialBytes,
+  hmacSha256CentennialHex,
+  sha256CentennialBytes,
+  sha256CentennialHex,
+  verifyCentennialMerkleProof,
+  type CentennialArchiveChunkInput,
+  type CentennialArchiveErrorCode,
+  type CentennialChunkEncoding,
+  type CentennialChunkKind,
+  type CentennialMerkleProof,
+  type CentennialMerkleProofStep,
+  type CentennialMerkleTree,
+  type DecodedCentennialArchive,
+  type DecodedCentennialChunk,
+} from "./centennial-archive-container-and-crypto";
+
+export {
+  C2PA_GENESIS_PREVIOUS_HASH,
+  DETERMINISTIC_ARITHMETIC_CONTRACT,
+  appendC2paAssertion,
+  auditCentennialPreservationReadiness,
+  buildEmbeddedFontSubsetForText,
+  createC2paProvenanceChain,
+  createEmbeddedIccColorProfile,
+  createSealedCentennialEpisodeArchive,
+  renderDeterministicReferencePanelRgba,
+  verifyC2paProvenanceChain,
+  verifyCentennialDeterministicReplay,
+  type C2paAiDisclosureData,
+  type C2paAssertionInput,
+  type C2paAssertionLabel,
+  type C2paChainVerificationResult,
+  type C2paCreatorIdentity,
+  type C2paProvenanceChain,
+  type C2paProvenanceEntry,
+  type C2paVerificationFailureCode,
+  type CentennialPreservationAuditReport,
+  type CentennialPreservationBlocker,
+  type CentennialReplayVerificationResult,
+  type CreateSealedCentennialEpisodeInput,
+  type DeterministicDialogueRun,
+  type DeterministicInkStroke,
+  type DeterministicPanelRenderResult,
+  type DeterministicPanelSpec,
+  type DeterministicRectFill,
+  type EmbeddedBitmapFontSubset,
+  type EmbeddedIccColorProfile,
+  type ReplayHostPanelOutcome,
+  type ReplayHostYearReport,
+  type RightsBomArchivalAsset,
+  type RightsBomArchivalSnapshot,
+  type SealedPanelLayerPayload,
+  type WasmRendererPinManifest,
+} from "./c2pa-provenance-chain-and-deterministic-replay";
+
+export {
+  renderCentennialArchiveCertificateSvg,
+  summarizeCentennialArchiveKo,
+  type CentennialCertificateSvgResult,
+} from "./centennial-seal-certificate-svg-and-audit";
