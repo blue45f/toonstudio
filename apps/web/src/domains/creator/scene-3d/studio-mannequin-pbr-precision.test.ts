@@ -14,7 +14,8 @@ import {
   buildStudioMannequinSpec,
   type StudioMannequinPrimitiveMaterialRole,
 } from "./studio-mannequin-model";
-import { createStudioMannequinRestPose } from "./studio-mannequin-poses";
+import { createStudioMannequinRestPose, STUDIO_MANNEQUIN_HAND_POSE_PRESETS } from "./studio-mannequin-poses";
+import { resolveStudioMannequinLibraryHandState } from "./use-studio-mannequin-hand-pose";
 import {
   createStudioMannequinSceneFigure,
   resolveStudioMannequinPickedJoint,
@@ -228,6 +229,45 @@ describe("createStudioMannequinSceneFigure SubD 원주 분할 및 관절구 밀�
       expect(joints).toEqual(new Set(["pelvis", "spine", "chest"]));
     } finally {
       figure.dispose();
+      harness.dispose();
+      disposeStudioMannequinMaterialPalette(palette);
+      gradient.dispose();
+    }
+  });
+
+  it("모든 라이브러리 손 모양이 상대의 양손에 같은 메시로 보이고 몸통과 주인공을 보존한다", () => {
+    const gradient = createStudioMannequinToonGradientTexture();
+    const palette = createStudioMannequinMaterialPalette("wood", gradient);
+    const harness = createFigureMaterialsHarness(palette);
+    const rest = createStudioMannequinRestPose();
+    const spec = buildStudioMannequinSpec(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS);
+    const lead = createStudioMannequinSceneFigure({ id: "lead", materials: harness.materials, pose: rest, spec });
+    const partner = createStudioMannequinSceneFigure({ id: "partner", materials: harness.materials, pose: rest, spec });
+    const pelvis = partner.joints().get("pelvis");
+    const handGeometry = (figure: typeof partner) => figure.bodyMeshes()
+      .filter((mesh) => mesh.userData.studioMannequinJointId === "leftHand" || mesh.userData.studioMannequinJointId === "rightHand")
+      .map((mesh) => {
+        mesh.updateMatrix();
+        mesh.geometry.computeBoundingBox();
+        const box = mesh.geometry.boundingBox;
+        return [mesh.userData.studioMannequinJointId, mesh.matrix.toArray(), box?.min.toArray(), box?.max.toArray()];
+      });
+    try {
+      for (const preset of STUDIO_MANNEQUIN_HAND_POSE_PRESETS) {
+        const hands = resolveStudioMannequinLibraryHandState(preset.id);
+        if (!hands) throw new Error(`손 모양을 찾을 수 없습니다: ${preset.id}`);
+        const nextSpec = buildStudioMannequinSpec(spec.params, hands.fingerPose);
+        const originalLead = handGeometry(lead);
+        partner.applyPartnerPose(nextSpec, rest, hands);
+        expect(partner.joints().get("pelvis")).toBe(pelvis);
+        expect(handGeometry(lead)).toEqual(originalLead);
+        lead.setFingerSpec(nextSpec);
+        lead.setEcorcheState(hands, rest);
+        expect(handGeometry(partner), preset.id).toEqual(handGeometry(lead));
+      }
+    } finally {
+      partner.dispose();
+      lead.dispose();
       harness.dispose();
       disposeStudioMannequinMaterialPalette(palette);
       gradient.dispose();

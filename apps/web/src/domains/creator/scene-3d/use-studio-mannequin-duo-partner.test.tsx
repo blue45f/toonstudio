@@ -89,6 +89,42 @@ function placeHug(hook: ReturnType<typeof setup>["hook"]) {
 }
 
 describe("useStudioMannequinDuoPartner — 2인 구도 상대 인형(B-02)", () => {
+  it("같은 손목에서도 상대의 손가락·벌림을 한 번에 되돌리고 저장된 손을 다시 연다", () => {
+    const { scene, stateRef, hook } = setup();
+    placeHug(hook);
+    const original = hook.result.current.partner;
+    if (!original) throw new Error("상대 인형이 없습니다.");
+    const originalLead = stateRef.current.pose;
+    act(() => hook.result.current.setActiveFigure("partner"));
+    const latest = () => scene.setPartner.mock.lastCall?.[0];
+    const applyHands = (id: string) => act(() => {
+      expect(hook.result.current.applyPoseToPartner((current) => current.pose, id)).toBe(true);
+    });
+    applyHands("hand-peace");
+    const peace = latest();
+    expect(peace?.spec.fingerPose?.left.index).toEqual([0, 0, 0]);
+    expect(peace?.hands?.rightSplayDeg.index).toBeGreaterThan(0);
+    applyHands("hand-fist");
+    const fist = latest();
+    expect(fist?.spec.fingerPose?.left.index).toEqual([100, 100, 100]);
+    expect(fist?.spec.fingerPose?.right.middle).toEqual([100, 100, 100]);
+    expect(fist?.hands?.rightSplayDeg).toEqual({});
+    expect(stateRef.current.pose).toBe(originalLead);
+    const saved = serializeStudioMannequinState(stateRef.current);
+    act(() => hook.result.current.undoPartner());
+    expect(latest()?.hands).toEqual(peace?.hands);
+    act(() => hook.result.current.undoPartner());
+    expect(hook.result.current.partner).toEqual(original);
+    expect(latest()?.hands).toBeUndefined();
+    act(() => hook.result.current.redoPartner());
+    act(() => hook.result.current.redoPartner());
+    expect(latest()?.hands).toEqual(fist?.hands);
+    const reopened = parseStudioMannequinState(saved);
+    act(() => hook.result.current.restorePartner(reopened?.partner ?? null));
+    expect(hook.result.current.partner?.handPresetId).toBe("hand-fist");
+    expect(latest()?.spec.fingerPose).toEqual(fist?.spec.fingerPose);
+  });
+
   it("2인 프리셋 배치는 상대 인형을 씬에 넣고 영속 스냅샷·개정 번호를 같은 틱에 갱신한다", () => {
     const { scene, stateRef, stateRevisionRef, hook } = setup();
     expect(scene.setPartner).toHaveBeenLastCalledWith(null);

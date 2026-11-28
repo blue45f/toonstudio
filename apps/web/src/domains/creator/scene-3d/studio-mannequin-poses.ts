@@ -376,6 +376,8 @@ export interface StudioMannequinPersistentRigState {
 
 /** 2인 구도의 상대 인형 — 체형·포즈와 주인공 로컬 프레임 기준 배치. */
 export interface StudioMannequinPersistentPartner {
+  /** 포즈 라이브러리에서 선택한 양손 모양. 기존 문서는 기본 손으로 연다. */
+  readonly handPresetId?: string;
   readonly params: StudioMannequinBodyParams;
   readonly pose: StudioMannequinPose;
   /** 상대 루트 위치(m). 주인공 원점·+Z 응시 프레임. */
@@ -479,7 +481,15 @@ function quantizePartnerAxis(value: unknown): number {
   return Object.is(quantized, -0) ? 0 : quantized;
 }
 
+export function haveSameStudioMannequinBodyParams(a: StudioMannequinBodyParams, b: StudioMannequinBodyParams): boolean {
+  if (a === b) return true;
+  const left = Object.entries(a);
+  const right = new Map(Object.entries(b));
+  return left.length === right.size && left.every(([key, value]) => right.get(key) === value);
+}
+
 function canonicalPartner(source: {
+  readonly handPresetId?: unknown;
   readonly params?: unknown;
   readonly pose?: unknown;
   readonly offset?: unknown;
@@ -487,11 +497,13 @@ function canonicalPartner(source: {
 }): StudioMannequinPersistentPartner {
   const offset: readonly unknown[] = Array.isArray(source.offset) ? source.offset : [];
   const yaw = canonicalizeStudioMannequinAngle(source.yawRad);
+  const handPreset = findStudioMannequinPosePreset(source.handPresetId);
   return {
     params: clampStudioMannequinBodyParams(source.params),
     pose: normalizeStudioMannequinPose(source.pose),
     offset: [quantizePartnerAxis(offset[0]), quantizePartnerAxis(offset[1]), quantizePartnerAxis(offset[2])],
     yawRad: yaw <= -Math.PI + 1e-6 ? canonicalizeStudioMannequinAngle(Math.PI - 1e-6) : yaw,
+    ...(handPreset && studioMannequinPosePresetScope(handPreset) === "hand-only" ? { handPresetId: handPreset.id } : {}),
   };
 }
 

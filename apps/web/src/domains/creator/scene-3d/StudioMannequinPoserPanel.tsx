@@ -995,8 +995,8 @@ export function StudioMannequinPoserPanel({
       commitPoseWithHistory(placeDuo({ presetId: preset.id, leadPose, leadParams: params }).leadPose, {});
       return;
     }
-    if (applyPoseToPartner((partner) => resolveStudioMannequinLibraryPresetPose(preset, partner.params, partner.pose))) return;
     const handOnly = studioMannequinPosePresetScope(preset) === "hand-only";
+    if (applyPoseToPartner((partner) => resolveStudioMannequinLibraryPresetPose(preset, partner.params, partner.pose), handOnly ? preset.id : undefined)) return;
     const nextMeta: StudioMannequinPoseSemanticMeta = handOnly
       ? { contrapposto: activeContrappostoRef.current, hands: resolveStudioMannequinLibraryHandState(preset.id) }
       : {};

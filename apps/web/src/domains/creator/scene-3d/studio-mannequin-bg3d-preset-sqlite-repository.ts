@@ -172,7 +172,8 @@ function isCanonicalPartner(
   input: unknown,
   canonical: NonNullable<StudioMannequinPersistentState["partner"]>,
 ): boolean {
-  if (!isPlainRecord(input) || definedKeys(input) !== "offset|params|pose|yawRad") return false;
+  const keys = canonical.handPresetId ? "handPresetId|offset|params|pose|yawRad" : "offset|params|pose|yawRad";
+  if (!isPlainRecord(input) || definedKeys(input) !== keys || input.handPresetId !== canonical.handPresetId) return false;
   const offset = input.offset;
   if (!Array.isArray(offset) || offset.length !== 3) return false;
   for (let index = 0; index < 3; index += 1) {

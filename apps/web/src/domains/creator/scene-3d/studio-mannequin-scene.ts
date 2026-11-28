@@ -11,7 +11,7 @@ import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "../bg3d/studio-bg3d-lt-render"
 import { captureStudioVrmRgba, encodeStudioVrmCapturePngDataUrl } from "../vrm/studio-vrm-raster-capture";
 
 import { fitStudioMannequinCameraToBounds } from "./studio-mannequin-camera-framing";
-import { resolveStudioMannequinSurfaceMode, type StudioMannequinSurfaceMode } from "./studio-mannequin-ecorche-anatomy";
+import { resolveStudioMannequinSurfaceMode, type StudioMannequinHandState, type StudioMannequinSurfaceMode } from "./studio-mannequin-ecorche-anatomy";
 import { StudioMannequinWebglUnavailableError, probeStudioMannequinWebgl2Support } from "./studio-mannequin-webgl-probe";
 import { solveStudioMannequinTwoBoneIk } from "./studio-mannequin-ik";
 import {
@@ -103,6 +103,7 @@ export interface StudioMannequinSceneOptions {
 
 /** 2인 구도의 상대 인형 — 스펙·포즈와 주인공 로컬 프레임 기준 배치(위치·요). */
 export interface StudioMannequinScenePartner {
+  readonly hands?: StudioMannequinHandState;
   readonly spec: StudioMannequinSpec;
   readonly pose: StudioMannequinPose;
   readonly offset: StudioMannequinVec3;
@@ -1221,13 +1222,11 @@ export function createStudioMannequinScene(
         spec: next.spec,
         pose,
         materials: figureMaterials,
-        initialEcorcheState: { surfaceMode: lead.getEcorcheState().surfaceMode },
+        initialEcorcheState: { surfaceMode: lead.getEcorcheState().surfaceMode, ...next.hands },
       });
       scene.add(partner.root);
-    } else if (partner.spec() !== next.spec) {
-      partner.rebuild(next.spec, pose);
     } else {
-      partner.applyPose(pose);
+      partner.applyPartnerPose(next.spec, pose, next.hands);
     }
     partner.setPlacement(next.offset, next.yawRad);
     applySelectionTint();
