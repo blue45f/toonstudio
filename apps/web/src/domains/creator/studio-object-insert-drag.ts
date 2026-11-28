@@ -3,6 +3,8 @@
  * Separate from image `json-asset` payloads so canvas drop can open production tools.
  */
 
+import { PRIMITIVE_DEFS, type BgPrimitiveKind } from "./studio-background-3d-metadata";
+
 import type {
   StudioObjectInsertItem,
   StudioObjectInsertOpenTarget,
@@ -154,4 +156,13 @@ export function resolveStudioObjectInsertOpenSeed(input: {
     bg3dSeedPrimitiveKind: sourceId,
     poserSeedPropId: null,
   });
+}
+
+/** 구형 셸의 공용 seed 값에서 도형과 등록된 모델을 구분한다. URL은 페이로드로 받지 않는다. */
+export function resolveStudioBg3dObjectSeed(sourceId: string | null) {
+  const primitive = sourceId !== null && Object.hasOwn(PRIMITIVE_DEFS, sourceId);
+  return {
+    seedPrimitiveKind: primitive ? sourceId as BgPrimitiveKind : null,
+    seedModelSourceId: primitive ? null : sourceId,
+  };
 }

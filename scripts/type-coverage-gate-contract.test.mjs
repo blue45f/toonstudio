@@ -509,9 +509,11 @@ if (process.env.VITEST) {
     const { minimatch } = createRequire(coreManifest)("minimatch");
     assert.equal(typeof minimatch, "function", dirname(coreManifest));
 
-    const ignoredBy = (shard, file) =>
-      (shard.ignoreFiles ?? packageJson.typeCoverage.ignoreFiles).some((pattern) => minimatch(file, pattern));
     const planned = executionShards(repositoryRoot);
+    const ignorePatterns = (shard) => shard.ignoreFiles ?? packageJson.typeCoverage.ignoreFiles;
+    const patterns = new Set([...SHARDS, ...planned].flatMap(ignorePatterns));
+    const matchers = new Map(Array.from(patterns, (pattern) => [pattern, new minimatch.Minimatch(pattern)]));
+    const ignoredBy = (shard, file) => ignorePatterns(shard).some((pattern) => matchers.get(pattern).match(file));
     const fileSets = new Map(planned.filter((shard) => shard.files).map((shard) => [shard.name, new Set(shard.files)]));
     const tracked = execFileSync("git", ["ls-files", "-z"], {
       cwd: repositoryRoot,

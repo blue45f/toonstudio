@@ -11,12 +11,18 @@ import { STUDIO_CANVAS_IMAGE_ACCEPT } from "../studio-legacy-editor-runtime-help
 import { StudioDestructiveConfirmHost } from "../StudioDestructiveConfirmHost";
 import { StudioSupergapRuntimeHubLazyHost } from "../runtime-leaves/studio-supergap-runtime-hub-lazy";
 import { StudioVrmProjectArchiveAttestationHost } from "../runtime-leaves/studio-vrm-archive-attestation-lazy";
+import { lazy, Suspense } from "react";
+import { useLocation } from "react-router-dom";
+import { POSER_CUT_QUERY } from "./studio-poser-cut-handoff";
 import { StudioImportHandoffEntry } from "./StudioImportHandoffEntry";
 import { StudioMobileBackStackHost } from "./StudioMobileBackStackHost";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
+const PoserCutHandoff = lazy(() => import("./StudioPoserCutHandoffHost").then(({ StudioPoserCutHandoffHost: defaultExport }) => ({ default: defaultExport })));
+
 export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
+  const poserCut = new URLSearchParams(useLocation().search).get(POSER_CUT_QUERY);
   const {
     brushPackImportInputRef,
     brushPackImporting,
@@ -59,6 +65,10 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
     <AiAssistDialogHostEntry />
     <StudioVrmProjectArchiveAttestationHost />
     <StudioSupergapRuntimeHubLazyHost />
+    {poserCut && <Suspense fallback={null}><PoserCutHandoff key={poserCut} id={poserCut} owner={s.studioAuthUserId}
+      ready={s.poserCutInsertReady && !collaborationDocumentLocked && !s.pageEditLocked}
+      exists={(id) => s.pages.some((page) => page.elements.some((el) => el.id === id))}
+      insert={s.insertPoserCut} /></Suspense>}
     <StudioImportHandoffEntry
       workspaceReady={importWorkspaceReady}
       brushPackImporting={brushPackImporting}

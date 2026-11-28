@@ -39,31 +39,12 @@ import {
 
 import type { StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
 import type { ScrollPreviewPinReturn } from "./StudioScrollPreviewPanel";
-import type { BgPrimitiveKind } from "./studio-background-3d-metadata";
+import { resolveStudioBg3dObjectSeed } from "./studio-object-insert-drag";
 import type {
   StudioLazyPanelStackHandlers,
   StudioLazyPanelStackProps,
 } from "./StudioLazyPanelStack";
 
-function asBgPrimitiveKindOrNull(value: string | null): BgPrimitiveKind | null {
-  if (!value) return null;
-  const kinds: readonly string[] = [
-    "box",
-    "cylinder",
-    "plane",
-    "sphere",
-    "hemisphere",
-    "cone",
-    "pyramid",
-    "triangularPrism",
-    "hexPrism",
-    "torus",
-    "tube",
-    "ring",
-    "capsule",
-  ];
-  return kinds.includes(value) ? (value as BgPrimitiveKind) : null;
-}
 
 const EMPTY_STUDIO_PAGE_ELEMENTS: never[] = [];
 const EMPTY_STUDIO_PAGE_GROUPS: never[] = [];
@@ -467,7 +448,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
       initialScene={bg3dInitialScene}
       marketplaceModelId={bg3dMarketplaceModelId}
       seedSceneTemplateId={bg3dSeedTemplateId}
-      seedPrimitiveKind={asBgPrimitiveKindOrNull(bg3dSeedPrimitiveKind)}
+      {...resolveStudioBg3dObjectSeed(bg3dSeedPrimitiveKind)}
       onSeedObjectInsertConsumed={onSeedObjectInsertConsumed}
       {...(onOpenPrecisionModeler ? { onOpenPrecisionModeler } : {})}
       cutTeamDocument={cutTeamDocument} cutWorkId={cutWorkScope?.authorized ? cutWorkScope.workId : undefined} cutDocumentKey={cutWorkScope && activePageId ? studioTeamCutVrmDocumentScope(cutWorkScope.workId, activePageId) : studioCutVrmDocumentScope(cutDocumentKey, activePageId)}

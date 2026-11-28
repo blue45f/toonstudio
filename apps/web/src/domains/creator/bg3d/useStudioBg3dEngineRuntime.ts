@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStudioBg3dWebGpuModule } from "./useStudioBg3dWebGpuModule";
+import { observeStudioBg3dWebGl2FirstFrame, type StudioBg3dFrameRenderer } from "./studio-bg3d-canvas-renderer-admission";
 
 import { createStudioScene3dGpuDiagnostics, type StudioScene3dGpuDiagnostics } from "../scene3d/studio-scene3d-gpu-diagnostics";
 
@@ -69,7 +70,7 @@ function webGpuStartupFailureReason(error: unknown): string {
   return `WebGPU 엔진을 시작하지 못했습니다 (${detail.replace(/\s+/gu, " ").slice(0, 200)})`;
 }
 
-type WebGpuCanvasStage = "waiting-for-canvas" | "starting-device" | "waiting-for-frame" | "rendered";
+type CanvasStage = "waiting-for-canvas" | "starting-device" | "waiting-for-frame" | "rendered";
 
 export interface StudioBg3dEngineRuntimeState {
   readonly diagnostics: StudioScene3dGpuDiagnostics;
@@ -84,11 +85,12 @@ export interface StudioBg3dEngineRuntimeState {
    * explicitly retries a failed WebGPU selection.
    */
   readonly canvasKey: string;
-  readonly webGpuCanvasStage: WebGpuCanvasStage;
+  readonly canvasStage: CanvasStage;
   /** Present only while the selected WebGPU backend is available and the editor is open. */
   readonly glFactory: StudioBg3dRendererFactory | null;
   readonly deviceLostMessage: string | null;
-  setPreference(next: StudioBg3dEnginePreference): void;
+  setPreference(next: StudioBg3dEnginePreference, retryPending?: boolean): void;
+  observeWebGl2Renderer(renderer: StudioBg3dFrameRenderer): void;
   reportRendererFailure(backend: StudioBg3dEngineBackend, cause?: string): void;
 }
 
@@ -217,9 +219,9 @@ export function useStudioBg3dEngineRuntime(
   const [webgpuRetryCount, setWebgpuRetryCount] = useState(0);
   const [deviceLostMessage, setDeviceLostMessage] = useState<string | null>(null);
   const [recoveryGeneration, setRecoveryGeneration] = useState(0);
-  const [webGpuCanvasProgress, setWebGpuCanvasProgress] = useState<{
+  const [canvasProgress, setCanvasProgress] = useState<{
     canvas: HTMLCanvasElement;
-    stage: Exclude<WebGpuCanvasStage, "waiting-for-canvas">;
+    stage: Exclude<CanvasStage, "waiting-for-canvas">;
   } | null>(null);
   const [webglOnlyFeatures, setWebglOnlyFeatures] = useState<StudioBg3dEngineWebglOnlyFeatures>(
     EMPTY_STUDIO_BG3D_ENGINE_WEBGL_ONLY_FEATURES,
@@ -229,8 +231,8 @@ export function useStudioBg3dEngineRuntime(
   // that was already in flight cannot overwrite a choice the artist made while it loaded.
   const preferenceRevisionRef = useRef(0);
   const preferenceRef = useRef<StudioBg3dEnginePreference>(preference);
-  const webGpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  useEffect(() => () => { webGpuCanvasRef.current = null; }, [enabled, recoveryGeneration]);
+  const activeCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => () => { activeCanvasRef.current = null; }, [enabled]);
   // Distinguishes a genuine closed→open transition from an effect re-run caused by unstable deps.
   const wasEnabledRef = useRef(false);
 
@@ -265,7 +267,7 @@ export function useStudioBg3dEngineRuntime(
     if (!enabled) {
       wasEnabledRef.current = false;
       setPhase("probing");
-      setWebGpuCanvasProgress(null);
+      setCanvasProgress(null);
       return;
     }
     // Reopening a retained editor runs this again. Without resetting the phase the engine controls
@@ -373,16 +375,19 @@ export function useStudioBg3dEngineRuntime(
     ],
   );
 
-  const setPreference = useCallback((next: StudioBg3dEnginePreference) => {
+  const setPreference = useCallback((next: StudioBg3dEnginePreference, retryPending = false) => {
     preferenceRevisionRef.current += 1;
     const normalized = normalizeStudioBg3dEnginePreference(next);
     const retriesFailedWebGpu = normalized === "webgpu" && normalized === preference
       && (webgpuRuntimeFailed || !probe.supported);
-    const retriesFailedWebGl2 = normalized === "webgl2" && normalized === preference
-      && (webgl2RuntimeFailed || !webgl2Probe.supported);
+    const retriesWebGl2 = normalized === "webgl2" && normalized === preference
+      && (webgl2RuntimeFailed || !webgl2Probe.supported || (retryPending && canvasProgress?.stage !== "rendered"));
     setPreferenceState(normalized);
     preferenceRef.current = normalized;
-    if (normalized !== preference || retriesFailedWebGpu) setWebGpuCanvasProgress(null);
+    if (normalized !== preference || retriesFailedWebGpu || retriesWebGl2) {
+      activeCanvasRef.current = null;
+      setCanvasProgress(null);
+    }
     if (enabled && normalized === "webgl2") {
       setWebgl2Probe(probeWebgl2());
       setPhase("ready");
@@ -394,12 +399,13 @@ export function useStudioBg3dEngineRuntime(
     setDeviceLostMessage(null);
     setWebgpuRuntimeFailed(false);
     setWebgl2RuntimeFailed(false);
-    if (retriesFailedWebGpu || retriesFailedWebGl2) {
+    if (retriesFailedWebGpu || retriesWebGl2) {
       setRecoveryGeneration((generation) => generation + 1);
     }
     void savePreference(normalized).catch(() => undefined);
   }, [
     enabled,
+    canvasProgress?.stage,
     preference,
     probe.supported,
     probeWebgl2,
@@ -437,6 +443,16 @@ export function useStudioBg3dEngineRuntime(
 
   const diagnostics = useMemo(() => createStudioScene3dGpuDiagnostics(), []);
 
+  const observeWebGl2Renderer = useCallback((renderer: StudioBg3dFrameRenderer) => {
+    const canvas = renderer.domElement;
+    if (activeCanvasRef.current === canvas || preferenceRef.current !== "webgl2") return;
+    activeCanvasRef.current = canvas;
+    setCanvasProgress({ canvas, stage: "waiting-for-frame" });
+    observeStudioBg3dWebGl2FirstFrame(renderer, () => {
+      if (activeCanvasRef.current === canvas && canvas.isConnected) setCanvasProgress({ canvas, stage: "rendered" });
+    });
+  }, []);
+
   const createRenderer = useStudioBg3dWebGpuModule(
     enabled && phase === "ready" && plan.backend === "webgpu" && plan.status === "available",
     createWebGpuRenderer,
@@ -445,14 +461,14 @@ export function useStudioBg3dEngineRuntime(
   const glFactory = useMemo<StudioBg3dRendererFactory | null>(() => {
     if (!createRenderer) return null;
     return async ({ canvas }) => {
-      webGpuCanvasRef.current = canvas;
+      activeCanvasRef.current = canvas;
       const startedInDocument = canvas.isConnected;
-      const isCurrent = () => webGpuCanvasRef.current === canvas
+      const isCurrent = () => activeCanvasRef.current === canvas
         && preferenceRef.current === "webgpu" && (!startedInDocument || canvas.isConnected);
       const markFrame = () => {
-        if (isCurrent()) setWebGpuCanvasProgress({ canvas, stage: "rendered" });
+        if (isCurrent()) setCanvasProgress({ canvas, stage: "rendered" });
       };
-      if (isCurrent()) setWebGpuCanvasProgress((current) => current?.canvas === canvas
+      if (isCurrent()) setCanvasProgress((current) => current?.canvas === canvas
         ? current : { canvas, stage: "starting-device" });
       try {
         const runtime = await createRenderer(canvas, {
@@ -463,7 +479,7 @@ export function useStudioBg3dEngineRuntime(
           onRenderError: (message) => { if (isCurrent()) handleWebGpuFailure(message); },
           onFirstSceneFrame: markFrame,
         });
-        if (isCurrent()) setWebGpuCanvasProgress((current) =>
+        if (isCurrent()) setCanvasProgress((current) =>
           current?.canvas === canvas && current.stage !== "starting-device"
             ? current : { canvas, stage: "waiting-for-frame" });
         return runtime.renderer as unknown as { render: (scene: never, camera: never) => unknown };
@@ -483,10 +499,11 @@ export function useStudioBg3dEngineRuntime(
     probe,
     webgl2Probe,
     canvasKey: `${plan.backend}#${recoveryGeneration}`,
-    webGpuCanvasStage: webGpuCanvasProgress?.stage ?? "waiting-for-canvas",
+    canvasStage: canvasProgress?.stage ?? "waiting-for-canvas",
     glFactory,
     deviceLostMessage,
     setPreference,
+    observeWebGl2Renderer,
     reportRendererFailure,
   };
 }

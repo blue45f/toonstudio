@@ -2,7 +2,9 @@
 import type { StudioVrmPortraitBounds, StudioVrmPortraitLandmarks } from "./studio-vrm-portrait-framing";
 
 type Vec3 = readonly [number, number, number];
-export interface StudioVrmInspectionLandmarks extends StudioVrmPortraitLandmarks {
+export const STUDIO_VRM_FINGER_DISTALS = ["ThumbDistal", "IndexDistal", "MiddleDistal", "RingDistal", "LittleDistal"] as const;
+type FingerLandmarks = Partial<Record<`${"left" | "right"}${typeof STUDIO_VRM_FINGER_DISTALS[number]}`, Vec3>>;
+export interface StudioVrmInspectionLandmarks extends StudioVrmPortraitLandmarks, Readonly<FingerLandmarks> {
   readonly hips?: Vec3;
   readonly spine?: Vec3;
   readonly leftHand?: Vec3;
@@ -90,12 +92,18 @@ export function resolveStudioVrmInspectionBounds(
       break;
     case "inspectLeftHand":
     case "inspectRightHand": {
-      const hand = presetId === "inspectLeftHand" ? landmarks.leftHand : landmarks.rightHand;
-      const finger = presetId === "inspectLeftHand" ? landmarks.leftMiddleProximal : landmarks.rightMiddleProximal;
+      const side = presetId === "inspectLeftHand" ? "left" : "right";
+      const hand = landmarks[`${side}Hand`];
+      const finger = landmarks[`${side}MiddleProximal`];
       if (!valid(hand)) return null;
       points.push(hand);
       if (valid(finger) && distance(hand, finger) < size * 0.12) points.push(finger);
-      padding = size * 0.045;
+      const tips = STUDIO_VRM_FINGER_DISTALS
+        .map((joint) => landmarks[`${side}${joint}`])
+        .filter((point): point is Vec3 => valid(point) && distance(hand, point) < size * 0.19);
+      points.push(...tips);
+      // 말단 본 뒤의 손톱·손가락 끝 여백을 남긴다. 손목만 있는 리그에는 기존 여유 폭을 쓴다.
+      padding = size * (tips.length >= 3 ? 0.024 : 0.045);
       break;
     }
     default: return null;

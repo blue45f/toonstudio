@@ -286,6 +286,7 @@ async function admitAndCacheStudioBg3dModelInternal(
           maximumCumulativeBytes: selectedBudgets.complexity.maxModelBytes,
         });
         applyStudioBg3dRuntimeAssetQuality(loaded.root, {
+          verifiedModel: args.record,
           castShadow: args.quality.shadows,
           receiveShadow: args.quality.shadows,
           renderer: args.renderer,

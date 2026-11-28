@@ -20,11 +20,9 @@ const MIN_RING_SAMPLES = 6;
 /** 실루엣 하나를 신뢰하기 위한 최소 유효 링 수. */
 const MIN_VALID_RINGS = 4;
 
-/** 반경 분위수. 1.0(최대)은 이물 하나에 링 전체가 끌려가므로 상위 8%를 잘라낸다. */
-const RADIUS_PERCENTILE = 0.92;
-
-/** 중심 분위수 — 좌우 비대칭 이물이 중심을 끌지 않도록 중앙값을 쓴다. */
-const CENTER_PERCENTILE = 0.5;
+// 양 끝 4%를 제외한 경계의 중점은 표정·의상의 정점이 한쪽 면에 몰려도 몸통을 따라간다.
+const SURFACE_EDGE_QUANTILE = 0.96;
+const ELLIPSE_QUANTILE = 0.94;
 
 const MIN_RADIUS_M = 0.01;
 const MAX_RADIUS_M = 0.9;
@@ -39,6 +37,8 @@ export interface BodySilhouetteRing {
   halfDepth: number;
   centerX: number;
   centerZ: number;
+  /** 사선 모서리까지 옷감으로 감쌀 때 필요한 외접 타원의 좌우·앞뒤 반경. */
+  outerEllipse?: readonly [number, number];
 }
 
 /** 링 하나를 만들기 위해 넘기는 정점 하나. spine 로컬 좌표 + 정규화 높이. */
@@ -96,7 +96,7 @@ export function percentileOfSorted(sorted: readonly number[], percentile: number
 
 /**
  * 정점 샘플 → 높이별 링. 링 수(`ringCount`)만큼 t를 균등 분할하고, 각 구간에서
- * 중심은 중앙값, 반경은 상위 분위수로 잡는다. 샘플이 부족한 구간은 이웃 링에서 채운다.
+ * 중심은 앞뒤·좌우 경계의 중점으로 잡고 타원의 사선도 표면에 맞춘다. 샘플이 부족한 구간은 이웃 링에서 채운다.
  * 유효 링이 MIN_VALID_RINGS 미만이면 실측 실패로 보고 null을 돌려준다.
  */
 export function buildBodySilhouette(
@@ -121,14 +121,22 @@ export function buildBodySilhouette(
     const zs = bucketsZ[index];
     const sortedX = [...xs].sort((a, b) => a - b);
     const sortedZ = [...zs].sort((a, b) => a - b);
-    const centerX = percentileOfSorted(sortedX, CENTER_PERCENTILE);
-    const centerZ = percentileOfSorted(sortedZ, CENTER_PERCENTILE);
-    const spreadX = [...xs].map((x) => Math.abs(x - centerX)).sort((a, b) => a - b);
-    const spreadZ = [...zs].map((z) => Math.abs(z - centerZ)).sort((a, b) => a - b);
+    const left = percentileOfSorted(sortedX, 1 - SURFACE_EDGE_QUANTILE);
+    const right = percentileOfSorted(sortedX, SURFACE_EDGE_QUANTILE);
+    const back = percentileOfSorted(sortedZ, 1 - SURFACE_EDGE_QUANTILE);
+    const front = percentileOfSorted(sortedZ, SURFACE_EDGE_QUANTILE);
+    const centerX = (left + right) / 2;
+    const centerZ = (back + front) / 2;
+    const width = clampRadius((right - left) / 2);
+    const depth = clampRadius((front - back) / 2);
+    // 어깨나 가슴 사선의 점도 타원 안에 와야 한다. X와 Z 최대치만 재면 모서리에서 옷이 뚫린다.
+    const radii = xs.map((x, i) => Math.hypot((x - centerX) / width, (zs[i] - centerZ) / depth)).sort((a, b) => a - b);
+    const scale = percentileOfSorted(radii, ELLIPSE_QUANTILE);
+
     return {
       t: (index + 0.5) / rings,
-      halfWidth: clampRadius(percentileOfSorted(spreadX, RADIUS_PERCENTILE)),
-      halfDepth: clampRadius(percentileOfSorted(spreadZ, RADIUS_PERCENTILE)),
+      halfWidth: width, halfDepth: depth,
+      ...(scale > 1.025 ? { outerEllipse: [clampRadius(width * scale), clampRadius(depth * scale)] as const } : {}),
       centerX,
       centerZ,
     };
@@ -178,7 +186,12 @@ export function buildBodySilhouette(
 
 function mixRings(a: BodySilhouetteRing, b: BodySilhouetteRing, ratio: number): BodySilhouetteRing {
   const k = Math.min(1, Math.max(0, ratio));
+  const first = a.outerEllipse ?? [a.halfWidth, a.halfDepth];
+  const last = b.outerEllipse ?? [b.halfWidth, b.halfDepth];
   return {
+    ...(a.outerEllipse || b.outerEllipse ? { outerEllipse: [
+      first[0] + (last[0] - first[0]) * k, first[1] + (last[1] - first[1]) * k,
+    ] as const } : {}),
     t: a.t + (b.t - a.t) * k,
     halfWidth: a.halfWidth + (b.halfWidth - a.halfWidth) * k,
     halfDepth: a.halfDepth + (b.halfDepth - a.halfDepth) * k,
@@ -245,6 +258,8 @@ function sanitizeRing(raw: unknown): BodySilhouetteRing | null {
     t: Math.min(1.5, Math.max(-0.5, ring.t)),
     halfWidth: clampRadius(ring.halfWidth),
     halfDepth: clampRadius(ring.halfDepth),
+    ...(Array.isArray(ring.outerEllipse) && ring.outerEllipse.length === 2 && ring.outerEllipse.every(isFiniteNumber)
+      ? { outerEllipse: [clampRadius(Math.max(ring.halfWidth, ring.outerEllipse[0])), clampRadius(Math.max(ring.halfDepth, ring.outerEllipse[1]))] as const } : {}),
     // 중심도 반경과 같은 범위로 묶는다. 재단이 |center| 를 반경에 더하므로, 중심만 무제한으로
     // 두면 저장된 값 하나가 옷을 임의로 크게 만들 수 있다.
     centerX: clampCenter(ring.centerX),
@@ -292,7 +307,7 @@ export function bodySilhouetteSignature(silhouette: BodySilhouette | null): stri
   const payload = silhouette.rings
     .map((ring) =>
       `${round(ring.t)}:${round(ring.halfWidth)}:${round(ring.halfDepth)}`
-      + `:${round(ring.centerX)}:${round(ring.centerZ)}`)
+      + `:${round(ring.centerX)}:${round(ring.centerZ)}` + (ring.outerEllipse ? `:${ring.outerEllipse.map(round).join(":")}` : ""))
     .join("|");
   let hash = 0x811c9dc5;
   for (let index = 0; index < payload.length; index += 1) {

@@ -360,6 +360,9 @@ export const CAMERA_PRESETS: CameraPreset[] = [
   { id: "inspectFeet", label: "신발·접지 확대", position: [0.4, 0.4, 1.4], target: [0, 0.1, 0], fov: 30 },
   { id: "inspectLeftHand", label: "왼손·그립 확대", position: [0.25, 1.1, 1.5], target: [0, 1, 0], fov: 30 },
   { id: "inspectRightHand", label: "오른손·그립 확대", position: [-0.25, 1.1, 1.5], target: [0, 1, 0], fov: 30 },
+  { id: "hairFront", label: "헤어 정면", position: [0, 1.55, 1.35], target: [0, 1.5, 0], fov: 30 },
+  { id: "hairProfile", label: "헤어 측면", position: [1.35, 1.55, 0], target: [0, 1.5, 0], fov: 30 },
+  { id: "hairBack", label: "헤어 후면", position: [0, 1.55, -1.35], target: [0, 1.5, 0], fov: 30 },
 ];
 
 export const BONE_LABELS: Record<string, string> = {

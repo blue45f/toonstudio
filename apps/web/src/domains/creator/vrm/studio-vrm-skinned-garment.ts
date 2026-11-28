@@ -1,4 +1,6 @@
+import { studioVrmGarmentPartMatrix } from "./studio-vrm-garment-part-frame";
 import * as THREE from "three";
+import { buildStudioVrmBlazerGeometry, shapeStudioVrmBlazerSleeveCap } from "./studio-vrm-blazer-geometry";
 
 import type {
   GarmentPart,
@@ -140,8 +142,6 @@ interface UpperBodyTopologyMetadata {
   rightSleeve: SleeveTopologyRange;
 }
 
-const GARMENT_Y = new THREE.Vector3(0, 1, 0);
-const GARMENT_Z = new THREE.Vector3(0, 0, 1);
 const MATRIX_EPSILON = 1e-12;
 const GEOMETRY_EPSILON = 1e-8;
 const UPPER_SLEEVE_AXIAL_STEPS = 8;
@@ -366,6 +366,7 @@ interface EllipticalLatheRing {
   dRadius: number;
   dY: number;
   dZRadius: number;
+  centerX: number; centerZ: number; dCenterX: number; dCenterZ: number;
 }
 
 function resolveEllipticalLatheRings(profile: GarmentLatheProfile): EllipticalLatheRing[] {
@@ -380,6 +381,9 @@ function resolveEllipticalLatheRings(profile: GarmentLatheProfile): EllipticalLa
       radius: point.radius,
       y: point.y,
       zRadius: zRadii[index],
+      centerX: point.centerX ?? 0, centerZ: point.centerZ ?? 0,
+      dCenterX: (profile[high].centerX ?? 0) - (profile[low].centerX ?? 0),
+      dCenterZ: (profile[high].centerZ ?? 0) - (profile[low].centerZ ?? 0),
       depth: point.depth ?? LATHE_RING_DEFAULT_DEPTH,
       dRadius: profile[high].radius - profile[low].radius,
       dY: profile[high].y - profile[low].y,
@@ -422,13 +426,13 @@ function buildEllipticalLatheGeometry(
     const cos = Math.cos(phi);
     for (let index = 0; index < ringCount; index += 1) {
       const ring = rings[index];
-      positions.push(ring.radius * sin, ring.y, ring.zRadius * cos);
+      positions.push(ring.centerX + ring.radius * sin, ring.y, ring.centerZ + ring.zRadius * cos);
       uvs.push(u, index / Math.max(1, lastRing));
       // 타원 표면의 법선 = (∂P/∂φ × ∂P/∂ring) / radius. radius로 나눈 형태라 반경 0인 링에서도
       // 살아 있고, depth가 모두 1이면 LatheGeometry의 (dY, -dRadius, 0) 회전 법선과 같아진다.
       normal.set(
         ring.depth * ring.dY * sin,
-        -ring.depth * ring.dRadius * sin * sin - ring.dZRadius * cos * cos,
+        -ring.depth * sin * (ring.dRadius * sin + ring.dCenterX) - cos * (ring.dZRadius * cos + ring.dCenterZ),
         ring.dY * cos,
       ).normalize();
       // 접선이 통째로 소멸한 링(중복 정점 등)만 반경 방향으로 되돌린다. 정원의 반경 방향이 아니라
@@ -464,9 +468,10 @@ export function buildStudioVrmGarmentGeometry(shape: GarmentShape): THREE.Buffer
       return new THREE.CylinderGeometry(shape.rTop, shape.rBottom, shape.h, 40, 4, shape.open ?? false);
     case "lathe": {
       const segments = boundedSegments(shape.segments, 40, 40, 256);
+      if (shape.tailoring) return buildStudioVrmBlazerGeometry(shape, segments);
       // 어떤 링도 depth를 선언하지 않으면 단면은 정원이라 회전체와 완전히 같다. 이때는 three
       // 구현을 그대로 써야 기존 아이템의 정점·영수증 서명이 한 비트도 움직이지 않는다.
-      if (shape.profile.some((point) => point.depth !== undefined)) {
+      if (shape.profile.some((point) => point.depth !== undefined || point.centerX || point.centerZ)) {
         return buildEllipticalLatheGeometry(shape.profile, segments);
       }
       return new THREE.LatheGeometry(
@@ -481,23 +486,6 @@ export function buildStudioVrmGarmentGeometry(shape: GarmentShape): THREE.Buffer
     case "torus":
       return new THREE.TorusGeometry(shape.r, shape.tube, 14, 40, shape.arc ?? Math.PI * 2);
   }
-}
-
-function partMatrix(part: GarmentPart): THREE.Matrix4 {
-  const source = part.shape.kind === "torus" ? GARMENT_Z : GARMENT_Y;
-  const quaternion = new THREE.Quaternion();
-  if (part.align) {
-    const target = new THREE.Vector3(part.align[0], part.align[1], part.align[2]);
-    if (target.lengthSq() > GEOMETRY_EPSILON) quaternion.setFromUnitVectors(source, target.normalize());
-  }
-  const scale = part.squash
-    ? new THREE.Vector3(part.squash[0], part.squash[1], part.squash[2])
-    : new THREE.Vector3(1, 1, 1);
-  return new THREE.Matrix4().compose(
-    new THREE.Vector3(part.offset[0], part.offset[1], part.offset[2]),
-    quaternion,
-    scale,
-  );
 }
 
 function receiptSignature(input: {
@@ -517,6 +505,7 @@ function receiptSignature(input: {
     shape: part.shape,
     offset: part.offset.map((value) => round(value)),
     align: part.align?.map((value) => round(value)) ?? null,
+    ...(part.forward ? { forward: part.forward.map((value) => round(value)) } : {}),
     squash: part.squash?.map((value) => round(value)) ?? null,
   }));
   return `vrm-garment-skin1:${fnv1a(JSON.stringify({
@@ -599,7 +588,7 @@ function valuesAreFinite(values: readonly number[]): boolean {
 
 function partValidationReason(part: GarmentPart): "non-finite-geometry" | "invalid-topology" | null {
   if (!valuesAreFinite(part.offset)
-    || (part.align && !valuesAreFinite(part.align))
+    || (part.align && !valuesAreFinite(part.align)) || (part.forward && !valuesAreFinite(part.forward))
     || (part.squash && !valuesAreFinite(part.squash))
     || (part.skinJointRange && !valuesAreFinite(part.skinJointRange))) {
     return "non-finite-geometry";
@@ -619,7 +608,8 @@ function partValidationReason(part: GarmentPart): "non-finite-geometry" | "inval
       if (part.shape.segments !== undefined && !Number.isFinite(part.shape.segments)) return "non-finite-geometry";
       if (part.shape.profile.some((point) => !Number.isFinite(point.radius)
         || !Number.isFinite(point.y)
-        || (point.depth !== undefined && !Number.isFinite(point.depth)))) {
+        || (point.depth !== undefined && !Number.isFinite(point.depth)
+          || !Number.isFinite(point.centerX ?? 0) || !Number.isFinite(point.centerZ ?? 0)))) {
         return "non-finite-geometry";
       }
       // 음수 depth는 단면을 뒤집어 winding이 반대인 면을 만든다 — 음수 radius와 같게 막는다.
@@ -696,7 +686,7 @@ function partRootTransform(
 ): THREE.Matrix4 {
   return new THREE.Matrix4()
     .multiplyMatrices(rootInverse, bone.matrixWorld)
-    .multiply(partMatrix(part));
+    .multiply(studioVrmGarmentPartMatrix(part));
 }
 
 function appendGenericPart(
@@ -879,6 +869,16 @@ function appendContinuousSleeve(
       { bone: upperBoneName, weight: 1 - lowerWeight },
       { bone: lowerBoneName, weight: lowerWeight },
     ]);
+  }
+  const opposite = boneNodes.get(upperBoneName === "leftUpperArm" ? "rightUpperArm" : "leftUpperArm");
+  if (upperPart.skinMode === "set-in-sleeve" && opposite) {
+    const joint = upperBone.getWorldPosition(new THREE.Vector3()).applyMatrix4(rootInverse);
+    const other = opposite.getWorldPosition(new THREE.Vector3()).applyMatrix4(rootInverse);
+    const chest = boneIndices.has("chest") ? "chest" : "spine";
+    shapeStudioVrmBlazerSleeveCap(centers, ringRadii, joint, other, elbow).forEach((weight, index) => {
+      if (!weight) return;
+      ringInfluences[index] = [{ bone: upperBoneName, weight: 1 - weight }, { bone: chest, weight }];
+    });
   }
   for (let step = 1; step <= UPPER_SLEEVE_AXIAL_STEPS; step += 1) {
     const t = step / UPPER_SLEEVE_AXIAL_STEPS;

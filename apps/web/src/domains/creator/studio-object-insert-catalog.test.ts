@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { getStudioBg3dEnvironmentAsset, getStudioBg3dEnvironmentAssetByHash } from "./bg3d/studio-bg3d-environment-catalog";
 import { PRIMITIVE_DEFS } from "./studio-background-3d-metadata";
 import { BG_SCENE_TEMPLATES } from "./studio-background-3d-scene-templates";
 import {
@@ -16,12 +17,28 @@ import {
 import { VRM_PROPS } from "./vrm/studio-vrm-props";
 
 describe("studio object insert catalog (Canva-style 3D elements)", () => {
-  it("공원 삽입의 기존 항목 ID가 새 강변 쉼터와 같은 촬영 썸네일을 가리킨다", () => {
+  it("공원 템플릿 카드가 실제로 배치하는 공원 광장의 촬영본을 사용한다", () => {
     expect(findStudioObjectInsertItem("obj-scene-park_plaza")).toMatchObject({
       sourceId: "park_plaza",
-      assetUrl: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.glb",
-      thumbnailUrl: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.png",
+      thumbnailUrl: "/assets/studio/scene-template-previews/park_plaza.webp",
     });
+  });
+
+  it("첫 여섯 배경의 카드·모바일 배포본·원고 복원이 같은 검증 모델을 가리킨다", () => {
+    const items = listStudioObjectInsertItems().slice(0, 6);
+    for (const item of items) {
+      const desktop = getStudioBg3dEnvironmentAsset(item.sourceId);
+      const mobile = getStudioBg3dEnvironmentAsset(item.sourceId.replace(/-desktop$/u, "-mobile"));
+      expect(desktop, item.id).toBeTruthy();
+      expect(mobile, item.id).toBeTruthy();
+      if (!desktop || !mobile) throw new Error("검증된 데스크톱·모바일 배경이 필요합니다.");
+      expect(item).toMatchObject({
+        kind: "bg3d-scene-prop", assetUrl: desktop.url, bundledEnvironmentId: desktop.id,
+        assetLicense: desktop.provenance.license, thumbnailUrl: desktop.thumbnailUrl,
+      });
+      expect(getStudioBg3dEnvironmentAssetByHash(desktop.sha256)).toBe(desktop);
+      expect(getStudioBg3dEnvironmentAssetByHash(mobile.sha256)).toBe(mobile);
+    }
   });
 
   it("lists primitives, props, and scene templates with unique ids", () => {
@@ -52,7 +69,10 @@ describe("studio object insert catalog (Canva-style 3D elements)", () => {
     expect(scenes.every((item) => item.openTarget === "bg3d-templates")).toBe(
       true,
     );
-    expect(scenes.every((item) => Boolean(item.assetUrl && item.thumbnailUrl))).toBe(true);
+    for (const item of scenes) {
+      expect(item.assetUrl).toBeUndefined();
+      expect(item.thumbnailUrl).toBe(`/assets/studio/scene-template-previews/${item.sourceId}.webp`);
+    }
 
     const publicRoot = process.cwd().endsWith("/apps/web")
       ? join(process.cwd(), "public")
@@ -96,8 +116,9 @@ describe("studio object insert catalog (Canva-style 3D elements)", () => {
       expect(placement?.openTarget).toBe("bg3d-editor");
     }
 
-    const sceneProps = filterStudioObjectInsertItems({ kind: "bg3d-scene-prop", limit: 200 });
-    expect(sceneProps).toHaveLength(36);
+    const sceneProps = filterStudioObjectInsertItems({ kind: "bg3d-scene-prop", family: "scene-furniture", limit: 200 });
+    expect(sceneProps).toHaveLength(24);
+    expect(listStudioObjectInsertItems().some((item) => item.blockout)).toBe(false);
     for (const ceId of ["bench", "bookshelf", "chair", "desk", "doorway", "stairs", "streetlamp", "window-wall"]) {
       const entry = findStudioObjectInsertItem(`obj-furniture-ce_${ceId}`);
       expect(entry?.kind).toBe("bg3d-scene-prop");

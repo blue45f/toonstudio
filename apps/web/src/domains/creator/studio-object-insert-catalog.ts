@@ -61,6 +61,9 @@ export interface StudioObjectInsertItem {
   readonly defaultHeight: number;
   /** Optional first-party GLB asset URL backing this 3D item. */
   readonly assetUrl?: string;
+  readonly assetLicense?: "CC0-1.0";
+  readonly bundledEnvironmentId?: string;
+  readonly blockout?: boolean;
   /** Optional rendered preview/thumbnail PNG URL for catalog cards. */
   readonly thumbnailUrl?: string;
 }
@@ -129,32 +132,42 @@ const KENNEY_BLOCKOUT_SCENE_PROP_INDEX = Object.freeze([
   { id: "watercraft_boat_sail_a", assetId: "kenney-watercraft-boat-sail-a", path: "assets/kenney-watercraft/boat-sail-a.glb", label: "항구 돛단배 범선 A · Kenney", keywords: ["sail", "ship", "범선", "돛단배", "항구", "kenney", "blockout"], hint: "Kenney CC0 항구 범선 블록아웃 GLB." },
 ] as const);
 
+// BG3D 런타임을 불러오기 전에 요소 패널에서 보여 줄 웹툰 배경 세트.
+const WEBTOON_ENVIRONMENT_INDEX = [
+  { version: "v1", slug: "kr_highschool_classroom_corridor", label: "고등학교 교실과 복도", family: "scene-interior", keywords: ["학교", "학원물", "칠판"] },
+  { version: "v1", slug: "kr_atelier_cafe_interior", label: "아틀리에 카페", family: "scene-interior", keywords: ["카페", "커피", "로맨스"] },
+  { version: "v1", slug: "kr_seoul_alley_street_hero", label: "서울 도심 골목", family: "scene-urban", keywords: ["길", "거리", "상가"] },
+  { version: "v2", slug: "kr_modern_office_suite", label: "현대 오피스와 회의실", family: "scene-interior", keywords: ["회사", "사무실", "오피스물"] },
+  { version: "v2", slug: "kr_hospital_ward_corridor", label: "병동 복도와 간호사실", family: "scene-interior", keywords: ["병원", "병실", "메디컬"] },
+  { version: "v2", slug: "kr_seoul_subway_train_platform", label: "서울 지하철과 승강장", family: "scene-urban", keywords: ["역", "출퇴근", "전철"] },
+] as const;
+
 /** Lightweight scene-template index (mirrors BG_SCENE_TEMPLATES labels; Three-free). */
 const SCENE_TEMPLATE_INDEX = Object.freeze([
-  { id: "classroom", category: "interior", label: "교실", keywords: ["school", "학교", "칠판"], assetUrl: "/assets/3d/environments/refined-v6/classroom_art_studio.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/classroom_art_studio/beauty0001.png" },
-  { id: "cafe", category: "interior", label: "카페", keywords: ["coffee", "카페", "테이블"], assetUrl: "/assets/3d/environments/refined-v6/stylized_cafe_interior.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/stylized_cafe_interior/beauty0001.png" },
-  { id: "office", category: "interior", label: "오피스", keywords: ["office", "회사", "책상"], assetUrl: "/assets/3d/environments/expansion-v1/library_reading_room.glb", thumbnailUrl: "/assets/3d/environments/expansion-v1/thumbnails/library_reading_room.png" },
-  { id: "bedroom", category: "interior", label: "침실", keywords: ["bed", "방", "침대"], assetUrl: "/assets/3d/environments/refined-v6/compact_apartment_interior.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/compact_apartment_interior/beauty0001.png" },
-  { id: "hospital_room", category: "interior", label: "병실", keywords: ["hospital", "병원"], assetUrl: "/assets/3d/environments/refined-v6/hospital_emergency_nurse_station.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/hospital_emergency_nurse_station/beauty0001.png" },
-  { id: "convenience_store", category: "interior", label: "편의점", keywords: ["store", "편의점"], assetUrl: "/assets/3d/environments/refined-v6/korean_convenience_store_night.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/korean_convenience_store_night/beauty0001.png" },
-  { id: "magical_academy_classroom", category: "interior", label: "마법 아카데미 강당 교실", keywords: ["fantasy", "마법", "학원"], assetUrl: "/assets/3d/environments/refined-v6/fantasy_alchemist_workshop_library.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/fantasy_alchemist_workshop_library/beauty0001.png" },
-  { id: "modern_hospital_room", category: "interior", label: "모던 병원 진료실", keywords: ["clinic", "진료"], assetUrl: "/assets/3d/environments/expansion-v1/science_research_laboratory.glb", thumbnailUrl: "/assets/3d/environments/expansion-v1/thumbnails/science_research_laboratory.png" },
-  { id: "street_avenue", category: "urban", label: "거리", keywords: ["street", "길", "도시"], assetUrl: "/assets/3d/environments/webtoon-v7/webtoon_corner_store_facade.glb", thumbnailUrl: "/assets/3d/environments/webtoon-v7/thumbnails/webtoon_corner_store_facade.png" },
-  { id: "residential_alley", category: "urban", label: "골목길", keywords: ["alley", "골목"], assetUrl: "/assets/3d/environments/refined-v6/urban_neon_alley.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/urban_neon_alley/beauty0001.png" },
-  { id: "crosswalk", category: "urban", label: "횡단보도", keywords: ["crosswalk", "신호"], assetUrl: "/assets/3d/environments/authored-v1/webtoon_neighborhood_bus_stop.glb", thumbnailUrl: "/assets/3d/environments/authored-v1/thumbnails/webtoon_neighborhood_bus_stop.png" },
-  { id: "station_plaza", category: "urban", label: "역 앞 광장", keywords: ["station", "역"], assetUrl: "/assets/3d/environments/refined-v6/seoul_subway_platform.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/seoul_subway_platform/beauty0001.png" },
-  { id: "construction_site", category: "urban", label: "공사장", keywords: ["construction", "공사"], assetUrl: "/assets/3d/environments/webtoon-v7/webtoon_rooftop_utility_platform.glb", thumbnailUrl: "/assets/3d/environments/webtoon-v7/thumbnails/webtoon_rooftop_utility_platform.png" },
-  { id: "rooftop", category: "urban", label: "옥상", keywords: ["rooftop", "옥상"], assetUrl: "/assets/3d/environments/refined-v6/korean_school_rooftop.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/korean_school_rooftop/beauty0001.png" },
-  { id: "post_apocalyptic_ruins", category: "urban", label: "폐허 아포칼립스 거점", keywords: ["ruins", "폐허"], assetUrl: "/assets/3d/environments/refined-v6/fantasy_ruin_courtyard.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/fantasy_ruin_courtyard/beauty0001.png" },
-  { id: "space_station_bridge", category: "urban", label: "SF 우주선 함교", keywords: ["space", "우주", "sf"], assetUrl: "/assets/3d/environments/refined-v6/scifi_command_corridor.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/scifi_command_corridor/beauty0001.png" },
-  { id: "park_plaza", category: "nature", label: "공원", keywords: ["park", "공원"], assetUrl: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.glb", thumbnailUrl: "/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.png" },
-  { id: "backyard_garden", category: "nature", label: "정원", keywords: ["garden", "정원"], assetUrl: "/assets/3d/environments/expansion-v1/park_garden_pavilion.glb", thumbnailUrl: "/assets/3d/environments/expansion-v1/thumbnails/park_garden_pavilion.png" },
-  { id: "beach", category: "nature", label: "해변", keywords: ["beach", "바다"], assetUrl: "/assets/3d/environments/authored-v1/webtoon_riverside_park_pavilion.glb", thumbnailUrl: "/assets/3d/environments/authored-v1/thumbnails/webtoon_riverside_park_pavilion.png" },
-  { id: "forest_path", category: "nature", label: "숲길", keywords: ["forest", "숲"], assetUrl: "/assets/3d/environments/refined-v6/fantasy_ruin_courtyard.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/fantasy_ruin_courtyard/beauty0001.png" },
-  { id: "shrine_yard", category: "nature", label: "사당 마당", keywords: ["shrine", "사당"], assetUrl: "/assets/3d/environments/refined-v6/hanok_market_courtyard.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/hanok_market_courtyard/beauty0001.png" },
-  { id: "ancient_palace", category: "nature", label: "고풍 전통 궁궐 사당", keywords: ["palace", "궁"], assetUrl: "/assets/3d/environments/authored-v1/webtoon_hanok_courtyard_gate.glb", thumbnailUrl: "/assets/3d/environments/authored-v1/thumbnails/webtoon_hanok_courtyard_gate.png" },
-  { id: "fantasy_dungeon_hall", category: "nature", label: "판타지 던전 알현실", keywords: ["dungeon", "던전"], assetUrl: "/assets/3d/environments/refined-v6/fantasy_ruin_courtyard.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/fantasy_ruin_courtyard/beauty0001.png" },
-  { id: "fantasy_tavern", category: "interior", label: "판타지 여관", keywords: ["fantasy", "tavern", "여관", "주점"], assetUrl: "/assets/3d/environments/expansion-v1/independent_bookshop.glb", thumbnailUrl: "/assets/3d/environments/expansion-v1/thumbnails/independent_bookshop.png" },
+  { id: "classroom", category: "interior", label: "교실", keywords: ["school", "학교", "칠판"] },
+  { id: "cafe", category: "interior", label: "카페", keywords: ["coffee", "카페", "테이블"] },
+  { id: "office", category: "interior", label: "오피스", keywords: ["office", "회사", "책상"] },
+  { id: "bedroom", category: "interior", label: "침실", keywords: ["bed", "방", "침대"] },
+  { id: "hospital_room", category: "interior", label: "병실", keywords: ["hospital", "병원"] },
+  { id: "convenience_store", category: "interior", label: "편의점", keywords: ["store", "편의점"] },
+  { id: "magical_academy_classroom", category: "interior", label: "마법 아카데미 강당 교실", keywords: ["fantasy", "마법", "학원"] },
+  { id: "modern_hospital_room", category: "interior", label: "모던 병원 진료실", keywords: ["clinic", "진료"] },
+  { id: "street_avenue", category: "urban", label: "거리", keywords: ["street", "길", "도시"] },
+  { id: "residential_alley", category: "urban", label: "골목길", keywords: ["alley", "골목"] },
+  { id: "crosswalk", category: "urban", label: "횡단보도", keywords: ["crosswalk", "신호"] },
+  { id: "station_plaza", category: "urban", label: "역 앞 광장", keywords: ["station", "역"] },
+  { id: "construction_site", category: "urban", label: "공사장", keywords: ["construction", "공사"] },
+  { id: "rooftop", category: "urban", label: "옥상", keywords: ["rooftop", "옥상"] },
+  { id: "post_apocalyptic_ruins", category: "urban", label: "폐허 아포칼립스 거점", keywords: ["ruins", "폐허"] },
+  { id: "space_station_bridge", category: "urban", label: "SF 우주선 함교", keywords: ["space", "우주", "sf"] },
+  { id: "park_plaza", category: "nature", label: "공원", keywords: ["park", "공원"] },
+  { id: "backyard_garden", category: "nature", label: "정원", keywords: ["garden", "정원"] },
+  { id: "beach", category: "nature", label: "해변", keywords: ["beach", "바다"] },
+  { id: "forest_path", category: "nature", label: "숲길", keywords: ["forest", "숲"] },
+  { id: "shrine_yard", category: "nature", label: "사당 마당", keywords: ["shrine", "사당"] },
+  { id: "ancient_palace", category: "nature", label: "고풍 전통 궁궐 사당", keywords: ["palace", "궁"] },
+  { id: "fantasy_dungeon_hall", category: "nature", label: "판타지 던전 알현실", keywords: ["dungeon", "던전"] },
+  { id: "fantasy_tavern", category: "interior", label: "판타지 여관", keywords: ["fantasy", "tavern", "여관", "주점"] },
 ] as const);
 
 const SCENE_FAMILY: Record<string, StudioObjectInsertFamily> = {
@@ -249,6 +262,20 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
     });
   });
 
+  const environments = WEBTOON_ENVIRONMENT_INDEX.map(({ version, slug, label, family, keywords }) => {
+    const base = `/assets/3d/environments/hero-${version}`;
+    const modelId = `ts-bg3d-hero-${version}-${slug}-desktop`;
+    return Object.freeze({
+      id: `obj-environment-${slug}`, sourceId: modelId, bundledEnvironmentId: modelId,
+      kind: "bg3d-scene-prop" as const, openTarget: "bg3d-editor" as const,
+      label, family, familyLabel: SCENE_FAMILY_LABEL[family],
+      keywords: Object.freeze([slug, ...keywords, "웹툰", "배경", "3d"]),
+      hint: null, defaultWidth: 720, defaultHeight: 480, assetLicense: "CC0-1.0" as const,
+      assetUrl: version === "v1" ? `${base}/${slug}.glb` : `${base}/${slug}/desktop.glb`,
+      thumbnailUrl: version === "v1" ? `${base}/thumbnails/${slug}.png` : `${base}/${slug}/thumbnail.png`,
+    });
+  });
+
   const scenes = SCENE_TEMPLATE_INDEX.map((template) => {
     const family = SCENE_FAMILY[template.category] ?? "scene-interior";
     return Object.freeze({
@@ -272,8 +299,7 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
       openTarget: "bg3d-templates" as const,
       defaultWidth: 720,
       defaultHeight: 480,
-      assetUrl: template.assetUrl,
-      thumbnailUrl: template.thumbnailUrl,
+      thumbnailUrl: `/assets/studio/scene-template-previews/${template.id}.webp`,
     });
   });
 
@@ -300,6 +326,7 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
         openTarget: "bg3d-editor" as const,
         defaultWidth: 360,
         defaultHeight: 360,
+        assetLicense: "CC0-1.0" as const,
         assetUrl: `/assets/3d/refined-v8/${item.id}.glb`,
         thumbnailUrl: `/assets/3d/refined-v8/thumbnails/${item.id}.png`,
       }),
@@ -326,6 +353,7 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
         openTarget: "bg3d-editor" as const,
         defaultWidth: 360,
         defaultHeight: 360,
+        assetLicense: "CC0-1.0" as const,
         assetUrl: `/creator-essentials/prop-${item.id}.glb`,
         thumbnailUrl: `/creator-essentials/prop-${item.id}.preview.png`,
       }),
@@ -353,6 +381,7 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
         openTarget: "bg3d-editor" as const,
         defaultWidth: 360,
         defaultHeight: 360,
+        assetLicense: "CC0-1.0" as const,
         assetUrl: `/assets/studio/cc0-20260906/assets/${item.slug}/${item.file}`,
         thumbnailUrl: `/assets/studio/cc0-20260906/previews/${item.slug}.png`,
       }),
@@ -360,6 +389,7 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
     ...KENNEY_BLOCKOUT_SCENE_PROP_INDEX.map((item) =>
       Object.freeze({
         id: `obj-furniture-kn_${item.id}`,
+        blockout: true,
         kind: "bg3d-scene-prop" as const,
         sourceId: `kn_${item.id}`,
         label: item.label,
@@ -371,6 +401,7 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
           item.assetId,
           item.label,
           ...item.keywords,
+          "블록아웃",
           "가구",
           "소품",
           "배경",
@@ -380,20 +411,28 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
         openTarget: "bg3d-editor" as const,
         defaultWidth: 360,
         defaultHeight: 360,
+        assetLicense: "CC0-1.0" as const,
         assetUrl: `/assets/studio/cc0-20260906/${item.path}`,
         thumbnailUrl: `/assets/studio/cc0-20260906/previews/${item.assetId}.png`,
       }),
     ),
   ];
 
-  return Object.freeze([...primitives, ...sceneFurniture, ...props, ...scenes]);
+  return Object.freeze([...environments, ...sceneFurniture, ...props, ...scenes, ...primitives]);
 }
 
 let cachedCatalog: readonly StudioObjectInsertItem[] | null = null;
 
-export function listStudioObjectInsertItems(): readonly StudioObjectInsertItem[] {
+function registeredObjectInsertItems(): readonly StudioObjectInsertItem[] {
   if (!cachedCatalog) cachedCatalog = buildCatalog();
   return cachedCatalog;
+}
+
+let manuscriptCatalog: readonly StudioObjectInsertItem[] | null = null;
+
+export function listStudioObjectInsertItems(): readonly StudioObjectInsertItem[] {
+  manuscriptCatalog ??= Object.freeze(registeredObjectInsertItems().filter((item) => !item.blockout));
+  return manuscriptCatalog;
 }
 
 export function listStudioObjectInsertFamilies(): readonly {
@@ -423,7 +462,13 @@ export function findStudioObjectInsertItem(
 ): StudioObjectInsertItem | null {
   const trimmed = typeof id === "string" ? id.trim() : "";
   if (!trimmed) return null;
-  return listStudioObjectInsertItems().find((item) => item.id === trimmed) ?? null;
+  return registeredObjectInsertItems().find((item) => item.id === trimmed) ?? null;
+}
+
+/** 클릭·드롭의 ID를 등록된 원본과 대조한다. 검색에서 숨긴 기존 에셋도 다시 열 수 있다. */
+export function findStudioBg3dModelInsertBySourceId(sourceId: string): StudioObjectInsertItem | null {
+  return registeredObjectInsertItems().find((item) => item.kind === "bg3d-scene-prop"
+    && item.openTarget === "bg3d-editor" && item.sourceId === sourceId) ?? null;
 }
 
 export function filterStudioObjectInsertItems(input: {
@@ -440,7 +485,10 @@ export function filterStudioObjectInsertItems(input: {
     Math.min(500, Math.floor(input.limit ?? 120)),
   );
   const out: StudioObjectInsertItem[] = [];
-  for (const item of listStudioObjectInsertItems()) {
+  const candidates = /kenney|blockout|블록아웃/u.test(normalized)
+    ? registeredObjectInsertItems()
+    : listStudioObjectInsertItems();
+  for (const item of candidates) {
     if (family && item.family !== family) continue;
     if (kind && item.kind !== kind) continue;
     if (!matchesQuery(item, normalized)) continue;

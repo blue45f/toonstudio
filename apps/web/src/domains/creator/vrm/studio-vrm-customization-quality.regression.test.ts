@@ -206,9 +206,9 @@ describe("3D 커스터마이징 품질 회귀 검증 (헤어 · 의상 · 소품
     const capGeo = createStudioVrmAuthoredHairGeometry(capPart);
     assertValidSmoothNormals(capGeo, "hair-cap");
     const capNormal = capGeo.getAttribute("normal");
-    // 캡 UV 심(col=0 vs col=28)의 법선이 끊기지 않고 일치해야 한다.
-    const seamA = new THREE.Vector3().fromBufferAttribute(capNormal, 8 * 29 + 0);
-    const seamB = new THREE.Vector3().fromBufferAttribute(capNormal, 8 * 29 + 28);
+    // 캡 UV 심(col=0 vs col=48)의 법선이 끊기지 않고 일치해야 한다.
+    const seamA = new THREE.Vector3().fromBufferAttribute(capNormal, 8 * 49);
+    const seamB = new THREE.Vector3().fromBufferAttribute(capNormal, 8 * 49 + 48);
     expect(seamA.dot(seamB)).toBeGreaterThan(0.99);
     capGeo.dispose();
 

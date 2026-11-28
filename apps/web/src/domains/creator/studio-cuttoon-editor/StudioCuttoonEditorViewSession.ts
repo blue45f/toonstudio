@@ -12,6 +12,8 @@ export type StudioCuttoonEditorViewSession =
   StudioCuttoonEditorViewSessionRest & import("./runtime/studio-local-vrm-cut-scope").StudioLocalVrmCutHostScope & {
     scopedWriteRuntime?: import("./runtime/useStudioScopedWriteRuntime").StudioScopedWriteRuntime; scopedCanvasDrawingAvailable?: boolean; scopedSavePendingConfirmation?: boolean;
     onScopedWriteLayer?: (layerId: string | null, frameId: string | null) => void;
+    poserCutInsertReady: boolean;
+    insertPoserCut: (cut: import("./studio-poser-cut-handoff").PoserCutRaster, id: string) => boolean;
     toggleCanvasFlipX?: () => void;
     zoomReset?: () => void;
     clearPolyLassoDraft?: () => void;

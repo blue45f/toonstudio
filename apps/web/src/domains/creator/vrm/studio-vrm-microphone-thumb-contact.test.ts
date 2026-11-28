@@ -1,7 +1,7 @@
 import { Bone, BufferGeometry, Euler, Float32BufferAttribute, Group, MeshBasicMaterial, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
-import { createMicrophoneThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
+import { createFittedThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
 import { DEFAULT_VRM_PROP_RIG_METRICS, resolvePropAttachment } from "./studio-vrm-prop-rig";
 import { createPropInstance, propDefById } from "./studio-vrm-props";
 
@@ -73,7 +73,7 @@ describe("마이크 자동 그립의 엄지 접촉", () => {
   it("손잡이를 가로지른 중간 마디를 빼내고 끝마디를 손잡이 표면에 둔다", () => {
     const f = fixture();
     const original = f.pose();
-    const pass = createMicrophoneThumbContactPass(f.vrm, "right", f.fit, 0.08, [])!;
+    const pass = createFittedThumbContactPass(f.vrm, "right", f.fit, 0.08, [])!;
     expect(f.measure().deepest).toBeGreaterThan(0.005);
     pass.run();
     expect(f.measure().deepest).toBeLessThan(0.002);
@@ -88,17 +88,17 @@ describe("마이크 자동 그립의 엄지 접촉", () => {
 
   it("모델·잠금·기존 앵커의 저작 권한을 지킨다", () => {
     const f = fixture(false);
-    expect(createMicrophoneThumbContactPass(f.vrm, "right", f.fit, 0.08, ["rightThumbDistal"])).toBeNull();
-    expect(createMicrophoneThumbContactPass(f.vrm, "right", f.fit, 0.08, ["rightHand"])).toBeNull();
+    expect(createFittedThumbContactPass(f.vrm, "right", f.fit, 0.08, ["rightThumbDistal"])).toBeNull();
+    expect(createFittedThumbContactPass(f.vrm, "right", f.fit, 0.08, ["rightHand"])).toBeNull();
     const old = { ...f.fit, anchor: { ...f.fit.anchor, id: "primary" } };
-    expect(createMicrophoneThumbContactPass(f.vrm, "right", old, 0.08, [])).toBeNull();
-    const pass = createMicrophoneThumbContactPass(f.vrm, "right", f.fit, 0.08, [])!;
+    expect(createFittedThumbContactPass(f.vrm, "right", old, 0.08, [])).toBeNull();
+    const pass = createFittedThumbContactPass(f.vrm, "right", f.fit, 0.08, [])!;
     pass.run();
     f.proximal.rotation.y += 0.04;
     const authored = f.pose();
     expect(pass.release()).toBe(false);
     expect(f.pose()).toEqual(authored);
     delete f.nodes.rightThumbDistal;
-    expect(createMicrophoneThumbContactPass(f.vrm, "right", f.fit, 0.08, [])).toBeNull();
+    expect(createFittedThumbContactPass(f.vrm, "right", f.fit, 0.08, [])).toBeNull();
   });
 });

@@ -3,7 +3,7 @@ import { useState, type KeyboardEvent } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { STUDIO_VRM_HERO_V1_ENTRIES } from "../../../vrm/studio-vrm-hero-v1-catalog-entries";
-import { isBundledVrmUrlRightsBlocked, SAMPLE_VRMS } from "../../../vrm/vrm-library";
+import { isBundledVrmUrlRightsBlocked, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../../vrm/vrm-library";
 import { isStudioVrmTechnicallyAdmittedThumbnail } from "../../../vrm/studio-vrm-thumbnail-technical-denylist.generated";
 import { isStudioVrmProductionThumbnailUrl } from "../../../vrm/studio-vrm-thumbnail-quality";
 import { isVerifiedStudioThreeVrmUrl, resolveStudioThreeVrmUrl, STUDIO_THREE_VRM_URLS } from "../studio-virtual-space-three-scene";
@@ -28,8 +28,9 @@ function threeAvatarChoice(url: string) {
   const sample = SAMPLE_VRMS.find((candidate) => candidate.url === url);
   if (!sample) return null;
   const heroEntry = HERO_ENTRY_BY_URL.get(url) ?? null;
-  const thumbnail = isStudioVrmProductionThumbnailUrl(sample.thumbnailUrl)
-    && isStudioVrmTechnicallyAdmittedThumbnail(sample.id) ? sample.thumbnailUrl : null;
+  const portrait = SAMPLE_VRM_ENTRIES.find((entry) => entry.id === sample.id)?.thumbnail ?? sample.thumbnailUrl;
+  const thumbnail = isStudioVrmProductionThumbnailUrl(portrait)
+    && isStudioVrmTechnicallyAdmittedThumbnail(sample.id) ? portrait : null;
   const optionId = heroEntry ? `hero-v1-${heroEntry.archetypeId}` : sample.id;
   return {
     name: sample.name,
@@ -38,6 +39,7 @@ function threeAvatarChoice(url: string) {
     url,
     thumbnail,
     isHero: heroEntry !== null,
+    visible: heroEntry !== null || sample.visibility !== "legacy",
     genreKo: heroEntry?.genreKo ?? null,
   };
 }
@@ -60,7 +62,7 @@ export function VirtualThreeAvatarPicker({ avatarIndex, onSelect, entry = false 
   const activeUrl = entry && avatarIndex < 0 ? null : resolveStudioThreeVrmUrl(avatarIndex);
   const choices = STUDIO_THREE_VRM_URLS.flatMap((url, index) => {
     const choice = threeAvatarChoice(url);
-    return choice ? [{ ...choice, avatarIndex: index }] : [];
+    return choice && (choice.visible || choice.url === activeUrl) ? [{ ...choice, avatarIndex: index }] : [];
   });
   const heroChoices = choices.filter((item) => item.isHero);
   const fallbackChoices = choices.filter((item) => !item.isHero);

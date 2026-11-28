@@ -1,3 +1,4 @@
+import { mergeAvatarForgeHair } from "../../vrm/studio-vrm-hair-sections";
 import { Euler, Quaternion } from "three";
 
 import { planCharacterSlotApply } from "../../character-shaper/character-shaper-apply-plan";
@@ -180,7 +181,7 @@ export function planCharacterDocumentSteps(document: CharacterDocumentV3, profil
   const hairSteps = steps.filter((step) => step.kind === "forge-hair");
   const hairSelection = slots.hair ?? document.recipe.slots.hair;
   if (hairSelection && hairSteps.length) {
-    const hair = sanitizeAvatarForgeState({ ...createAvatarForgeState(), hair: Object.assign({}, characterDocumentHair(document), ...hairSteps.map((step) => step.hair)) }).hair;
+    const hair = sanitizeAvatarForgeState({ ...createAvatarForgeState(), hair: hairSteps.reduce((current, step) => mergeAvatarForgeHair(current, step.hair), characterDocumentHair(document)) }).hair;
     slots.hair = { ...hairSelection, overrides: Object.fromEntries(Object.entries(hair)
       .filter(([key]) => (key !== "baseColor" && key !== "tipColor")
         || hairSteps.some((step) => Object.hasOwn(step.hair, key))

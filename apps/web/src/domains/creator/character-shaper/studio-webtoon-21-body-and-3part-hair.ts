@@ -7,6 +7,7 @@
  * - CSP 4영역 손 포즈 삼각형 패드(펴기·쥐기·가리키기·집기) 연속 가중치 및 개별 손가락 잠금 보간
  */
 
+import { BACK_HAIR_PART_OPTIONS, FRONT_HAIR_PART_OPTIONS, SIDE_HAIR_PART_OPTIONS } from "../vrm/studio-vrm-hair-sections";
 import {
   createStudioVrmHandPose,
   type StudioVrmHandFinger,
@@ -17,6 +18,8 @@ import {
   sanitizeStudioVrmProportions,
   type StudioVrmProportions,
 } from "../vrm/studio-vrm-proportion-core";
+
+export { BACK_HAIR_PART_OPTIONS, FRONT_HAIR_PART_OPTIONS, SIDE_HAIR_PART_OPTIONS } from "../vrm/studio-vrm-hair-sections";
 
 export type BodySliderGroupId = "overall" | "upper" | "lower" | "extremities";
 
@@ -108,37 +111,6 @@ export interface HairPartOption {
   readonly id: string;
   readonly labelKo: string;
 }
-
-export const FRONT_HAIR_PART_OPTIONS: readonly HairPartOption[] = Object.freeze([
-  { id: "front-full-bang", labelKo: "풀뱅" },
-  { id: "front-see-through", labelKo: "시스루 뱅" },
-  { id: "front-center-part", labelKo: "가운데 가르마" },
-  { id: "front-side-swept", labelKo: "사이드 스웹" },
-  { id: "front-curtain", labelKo: "커튼 뱅" },
-  { id: "front-m-bang", labelKo: "M자 뱅" },
-  { id: "front-slick-back", labelKo: "올백" },
-  { id: "front-asym-bang", labelKo: "비대칭 뱅" },
-]);
-
-export const SIDE_HAIR_PART_OPTIONS: readonly HairPartOption[] = Object.freeze([
-  { id: "side-hime", labelKo: "히메컷" },
-  { id: "side-layered", labelKo: "레이어드" },
-  { id: "side-tucked", labelKo: "귀 뒤 넘김" },
-  { id: "side-short-burn", labelKo: "짧은 구레나룻" },
-  { id: "side-wave", labelKo: "웨이브 사이드" },
-  { id: "side-none", labelKo: "옆머리 없음" },
-]);
-
-export const BACK_HAIR_PART_OPTIONS: readonly HairPartOption[] = Object.freeze([
-  { id: "back-short", labelKo: "숏컷" },
-  { id: "back-bob", labelKo: "단발 보브" },
-  { id: "back-wolf", labelKo: "울프컷" },
-  { id: "back-long-straight", labelKo: "롱 스트레이트" },
-  { id: "back-long-wave", labelKo: "웨이브 롱" },
-  { id: "back-high-ponytail", labelKo: "하이 포니테일" },
-  { id: "back-twintail", labelKo: "트윈테일" },
-  { id: "back-low-bun", labelKo: "로우 번" },
-]);
 
 export interface HairColorTokenPreset {
   readonly id: string;

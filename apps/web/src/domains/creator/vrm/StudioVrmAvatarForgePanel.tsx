@@ -723,7 +723,7 @@ export function StudioVrmAvatarForgePanel({
                   const previewState = sanitizeAvatarForgeState({
                     ...state,
                     presetId: undefined,
-                    hair: { ...state.hair, bangStyle: option.id },
+                    hair: { ...state.hair, bangStyle: option.id, frontPart: undefined },
                   });
                   return (
                     <button

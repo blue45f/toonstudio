@@ -38,6 +38,7 @@ jobs:
       # Related tests validate tracked documentation evidence; retain docs.
       # PR related의 digest 검사는 등록 VRM 116개를 모두 읽는다. 정본 경로만 최초 checkout에 포함한다.
       # 환경 무결성 검사는 썸네일 뒤의 GLB까지 읽으므로 두 파일을 함께 받고, 무관한 자산 트리는 제외한다.
+      # Hero v1 검사는 6개 씬의 두 기기용 GLB와 썸네일을 읽고, 삽입 목록 검사는 추천 v2 씬 3개 및 템플릿 카드를 읽는다.
       # 일러스트 팩 무결성 시험(studio-illustration-pack)은 원본 PNG·SOURCE.json·PROMPTS.json 을 디스크에서 읽는다(약 33 MB).
       # Creator Bundle 시험은 공개 JSON·권리 원장을 읽고, PR Nature 시험은 정본 hash가 결박된 JSON 원본도 읽는다.
       # PR의 세 파생 팩은 인증이 유효한 최초 체크아웃에 포함하고 수동 검사는 manifest만 유지한다.
@@ -77,6 +78,31 @@ jobs:
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/boatyard-v1/harbor_boat_repair_shed.png' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_modern_apartment_living.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_modern_apartment_living-mobile.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/thumbnails/kr_modern_apartment_living.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_atelier_cafe_interior.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_atelier_cafe_interior-mobile.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/thumbnails/kr_atelier_cafe_interior.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_highschool_classroom_corridor.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_highschool_classroom_corridor-mobile.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/thumbnails/kr_highschool_classroom_corridor.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_school_rooftop_hero.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_school_rooftop_hero-mobile.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/thumbnails/kr_school_rooftop_hero.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_seoul_alley_street_hero.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/kr_seoul_alley_street_hero-mobile.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/thumbnails/kr_seoul_alley_street_hero.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/rofan_imperial_palace_hall_balcony.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/rofan_imperial_palace_hall_balcony-mobile.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v1/thumbnails/rofan_imperial_palace_hall_balcony.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/desktop.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/thumbnail.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v2/kr_hospital_ward_corridor/desktop.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v2/kr_hospital_ward_corridor/thumbnail.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v2/kr_seoul_subway_train_platform/desktop.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/hero-v2/kr_seoul_subway_train_platform/thumbnail.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/studio/scene-template-previews/*.webp' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/LICENSES.md' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/hdri/*.hdr' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/virtual-studio/office-themes-v1/' || '' }}

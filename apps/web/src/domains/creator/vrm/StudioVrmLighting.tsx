@@ -1,3 +1,5 @@
+import { Color } from "three";
+
 import {
   computeLightingUniforms,
   type EnvVariant,
@@ -12,6 +14,13 @@ export type LightingTone = StudioVrmLightingTone;
 
 const HEMI_SKY_COLOR = "#fff8ef";
 const STAGE_WALL_COLOR = "#2b2b32";
+
+const LIGHT_RIGS = {
+  morning: { amb: [0.68, "#ffffff"], d1: [1.32, "#ffffff"], d2: [0.54, "#f7d8c4"], d3: [0.42, "#cfdcff"] },
+  sunset: { amb: [0.52, "#ffe8d6"], d1: [1.45, "#ffccac"], d2: [0.6, "#edac9c"], d3: [0.35, "#ffd2ac"] },
+  night: { amb: [0.48, "#7684ad"], d1: [0.99, "#b6ccf3"], d2: [0.46, "#8d94c5"], d3: [0.52, "#b4a1da"] },
+  studio: { amb: [0.82, "#ffffff"], d1: [1.5, "#ffffff"], d2: [0.66, "#ffffff"], d3: [0.72, "#ffffff"] },
+} as const;
 
 export function VrmLighting({
   tone,
@@ -32,24 +41,20 @@ export function VrmLighting({
   const col = li ? li.color : null;
   const dirPos = li ? [li.dir.x * 3.5, li.dir.y * 4, li.dir.z * 3.5] as const : [2.8, 4.2, 3.6] as const;
 
-  const base = tone === "sunset" ? { amb: [0.52, "#ffe8d6"], d1: [1.5, "#ffa07a"], d2: [0.6, "#ffb732"], d3: [0.3, "#ff6b8b"] } :
-               tone === "night" ? { amb: [0.34, "#1b1c30"], d1: [0.92, "#7fa3ff"], d2: [0.4, "#483d8b"], d3: [0.5, "#8a2be2"] } :
-               tone === "studio" ? { amb: [0.92, "#ffffff"], d1: [1.5, "#ffffff"], d2: [0.8, "#ffffff"], d3: [0.8, "#ffffff"] } :
-               { amb: [0.68, "#ffffff"], d1: [1.32, "#ffffff"], d2: [0.54, "#f7d8c4"], d3: [0.42, "#cfdcff"] };
+  const base = LIGHT_RIGS[tone];
+  const ambI = base.amb[0] * iMul * 0.9 * (formStudy ? 0.68 : 1);
+  const d1I = base.d1[0] * iMul * (formStudy ? 1.12 : 1);
+  const d2I = base.d2[0] * iMul * 0.9 * (formStudy ? 0.82 : 1);
+  const d3I = base.d3[0] * iMul * 0.8 * (formStudy ? 1.38 : 1);
 
-  // Clay/reference mode uses a lower fill, stronger key, and brighter rear rim so anatomy reads
-  // clearly without changing the user's authored lighting preset.
-  const ambI = (base.amb[0] as number) * (iMul * 0.9) * (formStudy ? 0.68 : 1);
-  const d1I = (base.d1[0] as number) * iMul * (formStudy ? 1.12 : 1);
-  const d2I = (base.d2[0] as number) * iMul * 0.9 * (formStudy ? 0.82 : 1);
-  const d3I = (base.d3[0] as number) * iMul * 0.8 * (formStudy ? 1.38 : 1);
-
-  const c1 = col ? `rgb(${Math.round(col[0]*255)},${Math.round(col[1]*255)},${Math.round(col[2]*255)})` : (base.d1[1] as string);
-  const c2 = col ? `rgb(${Math.round(col[0]*255*0.85)},${Math.round(col[1]*255*0.85)},${Math.round(col[2]*255*0.9)})` : (base.d2[1] as string);
+  // 프리셋의 주광과 반사광 색을 보존한 채 선형 RGB에서 색온도를 곱한다.
+  const temperature = col ? new Color(...col) : new Color(1, 1, 1);
+  const c1 = new Color(base.d1[1]).multiply(temperature);
+  const c2 = new Color(base.d2[1]).multiply(temperature);
 
   return (
     <>
-      <ambientLight intensity={ambI} color={base.amb[1] as string} />
+      <ambientLight intensity={ambI} color={base.amb[1]} />
       <hemisphereLight
         intensity={(formStudy ? 0.26 : 0.16) * iMul}
         color={HEMI_SKY_COLOR}
@@ -72,7 +77,7 @@ export function VrmLighting({
         shadow-camera-bottom={-0.5}
       />
       <directionalLight intensity={d2I} position={[-3.2, 2.6, 2.1]} color={c2} />
-      <directionalLight intensity={d3I} position={[-1.6, 3.4, -3.2]} color={base.d3[1] as string} />
+      <directionalLight intensity={d3I} position={[-1.6, 3.4, -3.2]} color={base.d3[1]} />
 
       {/* Env variants (floor / wall / room / outdoor) — excluded from subject-only capture. */}
       <group ref={envRootRef}>

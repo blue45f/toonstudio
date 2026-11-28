@@ -116,6 +116,10 @@ describe("studio mannequin hand presets", () => {
     const applied = applyStudioMannequinHandPreset(preset, "right", { index: 80 });
     expect(applied.curl.index).toBe(80);
     expect(applied.curl.thumb).toBe(0);
+    const fist = getStudioMannequinHandPreset("fist");
+    if (!fist) throw new Error("주먹 프리셋이 필요합니다.");
+    expect(applyStudioMannequinHandPreset(fist, "left", { index: 25 }).curl)
+      .toEqual({ thumb: 100, index: 25, middle: 100, ring: 100, little: 100 });
   });
 
   it("포즈와 함께 저장 가능한 페이로드 구조를 만듭니다", () => {

@@ -97,6 +97,7 @@ export function readStudioVrmPoserShaperSurface(host: StudioVrmPoserHost): Studi
 
 /** Open host bag — residual `any` confined to this type alias (extracted-slice pattern). */
 export type StudioVrmPoserHost = Record<string, any> & {
+  invalidateViewport?: () => void;
   onApplyCutPaint?: import("./StudioVrmPoserTypes").StudioVrmPoserProps["onApplyCutPaint"];
   cutPaintSession?: import("./studio-vrm-cut-paint-session").StudioVrmCutPaintSession;
   pngSessionRef?: { readonly current: import("./studio-vrm-png-worker-session").StudioVrmPngWorkerSession | null };

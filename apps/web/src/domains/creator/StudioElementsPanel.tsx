@@ -210,13 +210,13 @@ export function StudioElementsPanel({
     catalog.dispatch({ kind: "favorite", id: item.id, value: !catalog.state.favoriteIds.includes(item.id) });
   }
   function resetCatalogFilters() { setQuery(""); setCategory("all"); setOrientation("all"); setFavoritesOnly(false); setVisibleLimit(60); }
-  useEffect(() => { setVisibleLimit(60); }, [category, query, sort, orientation, favoritesOnly]);
+  useEffect(() => { setVisibleLimit(60); }, [category, query, sort, orientation, favoritesOnly, objectFamily, surface]);
   const objectFamilies = listStudioObjectInsertFamilies();
   const objectItems = showObject3d
     ? filterStudioObjectInsertItems({
         query,
         family: objectFamily,
-        limit: 120,
+        limit: 500,
       })
     : [];
   const recentItems = recentIds
@@ -464,7 +464,7 @@ export function StudioElementsPanel({
             id={resultsId}
             role="tabpanel"
             data-studio-elements-3d-results="true"
-            className="grid max-h-72 grid-cols-2 gap-1.5 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]"
+            className="grid max-h-72 auto-rows-max grid-cols-2 content-start gap-1.5 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]"
           >
             {objectItems.length === 0 ? (
               <div className="col-span-2 flex h-24 flex-col items-center justify-center rounded-lg border border-dashed border-line text-center">
@@ -474,7 +474,7 @@ export function StudioElementsPanel({
                 </p>
               </div>
             ) : (
-              objectItems.map((item) => (
+              objectItems.slice(0, visibleLimit).map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -492,6 +492,10 @@ export function StudioElementsPanel({
                     "hover:border-accent/45 hover:bg-raised",
                   )}
                 >
+                  {item.thumbnailUrl && (
+                    <img src={item.thumbnailUrl} alt="" loading="lazy" decoding="async" draggable={false}
+                      className={cn("mb-1 h-20 w-full shrink-0 rounded-md bg-raised", item.bundledEnvironmentId ? "object-cover" : "object-contain")} />
+                  )}
                   <span className="text-[0.68rem] font-semibold text-fg">{item.label}</span>
                   <span className="text-[0.55rem] text-fg-3">{item.familyLabel}</span>
                   <span className="inline-flex w-full items-center justify-between gap-1 text-[0.52rem] font-medium text-accent">
@@ -512,6 +516,7 @@ export function StudioElementsPanel({
               ))
             )}
           </div>
+          {objectItems.length > visibleLimit && <button type="button" className={STUDIO_CATALOG_CONTROL} onClick={() => setVisibleLimit((limit) => limit + 60)}>더 보기 ({visibleLimit}/{objectItems.length})</button>}
         </>
       ) : (
         <>

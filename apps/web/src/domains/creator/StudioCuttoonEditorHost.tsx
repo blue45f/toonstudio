@@ -21561,8 +21561,7 @@ function clearSelectionForEdit() {
 
   const productionBibleAssetOptions = deriveStudioProductionBibleAssetOptions(productionBibleOpen, pages);
 
-  // 편집기 표면은 DCC 라우트 래퍼 안에서 렌더된다. 래퍼는 표면 전환을 가로질러 마운트를
-  // 유지하므로 캔버스↔DCC 왕복이 이 트리를 재마운트하지 않는다.
+  // DCC 래퍼는 캔버스↔DCC 왕복에서 편집기 마운트를 유지한다.
   const editorSurface = (
     <StudioCuttoonEditorView
       activatePrimaryCanvasTool={activatePrimaryCanvasTool}
@@ -22014,8 +22013,9 @@ function clearSelectionForEdit() {
       nodeEditTool={nodeEditTool}
       nodeRefsRef={nodeRefsRef}
       nodeSmoothStrength={nodeSmoothStrength}
-      onPickImage={onPickImage}
-      onionSkin={onionSkin}
+      onPickImage={onPickImage} onionSkin={onionSkin}
+      poserCutInsertReady={studioAuthReady && workHydrated && autosaveChecked && !autosaveCheckFailed && !hasAutosave && !hardCanvasInteractionBlock && !activeSurfaceReviewLocked && persistLeadershipAllowsDraw && !timelapseCapturing && !masterEditMode}
+      insertPoserCut={(cut, id) => canApplyStudioMutation(captureStudioMutationTicket()) && addRenderedImage(cut.pngDataUrl, cut.displayWidth ?? cut.width, cut.displayHeight ?? cut.height, undefined, false, { id, name: "3D 데생 인형(마네킹)" })}
       openHybridDccWorkspace={openHybridDccWorkspace}
       openStudioCommentCount={openStudioCommentCount}
       openStudioCommentInbox={openStudioCommentInbox}

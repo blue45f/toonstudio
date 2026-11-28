@@ -355,12 +355,19 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
       loadModelRef.current(SAMPLE_VRM_ENTRIES[0]);
     }
 
+    const bundledForScene = () => {
+      const pending = pendingPoseDataRef.current;
+      if (pending?.modelHash) return [...SAMPLE_VRM_ENTRIES];
+      const id = pending?.modelId ?? (pending?.modelName ? undefined : activeModelIdRef.current);
+      const legacy = savedLegacySampleVrmEntry(id, pending?.modelName);
+      return legacy ? [...SAMPLE_VRM_ENTRIES, legacy] : [...SAMPLE_VRM_ENTRIES];
+    };
     void (async () => {
       try {
         const firstPage = await queryUploadedVrmLibraryEntriesPage({
           signal: controller.signal,
         });
-        const entries: VrmLibraryEntry[] = [...SAMPLE_VRM_ENTRIES];
+        const entries = bundledForScene();
         const appendUnique = (entry: VrmLibraryEntry) => {
           if (entries.some((candidate) => (
             candidate.id === entry.id ||
@@ -374,8 +381,6 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
         }
 
         const pending = pendingPoseDataRef.current;
-        const legacy = pending?.modelId && !pending.modelHash ? savedLegacySampleVrmEntry(pending.modelId) : null;
-        if (legacy) appendUnique(legacy);
         const findRequestedEntry = (candidates: readonly VrmLibraryEntry[]) => {
           if (pending?.modelHash) {
             return candidates.find((entry) => entry.contentHash === pending.modelHash) ?? null;
@@ -412,11 +417,12 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
         loadResolvedEntry(entries);
       } catch (caughtError: unknown) {
         if (cancelled) return;
-        setLibraryEntries(SAMPLE_VRM_ENTRIES);
+        const entries = bundledForScene();
+        setLibraryEntries(entries);
         setLibraryNextCursor(null);
         setLibraryStatus("error");
         setLibraryError(getErrorMessage(caughtError, "저장된 VRM 라이브러리를 불러오지 못했습니다."));
-        loadResolvedEntry(SAMPLE_VRM_ENTRIES);
+        loadResolvedEntry(entries);
       }
     })();
 

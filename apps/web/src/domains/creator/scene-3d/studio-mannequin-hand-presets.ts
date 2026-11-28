@@ -1,9 +1,7 @@
 /**
  * Studio 3D 데생 인형 — Magic Poser 벤치마크: 손 포즈 프리셋 라이브러리 (MP1).
  *
- * 웹툰에서 자주 등장하는 손 모양 50종을 데이터로 제공합니다. 데생 인형의 손가락은
- * 관절이 아니라 손목에 붙은 장식 프리미티브이므로(studio-mannequin-hand-tracking 참조),
- * 프리셋은 손목 관절 회전(Euler radians) + 손가락별 컬(curl 0~100) 로 구성됩니다.
+ * 웹툰에서 자주 등장하는 50종의 손목 회전, 손가락별 굽힘, 벌림 각도를 제공한다.
  *
  * - 관절 ID는 손 관절 ID 체계(`leftHand`/`rightHand`)만 참조합니다.
  * - 미러는 하우스 미러 계약(YZ 평면 반사 + 관절 측 스왑)을 따릅니다.
@@ -88,6 +86,7 @@ export interface StudioMannequinHandPreset {
   readonly wrist: StudioMannequinVec3;
   /** 손가락별 컬(0~100). */
   readonly curl: StudioHandFingerCurl;
+  readonly splayDeg: Partial<Record<StudioHandFingerName, number>>;
   /** 초보자용 설명. 합니다체. */
   readonly description: string;
   /** 카테고리(기본/제스처/숫자/잡기/감정). */
@@ -95,6 +94,16 @@ export interface StudioMannequinHandPreset {
   /** 양손을 함께 써야 자연스러운 프리셋이면 true. */
   readonly twoHanded?: boolean;
 }
+
+const OPEN_SPLAY = { thumb: 13, index: 9, middle: 2, ring: -5, little: -12 };
+const PEACE_SPLAY = { index: 15, middle: -6 };
+const PRESET_SPLAY: Readonly<Record<string, Partial<Record<StudioHandFingerName, number>>>> = {
+  open: OPEN_SPLAY, five: OPEN_SPLAY, wave: OPEN_SPLAY, "high-five": OPEN_SPLAY, stop: OPEN_SPLAY,
+  two: PEACE_SPLAY, peace: PEACE_SPLAY, rock: { index: 8, little: -12 },
+  "devil-horns": { index: 8, little: -12 }, claw: OPEN_SPLAY,
+  relaxed: { index: 3, little: -5 }, "crossed-fingers": { index: -17, middle: 7 },
+  ball: { thumb: 10, index: 6, little: -9 }, ok: { index: 6, little: -10 },
+};
 
 function preset(
   id: string,
@@ -109,6 +118,7 @@ function preset(
     id,
     name,
     wrist,
+    splayDeg: PRESET_SPLAY[id] ?? {},
     category,
     curl: Object.freeze({
       thumb: curl[0],
@@ -141,7 +151,7 @@ export const STUDIO_MANNEQUIN_HAND_PRESETS: readonly StudioMannequinHandPreset[]
     preset("claw", "갈고리손", [0, 0, 0], [45, 45, 45, 45, 45], "손가락을 갈고리처럼 구부립니다. 위협·야수·공포 표현에 사용합니다.", "emotion"),
     preset("hook", "후크(걸기)", [-0.3, 0, 0], [65, 65, 65, 65, 65], "손가락을 걸어 무언가를 끌어당기는 모양입니다.", "grip"),
     preset("loose-fist", "느슨한 주먹", [0, 0, 0], [60, 60, 60, 60, 60], "힘을 뺀 주먹입니다. 긴장 완화·자연스러운 대기 자세에 사용합니다.", "basic"),
-    preset("relaxed", "편안한 손", [0, 0, 0], [25, 25, 25, 25, 25], "살짝 구부린 자연스러운 손입니다. 기본 대기 자세에 사용합니다.", "basic"),
+    preset("relaxed", "편안한 손", [0, 0, 0], [18, 13, 20, 26, 33], "살짝 구부린 자연스러운 손입니다. 기본 대기 자세에 사용합니다.", "basic"),
     preset("ball", "공 잡기", [0, 0, 0], [50, 50, 50, 50, 50], "공을 감싸 쥡니다. 구기·잡기 장면에 사용합니다.", "grip"),
     preset("pen", "펜 잡기", [0.3, 0, 0], [55, 60, 65, 95, 95], "펜을 잡는 모양입니다. 쓰기·그리기 장면에 사용합니다.", "grip"),
     preset("sword", "칼 잡기", [-0.4, 0, 0], [90, 90, 90, 90, 90], "자루를 단단히 쥡니다. 무기 소지 장면에 사용합니다.", "grip"),
@@ -258,7 +268,7 @@ export function applyStudioMannequinHandPreset(
   const jointId = handJointIdForSide(side);
   return {
     angles: { [jointId]: preset.wrist },
-    curl: curlOverride ? { ...preset.curl, ...normalizeStudioHandCurl(curlOverride) } : preset.curl,
+    curl: curlOverride ? normalizeStudioHandCurl({ ...preset.curl, ...curlOverride }) : preset.curl,
   };
 }
 

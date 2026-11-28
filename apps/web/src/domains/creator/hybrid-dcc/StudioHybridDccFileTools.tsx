@@ -98,7 +98,7 @@ export function StudioHybridDccFileTools({
           type="button"
           className={cn(BUTTON, model.canSaveObj && !model.disabled && "border-accent/45 text-fg")}
           disabled={model.disabled || !model.canSaveObj}
-          title={bt("선택한 메시를 표준 GLB 2.0 바이너리(UV·툰 재질 포함)로 저장합니다.", "Save the selected mesh as a standard GLB 2.0 binary.")}
+          title={bt("선택한 메시와 UV·툰 재질을 로컬 좌표의 GLB 2.0으로 저장합니다. 오브젝트 위치·회전·크기는 .toon3d 작업파일에 보관하세요.", "Save the selected mesh in local coordinates as GLB 2.0, including UVs and toon materials. Use a .toon3d workfile to keep object position, rotation and scale.")}
           onClick={model.saveGlb}
         >
           <Download size={14} aria-hidden="true" className="shrink-0 text-accent" />
@@ -117,7 +117,7 @@ export function StudioHybridDccFileTools({
           type="button"
           className={BUTTON}
           disabled={model.disabled || !model.canSaveObj}
-          title={bt("선택한 원본 메시를 3D 프린팅·CAD 호환 STL로 저장합니다.", "Save the selected source mesh as STL for CAD and 3D printing.")}
+          title={bt("선택한 원본 메시를 3D 프린팅·CAD용 STL로 저장합니다. 좌표는 메시 로컬 기준이며, 오브젝트 위치·회전·크기는 .toon3d 작업파일에 보관하세요.", "Save the selected source mesh in local coordinates as STL for CAD and 3D printing. Use a .toon3d workfile to keep object position, rotation and scale.")}
           onClick={model.saveStl}
         >
           {bt("STL 저장", "Save STL")}

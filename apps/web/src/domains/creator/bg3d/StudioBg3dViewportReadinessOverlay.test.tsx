@@ -21,18 +21,18 @@ function openViewport(backend: "webgpu" | "webgl2", downloading = false) {
   const setPreference = vi.fn();
   const props = {
     open: true,
-    engineRuntime: { phase: "ready" as const, plan, canvasKey: backend, glFactory: downloading ? null : vi.fn(), webGpuCanvasStage: "waiting-for-canvas" as const, setPreference, reportRendererFailure },
+    engineRuntime: { phase: "ready" as const, plan, canvasKey: backend, glFactory: downloading ? null : vi.fn(), canvasStage: "waiting-for-canvas" as const, setPreference, reportRendererFailure },
     onClearModelRenderer: vi.fn(),
     isRestoringScene: false,
     viewportHostRef: { current: host },
   };
   const view = render(<StudioBg3dViewportReadinessOverlay {...props} modelRenderer={null} />);
-  return { reportRendererFailure, setPreference, view,
-    stage: (stage: StudioBg3dViewportReadinessOverlayProps["engineRuntime"]["webGpuCanvasStage"], mounted: boolean) =>
-      view.rerender(<StudioBg3dViewportReadinessOverlay {...props} engineRuntime={{ ...props.engineRuntime, webGpuCanvasStage: stage }} modelRenderer={mounted ? {} : null} />),
+  return { reportRendererFailure, setPreference, view, host,
+    stage: (stage: StudioBg3dViewportReadinessOverlayProps["engineRuntime"]["canvasStage"], mounted: boolean) =>
+      view.rerender(<StudioBg3dViewportReadinessOverlay {...props} engineRuntime={{ ...props.engineRuntime, canvasStage: stage }} modelRenderer={mounted ? {} : null} />),
     moduleReady: () => view.rerender(<StudioBg3dViewportReadinessOverlay {...props}
       engineRuntime={{ ...props.engineRuntime, glFactory: vi.fn() }} modelRenderer={null} />),
-    ready: () => view.rerender(<StudioBg3dViewportReadinessOverlay {...props} engineRuntime={{ ...props.engineRuntime, webGpuCanvasStage: "rendered" }} modelRenderer={{}} />) };
+    ready: () => view.rerender(<StudioBg3dViewportReadinessOverlay {...props} engineRuntime={{ ...props.engineRuntime, canvasStage: "rendered" }} modelRenderer={{}} />) };
 }
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -81,15 +81,35 @@ describe("3D 배경 렌더러 초기화 시간", () => {
     expect(gpu.view.queryByRole("status")).toBeNull();
   });
 
-  it("WebGL2의 컨텍스트 생성이 멈추면 기존 제한 시간 뒤 복구 화면을 연다",
-    () => {
-      const backend = "webgl2", timeout = 6_000;
-      vi.useFakeTimers();
-      const viewport = openViewport(backend);
-      act(() => vi.advanceTimersByTime(timeout - 1));
-      expect(viewport.reportRendererFailure).not.toHaveBeenCalled();
-      act(() => vi.advanceTimersByTime(1));
-      expect(viewport.reportRendererFailure).toHaveBeenCalledWith(backend, expect.stringContaining("초기화"));
-    },
-  );
+  it("WebGL2가 6초 넘게 걸리면 캔버스를 유지하고 수동 재시도를 제공한다", () => {
+    vi.useFakeTimers();
+    const viewport = openViewport("webgl2");
+    act(() => vi.advanceTimersByTime(6_000));
+    fireEvent.click(viewport.view.getByRole("button", { name: "WebGL2 다시 시도" }));
+    expect(viewport.setPreference).toHaveBeenCalledWith("webgl2", true);
+    viewport.stage("waiting-for-frame", true);
+    act(() => vi.advanceTimersByTime(40_000));
+    expect(viewport.view.getByText("장면의 첫 화면을 그리고 있습니다…")).toBeTruthy();
+    viewport.ready();
+    act(() => vi.advanceTimersByTime(90_000));
+    expect(viewport.reportRendererFailure).not.toHaveBeenCalled();
+    expect(viewport.view.queryByRole("status")).toBeNull();
+  });
+
+  it("엔진 마운트 이후에도 첫 화면이 90초 안에 제출되지 않으면 복구 화면을 연다", () => {
+    vi.useFakeTimers();
+    const viewport = openViewport("webgl2");
+    act(() => vi.advanceTimersByTime(10_000));
+    viewport.stage("waiting-for-frame", true);
+    act(() => vi.advanceTimersByTime(79_999));
+    expect(viewport.reportRendererFailure).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(viewport.reportRendererFailure).toHaveBeenCalledWith("webgl2", expect.stringContaining("첫 화면"));
+  });
+
+  it("네이티브 컨텍스트 생성 오류는 느린 시작으로 취급하지 않고 즉시 알린다", () => {
+    const viewport = openViewport("webgl2");
+    act(() => { viewport.host.dispatchEvent(new Event("webglcontextcreationerror")); });
+    expect(viewport.reportRendererFailure).toHaveBeenCalledWith("webgl2", expect.stringContaining("컨텍스트"));
+  });
 });

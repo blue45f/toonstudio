@@ -313,11 +313,15 @@ describe("CharacterShaperInspector per slot", () => {
     expect(binding.commitColor).toHaveBeenLastCalledWith("iris", null);
   });
 
-  it("원본 헤어를 쓰는 동안 절차형 헤어 조절이 화면에 보이지 않는다고 먼저 알린다", () => {
+  it("원본 헤어에서 부위별 편집을 시작할 수 있는 경로를 알린다", () => {
     const original = renderInspector("hair", {
       binding: makeBinding({ recipe: makeRecipe({ slots: { ...makeRecipe().slots, hair: "hair:original" } }) }),
     });
-    expect(document.querySelector("[data-character-hair-original-note]")?.textContent).toContain("원본 헤어를 쓰고 있어");
+    expect(document.querySelector("[data-character-hair-original-note]")?.textContent).toContain("앞·옆·뒷머리 중 한 부위를 선택");
+    fireEvent.change(screen.getByRole("combobox", { name: "3분할 옆머리 파츠" }), { target: { value: "side-wave" } });
+    expect(original.binding.commitHairParams).toHaveBeenLastCalledWith(
+      expect.objectContaining({ style: "bob", sidePart: "side-wave", replaceOriginal: true }), "헤어: 옆머리",
+    );
     original.unmount();
     renderInspector("hair");
     expect(document.querySelector("[data-character-hair-original-note]")).toBeNull();

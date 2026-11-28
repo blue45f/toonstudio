@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { StudioThreeDToggleControl } from "../StudioThreeDToggle";
@@ -23,6 +23,7 @@ import { cn } from "@/shared/lib/utils";
 export interface StudioBodyRatioMatrixPadProps {
   readonly state: StudioWebtoonBodyAndHairState;
   readonly disabled?: boolean;
+  readonly hairEditor?: ReactNode;
   readonly className?: string;
   readonly onChange: (next: StudioWebtoonBodyAndHairState) => void;
 }
@@ -46,6 +47,7 @@ export function StudioBodyRatioMatrixPad({
   state,
   disabled = false,
   className,
+  hairEditor,
   onChange,
 }: StudioBodyRatioMatrixPadProps) {
   const [activeTab, setActiveTab] = useState<"body" | "hair">("body");
@@ -121,6 +123,7 @@ export function StudioBodyRatioMatrixPad({
           type="button"
           disabled={disabled}
           onClick={() => onChange(createDefaultBodyAndHairState())}
+          hidden={activeTab === "hair" && Boolean(hairEditor)}
           className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-2.5 text-xs font-medium text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-45"
         >
           <RotateCcw className="size-3.5" aria-hidden="true" />
@@ -269,7 +272,7 @@ export function StudioBodyRatioMatrixPad({
             ))}
           </div>
         </div>
-      ) : (
+      ) : hairEditor ?? (
         <div className="mt-2.5 space-y-2.5">
           <StudioThreeDToggleControl
             checked={state.hair.lockMainColor}

@@ -145,9 +145,13 @@ async function accessibleNameGaps(page: Page): Promise<string[]> {
     if (!root) return ["dialog missing"];
     const gaps: string[] = [];
     root.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [role=button]").forEach((el) => {
+      const labels = el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement
+        ? Array.from(el.labels ?? [], (label) => label.textContent?.trim()).filter(Boolean).join(" ")
+        : "";
       const name =
         el.getAttribute("aria-label")
-        || el.getAttribute("aria-labelledby")
+        || el.getAttribute("aria-labelledby")?.split(/\s+/u).map((id) => document.getElementById(id)?.textContent?.trim()).filter(Boolean).join(" ")
+        || labels
         || el.getAttribute("title")
         || (el as HTMLInputElement).placeholder
         || el.textContent?.trim();

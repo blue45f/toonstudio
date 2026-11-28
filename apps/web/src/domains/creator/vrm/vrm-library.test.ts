@@ -16,6 +16,7 @@ import {
   SAMPLE_VRM_LIBRARY_ENTRY,
   SAMPLE_VRMS,
   sampleVrmThumbnailUrl,
+  savedLegacySampleVrmEntry,
   sampleVrmUrl,
   selectableSampleVrmUrl,
   withDefaultVrmEntry,
@@ -183,6 +184,30 @@ describe("VRM library helpers", () => {
     expect(samplesById.get("pirate-bot")?.limitations).toEqual(["heavy-payload"]);
   });
 
+  it("신규 원고는 표정·양손이 있는 웹툰 캐릭터를 제공하고 보관된 판본은 ID와 이름으로 복원한다", () => {
+    const visible = new Set(SAMPLE_VRM_ENTRIES.map((entry) => entry.id));
+    expect(visible.size).toBe(17);
+    for (const sample of SAMPLE_VRMS) {
+      if (visible.has(sample.id)) {
+        expect(sample.visibility).not.toBe("legacy");
+        const bytes = readFileSync(join(process.cwd(), "apps/web/public", sample.url));
+        const json = JSON.parse(bytes.toString("utf8", 20, 20 + bytes.readUInt32LE(12)));
+        const vrm = json.extensions.VRMC_vrm ?? json.extensions.VRM;
+        const bones = vrm.humanoid.humanBones;
+        const names: string[] = Array.isArray(bones) ? bones.map(({ bone }) => bone) : Object.keys(bones);
+        expect(names.filter((name) => /Thumb|Index|Middle|Ring|Little/u.test(name)), sample.id).toHaveLength(30);
+        const expressions = vrm.expressions?.preset ?? vrm.blendShapeMaster.blendShapeGroups;
+        const bound = Object.values<{ morphTargetBinds?: unknown[]; binds?: unknown[] }>(expressions)
+          .filter((expression) => (expression.morphTargetBinds ?? expression.binds)?.length);
+        expect(bound.length, sample.id).toBeGreaterThanOrEqual(10);
+      } else {
+        expect(savedLegacySampleVrmEntry(sample.id)?.id).toBe(sample.id);
+        expect(savedLegacySampleVrmEntry(undefined, sample.name)?.id).toBe(sample.id);
+        expect(selectableSampleVrmUrl(sample.id)).toBe(sample.url);
+      }
+    }
+  });
+
   it("carries the AliciaSolid license notice from the catalog into library entries", () => {
     // 근거: AliciaSolid.vrm 임베드 메타 (author "© DWANGO Co., Ltd.",
     // otherLicenseUrl "https://3d.nicovideo.jp/alicia/rule.html") + LICENSES.md 문제 6.
@@ -292,9 +317,13 @@ describe("VRM library helpers", () => {
     // fallback 검증
     expect(sampleVrmThumbnailUrl("non-existent-id")).toBe("/assets/3d/characters/thumbnails/non-existent-id.png");
 
-    // SAMPLE_VRM_ENTRIES 썸네일 전수 바인딩 검증
+    // 캐스팅 카드는 실물 VRM의 새 초상화를 표시하고, 기존 모델 사진과 원본 영수증은 위에서 검증한다.
     for (const entry of SAMPLE_VRM_ENTRIES) {
-      expect(entry.thumbnail).toMatch(/^\/assets\/3d\/characters\/thumbnails\/(?:[a-z0-9_.-]+\/)*[a-z0-9_.-]+\.png$/);
+      expect(entry.thumbnail).toBe(`/assets/3d/characters/thumbnails/manuscript-v1/${entry.id}.webp`);
+      const portrait = readFileSync(join(process.cwd(), "apps/web/public", entry.thumbnail!));
+      expect(portrait.toString("ascii", 0, 4)).toBe("RIFF");
+      expect(portrait.toString("ascii", 8, 12)).toBe("WEBP");
+      expect(portrait.byteLength).toBeGreaterThan(1024);
     }
   });
 

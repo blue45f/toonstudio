@@ -43,10 +43,13 @@ import {
 } from "./studio-mannequin-hand-preset-storage";
 import type {
   StudioMannequinFingerName,
+  StudioMannequinFingerPose,
   StudioMannequinJointId,
   StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import type { StudioMannequinPose } from "./studio-mannequin-poses";
+import { buildSplayedHandDigitPrimitives } from "./studio-mannequin-hand-geometry";
+import { studioMannequinFingerPoseFromCurls } from "./studio-mannequin-model";
 import {
   STUDIO_HAND_FINGER_ORDER,
   STUDIO_HAND_PRESET_CATEGORIES,
@@ -113,6 +116,7 @@ export interface StudioMagicPoserScene {
    * 손가락별 컬(0–100)을 실제 3D 손가락 관절에 반영한다. 호스트가 없으면
    * 손 실루엣 미리보기만 갱신된다(기존 동작 유지).
    */
+  readonly setFingerSpread?: (side: "left" | "right", spread: StudioMannequinHandPreset["splayDeg"]) => void;
   readonly setFingerCurls?: (
     side: "left" | "right",
     curls: Partial<Record<StudioMannequinFingerName, number>>,
@@ -144,6 +148,7 @@ export interface StudioMagicPoserPanelProps {
   readonly onApplyCameraBookmark?: (bookmark: StudioCameraBookmark) => void;
   /** 호스트의 현재 포즈(포즈 강도가 다른 경로의 포즈 변경을 알아채는 근거). */
   readonly currentPose?: StudioMannequinPose;
+  readonly currentFingerPose?: StudioMannequinFingerPose;
   /** 호스트가 되돌리기를 소유하면 패널 자체 되돌리기 줄을 숨기고 기록도 호스트에 맡긴다. */
   readonly hostOwnsHistory?: boolean;
   readonly className?: string;
@@ -190,100 +195,24 @@ const TIME_OF_DAY_ORDER: readonly StudioMannequinTimeOfDay[] = [
 // 컬(0~100)에서 그린 실루엣 미니어처다. 이미지 에셋이 없어도 동작하는
 // 순수 SVG라 다크/라이트·모바일·reduced-motion 대응이 자동으로 된다.
 
-interface HandSilhouettePoint {
-  readonly x: number;
-  readonly y: number;
-}
-
-function formatHandSilhouettePoints(points: readonly HandSilhouettePoint[]): string {
-  return points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-}
-
-interface HandFingerSpec {
-  readonly base: HandSilhouettePoint;
-  /** 손가락 길이 [마디1, 마디2]. */
-  readonly lengths: readonly [number, number];
-  /** 휴식 방향(수직 기준 deg). 손바닥 쪽(아래)으로 양수. */
-  readonly restDeg: number;
-}
-
-/** 검지·중지·약지·새끼. 손바닥 정면, 손가락 위쪽. */
-const HAND_FINGER_SPECS: readonly HandFingerSpec[] = [
-  { base: { x: 25, y: 46 }, lengths: [9, 7.5], restDeg: -4 },
-  { base: { x: 30.5, y: 44 }, lengths: [9.5, 8], restDeg: 0 },
-  { base: { x: 36, y: 46 }, lengths: [9, 7.5], restDeg: 4 },
-  { base: { x: 40.5, y: 49.5 }, lengths: [7.5, 6.5], restDeg: 9 },
-];
-
-/** 컬(0~100) → 마디별 굽힘 각도(deg). */
-function handFingerBendAngles(curl: number): readonly [number, number] {
-  const clamped = Math.min(100, Math.max(0, curl));
-  return [clamped * 1.35, clamped * 0.9];
-}
-
-function bendHandPoint(from: HandSilhouettePoint, angleDeg: number, length: number): HandSilhouettePoint {
-  const rad = (angleDeg * Math.PI) / 180;
-  return {
-    x: from.x + length * Math.sin(rad),
-    y: from.y - length * Math.cos(rad),
-  };
-}
-
-function handFingerPoints(
-  spec: HandFingerSpec,
-  curl: number,
-): readonly [HandSilhouettePoint, HandSilhouettePoint, HandSilhouettePoint] {
-  const [bend1, bend2] = handFingerBendAngles(curl);
-  const mid = bendHandPoint(spec.base, spec.restDeg + bend1, spec.lengths[0]);
-  const tip = bendHandPoint(mid, spec.restDeg + bend1 + bend2, spec.lengths[1]);
-  return [spec.base, mid, tip];
-}
-
-function handThumbPoints(
-  curl: number,
-): readonly [HandSilhouettePoint, HandSilhouettePoint, HandSilhouettePoint] {
-  const base: HandSilhouettePoint = { x: 20.5, y: 63 };
-  const clamped = Math.min(100, Math.max(0, curl));
-  // 휴식 시 왼쪽 위(-55°)를 향하고, 구부릴수록 손바닥 쪽으로 감긴다.
-  const bend1 = -55 + clamped * 0.75;
-  const bend2 = bend1 + clamped * 0.55;
-  const mid = bendHandPoint(base, bend1, 7);
-  const tip = bendHandPoint(mid, bend2, 6.5);
-  return [base, mid, tip];
-}
-
-/** 손가락 컬에서 그린 정면 손 실루엣. 주먹(100)은 감기고 펼침(0)은 펴진다. */
-function StudioHandPresetSilhouette({
-  label,
-  curl,
-  className,
-}: {
-  /** aria-label에 쓸 프리셋 이름. */
-  readonly label: string;
-  /** 손가락별 컬(0~100). 0 = 폄, 100 = 완전히 구부림. */
-  readonly curl: StudioHandFingerCurl;
-  readonly className?: string;
-}): ReactElement {
+/** 실제 손 메시와 같은 마디를 손바닥 앞쪽에서 투영한다. */
+function StudioHandPresetSilhouette({ preset }: { readonly preset: StudioMannequinHandPreset }): ReactElement {
+  const segments = useMemo(() => {
+    const pose = studioMannequinFingerPoseFromCurls({ left: preset.curl });
+    return buildSplayedHandDigitPrimitives("leftHand", 1, 1, pose.left ?? {}, preset.splayDeg)
+      .filter((primitive) => primitive.kind === "capsule");
+  }, [preset]);
+  const project = ([x, y, z]: StudioMannequinVec3) => [32 - 68 * x + 18 * z, 76 + 56 * y - 5 * z];
   return (
-    <svg
-      viewBox="0 0 64 88"
-      className={className ?? "h-16 w-full text-fg-3"}
-      role="img"
-      aria-label={`${label} 손 모양 실루엣`}
-    >
-      {/* 손목 */}
-      <line x1={27} y1={76} x2={38} y2={76} stroke="currentColor" strokeWidth={8} strokeLinecap="round" opacity={0.55} />
-      {/* 손바닥 */}
-      <rect x={21} y={44} width={22.5} height={30} rx={9} fill="currentColor" opacity={0.3} />
-      {/* 손가락 4개 */}
-      <g stroke="currentColor" strokeLinecap="round" fill="none" strokeWidth={3.2}>
-        {HAND_FINGER_SPECS.map((spec, index) => (
-          <polyline
-            key={index}
-            points={formatHandSilhouettePoints(handFingerPoints(spec, [curl.index, curl.middle, curl.ring, curl.little][index] ?? 0))}
-          />
-        ))}
-        <polyline points={formatHandSilhouettePoints(handThumbPoints(curl.thumb))} />
+    <svg viewBox="0 0 64 88" className="h-16 w-full text-fg-3" role="img" aria-label={`${preset.name} 손 모양 실루엣`}>
+      <path d="M25 77 Q25 69 20 60 Q16 54 18 47 Q19 40 30 41 Q45 39 47 47 Q50 56 45 64 L39 77 Z"
+        fill="currentColor" fillOpacity={0.28} stroke="currentColor" strokeWidth={1.2} />
+      <g stroke="currentColor" strokeLinecap="round">
+        {segments.map((segment, i) => {
+          const [x1, y1] = project(segment.from);
+          const [x2, y2] = project(segment.to);
+          return <polyline key={i} points={`${x1},${y1} ${x2},${y2}`} strokeWidth={segment.radius * 100} fill="none" />;
+        })}
       </g>
     </svg>
   );
@@ -318,7 +247,7 @@ function HandPresetCard({
         title={`${preset.name} — 클릭하면 손에 바로 적용 · ${preset.description}`}
         className="flex w-full flex-col rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <StudioHandPresetSilhouette label={preset.name} curl={preset.curl} />
+        <StudioHandPresetSilhouette preset={preset} />
         <span className="mt-1 block truncate text-[0.7rem] font-bold text-fg" aria-hidden>
           {preset.name}
         </span>
@@ -354,6 +283,7 @@ export function StudioMagicPoserPanel({
   onBodyMorphChange,
   onApplyCameraBookmark,
   currentPose,
+  currentFingerPose,
   hostOwnsHistory = false,
   className,
 }: StudioMagicPoserPanelProps): ReactElement {
@@ -364,7 +294,7 @@ export function StudioMagicPoserPanel({
   const [historySnapshot, setHistorySnapshot] =
     useState<StudioPoseHistory>(historyRef.current);
   const historyGestureRecordedRef = useRef(false);
-  const [lastAppliedHandId, setLastAppliedHandId] = useState<string | null>(null);
+  const [lastHand, setLastHand] = useState<{ name: string; side: StudioMannequinHandSide | "both"; mirrored: boolean } | null>(null);
 
   // MP1 손
   const [handQuery, setHandQuery] = useState("");
@@ -372,20 +302,19 @@ export function StudioMagicPoserPanel({
   const [handSide, setHandSide] = useState<StudioMannequinHandSide>("right");
   const [handBoth, setHandBoth] = useState(false);
   const [handMirrored, setHandMirrored] = useState(false);
-  const [handPresetId, setHandPresetId] = useState<string | null>(null);
   const [handFavorites, setHandFavorites] = useState<string[]>(() =>
     readMannequinHandPresetFavorites(),
   );
   const [handRecent, setHandRecent] = useState<string[]>(() =>
     readMannequinHandPresetRecent(),
   );
-  const [fingerCurl, setFingerCurl] = useState<StudioHandFingerCurl>({
-    thumb: 0,
-    index: 0,
-    middle: 0,
-    ring: 0,
-    little: 0,
+  const [curlsBySide, setCurlsBySide] = useState<Record<StudioMannequinHandSide, StudioHandFingerCurl>>(() => {
+    const open = { thumb: 0, index: 0, middle: 0, ring: 0, little: 0 };
+    return { left: open, right: open };
   });
+  const readCurl = (finger: StudioHandFingerName) => currentFingerPose
+    ? currentFingerPose[handSide]?.[finger]?.[0] ?? 0
+    : curlsBySide[handSide][finger];
 
   // MP3 라이팅 — 씬에 이미 적용된 릭에서 시작한다(null = 기본 3점 리그). 빈 릭으로 시작해
   // 탭을 열 때마다 씬 조명을 기본값으로 덮어쓰고 "조명 0개"로 표시하던 문제를 막는다.
@@ -448,10 +377,6 @@ export function StudioMagicPoserPanel({
     [historySnapshot],
   );
 
-  const lastHandName = lastAppliedHandId
-    ? getStudioMannequinHandPreset(lastAppliedHandId)?.name ?? lastAppliedHandId
-    : null;
-
   function applyPoseToScene(pose: StudioMannequinPose): void {
     scene?.setPose(pose);
   }
@@ -494,20 +419,20 @@ export function StudioMagicPoserPanel({
 
   function handleApplyHandPreset(preset: StudioMannequinHandPreset): void {
     pushPoseHistory();
-    setHandPresetId(preset.id);
-    setLastAppliedHandId(preset.id);
+    setLastHand({ name: preset.name, side: handBoth ? "both" : handSide, mirrored: handMirrored && (handBoth || handSide === "right") });
     setHandRecent(recordMannequinHandPresetRecent(preset.id));
-    setFingerCurl({ ...preset.curl });
+    setCurlsBySide((previous) => handBoth ? { left: preset.curl, right: preset.curl } : { ...previous, [handSide]: preset.curl });
     if (!scene) return;
     const sides: readonly StudioMannequinHandSide[] = handBoth
       ? ["left", "right"]
       : [handSide];
     for (const side of sides) {
       // 손가락 컬은 실루엣 미리보기만이 아니라 실제 3D 손가락 관절에도 닿는다.
-      scene.setFingerCurls?.(side, { ...preset.curl });
+      scene.setFingerCurls?.(side, preset.curl);
+      scene.setFingerSpread?.(side, preset.splayDeg);
       const mirror = handMirrored && side === "right";
       const applied = mirror
-        ? applyStudioMannequinHandPresetMirrored(preset, side)
+        ? applyStudioMannequinHandPresetMirrored(preset, "left")
         : applyStudioMannequinHandPreset(preset, side);
       for (const [jointId, rotation] of Object.entries(applied.angles)) {
         if (rotation) scene.setJointRotation(jointId as StudioMannequinJointId, rotation);
@@ -525,24 +450,18 @@ export function StudioMagicPoserPanel({
   }
 
   function handleFingerCurlChange(finger: StudioHandFingerName, value: number): void {
-    const next = { ...fingerCurl, [finger]: clampStudioHandCurlValue(value) };
-    setFingerCurl(next);
+    const curl = clampStudioHandCurlValue(value);
+    setCurlsBySide((previous) => ({
+      left: handBoth || handSide === "left" ? { ...previous.left, [finger]: curl } : previous.left,
+      right: handBoth || handSide === "right" ? { ...previous.right, [finger]: curl } : previous.right,
+    }));
     if (!scene) return;
     const sides: readonly StudioMannequinHandSide[] = handBoth
       ? ["left", "right"]
       : [handSide];
     // 프리셋 선택 여부와 무관하게 손가락 관절은 항상 실제 형상에 반영한다.
     for (const side of sides) {
-      scene.setFingerCurls?.(side, { ...next });
-    }
-    const preset = handPresetId ? getStudioMannequinHandPreset(handPresetId) : undefined;
-    if (!preset) return;
-    pushPoseHistoryOncePerGesture();
-    for (const side of sides) {
-      const applied = applyStudioMannequinHandPreset(preset, side, next);
-      for (const [jointId, rotation] of Object.entries(applied.angles)) {
-        if (rotation) scene.setJointRotation(jointId as StudioMannequinJointId, rotation);
-      }
+      scene.setFingerCurls?.(side, { [finger]: curl });
     }
   }
 
@@ -686,13 +605,13 @@ export function StudioMagicPoserPanel({
             title="손 프리셋 — 10초 가이드"
             steps={[
               { ko: "손 모양 카드를 클릭하면 3D 손에 바로 적용됩니다 (실시간 미리보기).", en: "Click a hand card to apply it to the 3D hand instantly." },
-              { ko: "왼손/오른손/양손을 고르고, 좌우 미러로 반대손에도 반영하세요.", en: "Pick left/right/both hands, mirror to the other hand." },
+              { ko: "왼손·오른손·양손을 선택하세요. 좌우 미러를 켜면 오른손목 각도를 반사합니다.", en: "Select the left, right or both hands. Mirror reflects the right wrist angle." },
               { ko: "손가락 슬라이더 5개로 굽힘을 미세 조절할 수 있습니다.", en: "Fine-tune each finger with the five curl sliders." },
             ]}
           />
           <StudioSectionHeader
             title={`손 프리셋 ${STUDIO_MANNEQUIN_HAND_PRESETS.length}종`}
-            description="손 모양 카드를 누르면 3D 손목 관절에 바로 적용됩니다. 실루엣은 손가락 굽힘(curl)에서 그린 미리보기입니다."
+            description="카드를 누르면 선택한 손목과 다섯 손가락에 적용됩니다."
           />
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
             <StudioToggleChip active={handSide === "left" && !handBoth} onClick={() => { setHandSide("left"); setHandBoth(false); }}>
@@ -795,8 +714,8 @@ export function StudioMagicPoserPanel({
             <p className="mt-2 text-xs text-fg-3">{frozenStatus4Text("studio.frozenStatus4.magic.handSearchEmpty", "검색 결과가 없습니다. 다른 단어로 검색해 보세요.")}</p>
           )}
           <p role="status" className="mt-2 text-[0.66rem] text-fg-3">
-            {lastHandName
-              ? frozenStatus4Text("studio.frozenStatus4.magic.handApplied", { name: lastHandName, side: handBoth ? frozenStatus4Text("studio.frozenStatus4.magic.sideBoth", "양손") : handSide === "left" ? frozenStatus4Text("studio.frozenStatus4.magic.sideLeft", "왼손") : frozenStatus4Text("studio.frozenStatus4.magic.sideRight", "오른손"), mirror: handMirrored ? frozenStatus4Text("studio.frozenStatus4.magic.mirrorFragment", " · 미러") : "" }, "적용된 손: {name} · {side}{mirror}")
+            {lastHand
+              ? frozenStatus4Text("studio.frozenStatus4.magic.handApplied", { name: lastHand.name, side: lastHand.side === "both" ? frozenStatus4Text("studio.frozenStatus4.magic.sideBoth", "양손") : lastHand.side === "left" ? frozenStatus4Text("studio.frozenStatus4.magic.sideLeft", "왼손") : frozenStatus4Text("studio.frozenStatus4.magic.sideRight", "오른손"), mirror: lastHand.mirrored ? frozenStatus4Text("studio.frozenStatus4.magic.mirrorFragment", " · 미러") : "" }, "적용된 손: {name} · {side}{mirror}")
               : frozenStatus4Text("studio.frozenStatus4.magic.handNone", "아직 적용된 손 프리셋이 없습니다. 카드를 클릭해 보세요.")}
           </p>
           <div className="mt-2 space-y-1" onPointerDownCapture={resetHistoryGesture}>
@@ -807,9 +726,9 @@ export function StudioMagicPoserPanel({
                 min={0}
                 max={100}
                 step={1}
-                value={fingerCurl[finger]}
+                value={readCurl(finger)}
                 onChange={(v) => handleFingerCurlChange(finger, v)}
-                readout={`${Math.round(fingerCurl[finger])}`}
+                readout={`${Math.round(readCurl(finger))}`}
               />
             ))}
           </div>

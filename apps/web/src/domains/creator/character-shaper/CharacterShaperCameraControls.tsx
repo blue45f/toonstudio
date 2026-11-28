@@ -1,4 +1,3 @@
-
 import { Grid3X3, SlidersHorizontal, Sun } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -17,6 +16,7 @@ import {
 } from "./character-shaper-session-settings";
 import { CHARACTER_SHAPER_CAMERA_PRESET_IDS } from "./character-shaper-ui-model";
 
+import type { CharacterSlotKind } from "./character-shaper-contract";
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 import type { CharacterShaperGazeMode } from "./character-shaper-session-settings";
 import type { CharacterShaperViewportHudProps } from "./character-shaper-ui-contract";
@@ -46,8 +46,16 @@ function isCharacterShaperGazeMode(value: string): value is CharacterShaperGazeM
   return value === "cam" || value === "fix" || value === "light" || value === "world";
 }
 
+const SLOT_CAMERA_PRESETS: Partial<Record<CharacterSlotKind, readonly string[]>> = {
+  hair: ["hairFront", "hairProfile", "hairBack", "bust", "fullBody"],
+  "hand-pose": ["inspectLeftHand", "inspectRightHand", "threeQuarter", "bust", "fullBody"],
+};
+
 /** 단일 44px 컴팩트 카메라 필 바 — 모바일에서는 프리셋·정면광·세부 카메라 1줄로 3D 뷰포트를 지키고, 보조 4종은 1탭으로 펼친다. */
-export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShaperViewportHudProps, "h" | "compact">) {
+export function CharacterShaperCameraControls({ h, compact, slot }: Pick<CharacterShaperViewportHudProps, "h" | "compact"> & {
+  readonly slot?: CharacterSlotKind;
+}) {
+  const bt = useBilingual("CharacterShaperCameraControls");
   const extrasId = useId();
   const [focalMm, setFocalMm] = useState(50);
   const [frontLightLocked, setFrontLightLocked] = useState(false);
@@ -55,7 +63,8 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
   const activeCameraId = typeof h.activeCameraId === "string" ? h.activeCameraId : "front";
   const cameraLocked = Boolean(h.viewportCameraInteractionLocked || h.isCapturing || h.isSharingPose || h.isThumbnailCapturing);
   const disabled = cameraLocked || h.status !== "ready";
-  const presets = CHARACTER_SHAPER_CAMERA_PRESET_IDS
+  const slotPresets = slot ? SLOT_CAMERA_PRESETS[slot] : undefined;
+  const presets = (slotPresets ?? CHARACTER_SHAPER_CAMERA_PRESET_IDS)
     .map((id) => CAMERA_PRESETS.find((preset) => preset.id === id) ?? null)
     .filter((preset): preset is (typeof CAMERA_PRESETS)[number] => preset !== null);
   const selectClass = cn(
@@ -63,6 +72,24 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
     "disabled:cursor-not-allowed disabled:opacity-40",
     STUDIO_FOCUS_RING,
   );
+  const inspectionViews = slotPresets
+    ? [...STUDIO_VRM_INSPECTION_VIEWS, ...CAMERA_PRESETS.filter((preset) =>
+        CHARACTER_SHAPER_CAMERA_PRESET_IDS.includes(preset.id) && !slotPresets.includes(preset.id))]
+    : STUDIO_VRM_INSPECTION_VIEWS;
+  const pickCamera = (id: string) => {
+    if (id === activeCameraId) h.handleViewReset();
+    else h.setActiveCameraId(id);
+  };
+  const cameraLabel = (preset: { id: string; label: string }) => {
+    switch (preset.id) {
+      case "hairFront": return bt("헤어 정면", "Hair front");
+      case "hairProfile": return bt("헤어 측면", "Hair profile");
+      case "hairBack": return bt("헤어 후면", "Hair back");
+      case "inspectLeftHand": return bt("왼손 확대", "Left hand");
+      case "inspectRightHand": return bt("오른손 확대", "Right hand");
+      default: return preset.label;
+    }
+  };
   const handleFocalChange = (nextMm: number) => {
     setFocalMm(nextMm);
     const runtime = h.captureRef?.current as { readonly camera?: Parameters<typeof applyCameraFocalLengthToCamera>[0] } | null | undefined;
@@ -79,6 +106,19 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
     applyFrontLightLockToScene(runtime?.scene, runtime?.camera?.position, next);
     if (typeof h.invalidateViewport === "function") h.invalidateViewport();
   };
+  const inspectionSelect = (
+    <select
+      aria-label="부위·방향 확대 검사"
+      title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
+      disabled={disabled}
+      value={inspectionViews.some((view) => view.id === activeCameraId) ? activeCameraId : ""}
+      onChange={(event) => pickCamera(event.currentTarget.value)}
+      className={cn(selectClass, compact ? "max-w-full md:max-w-[10.5rem]" : "max-w-[10.5rem]")}
+    >
+      <option value="" disabled>부위·방향 확대 검사</option>
+      {inspectionViews.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
+    </select>
+  );
   const primaryRow = (
     <div
       data-character-shaper-camera-pill-bar="true"
@@ -97,7 +137,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
             aria-pressed={preset.id === activeCameraId}
             disabled={disabled}
             title={`카메라: ${preset.label}`}
-            onClick={() => h.setActiveCameraId(preset.id)}
+            onClick={() => pickCamera(preset.id)}
             className={cn(
               "min-h-11 shrink-0 rounded-full px-3 text-xs font-semibold transition-colors motion-reduce:transition-none",
               STUDIO_FOCUS_RING,
@@ -105,7 +145,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
               "disabled:cursor-not-allowed disabled:opacity-40",
             )}
           >
-            {preset.label}
+            {cameraLabel(preset)}
           </button>
         ))}
       </div>
@@ -153,19 +193,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
       {!compact ? <span aria-hidden className="hidden h-5 w-px shrink-0 bg-line/70 xl:block" /> : null}
       {!compact ? (
         <div data-character-camera-selects="true" className="flex flex-wrap items-center gap-1">
-          <select
-            aria-label="부위·방향 확대 검사"
-            title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
-            disabled={disabled}
-            value={STUDIO_VRM_INSPECTION_VIEWS.some((view) => view.id === activeCameraId) ? activeCameraId : ""}
-            onChange={(event) => {
-              if (event.target.value) h.setActiveCameraId(event.target.value);
-            }}
-            className={cn(selectClass, "max-w-[10.5rem]")}
-          >
-            <option value="" disabled>부위·방향 확대 검사</option>
-            {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
-          </select>
+          {inspectionSelect}
           <select
             aria-label="카메라 렌즈 초점거리"
             data-testid="shaper-camera-focal-select"
@@ -202,19 +230,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
           compactExtrasOpen ? "grid grid-cols-2 gap-1.5 pt-1.5 md:flex md:flex-wrap md:items-center md:gap-1 md:pt-0" : "hidden md:flex md:flex-wrap md:items-center md:gap-1",
         )}
       >
-        <select
-          aria-label="부위·방향 확대 검사"
-          title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
-          disabled={disabled}
-          value={STUDIO_VRM_INSPECTION_VIEWS.some((view) => view.id === activeCameraId) ? activeCameraId : ""}
-          onChange={(event) => {
-            if (event.target.value) h.setActiveCameraId(event.target.value);
-          }}
-          className={cn(selectClass, "max-w-full md:max-w-[10.5rem]")}
-        >
-          <option value="" disabled>부위·방향 확대 검사</option>
-          {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
-        </select>
+        {inspectionSelect}
         <select
           aria-label="카메라 렌즈 초점거리"
           data-testid="shaper-camera-focal-select"
@@ -301,7 +317,8 @@ export function CharacterShaperGazeSelect({
   const activeOffset = settings?.gazeOffset ?? DEFAULT_CHARACTER_SHAPER_GAZE_OFFSET;
 
   return (
-    <div className={cn("relative min-w-0 max-w-full text-[0.65rem] text-fg-3", compactPill ? "flex shrink-0 items-center gap-1" : "space-y-1")}>
+    <div data-character-camera-gaze={compactPill ? "compact" : undefined}
+      className={cn("relative min-w-0 max-w-full text-[0.65rem] text-fg-3", compactPill ? "flex shrink-0 items-center gap-1" : "space-y-1")}>
       <select
         aria-label={workbench ? bt("안구 시선 모드", "Eye gaze mode") : bt("시선 추적 모드", "Gaze tracking mode")}
         data-testid={workbench ? "workbench-eyeball-tracking-select" : "shaper-eyeball-tracking-select"}

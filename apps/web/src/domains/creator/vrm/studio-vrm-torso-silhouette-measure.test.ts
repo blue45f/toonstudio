@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { bodySilhouetteSignature, buildBodySilhouette } from "./studio-vrm-body-silhouette";
+import { studioVrmGarmentPartMatrix } from "./studio-vrm-garment-part-frame";
+import { buildStudioVrmGarmentGeometry } from "./studio-vrm-skinned-garment";
 import {
   isStudioAuthoredAttachment,
   buildTorsoMeasureFrame,
@@ -247,6 +249,22 @@ describe("torso vertex stride", () => {
 });
 
 describe("torso sample pipeline", () => {
+  it("척추가 기울고 단면이 앞쪽에 치우쳐도 몸통의 폭·깊이와 앞뒤 중심을 보존한다", () => {
+    const geometry = buildStudioVrmGarmentGeometry({ kind: "lathe", profile: [
+      { radius: 0.1, depth: 0.6, centerZ: 0.03, y: 0 },
+      { radius: 0.1, depth: 0.6, centerZ: 0.03, y: 0.2 },
+    ] });
+    geometry.applyMatrix4(studioVrmGarmentPartMatrix({
+      bone: "spine", shape: { kind: "sphere", r: 1 }, offset: [0, 0, 0], align: [1, 0, 0], forward: [0, 1, 0],
+    }));
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox!;
+    expect(box.max.x - box.min.x).toBeCloseTo(0.2);
+    expect(box.max.z - box.min.z).toBeCloseTo(0.2);
+    expect(box.min.y).toBeCloseTo(-0.03);
+    expect(box.max.y).toBeCloseTo(0.09);
+    geometry.dispose();
+  });
   it("turns an elliptical surface into rings that keep the width/depth ratio", () => {
     const frame = buildTorsoMeasureFrame(UPRIGHT_ANCHORS);
     if (!frame) throw new Error("upright anchors must produce a frame");
@@ -279,6 +297,14 @@ describe("torso sample pipeline", () => {
 });
 
 describe("measureStudioVrmWardrobeMetrics torso", () => {
+  it("가슴과 안쪽 상의를 움직이는 보조 본도 몸통 실측에 포함한다", () => {
+    const rig = createRestRig();
+    const secondary = new THREE.Bone();
+    rig.bones.get("chest")!.add(secondary);
+    rig.scene.updateMatrixWorld(true);
+    attachEllipticalTorsoMesh(rig, secondary, [secondary]);
+    expect(measureStudioVrmWardrobeMetrics(rig.vrm).torso?.source).toBe("measured");
+  });
   it("measures the skinned surface into spine-local rings", () => {
     const rig = createRestRig();
     const spine = requireBone(rig, "spine");

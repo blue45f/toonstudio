@@ -38,6 +38,8 @@ export interface StudioBackground3DProps {
   marketplaceModelId?: string | null;
   /** One-shot seed: spawn a primitive kind after open. */
   seedPrimitiveKind?: BgPrimitiveKind | null;
+  /** 요소 패널에서 선택한 배경이나 소품의 카탈로그 ID. */
+  seedModelSourceId?: string | null;
   onSeedObjectInsertConsumed?: () => void;
   /** Runtime-only page composition. Character documents remain owned by their source layers. */
   sharedSceneSession?: StudioShared3dSceneSession;

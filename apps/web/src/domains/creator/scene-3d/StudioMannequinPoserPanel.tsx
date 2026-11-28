@@ -32,10 +32,10 @@ import {
   analyzeStudioMannequinGesture, applyStudioMannequinBreathingParams, applyStudioMannequinGazeTarget, type StudioMannequinHandContactTargetId,
 } from "./studio-mannequin-gesture-dynamics";
 import {
-  STUDIO_MANNEQUIN_BODY_PRESETS, STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, STUDIO_MANNEQUIN_FINGER_NAMES,
+  STUDIO_MANNEQUIN_BODY_PRESETS, STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
   STUDIO_MANNEQUIN_HEAD_PRESETS, buildStudioMannequinSpec, clampStudioMannequinBodyParams,
-  clampStudioMannequinFingerPose, clampStudioMannequinJointRotation, resolveStudioMannequinArchetypeParams,
-  type StudioMannequinBodyParams, type StudioMannequinFingerName,
+  clampStudioMannequinJointRotation, resolveStudioMannequinArchetypeParams,
+  type StudioMannequinBodyParams,
   type StudioMannequinJointId, type StudioMannequinMaterialStyle, type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import { STUDIO_MANNEQUIN_FOV_DEFAULT_DEG, clampStudioMannequinFovDeg } from "./studio-mannequin-quad-view";
@@ -171,7 +171,7 @@ export function StudioMannequinPoserPanel({
   const [muscleDefinition, setMuscleDefinition] = useState(1);
   const [breathPhase, setBreathPhase] = useState(0);
   const {
-    fingerPose, setFingerPose, handScannerPose, leftSplayDeg, rightSplayDeg,
+    fingerPose, setFingerPose, handScannerPose, leftSplayDeg, rightSplayDeg, setFingerSpread, setFingerCurls, applyLibraryHandPreset,
     handleApplyHandPad, handleScannerHandPoseChange,
   } = useStudioMannequinHandPose();
   const [jointLocks, setJointLocks] = useState<StudioMannequinJointLockMap>({});
@@ -374,7 +374,6 @@ export function StudioMannequinPoserPanel({
   });
   const notePoseEdited = viewportGestures.notePoseEdited;
 
-  // 매직 포저 어댑터: 50종 손 프리셋의 30마디 굴곡(setFingerCurls) + 체형 모프(onBodyMorphChange) 완전 연동
   const magicPoserScene = useMemo<StudioMagicPoserScene>(
     () => ({
       setPose: (nextPose: StudioMannequinPose) => {
@@ -400,23 +399,15 @@ export function StudioMannequinPoserPanel({
         applySemanticMeta(reconcileStudioMannequinSemanticContactsAfterManualEdit(prevPose, next, readCurrentSemanticMeta()));
         commitPose(next);
       },
-      setFingerCurls: (side, curls) => {
-        setFingerPose((prev) => {
-          const handPatch: Partial<Record<StudioMannequinFingerName, readonly [number, number, number]>> = {};
-          for (const fname of STUDIO_MANNEQUIN_FINGER_NAMES) {
-            const c = curls[fname];
-            if (typeof c === "number" && Number.isFinite(c)) handPatch[fname] = [c, c, c];
-          }
-          return clampStudioMannequinFingerPose({ ...prev, [side]: { ...prev[side], ...handPatch } });
-        });
-      },
+      setFingerSpread,
+      setFingerCurls,
       setLightingRig: (rig: StudioMannequinLightingRig) => {
         lightingRigRef.current = rig;
         sceneRef.current?.setLightingRig(rig);
       },
       getLightingRig: () => sceneRef.current?.getLightingRig() ?? lightingRigRef.current,
     }),
-    [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, setFingerPose],
+    [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, setFingerCurls, setFingerSpread],
   );
 
   const morphBaseParamsRef = useRef<StudioMannequinBodyParams | null>(null);
@@ -940,9 +931,11 @@ export function StudioMannequinPoserPanel({
     };
   }, [applySemanticMeta, attachDuoScene, commitPose, groundFootPose, notePoseEdited, open, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, sceneRetryNonce]);
 
+  const previousBodyParams = useRef<typeof effectiveParams | null>(null);
   useEffect(() => {
-    sceneRef.current?.setBodySpec(spec);
-  }, [spec]);
+    sceneRef.current?.setBodySpec(spec, previousBodyParams.current === effectiveParams ? "fingers" : undefined);
+    previousBodyParams.current = effectiveParams;
+  }, [spec, effectiveParams]);
 
   useEffect(() => {
     sceneRef.current?.setEcorcheState?.({
@@ -1004,12 +997,14 @@ export function StudioMannequinPoserPanel({
       return;
     }
     if (applyPoseToPartner((partner) => resolveStudioMannequinLibraryPresetPose(preset, partner.params, partner.pose))) return;
+    const handOnly = studioMannequinPosePresetScope(preset) === "hand-only";
+    if (handOnly) applyLibraryHandPreset(preset.id);
     const nextMeta: StudioMannequinPoseSemanticMeta =
-      studioMannequinPosePresetScope(preset) === "hand-only" && activeContrappostoRef.current
+      handOnly && activeContrappostoRef.current
         ? { contrapposto: activeContrappostoRef.current }
         : {};
     commitPoseWithHistory(resolveStudioMannequinLibraryPresetPose(preset, params, poseRef.current), nextMeta);
-  }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
+  }, [applyLibraryHandPreset, applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
   const applyWebtoonPosePreset = useCallback((presetId: string) => {
     const preset = getWebtoonPosePresetById(presetId);
@@ -1715,6 +1710,7 @@ export function StudioMannequinPoserPanel({
                   <StudioMagicPoserPanel
                     scene={magicPoserScene}
                     currentPose={pose}
+                    currentFingerPose={fingerPose}
                     hostOwnsHistory
                     onBodyMorphChange={handleMagicBodyMorphChange}
                   />

@@ -11,6 +11,7 @@ import * as THREE from "three";
 
 import { DEFAULT_AVATAR_FORGE_STATE } from "../vrm/studio-vrm-avatar-forge";
 import { classifyMeshName } from "../vrm/studio-vrm-costume";
+import { isStudioVrmCustomPart } from "../vrm/studio-vrm-authored-attachment";
 import { isStudioVrmMtoonMaterial } from "../vrm/studio-vrm-mtoon-brand";
 
 import type { CharacterOriginalHairColors } from "./character-shaper-contract";
@@ -153,7 +154,7 @@ interface NonMtoonBaseline {
 
 const nonMtoonBaselines = new WeakMap<object, NonMtoonBaseline>();
 const METAL_NAME_PATTERN = /(?:metal|steel|iron|silver|gold|chrome|blade|sword|armor|buckle|ring|earring|금속|검)/iu;
-const CUSTOM_ATTACHMENT_ROOT_PATTERN = /(?:wardrobe:|prop:|avatar[-_]?forge|hair|bang|ponytail|twintail|garment|accessory|shoe|skirt|jacket|shirt)/iu;
+const LEGACY_FORGE_MESH = /^avatar[-_]forge[-_:]/iu;
 
 function captureNonMtoonBaseline(mat: NonMtoonMutableMaterial): NonMtoonBaseline {
   const existing = nonMtoonBaselines.get(mat);
@@ -196,12 +197,9 @@ export function syncCustomAttachmentQuality(
       const mesh = node as Partial<THREE.Mesh> & { parent?: { name?: string } | null };
       if (!mesh.isMesh || !mesh.material) return;
       const meshName = typeof mesh.name === "string" ? mesh.name : "";
-      const parentName = typeof mesh.parent?.name === "string" ? mesh.parent.name : "";
-      const isCustom = CUSTOM_ATTACHMENT_ROOT_PATTERN.test(meshName) || CUSTOM_ATTACHMENT_ROOT_PATTERN.test(parentName);
-      if (isCustom) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-      }
+      if (!isStudioVrmCustomPart(node) && !LEGACY_FORGE_MESH.test(meshName)) return;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       for (const candidate of materials) {
         if (!candidate || typeof candidate !== "object") continue;
@@ -225,18 +223,19 @@ export function syncCustomAttachmentQuality(
           mat.envMapIntensity = Math.min(baseline.envMapIntensity ?? mat.envMapIntensity, targetEnvIntensity);
         }
         // 각진 저폴리 느낌을 유발하는 강제 flatShading 해제
-        if (mat.flatShading === true && isCustom) {
+        if (mat.flatShading === true) {
           mat.flatShading = false;
+          mat.needsUpdate = true;
           smoothShadedMeshes += 1;
         }
         if (mat.map && mat.map.colorSpace === THREE.NoColorSpace) {
           mat.map.colorSpace = THREE.SRGBColorSpace;
           mat.map.needsUpdate = true;
+          mat.needsUpdate = true;
           srgbMapsNormalized += 1;
         }
         const userData = (mat.userData ??= {});
         userData.shaperCustomQualityHarmonized = true;
-        mat.needsUpdate = true;
         harmonizedMaterials += 1;
       }
     });

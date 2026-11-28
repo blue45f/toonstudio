@@ -18,6 +18,8 @@ export type { TwoBoneLengths, TwoBoneTargetSolution };
 export interface VrmTwoBoneGripOptions {
   /** 보조 손의 최종 world quaternion. 생략하면 현재 손 local rotation을 보존한다. */
   targetQuaternion?: THREE.Quaternion;
+  /** 소품이 팔 길이 밖으로 움직이면 기존 포즈로 부드럽게 복귀한다. */
+  fadeBeyondReach?: boolean;
   /**
    * 부분 influence를 프레임마다 적용할 때 기준 포즈를 보존하는 재사용 상태.
    * 같은 제약의 수명 동안 하나를 유지하고, 비활성화·unmount 시 releaseVrmTwoBoneGripState를 호출한다.
@@ -239,7 +241,7 @@ export function applyVrmTwoBoneGrip(
   options: VrmTwoBoneGripOptions = {}
 ): boolean {
   if (!vrm?.humanoid || !vrm.scene || !isFiniteVector(targetWorld) || !Number.isFinite(influence)) return false;
-  const weight = THREE.MathUtils.clamp(influence, 0, 1);
+  let weight = THREE.MathUtils.clamp(influence, 0, 1);
   if (weight <= 0) return false;
 
   const upperArm = vrm.humanoid.getNormalizedBoneNode(`${side}UpperArm`) as THREE.Object3D | null;
@@ -267,6 +269,16 @@ export function applyVrmTwoBoneGrip(
     restoreLocalRotations(upperArm, lowerArm, hand, original);
     vrm.scene.updateMatrixWorld(true);
     return false;
+  }
+
+  if (options.fadeBeyondReach && !solution.reachable) {
+    const armLength = solution.lengths[0] + solution.lengths[1];
+    const overshoot = Math.max(0, solution.inputDistance - armLength);
+    weight *= 1 - THREE.MathUtils.smoothstep(overshoot, 0, armLength * 0.12);
+    if (weight === 0) {
+      recordGripOutput(options.state, binding);
+      return true;
+    }
   }
 
   try {

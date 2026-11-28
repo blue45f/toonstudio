@@ -10,7 +10,7 @@
 import { MToonMaterial, type VRM } from "@pixiv/three-vrm";
 import * as THREE from "three";
 
-import { isStudioAuthoredAttachment } from "./studio-vrm-authored-attachment";
+import { isStudioVrmCustomPart, STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY } from "./studio-vrm-authored-attachment";
 import {
   createStudioVrmFeatheredDiscAlphaTexture,
   createStudioVrmGarmentWeaveNormalTexture,
@@ -46,7 +46,7 @@ export {
 };
 
 export const STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY = "studioVrmCustomPartMaterial";
-export const STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY = "studioVrmCustomPartOutline";
+export { STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY };
 export const STUDIO_VRM_CUSTOM_PART_OWNED_TEXTURES_KEY = "studioVrmCustomPartOwnedTextures";
 export const STUDIO_VRM_ACTIVE_MATERIAL_FX_KEY = "__studioVrmActiveMaterialFx";
 export const STUDIO_VRM_ACTIVE_MTOON_CONTROLS_KEY = "__studioVrmActiveMtoonControls";
@@ -154,25 +154,6 @@ function median(values: readonly number[], fallback: number): number {
   return sorted[Math.floor(sorted.length / 2)] ?? fallback;
 }
 
-function isCustomOrDerivativeObject(object: THREE.Object3D): boolean {
-  let current: THREE.Object3D | null = object;
-  while (current) {
-    const data = current.userData;
-    if (
-      data.toonSpectrumAvatarForge === true
-      || data[STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY] === true
-      || typeof data.characterAuthoringDerivative === "string"
-      || data.characterCanonicalPart === true
-      || current.name.startsWith("wardrobe:")
-      || current.name.startsWith("prop:")
-    ) {
-      return true;
-    }
-    current = current.parent;
-  }
-  return isStudioAuthoredAttachment(object);
-}
-
 /**
  * VRM 본체 메시의 MToon 파라미터(셀 경계·그림자 색조·외곽선·림라이트)를 샘플링한다.
  * 커스텀 파츠 자체는 건너뛰어 자기 참조로 프로필이 드리프트하지 않게 한다.
@@ -199,7 +180,7 @@ export function sampleStudioVrmBodyMtoonProfile(
 
   vrm.scene.traverse((object) => {
     const mesh = object as THREE.Mesh;
-    if (!mesh.isMesh || !mesh.visible || isCustomOrDerivativeObject(mesh)) return;
+    if (!mesh.isMesh || !mesh.visible || isStudioVrmCustomPart(mesh)) return;
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const raw of materials) {
       const mat = raw as MToonReadableMaterial | undefined;
@@ -481,6 +462,7 @@ export function applyStudioVrmGarmentMToonStyle(
 ): void {
   const fabric = wardrobeFabricById(fabricId) ?? WARDROBE_FABRICS[0];
   const color = new THREE.Color(part?.color ?? itemColor);
+  if (part?.shape.kind === "lathe" && part.shape.tailoring === "blazer-facing") color.offsetHSL(0, -0.015, 0.033);
   const metalness = part?.metalness ?? fabric.metalness;
   const roughness = part?.metalness !== undefined && part.metalness > 0.35
     ? part.roughness ?? fabric.roughness

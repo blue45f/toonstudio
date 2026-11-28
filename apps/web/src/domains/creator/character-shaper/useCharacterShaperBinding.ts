@@ -21,6 +21,7 @@
  *     `(vrm, irisColor)`.
  */
 
+import { mergeAvatarForgeHair } from "../vrm/studio-vrm-hair-sections";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { EXPRESSION_PRESETS } from "../studio-pose-presets";
@@ -526,7 +527,6 @@ export function useCharacterShaperBinding(
     let nextIris: string | null | undefined;
     let nextHandPose: CharacterHandPoseType | undefined;
     const updatedHands: Partial<Record<"left" | "right", CharacterHandPoseType>> = {};
-
     for (const step of steps) {
       switch (step.kind) {
         case "forge-face": {
@@ -549,8 +549,8 @@ export function useCharacterShaperBinding(
         }
         case "forge-hair": {
           const base = forgeDraft();
-          const hairPatch = resolveHairCommitPatch(step.hair, base.hair);
-          mergedForge = sanitizeAvatarForgeState({ ...base, presetId: undefined, hair: { ...base.hair, ...hairPatch } });
+          const hair = mergeAvatarForgeHair(base.hair, resolveHairCommitPatch(step.hair, base.hair));
+          mergedForge = sanitizeAvatarForgeState({ ...base, presetId: undefined, hair });
           break;
         }
         case "proportion": {

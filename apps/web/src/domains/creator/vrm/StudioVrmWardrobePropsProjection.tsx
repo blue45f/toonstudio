@@ -1,3 +1,5 @@
+import { attachStudioVrmBlazerUnderarm } from "./studio-vrm-blazer-underarm";
+import { studioVrmGarmentPartMatrix } from "./studio-vrm-garment-part-frame";
 import { createPortal, useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -491,7 +493,7 @@ export function StudioVrmPropAttachment({
         target,
         Math.max(0, Math.min(1, secondary.influence)),
         secondary.elbowHint,
-        { targetQuaternion, state: secondaryGripState }
+        { targetQuaternion, state: secondaryGripState, fadeBeyondReach: resolved.anchorId === "cover-grip" }
       );
       reportAttachmentStatus(applied ? "ready" : "unavailable");
     } else {
@@ -662,7 +664,7 @@ function measureTorsoSilhouette(vrm: VRM, anchors: {
   neck: THREE.Vector3 | null;
   leftUpperArm: THREE.Vector3 | null;
   rightUpperArm: THREE.Vector3 | null;
-}): BodySilhouette | null {
+}): { silhouette: BodySilhouette | null; forward: Vec3 } | null {
   const humanoid = vrm.humanoid;
   const spine = anchors.spine;
   if (!humanoid || !spine || !anchors.up) return null;
@@ -689,12 +691,14 @@ function measureTorsoSilhouette(vrm: VRM, anchors: {
   });
   if (!frame) return null;
 
+  const torsoBoundary = new Set(["neck", "head", "leftShoulder", "rightShoulder", "leftUpperArm", "rightUpperArm", "leftUpperLeg", "rightUpperLeg"]
+    .map((name) => humanoid.getRawBoneNode(name as VRMHumanBoneName)).filter(Boolean));
   const torsoNodes = new Set<THREE.Object3D>();
   for (const boneName of TORSO_SILHOUETTE_BONES) {
     const boneNode = humanoid.getRawBoneNode(boneName);
     if (boneNode) torsoNodes.add(boneNode);
   }
-  if (torsoNodes.size === 0) return null;
+  if (torsoNodes.size === 0) return { silhouette: null, forward: frame.forward };
 
   const worldToSpine = new THREE.Matrix4().copy(spine.matrixWorld).invert();
   const vertex = new THREE.Vector3();
@@ -732,7 +736,10 @@ function measureTorsoSilhouette(vrm: VRM, anchors: {
     // Dominant bones select the torso region only. Actual shape uses every skin weight and morph.
     const torsoBoneIndices = new Set<number>();
     skeleton.bones.forEach((bone, index) => {
-      if (torsoNodes.has(bone)) torsoBoneIndices.add(index);
+      // 가슴·안쪽 셔츠의 보조 스킨 본은 원래 소속인 몸통 본까지 추적한다.
+      let owner: THREE.Object3D | null = bone;
+      while (owner && !torsoNodes.has(owner) && !torsoBoundary.has(owner)) owner = owner.parent;
+      if (owner && torsoNodes.has(owner)) torsoBoneIndices.add(index);
     });
     if (torsoBoneIndices.size === 0) return;
     const sampleVertex = createStudioVrmSurfaceVertexSampler(mesh, worldToSpine);
@@ -760,8 +767,7 @@ function measureTorsoSilhouette(vrm: VRM, anchors: {
     }
   });
 
-  if (samples.length < TORSO_MIN_SAMPLES) return null;
-  return buildBodySilhouette(samples);
+  return { silhouette: samples.length < TORSO_MIN_SAMPLES ? null : buildBodySilhouette(samples), forward: frame.forward };
 }
 
 
@@ -1013,17 +1019,9 @@ export function measureStudioVrmWardrobeMetrics(vrm: VRM): WardrobeMetrics {
     right: limb("rightLowerLeg", "rightFoot", fallback.lowerLeg.right),
   };
 
+  const torso = measureTorsoSilhouette(vrm, { spine: node("spine"), up: upLocal, hips, neck: neckW, leftUpperArm: lUpArm, rightUpperArm: rUpArm });
   return sanitizeWardrobeMetrics({
-    source: rigSource,
-    // 스킨 표면 실측. 앵커나 표면 정점이 모자라면 null이 되고, 재단은 아래 골격 치수만 쓴다.
-    torso: measureTorsoSilhouette(vrm, {
-      spine: node("spine"),
-      up: upLocal,
-      hips,
-      neck: neckW,
-      leftUpperArm: lUpArm,
-      rightUpperArm: rUpArm,
-    }),
+    source: rigSource, torso: torso?.silhouette, torsoForward: torso?.forward,
     shoulderW: localDistanceBetween("spine", lUpArm, rUpArm),
     hipW: localDistanceBetween("hips", lUpLeg, rUpLeg),
     hipsToSpine: spine ? localVector("hips", spine)?.length() : undefined,
@@ -1047,8 +1045,6 @@ export function measureStudioVrmWardrobeMetrics(vrm: VRM): WardrobeMetrics {
   });
 }
 
-const GARMENT_Y = new THREE.Vector3(0, 1, 0);
-const GARMENT_Z = new THREE.Vector3(0, 0, 1);
 
 function createGarmentWeaveTexture(fabricId: WardrobeEquip["fabricId"]): THREE.DataTexture | null {
   return createStudioVrmGarmentWeaveNormalTexture(fabricId);
@@ -1110,14 +1106,7 @@ function assembleGarmentGroups(
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.position.set(part.offset[0], part.offset[1], part.offset[2]);
-    if (part.align) {
-      // 실린더/박스/구는 +Y, 토러스는 링 축(+Z)을 목표 방향으로 정렬.
-      const source = part.shape.kind === "torus" ? GARMENT_Z : GARMENT_Y;
-      const target = new THREE.Vector3(part.align[0], part.align[1], part.align[2]).normalize();
-      if (target.lengthSq() > 1e-8) mesh.quaternion.setFromUnitVectors(source, target);
-    }
-    if (part.squash) mesh.scale.set(part.squash[0], part.squash[1], part.squash[2]);
+    studioVrmGarmentPartMatrix(part).decompose(mesh.position, mesh.quaternion, mesh.scale);
     attachStudioVrmGarmentOutlineMesh(mesh, material, profile);
     group.add(mesh);
   }
@@ -1160,6 +1149,7 @@ function assembleSkinnedGarment(
     disposeGarmentMaterials(materials);
   } else {
     if (materials[0]) attachStudioVrmGarmentOutlineMesh(built.surface.mesh, materials[0], profile);
+    if (name === "wardrobe:outer:blazer" && materials[0]) attachStudioVrmBlazerUnderarm(vrm, built.surface.mesh, materials[0]);
     syncStudioVrmCustomPartToActiveVrm(built.surface.mesh, vrm);
   }
   return built;

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { STUDIO_VRM_HERO_V1_ENTRIES } from "../../../vrm/studio-vrm-hero-v1-catalog-entries";
-import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRMS } from "../../../vrm/vrm-library";
+import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../../vrm/vrm-library";
 import { isStudioVrmProductionThumbnailUrl } from "../../../vrm/studio-vrm-thumbnail-quality";
 import { STUDIO_THREE_VRM_URLS } from "../studio-virtual-space-three-scene";
 import { VirtualThreeAvatarPicker } from "./VirtualThreeAvatarPicker";
@@ -29,23 +29,27 @@ function nameFor(index: number): string {
 }
 
 describe("독립 3D 아바타 선택기", () => {
-  it("Hero VRM 1.0 8종을 최우선 배치하고 전체 17개 슬롯의 이름·data-testid·thumbnail만 쓴다", () => {
+  it("웹툰 히어로 8종과 시노·시온을 먼저 제공하고 기존 원고의 아바타 슬롯 번호를 유지한다", () => {
     const onSelect = vi.fn();
-    const total = STUDIO_THREE_VRM_URLS.length;
+    const visibleSlots = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     const view = render(<VirtualThreeAvatarPicker avatarIndex={0} onSelect={onSelect} />);
     const group = screen.getByRole("group", { name: "3D 아바타" });
-    expect(within(group).getAllByRole("button")).toHaveLength(total);
+    expect(within(group).getAllByRole("button")).toHaveLength(visibleSlots.length);
+    expect(within(group).queryByRole("button", { name: nameFor(10) })).toBeNull();
     const heroGroup = screen.getByTestId("three-avatar-group-hero");
     expect(within(heroGroup).getAllByRole("button")).toHaveLength(STUDIO_VRM_HERO_V1_ENTRIES.length);
     for (const heroEntry of STUDIO_VRM_HERO_V1_ENTRIES) {
       expect(screen.getByTestId(`three-avatar-option-hero-v1-${heroEntry.archetypeId}`)).toBeTruthy();
     }
-    for (let index = 0; index < total; index += 1) {
+    for (const index of visibleSlots) {
       const button = within(group).getByRole("button", { name: nameFor(index) });
       expect(button.getAttribute("data-three-avatar-index")).toBe(String(index));
       expect(button.getAttribute("aria-pressed")).toBe(String(index === 0));
       const image = button.querySelector("img");
-      if (image) expect(isStudioVrmProductionThumbnailUrl(image.getAttribute("src"))).toBe(true);
+      const sample = SAMPLE_VRMS.find((entry) => entry.url === STUDIO_THREE_VRM_URLS[index]);
+      const portrait = SAMPLE_VRM_ENTRIES.find((entry) => entry.id === sample?.id);
+      expect(image?.getAttribute("src")).toBe(portrait?.thumbnail ?? sample?.thumbnailUrl);
+      expect(isStudioVrmProductionThumbnailUrl(image?.getAttribute("src"))).toBe(true);
     }
     expect(view.container.querySelector("svg")).toBeNull();
     expect(onSelect).not.toHaveBeenCalled();
@@ -59,7 +63,7 @@ describe("독립 3D 아바타 선택기", () => {
     if (!first) throw new Error("첫 3D 모델이 없습니다.");
     gate.denied.add(first);
     render(<VirtualThreeAvatarPicker avatarIndex={lastIndex} onSelect={onSelect} />);
-    expect(screen.getAllByRole("button")).toHaveLength(total - 1);
+    expect(screen.getAllByRole("button")).toHaveLength(10);
     const last = screen.getByRole("button", { name: nameFor(lastIndex) });
     expect(last.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(last);
@@ -78,11 +82,10 @@ describe("독립 3D 아바타 선택기", () => {
 
   it("권리 blocked·조건부·외부 모델을 추가하지 않고 클릭 시점의 gate도 다시 확인한다", () => {
     const onSelect = vi.fn();
-    const total = STUDIO_THREE_VRM_URLS.length;
     for (const blocked of BUNDLED_VRM_RIGHTS_BLOCKS) gate.extraUrls.add(blocked.url);
     gate.extraUrls.add("/vrm/AliciaSolid.vrm"); gate.extraUrls.add("https://example.com/avatar.vrm");
     render(<VirtualThreeAvatarPicker avatarIndex={0} onSelect={onSelect} />);
-    expect(screen.getAllByRole("button")).toHaveLength(total);
+    expect(screen.getAllByRole("button")).toHaveLength(10);
     const first = STUDIO_THREE_VRM_URLS[0];
     if (!first) throw new Error("첫 3D 모델이 없습니다.");
     gate.denied.add(first);

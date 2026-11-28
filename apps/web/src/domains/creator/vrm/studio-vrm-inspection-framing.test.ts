@@ -55,6 +55,18 @@ describe("close-up inspection framing", () => {
     expect(crop.max[1]).toBeLessThan(0.8);
     expect(crop.min[0]).toBeGreaterThan(0.3);
   });
+  it("펼친 다섯 손가락의 말단과 손목을 포함하고 반대 손·오검출 본을 제외한다", () => {
+    const changed: StudioVrmInspectionLandmarks = {
+      ...points, leftThumbDistal: [0.67, 1.24, 0.08], leftIndexDistal: [0.80, 1.25, 0.03],
+      leftMiddleDistal: [0.83, 1.2, 0], leftRingDistal: [0.80, 1.17, -0.01],
+      leftLittleDistal: [-0.7, 1.16, 0], rightMiddleDistal: [-0.85, 1.2, 0],
+    };
+    const crop = resolveStudioVrmInspectionBounds("inspectLeftHand", body, changed);
+    expect(crop?.max[0]).toBeGreaterThan(0.85);
+    expect(crop?.min[0]).toBeGreaterThan(0.55);
+    expect(crop?.max[2]).toBeGreaterThan(0.08);
+  });
+
   it("does not invent missing, stale or nonfinite landmarks", () => {
     for (const { id } of crops) expect(resolveStudioVrmInspectionBounds(id, body, {})).toBeNull();
     expect(resolveStudioVrmInspectionBounds("inspectLeftHand", body, { leftHand: [99, 0, 0] })).toBeNull();

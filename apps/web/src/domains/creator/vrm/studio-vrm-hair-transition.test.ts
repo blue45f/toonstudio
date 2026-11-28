@@ -21,6 +21,16 @@ describe("studio VRM hair transition", () => {
       .toBe(buildStudioVrmHairGeometryIdentity(second));
   });
 
+  it("부위별 커트나 색만 바꿔도 캐시된 메시를 다시 만든다", () => {
+    const hair = createAvatarForgeState("soft-bob").hair;
+    for (const patch of [
+      { frontPart: "front-m-bang" }, { sidePart: "side-none" }, { backPart: "back-low-bun" },
+      { frontTint: "#774433" }, { sideTint: "#774433" }, { backTint: "#774433" },
+    ] as const) {
+      expect(planStudioVrmHairTransition(hair, { ...hair, ...patch }).geometryChanged).toBe(true);
+    }
+  });
+
   it("forces a fresh surface and dynamic state when style or shape changes", () => {
     const bob = createAvatarForgeState("soft-bob").hair;
     const pony = { ...bob, style: "ponytail" as const };

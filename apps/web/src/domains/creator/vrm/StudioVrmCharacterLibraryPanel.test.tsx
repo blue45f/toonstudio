@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { STUDIO_VRM_1_PUBLIC_LICENSE_URL } from "./studio-vrm-license-metadata";
 import { inspectStudioVrmLicenseAuthority } from "./studio-vrm-license-product-gate";
 import { StudioVrmCharacterLibraryPanel } from "./StudioVrmCharacterLibraryPanel";
+import { SAMPLE_VRM_ENTRIES } from "./vrm-library";
 
 import type { VrmLibraryEntry } from "./vrm-library";
 import type { ComponentProps } from "react";
@@ -112,6 +113,17 @@ afterEach(() => {
 });
 
 describe("StudioVrmCharacterLibraryPanel", () => {
+  it("실제 라이브러리에서 원고 캐릭터 17종의 캐스팅 초상화가 원래 모델을 선택한다", () => {
+    const view = renderPanel({ entries: SAMPLE_VRM_ENTRIES, activeModelId: "sample-vrm" });
+    fireEvent.click(screen.getByRole("button", { name: /캐릭터 5명 더 보기/ }));
+    for (const entry of SAMPLE_VRM_ENTRIES) {
+      const image = view.container.querySelector(`img[src="${entry.thumbnail}"]`);
+      const card = image?.closest("button");
+      if (!card) throw new Error(`${entry.id} 캐스팅 카드 누락`);
+      fireEvent.click(card);
+      expect(view.props.onSelect).toHaveBeenLastCalledWith(entry);
+    }
+  });
   it("renders loading, error, upload-empty, and search-no-result states", () => {
     const view = renderPanel({ entries: [], libraryStatus: "loading" });
 

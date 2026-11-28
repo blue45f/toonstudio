@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import type { CompositionCameraSnapshot } from "../ai/studio-composition-generation-brief";
-import { readStudioMannequinCaptureCamera } from "./studio-mannequin-capture-camera";
+import { readStudioMannequinCaptureCamera, studioMannequinBoundsFitCamera } from "./studio-mannequin-capture-camera";
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "../bg3d/studio-bg3d-lt-render";
 import { captureStudioVrmRgba, encodeStudioVrmCapturePngDataUrl } from "../vrm/studio-vrm-raster-capture";
 
@@ -117,7 +117,7 @@ export interface StudioMannequinScenePartnerListener {
 }
 
 export interface StudioMannequinSceneHandle {
-  setBodySpec(spec: StudioMannequinSpec): void;
+  setBodySpec(spec: StudioMannequinSpec, change?: "fingers"): void;
   setPose(pose: StudioMannequinPose): void;
   getPose(): StudioMannequinPose;
   setJointRotation(jointId: StudioMannequinJointId, rotation: StudioMannequinVec3): void;
@@ -143,12 +143,10 @@ export interface StudioMannequinSceneHandle {
     scale: number,
     options?: { signal?: AbortSignal },
   ): Promise<StudioMannequinCaptureResult>;
-  // ── 2인 구도(선택 기능) ──
   setPartner?(partner: StudioMannequinScenePartner | null): void;
   setActiveFigure?(figure: StudioMannequinFigureId): void;
   setPartnerListener?(listener: StudioMannequinScenePartnerListener | null): void;
   frameAll?(): void;
-  // ── v3 에코르셰·프로 키네마틱스·작화 보조선(선택 기능 — 기존 테스트 스텁 하위 호환) ──
   setSurfaceMode?(mode: StudioMannequinSurfaceMode): void;
   getSurfaceMode?(): StudioMannequinSurfaceMode;
   setEcorcheState?(next: Partial<StudioMannequinFigureEcorcheState>): void;
@@ -473,9 +471,7 @@ export function createStudioMannequinScene(
   let rangeArcBuiltKey: string | null = null;
   scene.add(rangeArcGroup);
 
-  let currentPose = normalizeStudioMannequinPose(
-    options.initialPose ?? createStudioMannequinRestPose(),
-  );
+  let currentPose = normalizeStudioMannequinPose(options.initialPose ?? createStudioMannequinRestPose());
   const lead = createStudioMannequinSceneFigure({
     id: "lead",
     spec,
@@ -603,13 +599,13 @@ export function createStudioMannequinScene(
     controls.update();
   }
 
-  function frameFigures(direction?: StudioMannequinVec3): void {
+  function frameFigures(direction?: StudioMannequinVec3, onlyIfClipped = false): void {
     scene.updateMatrixWorld(true);
     const box = new THREE.Box3();
     for (const figure of allFigures()) {
       for (const mesh of figure.bodyMeshes()) box.expandByObject(mesh);
     }
-    if (box.isEmpty()) return;
+    if (box.isEmpty() || (onlyIfClipped && studioMannequinBoundsFitCamera(activeCamera, box))) return;
     const current = activeCamera.position.clone().sub(cameraTarget);
     const viewDirection: StudioMannequinVec3 = direction
       ?? (current.lengthSq() > 1e-9 ? [current.x, current.y, current.z] : cameraPresetDirection("home"));
@@ -1236,7 +1232,7 @@ export function createStudioMannequinScene(
     partner.setPlacement(next.offset, next.yawRad);
     applySelectionTint();
     applyHandleVisibility();
-    if (isNew) frameFigures();
+    if (isNew || fullBodyFramed) frameFigures(undefined, !isNew);
     invalidate();
   }
 
@@ -1246,21 +1242,25 @@ export function createStudioMannequinScene(
   renderNow();
 
   return {
-    setBodySpec(nextSpec) {
+    setBodySpec(nextSpec, change) {
       if (disposed) return;
       spec = nextSpec;
-      lead.rebuild(spec, currentPose);
-      proOverlays.rebuildFigureGuides(spec, lead.joints());
-      proOverlays.syncBalanceOverlay(spec, currentPose);
-      applySelectionTint();
-      applyHandleVisibility();
-      frameFigures();
+      if (change === "fingers") lead.setFingerSpec(spec);
+      else {
+        lead.rebuild(spec, currentPose);
+        proOverlays.rebuildFigureGuides(spec, lead.joints());
+        proOverlays.syncBalanceOverlay(spec, currentPose);
+        applySelectionTint();
+        applyHandleVisibility();
+        frameFigures();
+      }
       invalidate();
     },
     setPose(posePatch) {
       if (disposed) return;
       currentPose = normalizeStudioMannequinPose(posePatch);
       applyPoseToGraph(currentPose);
+      if (fullBodyFramed) frameFigures(undefined, true);
       invalidate();
     },
     getPose() {
@@ -1363,13 +1363,13 @@ export function createStudioMannequinScene(
     },
     resize(width, height) {
       if (disposed) return;
-      if (width / height < viewWidth / viewHeight) fullBodyFramed = false;
       viewWidth = Math.max(1, Math.floor(width));
       viewHeight = Math.max(1, Math.floor(height));
       renderer.setSize(viewWidth, viewHeight, false);
       perspectiveCamera.aspect = viewWidth / viewHeight;
       perspectiveCamera.updateProjectionMatrix();
       updateOrthographicFrustum();
+      if (fullBodyFramed) frameFigures(undefined, true);
       invalidate();
     },
     invalidate,
@@ -1404,15 +1404,13 @@ export function createStudioMannequinScene(
     },
     setEcorcheState(next) {
       if (disposed) return;
-      lead.setEcorcheState(next, currentPose);
-      proOverlays.rebuildFigureGuides(spec, lead.joints());
-      applySelectionTint();
-      applyHandleVisibility();
+      if (lead.setEcorcheState(next, currentPose)) {
+        proOverlays.rebuildFigureGuides(spec, lead.joints());
+        applyHandleVisibility();
+      }
       invalidate();
     },
-    getEcorcheState() {
-      return lead.getEcorcheState();
-    },
+    getEcorcheState: () => lead.getEcorcheState(),
     setGuideVisibility(next) {
       if (disposed) return;
       proOverlays.setVisibility(next);
