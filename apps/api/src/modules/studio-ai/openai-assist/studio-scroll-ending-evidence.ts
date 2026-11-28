@@ -28,7 +28,8 @@ function endingPassage(inputText: string): string {
   const source = sections.at(-1) ?? "";
   const [beforeSection, section] = source.split(editorialSection, 2);
   const [body, notes] = beforeSection.split(editorialNotes, 2);
-  const sentences = Array.from(sentenceSegmenter.segment(body), part => part.segment);
+  const sentences = Array.from(sentenceSegmenter.segment(body), part => part.segment)
+    .filter(sentence => sentence.trim().length > 0);
   while (sentences.length && isTrailingRequest(sentences.at(-1) ?? "")) sentences.pop();
   const manuscript = sentences.join("").trim();
   const episodes = new Set(Array.from(manuscript.matchAll(episodeMarker), match => Number(match[1])));

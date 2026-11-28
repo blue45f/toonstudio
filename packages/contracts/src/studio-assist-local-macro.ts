@@ -62,21 +62,51 @@ function requestedCanvasClauses(brief: string) {
   return requests;
 }
 
-function readNewLayer(source: string) {
-  const names = [...source.matchAll(/(?<![\p{L}\p{N}])(?:새로운|새|신규)\s*(?:레이어\s*[‘“「"']([^’”」"'\n]{1,64})[’”」"']|[‘“「"']([^’”」"'\n]{1,64})[’”」"']\s*레이어)/gu)];
+// 인용문 안의 쉼표·마침표는 명령 경계가 아니다. 물음표는 해당 절의 일부로 남긴다.
+function instructionParts(source: string): string[] {
+  const parts: string[] = [];
+  let start = 0;
+  const separators = /“[^”]*(?:”|$)|‘[^’]*(?:’|$)|「[^」]*(?:」|$)|『[^』]*(?:』|$)|`[^`]*(?:`|$)|"[^"]*(?:"|$)|'[^']*(?:'|$)|([.!?。！？](?=\s|$)|[,，;\r\n])/gu;
+  for (const match of source.matchAll(separators)) {
+    if (!match[1]) continue;
+    const end = /[?？]/u.test(match[1]) ? match.index + 1 : match.index;
+    const part = source.slice(start, end).trim();
+    if (part) parts.push(part);
+    start = match.index + 1;
+  }
+  const last = source.slice(start).trim();
+  if (last) parts.push(last);
+  return parts;
+}
+
+function isDeferred(parts: readonly string[], index: number, target: "layer" | "lens"): boolean {
+  if (/(?:면|경우|조건|(?:승인|확인|허가)\s*(?:후|시|뒤)|한\s*(?:후|뒤)|필요\s*시)\s*[:：]?$/u.test(parts[index - 1] ?? "")) return true;
+  const subject = target === "layer" ? /레이어/u : /렌즈|카메라|초점\s*거리/iu;
+  const deferred = /취소|철회|보류|미정|미확정|승인\s*대기|없이\s*(?:작업|진행)|하지\s*않/u;
+  if (parts.some(part => subject.test(part) && deferred.test(part))) return true;
+  // 목적어 없는 정정은 바로 앞 명령에만 걸린다. 다른 소품의 미정 수치는 별개다.
+  const next = parts[index + 1] ?? "";
+  return /^(?:(?:생성|추가|설정|적용|지시|요청|작업)(?:은|는|을|를)?\s*)?(?:취소|철회|보류|미정|미확정|없이|승인\s*(?:후|대기)|확인\s*후)|^(?:또는|혹은|아니면|필요하면|조건부)/u.test(next);
+}
+
+function readNewLayer(parts: readonly string[]) {
+  const namedLayer = /(?:새로운|새|신규)\s*(?:레이어\s*[‘“「"']([^’”」"'\n]{1,64})[’”」"']|[‘“「"']([^’”」"'\n]{1,64})[’”」"']\s*레이어)/gu;
+  const names = parts.flatMap((part, index) => [...part.matchAll(namedLayer)].map(match => ({ match, index })));
   if (names.length !== 1) return undefined;
-  const [match] = names;
+  const [{ match, index }] = names;
+  const clause = parts[index];
+  const prefix = clause.slice(0, match.index).trim();
+  if (prefix && !/^(?:기존|현재|열린)\s*캔버스(?:\s*\d+\s*[×xX]\s*\d+\s*(?:px|픽셀))?(?:에|에서)$/u.test(prefix)) return undefined;
+  if (isDeferred(parts, index, "layer") || /^-?\d+(?:\.\d+)?\s*%/u.test(parts[index + 1] ?? "")) return undefined;
   const name = match[1] ?? match[2];
-  const afterName = source.slice(match.index + match[0].length);
-  // 같은 문장의 레이어 설정만 자동값으로 쓴다. 다른 문장의 수치는 수동 지시에 보존한다.
-  const clause = afterName.split(/[.!?。](?=\s|$)|[;\r\n]/u, 1)[0];
-  const otherText = source.slice(0, match.index) + "\n" + afterName.slice(clause.length);
-  const manualOpacity = /불투명도|opacityPct/iu.test(otherText);
-  const setting = clause.trim();
+  const manualOpacity = parts.some((part, position) => position !== index && /불투명도|opacityPct/iu.test(part));
+  const setting = clause.slice(match.index + match[0].length).trim();
   const label = setting.match(/^(?:[은는을를의]\s*)?불투명도(?:는|를|로|\s*시작값은)?/u);
   if (!label) {
-    if (/불투명도|opacityPct|%|\d\s*(?:퍼센트|프로)/iu.test(setting)) return undefined;
-    return { name, manualOpacity };
+    if (/^(?:[은는을를]\s*)?(?:(?:추가|생성)(?:한다|합니다|해\s*(?:주세요|줘))?|만든다|만듭니다|만들어\s*(?:주세요|줘))$/u.test(setting)) {
+      return { name, manualOpacity };
+    }
+    return undefined;
   }
   const value = setting.slice(label[0].length).trim().replace(/^[:：]\s*/u, "");
   const percentage = value.match(/^(\d+(?:\.\d+)?)\s*%/u);
@@ -87,15 +117,27 @@ function readNewLayer(source: string) {
   }
 }
 
-function readLensValues(clauses: readonly string[]) {
+function readLensValues(parts: readonly string[]) {
   const values = new Set<string>();
-  for (const part of clauses) {
+  let confirmed = true;
+  let followsLens = false;
+  const lensLabel = /렌즈|초점\s*거리|lensMm/iu;
+  const setting = /^(?:(?:카메라)?(?:시작)?(?:렌즈|초점거리|lensMm)(?:의|는|를|가)?(?:(?:시작)?값(?:은)?)?[:：=]?수치|수치렌즈)(?:입니다|(?:으)?로(?:설정|지정|사용)(?:한다|합니다|해(?:줘|주세요))?)?$/iu;
+  for (const [index, part] of parts.entries()) {
+    const alternative: boolean = followsLens && /^(?:또는\s*|혹은\s*|아니면\s*)?-?\d+(?:\.\d+)?\s*(?:mm\b|중|후보|$)/iu.test(part);
+    followsLens = lensLabel.test(part) || alternative;
+    if (!followsLens) continue;
     const lengths = [...part.matchAll(/(?<![\d.])(-?\d+(?:\.\d+)?)\s*mm\b/giu)];
-    const lensLabel = /(?:렌즈|초점\s*거리|lensMm)(?:의|는|를|가)?\s*(?:시작값(?:은)?|값(?:은)?)?\s*[:：=]?\s*$/iu;
-    const isLens = lengths.some((entry) => lensLabel.test(part.slice(0, entry.index)) || /^\s*렌즈/u.test(part.slice(entry.index + entry[0].length)));
-    if (isLens) for (const entry of lengths) values.add(entry[1]);
+    for (const value of lengths) values.add(value[1]);
+    const [length] = lengths;
+    if (lengths.length !== 1 || alternative || isDeferred(parts, index, "lens")) {
+      confirmed = false;
+    } else {
+      const command = part.slice(0, length.index) + "수치" + part.slice(length.index + length[0].length);
+      if (!setting.test(command.replace(/\s/gu, ""))) confirmed = false;
+    }
   }
-  return values;
+  return { values, confirmed };
 }
 
 export function buildLocalWorkflowMacro(input: string, projectTitle: string): MacroData {
@@ -158,11 +200,12 @@ export function buildLocalWorkflowMacro(input: string, projectTitle: string): Ma
     }
   }
 
-  const lensValues = readLensValues(clauses);
+  const instructions = instructionParts(source);
+  const { values: lensValues, confirmed: lensConfirmed } = readLensValues(instructions);
   const [lens] = lensValues;
   if (canPlan(scene) && (namedTools.has(scene) || /카메라|렌즈|초점\s*거리|3D\s*(?:배경|장면)/iu.test(source))) {
     const lensMm = Number(lens);
-    if (lensValues.size === 1 && Number.isInteger(lensMm) && lensMm >= 12 && lensMm <= 200) {
+    if (lensConfirmed && lensValues.size === 1 && Number.isInteger(lensMm) && lensMm >= 12 && lensMm <= 200) {
       addStep(scene, `${focus}에 맞춰 ${lens}mm 렌즈를 설정합니다. 장면 미리보기에서 피사체의 위치와 거리감을 확인하세요.`,
         { sceneName: goal ? excerpt(goal, 80) : title, lensMm });
     } else {
@@ -171,7 +214,7 @@ export function buildLocalWorkflowMacro(input: string, projectTitle: string): Ma
     }
   }
 
-  const layer = readNewLayer(source);
+  const layer = readNewLayer(instructions);
   const createLayer = layer && canPlan(addLayer);
   if (createLayer) {
     const opacity = layer.percentage === undefined ? {} : { opacity: Number(layer.percentage) / 100 };

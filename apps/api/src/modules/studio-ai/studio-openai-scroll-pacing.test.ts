@@ -135,6 +135,21 @@ describe("스크롤 호흡 감사 응답 계약", () => {
     }
   });
 
+  it.each([
+    ["빈 줄 뒤의 요청", "죽은 동생의 목소리가 들린다.", "\n\n", "분석해 주세요."],
+    ["연속된 빈 줄과 두 요청", "죽은 동생의 목소리가 들린다.", "\n\n\n", "검토해 주세요.\n\n\t\n분석해 주세요."],
+    ["탭과 CRLF 뒤의 요청 구역", "죽은 동생이 전화를 건 걸까?", "\r\n\t\r\n\r\n", "[요청]\r\n분석해 주세요."],
+    ["공백 줄 뒤의 메모 구역", "죽은 동생이 전화를 건 걸까?", "\n \t\n\t\n", "메모: 분석해 주세요."],
+  ])("%s에서도 산문의 마지막 서술·질문만 점수의 근거가 된다", async (_name, ending, gap, request) => {
+    const input = `[원고]\n전화벨이 울린다. ${ending}${gap}${request}${gap}`;
+    for (const quote of [ending, "전화벨이 울린다", "분석해 주세요"]) {
+      const data = { ...output, cliffhangerScore: 62, cliffhangerTip: `「${quote}」가 마지막에 남습니다.` };
+      await expect(requestWithOutput(data, input).result).resolves.toMatchObject({
+        result: { mode, data: { cliffhangerScore: quote === ending ? 62 : null } },
+      });
+    }
+  });
+
   it("무료 클라우드 경로에서도 이전 컷의 인용을 점수 근거에서 제외한다", async () => {
     const data = { ...output, cliffhangerScore: 91, cliffhangerTip: "「현이 끊긴다」로 다음 연주를 기다리게 합니다." };
     const fetchImpl = vi.fn<typeof fetch>(async () => Response.json({

@@ -179,6 +179,57 @@ describe("원고에 근거한 로컬 제작 계획", () => {
     expect(fxOnly.summary).toContain("효과 불투명도 68%");
   });
 
+  it.each([
+    "새 레이어 ‘빛’을 추가한다.\n생성 취소.",
+    "새 레이어 ‘빛’을 추가한다.\n취소.",
+    "필요하면 새 레이어 ‘빛’을 추가한다.",
+    "작화팀 승인 시, 새 레이어 ‘빛’을 추가한다.",
+    "새 레이어 ‘빛’을 추가할까요?",
+    "새 레이어 ‘빛’의 불투명도 20%?",
+    "새 레이어 ‘빛’의 불투명도 20%, 60% 중 하나.",
+    "연출자가 말했다. “먼저 기다려. 새 레이어 ‘빛’을 추가한다. 여기까지야.”",
+  ])("확정되지 않은 새 레이어를 생성하지 않는다 (%s)", (text) => {
+    expect(plan(text).steps).toEqual([]);
+  });
+
+  it.each([
+    "카메라 렌즈 35mm, 50mm 중 어느 것으로 할지 미정.",
+    "렌즈 35mm, 또는 85mm 중에서 나중에 고른다.",
+    "카메라 렌즈 35mm,\n50mm 중 연출팀 확인 후 선택.",
+    "카메라 렌즈 35mm 또는 50mm.",
+    "카메라 렌즈 35mm? 아니면 50mm?",
+    "카메라 렌즈 35mm. 렌즈 50mm.",
+  ])("여러 렌즈 중 하나를 임의 선택하지 않고 원고 후보를 확인하도록 한다 (%s)", (text) => {
+    const data = plan(text);
+    expect(data.steps).toEqual([]);
+    expect(data.summary).toContain("35mm");
+    expect(data.summary).toContain(text.includes("85mm") ? "85mm" : "50mm");
+  });
+
+  it.each(["카메라 렌즈 35mm, 50 중 고른다.", "필요하면 카메라 렌즈 35mm.", "카메라 렌즈 35mm로 설정할까요?", "카메라 렌즈 35mm. 렌즈 설정 취소."])(
+    "조건·질문·취소가 걸린 단일 렌즈도 자동 설정하지 않는다 (%s)", (text) => {
+      expect(plan(text).steps).toEqual([]);
+    });
+
+  it("독립 지시의 대상·수치를 구분하고 실제 MCP의 장면과 레이어에 반영한다", () => {
+    const layerHeld = plan("새 레이어 ‘빛’을 추가한다. 편집자 정정: 레이어 생성 취소. 카메라 렌즈는 50mm.");
+    const lensHeld = plan("카메라 렌즈 35mm, 50mm 중 연출팀 확인 후 선택. 새 레이어 ‘안개’를 추가한다.");
+    const confirmed = plan("반지 지름 18mm, 카메라 시작 렌즈는 70mm입니다. 소품 두께 22mm는 미정. 새 레이어 ‘빛’을 불투명도 20%로 추가한다.");
+    expect(layerHeld.steps.map(step => step.toolName)).toEqual(["studio.bg3d.compose_scene"]);
+    expect(lensHeld.steps.map(step => step.toolName)).toEqual(["studio.canvas.add_layer"]);
+    const calls = [...layerHeld.steps, ...lensHeld.steps, ...confirmed.steps].map(step => ({
+      tool: step.toolName, arguments: JSON.parse(step.argumentsJson),
+    }));
+    const batch = dryRunBatch(calls);
+    expect(batch.status).toBe(0);
+    expect(batch.results).toMatchObject([
+      { ok: true, result: { scene: { camera: { lensMm: 50 } } } },
+      { ok: true, result: { layer: { name: "안개" } } },
+      { ok: true, result: { scene: { camera: { lensMm: 70 } } } },
+      { ok: true, result: { layer: { name: "빛", opacity: 0.2 } } },
+    ]);
+  });
+
   it("도구 하나만 허용된 원고와 전부 수동인 원고에서 자동 단계를 채워 넣지 않는다", () => {
     const manual = plan("기존 레이어 ‘입김’의 불투명도 0%. 허용 도구 studio.photoshop.apply_layer_fx.");
     expect(manual.steps).toEqual([]);
