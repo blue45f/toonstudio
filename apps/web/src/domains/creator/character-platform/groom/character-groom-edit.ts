@@ -5,6 +5,7 @@ import {
   type CharacterGroomGuideCurve,
   type CharacterGroomProfile,
 } from "./character-groom-document";
+import type { StudioVrmHeadFit } from "../../vrm/studio-vrm-head-fit";
 
 export const DEFAULT_CHARACTER_GROOM_PROFILE: CharacterGroomProfile = Object.freeze({
   baseWidth: 0.045, taper: 0.85, lengthScale: 1, curl: 0, wave: 0,
@@ -22,7 +23,26 @@ function allGuideIds(document: CharacterGroomDocument): string[] {
   return document.groups.flatMap((group) => group.guides.map((guide) => guide.guideId));
 }
 
-export function createCharacterHeadLocalGroomGuide(guideId: string, offset = 0): CharacterGroomGuideCurve {
+export function createCharacterHeadLocalGroomGuide(guideId: string, offset = 0, fit?: StudioVrmHeadFit): CharacterGroomGuideCurve {
+  if (fit) {
+    const [cx, cy, cz] = fit.center;
+    const width = fit.radiusX;
+    const height = fit.radiusY;
+    const depth = fit.radiusZ;
+    const side = offset / 0.10;
+    const forward = fit.frontSign * cz;
+    const fringe = fit.faceFront + depth * 0.09;
+    // 뿌리는 두피 가까이 두고, 이마를 감싸면서 끝이 눈 위에서 가늘어지게 한다.
+    return {
+      guideId, status: "valid", coordinateSpace: "anatomical-head",
+      points: [
+        { position: [fit.frontSign * cx + width * (side * 0.61 + 0.10), cy + height * 0.89, forward + depth * 0.32], width: 0.13, twist: 0 },
+        { position: [fit.frontSign * cx + width * (side * 0.72 + 0.06), cy + height * 0.72, forward + depth * 0.76], width: 0.54, twist: 0 },
+        { position: [fit.frontSign * cx + width * (side * 0.91 - 0.07), cy + height * 0.42, fringe], width: 0.41, twist: 0 },
+        { position: [fit.frontSign * cx + width * (side - 0.15), fit.eyeCenter[1] + height * 0.17, fringe + depth * 0.02], width: 0.10, twist: 0 },
+      ],
+    };
+  }
   return {
     guideId, status: "valid", points: [
       { position: [offset, 0.12, 0.04], width: 1, twist: 0 },
@@ -33,7 +53,7 @@ export function createCharacterHeadLocalGroomGuide(guideId: string, offset = 0):
   };
 }
 
-export function addCharacterGroomGroup(document: CharacterGroomDocument, name: string): CharacterGroomDocument {
+export function addCharacterGroomGroup(document: CharacterGroomDocument, name: string, fit?: StudioVrmHeadFit): CharacterGroomDocument {
   const groupId = nextId("groom:group", document.groups.map((group) => group.groupId));
   const guideId = nextId("groom:guide", allGuideIds(document));
   return validateCharacterGroomDocument({
@@ -41,7 +61,7 @@ export function addCharacterGroomGroup(document: CharacterGroomDocument, name: s
     groups: [...document.groups, {
       groupId, name, scalpRegionId: "scalp:head-local", materialId: "material:hair",
       visible: true, locked: false, profile: DEFAULT_CHARACTER_GROOM_PROFILE,
-      guides: [createCharacterHeadLocalGroomGuide(guideId)],
+      guides: [createCharacterHeadLocalGroomGuide(guideId, 0, fit)],
     }],
   });
 }
@@ -60,12 +80,13 @@ export function editCharacterGroomGroup(
   });
 }
 
-export function addCharacterGroomGuide(document: CharacterGroomDocument, groupId: string): CharacterGroomDocument {
+export function addCharacterGroomGuide(document: CharacterGroomDocument, groupId: string, fit?: StudioVrmHeadFit): CharacterGroomDocument {
   return editCharacterGroomGroup(document, groupId, (group) => ({
     ...group,
     guides: [...group.guides, createCharacterHeadLocalGroomGuide(
       nextId("groom:guide", allGuideIds(document)),
       (group.guides.length % 7 - 3) * 0.022,
+      fit,
     )],
   }));
 }

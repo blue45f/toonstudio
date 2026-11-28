@@ -13,6 +13,7 @@ import { type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { expect } from "@playwright/test";
 import { initializeCanvas, readPsd, type Layer } from "ag-psd";
 import { chromium, type Browser, type Download, type Page } from "playwright";
 
@@ -646,6 +647,30 @@ async function main(): Promise<void> {
     await checkMobileCameraSettings();
     await mpage.screenshot({ path: join(OUT_DIR, "character-mobile-320-controls.png") });
     evidence.mobileWidths = [390, 320];
+
+    // 짧은 화면에서 처음 열리는 패널이 실제 캐릭터에 남기는 공간을 잰다.
+    await mpage.setViewportSize({ width: 320, height: 568 });
+    await openShaper(mpage, origin);
+    const smallPhone = mpage.locator(DIALOG);
+    const stage = smallPhone.locator('[data-character-shaper-stage="true"]');
+    await stage.locator("canvas").first().waitFor({ state: "visible" });
+    const minimumViewport = await stage.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return { width: innerWidth, height: innerHeight, documentWidth: document.documentElement.scrollWidth,
+        stageWidth: bounds.width, stageHeight: bounds.height };
+    });
+    evidence.minimumMobileViewport = minimumViewport;
+    invariant(minimumViewport.width === 320 && minimumViewport.height === 568 && minimumViewport.documentWidth <= minimumViewport.width + 1,
+      `작은 휴대폰 화면이 320×568을 벗어났습니다. ${JSON.stringify(minimumViewport)}`);
+    invariant(minimumViewport.stageWidth >= 160 && minimumViewport.stageHeight >= 180,
+      `작은 휴대폰의 캐릭터 표시 영역이 160×180px보다 작습니다. ${JSON.stringify(minimumViewport)}`);
+    for (const name of ["닫기", "캔버스에 추가", "내보내기 더 보기"]) {
+      const button = smallPhone.getByRole("button", { name, exact: true });
+      await expect(button).toBeInViewport({ ratio: 1 });
+      const bounds = await button.boundingBox();
+      invariant(bounds !== null && bounds.width >= 43.5 && bounds.height >= 43.5, `${name}의 터치 영역이 44px보다 작습니다.`);
+      await button.tap({ trial: true });
+    }
     invariant(consoleErrors.length === 0, `character workflow page errors: ${consoleErrors.join("; ")}`);
     evidence.consoleErrors = consoleErrors;
     evidence.status = "passed";

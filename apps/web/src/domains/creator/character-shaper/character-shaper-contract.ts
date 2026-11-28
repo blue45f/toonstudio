@@ -279,6 +279,11 @@ export interface CharacterSlotAvailability {
 
 export interface CharacterOriginalHairColors {
   readonly baseColor: string;
+  /** 원본 모발에서 가장 많이 그리는 재질의 텍스처와 색 계수를 곱한 값. */
+  readonly dominantMaterial?: {
+    readonly baseColor: string;
+    readonly rimColor: string;
+  };
   readonly tipColor: string;
 }
 

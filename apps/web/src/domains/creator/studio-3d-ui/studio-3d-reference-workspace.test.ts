@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
+import { wcagContrast } from "culori";
 import { describe, expect, it } from "vitest";
+import { getSpectrumDomainPigment } from "../../../shared/lib/spectrum-editorial-tokens";
 
 const css = readFileSync(new URL("./studio-3d-reference-workspace.css", import.meta.url), "utf8");
 function block(selector: string): string {
@@ -38,6 +40,19 @@ describe("3D 작업면의 잠금 상태 가독성", () => {
   });
 });
 
+it("밝은 캐릭터 뷰포트의 상태 배지가 일반·강조 글자 모두 AA 대비를 유지한다", () => {
+  const light = ':root[data-theme="light"] [data-studio-3d-reference="tooncraft"]';
+  const pill = block(`${light}[data-character-shaper="true"] [data-character-hud-status="true"] [data-studio-hud-pill="true"]`);
+  const standardColors = /@media \(forced-colors: none\) \{[\s\S]*?\n\}/u.exec(css)?.[0];
+  expect(standardColors).toContain(pill);
+  expect(pill).toContain("background: var(--color-panel);");
+  const palette = block(light);
+  const panel = color(palette, "--color-panel");
+  for (const ink of [color(palette, "--color-fg-2"), getSpectrumDomainPigment("character").paper.ink]) {
+    expect(wcagContrast(ink, panel)).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
 it("3D 참조 작업면과 캐릭터 셰이퍼에 도메인 조작 색을 연결하고 고대비 색을 유지한다", () => {
   const reference = ':root[data-theme] [data-studio-3d-reference="tooncraft"]';
   const shaper = ':root[data-theme] [data-studio-3d-reference="tooncraft"][data-character-shaper="true"]';
@@ -56,4 +71,13 @@ it("3D 참조 작업면과 캐릭터 셰이퍼에 도메인 조작 색을 연결
   expect(contrastPalette).toContain("--color-accent: var(--ui-palette-accent);");
   expect(contrastPalette).toContain("--color-on-accent: var(--ui-palette-on-accent);");
   expect(css).toContain("--color-on-accent: HighlightText;");
+});
+
+it("강제 색상에서 캐릭터 저장·삽입과 선택한 카메라 버튼이 시스템 선택 색상을 짝으로 사용한다", () => {
+  const buttons = block('[data-studio-3d-reference] :is([data-character-primary-save], [data-character-dock-action="insert"], [data-character-shaper-camera-pill-bar] [role="group"] button[aria-pressed="true"]):enabled');
+  const forcedColors = /@media \(forced-colors: active\) \{[\s\S]*?\n\}/u.exec(css)?.[0];
+  expect(forcedColors).toContain(buttons);
+  expect(buttons).toContain("forced-color-adjust: none;");
+  expect(buttons).toContain("background: Highlight;");
+  expect(buttons).toContain("color: HighlightText;");
 });

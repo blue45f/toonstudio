@@ -21,6 +21,8 @@ export interface CharacterGroomGuidePoint {
 
 export interface CharacterGroomGuideCurve {
   readonly guideId: string;
+  /** 정규화한 머리의 위(+Y)·얼굴 앞(+Z) 기준. 생략된 기존 가이드는 원래 본 좌표를 쓴다. */
+  readonly coordinateSpace?: "anatomical-head";
   readonly points: readonly CharacterGroomGuidePoint[];
   readonly status: "valid" | "needs-reprojection" | "orphaned";
 }
@@ -221,6 +223,9 @@ export function validateCharacterGroomDocument(
     }
     const guides = group.guides.map((guide: CharacterGroomGuideCurve) => {
       assertId(guide.guideId, "guideId");
+      if (guide.coordinateSpace !== undefined && guide.coordinateSpace !== "anatomical-head") {
+        throw new CharacterGroomDocumentError("CHARACTER_GROOM_POINT_INVALID", "헤어 가이드 좌표계를 확인할 수 없습니다.");
+      }
       if (guideIds.has(guide.guideId)) {
         throw new CharacterGroomDocumentError("CHARACTER_GROOM_DUPLICATE_ID", `중복 Groom 가이드 ID가 있습니다: ${guide.guideId}`);
       }
@@ -387,6 +392,7 @@ export function buildCharacterGroomRibbon(
   validateProfile(profile);
   guide.points.forEach(validatePoint);
   const points = sampledGuidePoints(guide, profile);
+  const anatomical = guide.coordinateSpace === "anatomical-head" && !guide.points.some((point) => point.surfaceAnchor);
   const positions: number[] = [];
   const normals: number[] = [];
   const uvs: number[] = [];
@@ -433,7 +439,12 @@ export function buildCharacterGroomRibbon(
     uvs.push(u, 0, u, 1);
     if (index < points.length - 1) {
       const offset = index * 2;
-      indices.push(offset, offset + 2, offset + 1, offset + 2, offset + 3, offset + 1);
+      if (anatomical) {
+        // 정면의 삼각형 감김이 가닥의 바깥 법선과 일치해야 MToon 뒷면 외곽선이 정면을 덮지 않는다.
+        indices.push(offset, offset + 1, offset + 2, offset + 2, offset + 1, offset + 3);
+      } else {
+        indices.push(offset, offset + 2, offset + 1, offset + 2, offset + 3, offset + 1);
+      }
     }
   });
   return Object.freeze({

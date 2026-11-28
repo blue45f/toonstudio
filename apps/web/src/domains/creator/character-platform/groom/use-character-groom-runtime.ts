@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Object3D, Scene } from "three";
+import { Matrix4, Object3D, Scene } from "three";
 
-import { CharacterGroomThreeRuntime } from "./character-groom-three-runtime";
+import { CharacterGroomThreeRuntime, type CharacterGroomRenderOptions } from "./character-groom-three-runtime";
+import { measureStudioVrmHeadFit } from "../../vrm/studio-vrm-head-measure";
+import { isStudioVrmCustomPart } from "../../vrm/studio-vrm-authored-attachment";
 
+import type { VRM } from "@pixiv/three-vrm";
+import type { StudioVrmHeadFit } from "../../vrm/studio-vrm-head-fit";
 import type { CharacterDocumentV3 } from "../document/character-document-v3";
 import type { StudioVrmPoserHost } from "../../vrm/StudioVrmPoserHost";
 
@@ -16,6 +20,7 @@ export interface CharacterGroomRuntimeState {
   readonly skippedGuideCount: number;
   readonly notices?: readonly string[];
   readonly attachedGuideIds?: readonly string[];
+  readonly readGuideHeadFit?: () => StudioVrmHeadFit;
   readonly retry: () => void;
 }
 
@@ -30,20 +35,29 @@ function headBone(h: StudioVrmPoserHost): Object3D | null {
   return head instanceof Object3D ? head : null;
 }
 
-export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true }: {
+export function useCharacterGroomRuntime({ h, document, modelKey, originalHairMaterial, enabled = true }: {
   readonly h: StudioVrmPoserHost;
   readonly document: CharacterDocumentV3;
   readonly modelKey: string;
+  readonly originalHairMaterial?: CharacterGroomRenderOptions["originalHairMaterial"];
   readonly enabled?: boolean;
 }): CharacterGroomRuntimeState {
   const head = h.status === "ready" ? headBone(h) : null;
+  const model: VRM | null = h.vrm ?? null;
+  const normalizedHead = model?.humanoid?.getNormalizedBoneNode?.("head") ?? null;
+  // 새 가이드를 만드는 순간에만 현재 모델의 두상을 재고 같은 모델에서는 재사용한다.
+  const readGuideHeadFit = useMemo(() => {
+    if (!model || !head || !normalizedHead) return undefined;
+    let fit: StudioVrmHeadFit | undefined;
+    return () => fit ??= measureStudioVrmHeadFit(model, normalizedHead, { skip: isStudioVrmCustomPart }).fit;
+  }, [model, head, normalizedHead]);
   const [retryRevision, setRetryRevision] = useState(0);
   const input = useMemo(() => ({
     groom: document.groom, topologyRevision: document.topology.revision,
-    color: document.look.colors.hairBase, materialOverrides: document.look.materialOverrides,
+    color: document.look.colors.hairBase, originalHairMaterial, materialOverrides: document.look.materialOverrides,
     head, modelKey, enabled, retryRevision, sceneGeneration: h.captureSceneGeneration, model: h.vrm,
   }), [document.groom, document.topology.revision, document.look.colors.hairBase, document.look.materialOverrides,
-    head, modelKey, enabled, retryRevision, h.captureSceneGeneration, h.vrm]);
+    head, modelKey, enabled, retryRevision, h.captureSceneGeneration, h.vrm, originalHairMaterial]);
   type RuntimeView = Omit<CharacterGroomRuntimeState, "retry" | "supported" | "reason">;
   const [rendered, setRendered] = useState<{ readonly input: typeof input; readonly state: RuntimeView } | null>(null);
   const runtimeRef = useRef<CharacterGroomThreeRuntime | null>(null);
@@ -74,7 +88,15 @@ export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true
         return;
       }
       setRendered({ input, state: { status: "building", error: null, guideCount: 0, triangleCount: 0, skippedGuideCount: 0 } });
+      let anatomicalToRawHead: Matrix4 | undefined;
+      if (normalizedHead && readGuideHeadFit && document.groom.groups.some((group) => group.guides.some((guide) => guide.coordinateSpace === "anatomical-head"))) {
+        head.updateWorldMatrix(true, false);
+        normalizedHead.updateWorldMatrix(true, false);
+        anatomicalToRawHead = head.matrixWorld.clone().invert().multiply(normalizedHead.matrixWorld);
+        if (readGuideHeadFit().frontSign < 0) anatomicalToRawHead.multiply(new Matrix4().makeRotationY(Math.PI));
+      }
       void runtime.update(document.groom, document.topology.revision, document.look.colors.hairBase ?? "#32251f", {
+        anatomicalToRawHead, originalHairMaterial: document.look.colors.hairBase ? undefined : originalHairMaterial,
         ...(scene ? { surface: { scene, modelKey } } : {}), materialOverrides: document.look.materialOverrides,
         onSurfaceInvalidated: (guideId, notice) => {
           queueMicrotask(() => {
@@ -107,7 +129,7 @@ export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true
       modelRoot?.removeEventListener("removed", clear);
     };
   }, [document.groom, document.look.colors.hairBase, document.look.materialOverrides, document.topology.revision,
-    head, h.captureRef, h.captureSceneGeneration, h.vrm, invalidateRef, modelKey, retryRevision, enabled, input]);
+    head, normalizedHead, readGuideHeadFit, h.captureRef, h.captureSceneGeneration, h.vrm, invalidateRef, modelKey, retryRevision, enabled, input, originalHairMaterial]);
   const retry = useCallback(() => setRetryRevision((revision) => revision + 1), []);
   return {
     ...(rendered?.input === input ? rendered.state : {
@@ -115,6 +137,6 @@ export function useCharacterGroomRuntime({ h, document, modelKey, enabled = true
       guideCount: 0, triangleCount: 0, skippedGuideCount: 0,
     }), supported: head !== null,
     reason: head ? null : "실제 머리 본이 있는 VRM 모델에서 헤어를 편집할 수 있습니다.",
-    retry,
+    retry, readGuideHeadFit,
   };
 }

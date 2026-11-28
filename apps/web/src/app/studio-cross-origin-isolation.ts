@@ -125,18 +125,14 @@ function pathnameFromRequestUrl(url: string | null | undefined): string | null {
 function isViteStudioWorkerAssetUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   try {
-    const parsed = new URL(url, "http://vite.local");
-    if (
-      /(?:^|\/)assets\/studio-[^/]+\.worker-[A-Za-z0-9_-]+\.js$/.test(
-        parsed.pathname,
-      )
-    ) {
+    const { pathname } = new URL(url, "http://vite.local");
+    if (/\/assets\/[^/]+\.worker-[A-Za-z0-9_-]+\.js$/.test(pathname)) {
       return true;
     }
-    // Dev-server module workers and service-worker re-fetches of the same file
-    // both use the `studio-*.worker.ts` stem. Vite may add `?worker_file`; a
-    // controlling SW often drops that query and sends `Sec-Fetch-Dest: empty`.
-    return /(?:^|\/)studio-[^/]+\.worker\.[cm]?[jt]sx?$/.test(parsed.pathname);
+    // 개발 서버의 저작 Worker는 studio- 접두사가 없어도 서비스 워커가 같은 경로를 다시 요청한다.
+    const filename = pathname.slice(pathname.lastIndexOf("/") + 1);
+    return /\.worker\.[cm]?[jt]sx?$/.test(filename)
+      && (filename.startsWith("studio-") || pathname.includes("/src/domains/creator/"));
   } catch {
     return false;
   }

@@ -13,7 +13,7 @@ import type { StudioMannequinSceneHandle } from "./studio-mannequin-scene";
 
 const sceneMocks = vi.hoisted(() => {
   const setBodySpec = vi.fn<(spec: StudioMannequinSpec) => void>();
-  const setEcorcheState = vi.fn();
+  const setEcorcheState = vi.fn<NonNullable<StudioMannequinSceneHandle["setEcorcheState"]>>();
   return { setBodySpec, setEcorcheState };
 });
 
@@ -239,5 +239,71 @@ describe("StudioMannequinPoseSection · StudioMannequinPoserPanel — 손 포즈
     const ecorche = sceneMocks.setEcorcheState.mock.calls.at(-1)?.[0];
     expect(ecorche?.leftSplayDeg).toEqual({});
     expect(ecorche?.rightSplayDeg).toEqual({});
+  });
+
+  it("라이브러리 손 프리셋을 한 번에 취소·재실행해 양손 굽힘·벌림·손목과 접촉을 복원한다", async () => {
+    const { container } = render(<StudioMannequinPoserPanel open presentation="page" onClose={vi.fn()} onInsert={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "3D 데생 인형 닫기" })).toHaveProperty("disabled", false));
+    const click = (name: string | RegExp) => fireEvent.click(screen.getByRole("button", { name }));
+    const tabs = within(screen.getByRole("navigation", { name: "데생 인형 설정 탭" }));
+    const showTab = (name: string) => fireEvent.click(tabs.getByRole("button", { name }));
+    const readHands = () => {
+      const pose = vi.mocked(sceneHandle.setPose).mock.lastCall?.[0];
+      const state = sceneMocks.setEcorcheState.mock.lastCall?.[0];
+      if (!pose || !state) throw new Error("손 모양이 장면에 도달하지 않았습니다.");
+      showTab("관절");
+      const contact = screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed");
+      showTab("포즈");
+      return {
+        bones: sceneMocks.setBodySpec.mock.lastCall?.[0].fingerPose,
+        leftSplay: state.leftSplayDeg,
+        rightSplay: state.rightSplayDeg,
+        leftWrist: pose.joints.leftHand,
+        rightWrist: pose.joints.rightHand,
+        contact,
+      };
+    };
+    const applyPreset = (id: string) => {
+      fireEvent.change(screen.getByLabelText("포즈 라이브러리 검색"), { target: { value: id } });
+      const card = container.querySelector(`[data-studio-pose-library-entry="mannequin:${id}"] button`);
+      if (!card) throw new Error(`손 프리셋 카드가 없습니다: ${id}`);
+      fireEvent.click(card);
+    };
+
+    showTab("매직 포저");
+    click("손");
+    click("왼손");
+    click("손바닥 펼침");
+    click("오른손");
+    click("브이(피스)");
+    showTab("관절");
+    click("턱 괴기");
+    const original = readHands();
+    expect(original.bones?.left).not.toEqual(original.bones?.right);
+    expect(original.leftSplay).not.toEqual(original.rightSplay);
+    expect(original.contact).toBe("true");
+
+    applyPreset("hand-fist");
+    const fist = readHands();
+    expect(fist.bones?.left.index).toEqual([100, 100, 100]);
+    expect(fist.bones?.right.index).toEqual([100, 100, 100]);
+    expect(fist.leftWrist).not.toEqual(original.leftWrist);
+    expect(fist.contact).toBe("false");
+    applyPreset("hand-peace");
+    const peace = readHands();
+    expect(peace.bones?.right.index).toEqual([0, 0, 0]);
+    expect(peace.rightSplay).not.toEqual(fist.rightSplay);
+
+    click(/^되돌리기/u);
+    expect(readHands()).toEqual(fist);
+    click(/^되돌리기/u);
+    expect(readHands()).toEqual(original);
+    click(/^다시실행/u);
+    expect(readHands()).toEqual(fist);
+    click(/^다시실행/u);
+    expect(readHands()).toEqual(peace);
+    click(/^되돌리기/u);
+    applyPreset("hand-open");
+    expect(screen.getByRole("button", { name: "다시실행" })).toHaveProperty("disabled", true);
   });
 });

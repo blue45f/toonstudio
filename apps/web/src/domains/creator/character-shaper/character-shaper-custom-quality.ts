@@ -263,6 +263,7 @@ interface SampledHairMaterialLike {
   readonly isOutline?: boolean;
   readonly color?: THREE.Color;
   readonly shadeColorFactor?: THREE.Color;
+  readonly parametricRimColorFactor?: THREE.Color;
   readonly map?: {
     readonly image?: {
       readonly width?: number;
@@ -375,6 +376,41 @@ export function deriveHarmoniousHairTipColor(baseColorHex: string): string {
   return `#${tip.getHexString()}`;
 }
 
+function sampleHairMaterialSrgb(mat: SampledHairMaterialLike): THREE.Color | null {
+  const factor = { r: 1, g: 1, b: 1 };
+  if (mat.color?.isColor) mat.color.getRGB(factor, THREE.SRGBColorSpace);
+  const texture = mat.map ? sampleTextureMeanSrgb(mat.map) : null;
+  if (texture) {
+    return new THREE.Color().setRGB(texture.r * factor.r, texture.g * factor.g, texture.b * factor.b, THREE.SRGBColorSpace);
+  }
+  if (mat.map && Math.min(factor.r, factor.g, factor.b) >= 0.94) {
+    if (!mat.shadeColorFactor?.isColor) return null;
+    const shade = mat.shadeColorFactor.getRGB({ r: 0, g: 0, b: 0 }, THREE.SRGBColorSpace);
+    if (Math.max(shade.r, shade.g, shade.b) <= 0.06 || Math.min(shade.r, shade.g, shade.b) >= 0.94) return null;
+    return new THREE.Color().setRGB(
+      Math.min(1, shade.r * 1.18), Math.min(1, shade.g * 1.18), Math.min(1, shade.b * 1.18), THREE.SRGBColorSpace,
+    );
+  }
+  return mat.color?.isColor ? mat.color.clone() : null;
+}
+
+/** 인덱스 유무와 다중 재질의 드로 그룹을 반영하고 범위 밖의 면은 세지 않는다. */
+function hairMaterialDrawCount(mesh: Partial<THREE.Mesh>, materialIndex: number): number {
+  const geometry = mesh.geometry;
+  if (!geometry) return 0;
+  const vertexCount = geometry.index?.count ?? geometry.attributes?.position?.count ?? 0;
+  const start = Math.max(0, geometry.drawRange?.start ?? 0);
+  const end = Math.min(vertexCount, start + (geometry.drawRange?.count ?? Infinity));
+  if (!Number.isFinite(end) || start >= end) return 0;
+  if (!Array.isArray(mesh.material)) return end - start;
+  let count = 0;
+  for (const group of geometry.groups ?? []) {
+    if (group.materialIndex !== materialIndex || !Number.isFinite(group.start) || !(group.count > 0)) continue;
+    count += Math.max(0, Math.min(end, group.start + group.count) - Math.max(start, group.start));
+  }
+  return count;
+}
+
 /**
  * 불러온 VRM의 원본 헤어 메시·재질에서 대표 모발 기본색과 조화로운 끝 색을 가볍게 샘플링한다.
  * 생성된 절차형 파츠·외곽선·헤어 액세서리는 건너뛴다.
@@ -385,12 +421,7 @@ export function sampleOriginalVrmHairColors(
   const traverse = vrm?.scene?.traverse;
   if (!vrm?.scene || typeof traverse !== "function") return null;
 
-  const visited = new Set<object>();
-  let rTotal = 0;
-  let gTotal = 0;
-  let bTotal = 0;
-  let samples = 0;
-
+  const usage = new Map<SampledHairMaterialLike, number>();
   traverse.call(vrm.scene, (node) => {
     const mesh = node as Partial<THREE.Mesh>;
     if (!mesh.isMesh || !mesh.material || isGeneratedOrCustomHairObject(node)) return;
@@ -398,8 +429,8 @@ export function sampleOriginalVrmHairColors(
     if (meshClass.slot !== null) return;
 
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const raw of materials) {
-      if (!raw || typeof raw !== "object" || visited.has(raw)) continue;
+    for (const [index, raw] of materials.entries()) {
+      if (!raw || typeof raw !== "object") continue;
       const mat = raw as unknown as SampledHairMaterialLike;
       if (mat.isOutline === true || mat.userData?.studioVrmCustomPartMaterial) continue;
       const rawName = typeof mat.name === "string" ? mat.name : "";
@@ -411,58 +442,35 @@ export function sampleOriginalVrmHairColors(
         matClass.protected === "hair"
         || (meshClass.protected === "hair" && matClass.protected === null);
       if (!isHairMaterial) continue;
-      visited.add(raw);
-
-      const factor = { r: 1, g: 1, b: 1 };
-      if (mat.color?.isColor) {
-        mat.color.getRGB(factor, THREE.SRGBColorSpace);
-      }
-
-      const texMean = mat.map ? sampleTextureMeanSrgb(mat.map) : null;
-      if (texMean) {
-        rTotal += Math.min(1, Math.max(0, texMean.r * factor.r));
-        gTotal += Math.min(1, Math.max(0, texMean.g * factor.g));
-        bTotal += Math.min(1, Math.max(0, texMean.b * factor.b));
-        samples += 1;
-        continue;
-      }
-
-      const factorNearWhite = Math.min(factor.r, factor.g, factor.b) >= 0.94;
-      if (mat.map && factorNearWhite) {
-        if (mat.shadeColorFactor?.isColor) {
-          const shade = { r: 0, g: 0, b: 0 };
-          mat.shadeColorFactor.getRGB(shade, THREE.SRGBColorSpace);
-          if (Math.max(shade.r, shade.g, shade.b) > 0.06 && Math.min(shade.r, shade.g, shade.b) < 0.94) {
-            rTotal += Math.min(1, shade.r * 1.18);
-            gTotal += Math.min(1, shade.g * 1.18);
-            bTotal += Math.min(1, shade.b * 1.18);
-            samples += 1;
-          }
-        }
-        continue;
-      }
-
-      if (mat.color?.isColor) {
-        rTotal += Math.min(1, Math.max(0, factor.r));
-        gTotal += Math.min(1, Math.max(0, factor.g));
-        bTotal += Math.min(1, Math.max(0, factor.b));
-        samples += 1;
-      }
+      usage.set(mat, (usage.get(mat) ?? 0) + hairMaterialDrawCount(mesh, index));
     }
   });
 
+  let samples = 0;
+  const mean = new THREE.Vector3();
+  let dominantMaterial: CharacterOriginalHairColors["dominantMaterial"];
+  let dominantCount = 0;
+  for (const [mat, count] of usage) {
+    const color = sampleHairMaterialSrgb(mat);
+    if (!color) continue;
+    const srgb = color.getRGB({ r: 0, g: 0, b: 0 }, THREE.SRGBColorSpace);
+    mean.x += THREE.MathUtils.clamp(srgb.r, 0, 1);
+    mean.y += THREE.MathUtils.clamp(srgb.g, 0, 1);
+    mean.z += THREE.MathUtils.clamp(srgb.b, 0, 1);
+    samples += 1;
+    // 소량의 브리지나 장식색이 여러 재질에 걸친 실제 주 모발색을 오염시키지 않게 한다.
+    if (Number.isFinite(count) && count > dominantCount) {
+      dominantCount = count;
+      dominantMaterial = {
+        baseColor: `#${color.getHexString()}`,
+        rimColor: mat.parametricRimColorFactor?.isColor ? `#${mat.parametricRimColorFactor.getHexString()}` : "#000000",
+      };
+    }
+  }
   if (samples === 0) return null;
-  const mean = new THREE.Color().setRGB(
-    rTotal / samples,
-    gTotal / samples,
-    bTotal / samples,
-    THREE.SRGBColorSpace,
-  );
-  const baseColor = `#${mean.getHexString()}`;
-  return Object.freeze({
-    baseColor,
-    tipColor: deriveHarmoniousHairTipColor(baseColor),
-  });
+  mean.divideScalar(samples);
+  const baseColor = `#${new THREE.Color().setRGB(mean.x, mean.y, mean.z, THREE.SRGBColorSpace).getHexString()}`;
+  return Object.freeze({ baseColor, tipColor: deriveHarmoniousHairTipColor(baseColor), dominantMaterial });
 }
 
 /**

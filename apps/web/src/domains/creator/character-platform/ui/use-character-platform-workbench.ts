@@ -343,7 +343,10 @@ export function useCharacterPlatformWorkbench(
   });
   const hostRuntime = useCharacterDocumentHostRuntime({ h, binding, current: document, authoring });
   const renderExtras = useCharacterRenderExtras({ h, document: documentV3, enabled: authoring.hydrated });
-  const groom = useCharacterGroomRuntime({ h, document: documentV3, modelKey: modelId, enabled: authoring.hydrated });
+  const groom = useCharacterGroomRuntime({
+    h, document: documentV3, modelKey: modelId, enabled: authoring.hydrated,
+    originalHairMaterial: binding.profile.originalHairColors?.dominantMaterial,
+  });
   const poseRuntime = useCharacterPoseRuntime({ h, authoring, selectedRegions: selectedPoseRegions });
   const webRuntime = useMemo(
     () => createCurrentStudioWebAuthoringRuntimePlan(),

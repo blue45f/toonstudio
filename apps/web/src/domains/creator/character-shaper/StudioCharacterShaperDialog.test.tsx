@@ -272,12 +272,12 @@ function makeHost(overrides: Record<string, unknown> = {}): StudioVrmPoserHost {
 
 function installMatchMedia(width: number, height = 900, coarse = false) {
   vi.stubGlobal("matchMedia", (query: string) => {
-    const match = /\(min-width:\s*(\d+)px\)/u.exec(query);
-    const matches = query.includes("orientation: portrait")
-      ? coarse && height >= width && width <= 1023
-      : query.includes("pointer: coarse")
-        ? coarse && width >= 600 && width > height && height <= 500
-        : match ? width >= Number(match[1]) : false;
+    const matches = query.split(",").some((alternative) => {
+      if (alternative.includes("orientation: portrait")) return coarse && height >= width && width <= 1023;
+      if (alternative.includes("pointer: coarse")) return coarse && width >= 600 && width > height && height <= 500;
+      const match = /\(min-width:\s*(\d+)px\)/u.exec(alternative);
+      return match ? width >= Number(match[1]) : false;
+    });
     return {
       matches,
       media: query,

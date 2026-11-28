@@ -503,6 +503,27 @@ describe("#236 커스텀 3D 품질 일관성 & #234 SHAPER REA 완전 내재화 
     hairTex.dispose();
   });
 
+  it("작은 브리지와 다중 재질 외곽선은 측정된 주 모발색을 바꾸지 않고 기존 색 평균을 유지한다", () => {
+    const scene = new THREE.Group();
+    const blue = new THREE.MeshBasicMaterial({ name: "Hair_01", color: "#16243e" });
+    const accent = new THREE.MeshBasicMaterial({ name: "Hair_02", color: "#cc5028" });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), [accent, blue]);
+    mesh.name = "Hair";
+    mesh.geometry.clearGroups();
+    mesh.geometry.addGroup(0, 6, 0);
+    mesh.geometry.addGroup(6, 30, 1);
+    scene.add(mesh);
+    expect(sampleOriginalVrmHairColors({ scene })).toMatchObject({ dominantMaterial: { baseColor: "#16243e", rimColor: "#000000" }, baseColor: "#713a33" });
+    Object.assign(blue, { parametricRimColorFactor: new THREE.Color("#423458") });
+    expect(sampleOriginalVrmHairColors({ scene })?.dominantMaterial?.rimColor).toBe("#423458");
+    mesh.geometry.clearGroups();
+    mesh.geometry.addGroup(120, 30, 0);
+    expect(sampleOriginalVrmHairColors({ scene })?.dominantMaterial).toBeUndefined();
+    mesh.geometry.dispose();
+    blue.dispose();
+    accent.dispose();
+  });
+
   it("다이얼로그에서 1280px 정밀 조절 버튼이 우측 줌 레일과 겹치지 않고(right-16 · min-h-11), 포즈 적용 시 gazeIntent가 실시간 반영된다", () => {
     const originalMatchMedia = window.matchMedia;
     window.matchMedia = vi.fn((query: string) => ({

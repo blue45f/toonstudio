@@ -568,6 +568,12 @@ export const STUDIO_MANNEQUIN_FIST_STYLES: readonly {
 
 export type StudioMannequinFingerSplayMap = Readonly<Record<StudioMannequinFingerName, number>>;
 
+export interface StudioMannequinHandState {
+  readonly fingerPose: StudioMannequinFingerPose;
+  readonly leftSplayDeg: Partial<StudioMannequinFingerSplayMap>;
+  readonly rightSplayDeg: Partial<StudioMannequinFingerSplayMap>;
+}
+
 export interface StudioMannequinHandPadInput {
   readonly spread: number;
   readonly clench: number;

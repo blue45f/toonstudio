@@ -76,6 +76,7 @@ import {
   retargetStudioMannequinSemanticPose,
 } from "./studio-mannequin-semantic-persistence";
 import { createStudioPoseHistory, recordStudioPoseHistory } from "./studio-pose-history";
+import { resolveStudioMannequinLibraryHandState } from "./use-studio-mannequin-hand-pose";
 
 const DEG = Math.PI / 180;
 
@@ -442,6 +443,31 @@ describe("클립스튜디오 .pep / .3dp 양방향 호환 브리지", () => {
 });
 
 describe("체형 변경 후 접촉 목표 유지 · 양손 무간섭 · Undo/Redo 체형 연동", () => {
+  it("손 모양을 되돌리고 다시 실행할 때 복원된 손가락으로 바닥에 닿는다", () => {
+    const open = resolveStudioMannequinLibraryHandState("hand-open");
+    const fist = resolveStudioMannequinLibraryHandState("hand-fist");
+    if (!open || !fist) throw new Error("펼친 손과 주먹 프리셋이 필요합니다.");
+    const openSpec = buildStudioMannequinSpec(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, open.fingerPose);
+    const fistSpec = buildStudioMannequinSpec(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, fist.fingerPose);
+    const contact = { left: "ground" } as const;
+    const openMeta = { hands: open, handContacts: contact };
+    const fistMeta = { hands: fist, handContacts: contact };
+    const rest = createStudioMannequinRestPose();
+    const openPose = retargetStudioMannequinSemanticPose(openSpec, rest, openMeta);
+    const fistPose = retargetStudioMannequinSemanticPose(fistSpec, rest, fistMeta);
+    const history = recordStudioPoseHistory(createStudioPoseHistory(), openPose, openMeta);
+    const undo = resolveUndoRedoSemanticStep({
+      direction: "undo", history, currentPose: fistPose, currentMeta: fistMeta, spec: fistSpec, locks: {},
+    });
+    if (!undo) throw new Error("펼친 손을 되돌릴 수 없습니다.");
+    expect(undo.pose).toEqual(openPose);
+    expect(measureStudioMannequinBodyFloor(openSpec, undo.pose).regionLowestY.leftHand).toBeCloseTo(0, 5);
+    const redo = resolveUndoRedoSemanticStep({
+      direction: "redo", history: undo.history, currentPose: undo.pose, currentMeta: undo.meta, spec: openSpec, locks: {},
+    });
+    expect(redo?.pose).toEqual(fistPose);
+  });
+
   it("양손 동시 접촉 시 반대편 어깨 리듬이 먼저 맞춘 손을 흔들지 않고 체형(hero8→sd5→muscleVillain)·호흡 변경 뒤에도 접촉을 유지한다", () => {
     const meta = {
       contrapposto: "left" as const,
