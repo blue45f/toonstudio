@@ -30,7 +30,7 @@ import {
   useMetaDescription,
 } from "@/shared/seo/use-document-title";
 
-type OrderFilterGroup = "all" | "completed" | "pending" | "canceled";
+type OrderFilterGroup = "all" | "completed" | "pending" | "partially-refunded" | "canceled";
 
 interface MarketOrdersState {
   readonly ownerId: string | null;
@@ -62,6 +62,7 @@ const PAYMENT_METHOD_LABELS: Readonly<Record<string, readonly [string, string]>>
 
 function classifyOrderGroup(status: CommerceOrderStatus): Exclude<OrderFilterGroup, "all"> {
   if (status === "DONE") return "completed";
+  if (status === "PARTIAL_CANCELED") return "partially-refunded";
   if (status === "READY" || status === "IN_PROGRESS" || status === "WAITING_FOR_DEPOSIT") {
     return "pending";
   }
@@ -142,15 +143,22 @@ export function MarketOrdersPage() {
   const summary = useMemo(() => {
     let completedCount = 0;
     let pendingCount = 0;
+    let partiallyRefundedCount = 0;
     let canceledCount = 0;
-    let totalApprovedKrw = 0;
+    let confirmedNetPaidKrw = 0;
+    let unknownRefundBalanceCount = 0;
     for (const order of orders) {
       const group = classifyOrderGroup(order.status);
       if (group === "completed") {
         completedCount += 1;
-        totalApprovedKrw += order.balanceAmount ?? order.amount;
+        confirmedNetPaidKrw += order.balanceAmount ?? order.amount;
       } else if (group === "pending") {
         pendingCount += 1;
+      } else if (group === "partially-refunded") {
+        partiallyRefundedCount += 1;
+        const balance = order.balanceAmount ?? null;
+        if (balance === null) unknownRefundBalanceCount += 1;
+        else confirmedNetPaidKrw += balance;
       } else {
         canceledCount += 1;
       }
@@ -159,8 +167,12 @@ export function MarketOrdersPage() {
       totalCount: orders.length,
       completedCount,
       pendingCount,
+      partiallyRefundedCount,
       canceledCount,
-      totalApprovedKrw,
+      confirmedNetPaidKrw: unknownRefundBalanceCount > 0 && unknownRefundBalanceCount === completedCount + partiallyRefundedCount
+        ? null
+        : confirmedNetPaidKrw,
+      hasUnknownRefundBalance: unknownRefundBalanceCount > 0,
     };
   }, [orders]);
 
@@ -204,7 +216,7 @@ export function MarketOrdersPage() {
         };
       case "PARTIAL_CANCELED":
         return {
-          label: t("부분 취소", "Partially refunded"),
+          label: t("부분 환불", "Partially refunded"),
           className: "border-warn/30 bg-warn/10 text-warn",
           icon: XCircle,
         };
@@ -239,8 +251,8 @@ export function MarketOrdersPage() {
           </div>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-fg-2">
             {t(
-              "유료 소재 결제 영수증과 계정 이용 권한 부여 상태를 확인합니다. 결제가 완료된 소재는 내 에셋 보관함(/market/library)과 Studio에서 바로 사용할 수 있습니다.",
-              "Check payment receipts and account entitlements for paid market packages. Completed purchases are immediately available in My Assets and Studio.",
+              "유료 소재의 주문 상태와 영수증을 확인하세요. 현재 사용할 수 있는 소재는 내 에셋 보관함에서 확인할 수 있습니다.",
+              "Review paid asset orders and receipts. Check My Assets for the resources available to you.",
             )}
           </p>
           {config?.policyNotice ? (
@@ -322,9 +334,16 @@ export function MarketOrdersPage() {
               <dd className="numeral tnum mt-1 text-xl font-bold text-fg">{summary.pendingCount}</dd>
             </div>
             <div className="rounded-2xl border border-line bg-card p-4">
-              <dt className="text-xs font-semibold text-fg-3">{t("누적 승인 금액", "Approved total")}</dt>
+              <dt className="text-xs font-semibold text-fg-3">{t("환불 반영 결제액", "Net paid after refunds")}</dt>
               <dd className="numeral tnum mt-1 text-xl font-bold text-accent">
-                {formatKrw(summary.totalApprovedKrw)}
+                {summary.confirmedNetPaidKrw === null
+                  ? t("금액 확인 필요", "Amount unavailable")
+                  : formatKrw(summary.confirmedNetPaidKrw)}
+              </dd>
+              <dd className="mt-1 text-xs leading-relaxed text-fg-3">
+                {summary.hasUnknownRefundBalance
+                  ? t("조회된 주문 중 확인된 금액만 포함", "Includes only confirmed amounts from the listed orders")
+                  : t("조회된 주문 기준", "Based on the listed orders")}
               </dd>
             </div>
           </dl>
@@ -340,6 +359,7 @@ export function MarketOrdersPage() {
                   ["all", t("전체", "All"), summary.totalCount],
                   ["completed", t("결제 완료", "Paid"), summary.completedCount],
                   ["pending", t("결제 대기", "Pending"), summary.pendingCount],
+                  ["partially-refunded", t("부분 환불", "Partially refunded"), summary.partiallyRefundedCount],
                   ["canceled", t("취소·실패", "Canceled"), summary.canceledCount],
                 ] as const
               ).map(([id, label, count]) => {
@@ -351,7 +371,7 @@ export function MarketOrdersPage() {
                     aria-pressed={active}
                     onClick={() => setFilterGroup(id)}
                     className={cn(
-                      "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors",
+                      "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors",
                       active
                         ? "border-accent bg-accent text-on-accent"
                         : "border-line bg-card text-fg-2 hover:text-fg",
@@ -375,7 +395,7 @@ export function MarketOrdersPage() {
                 onChange={(event) => setSearch(event.target.value)}
                 aria-label={t("주문번호 또는 에셋명 검색", "Search by order ID or asset name")}
                 placeholder={t("주문번호·에셋명 검색…", "Search order ID or asset…")}
-                className="h-9 w-full rounded-xl border border-line bg-card pl-9 pr-3 text-xs text-fg focus:border-accent focus:outline-none"
+                className="min-h-11 w-full rounded-xl border border-line bg-card pl-9 pr-3 text-xs text-fg focus:border-accent focus:outline-none lg:min-h-9"
               />
             </div>
           </div>
@@ -439,7 +459,9 @@ export function MarketOrdersPage() {
                 const methodLabel = methodTuple
                   ? t(methodTuple[0], methodTuple[1])
                   : order.method || t("결제 수단 미지정", "Unspecified");
-                const timestamp = order.approvedAt ?? order.canceledAt;
+                const timestamp = order.canceledAt ?? order.approvedAt;
+                const partiallyRefunded = order.status === "PARTIAL_CANCELED";
+                const refundBalance = order.balanceAmount ?? null;
 
                 return (
                   <li
@@ -486,9 +508,16 @@ export function MarketOrdersPage() {
                       </div>
 
                       <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                        <div className="numeral tnum text-lg font-extrabold text-fg">
-                          {formatKrw(order.balanceAmount ?? order.amount)}
-                        </div>
+                        {partiallyRefunded ? (
+                          <div className="space-y-0.5 sm:text-right">
+                            <p className="text-xs text-fg-3">{t("환불 후 결제액", "Paid after refund")}</p>
+                            <p className="numeral tnum text-lg font-extrabold text-fg">
+                              {refundBalance === null ? t("금액 확인 필요", "Amount unavailable") : formatKrw(refundBalance)}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="numeral tnum text-lg font-extrabold text-fg">{formatKrw(order.balanceAmount ?? order.amount)}</p>
+                        )}
                         <div className="flex flex-wrap items-center gap-2">
                           {order.receiptUrl ? (
                             <a

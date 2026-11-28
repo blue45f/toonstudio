@@ -13,6 +13,8 @@ import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
 import { MobileFullEditNotice } from "../studio-shell/MobileFullEditNotice";
 import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
 import { useStudioMenubarStatusSlot } from "../studio-shell/studio-menubar-status-slot";
+import { StudioSupergapRuntimeHubLazyHost } from "../runtime-leaves/studio-supergap-runtime-hub-lazy";
+import { closeStudioSupergapRuntimeHub } from "../runtime-leaves/studio-supergap-runtime-hub-lazy-bridge";
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioDrawingClarityReceipt } from "./StudioDrawingClarityReceipt";
@@ -20,7 +22,8 @@ import { StudioDrawingClarityMobileBar, type StudioDrawingClarityMobileSession }
 
 vi.mock("../studio-collab/studio-scoped-draft-save", () => ({ useStudioScopedDraftSaveState: () => ({ available: false, pendingConfirmation: false }) }));
 vi.mock("../studio-tool-belt-lazy-ui", () => ({ preloadStudioAssetToolPopoverBody: vi.fn() }));
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+vi.mock("../studio-supergap-runtime-hub", () => new Promise(() => {}));
+afterEach(() => { cleanup(); closeStudioSupergapRuntimeHub(); vi.unstubAllGlobals(); });
 
 type MobileFixture = StudioDrawingClaritySession & StudioDrawingClarityMobileSession;
 function session(): MobileFixture {
@@ -80,6 +83,28 @@ function nativeModal() {
 }
 
 describe("웹 모바일 기본 상단", () => {
+  it("더보기의 엔진 상태는 도구 모달을 닫아 열린 뒤 같은 더보기 버튼으로 복귀한다", () => {
+    const modal = nativeModal();
+    try {
+      const value = session();
+      render(<StudioSupergapRuntimeHubLazyHost />);
+      show(value);
+      expect(screen.queryByRole("group", { name: "편집기 엔진 상태" })).toBeNull();
+      const launcher = more("workspace");
+      fireEvent.click(screen.getByRole("button", { name: "엔진 상태" }));
+      expect(document.querySelector("dialog[open]")).toBeNull();
+      expect(value.setMobileSheet).toHaveBeenCalledWith(null);
+      const panel = screen.getByRole("group", { name: "편집기 엔진 상태" });
+      expect(document.activeElement).toBe(panel);
+      expect(screen.getByText("엔진 상태를 불러오는 중…")).toBeTruthy();
+      fireEvent.keyDown(panel, { key: "Escape" });
+      expect(screen.queryByRole("group", { name: "편집기 엔진 상태" })).toBeNull();
+      expect(document.activeElement).toBe(launcher);
+    } finally {
+      modal.restore();
+    }
+  });
+
   it("동일한 원고·페이지 이름은 반복하지 않고 다른 페이지 문맥은 유지한다", () => {
     const value = { ...session(), title: "EP01 원고", studioMenubarActivePageLabel: " EP01 원고 " };
     const view = show(value);

@@ -11,6 +11,7 @@ import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
 import { installStudioCommandExecutionBindings } from "../studio-command-execution-registry";
 import { hasStudioCommandSearchHost, requestStudioCommandSearch, subscribeStudioCommandSearchHostReadiness } from "../studio-help-center-channel";
 import { requestStudioAllTools } from "../studio-toolbar-channel";
+import { openStudioSupergapRuntimeHub } from "../runtime-leaves/studio-supergap-runtime-hub-lazy-bridge";
 import { preloadStudioAssetToolPopoverBody } from "../studio-tool-belt-lazy-ui";
 import { useStudioDrawingCommandPresentation } from "./useStudioDrawingCommandPresentation";
 import { createStudioDrawingClarityCommandBindings } from "./StudioDrawingClarityCommands";
@@ -111,6 +112,10 @@ export function StudioDrawingClarityMobileBar({
         { id: "help", label: bt("그리기·손가락 안내", "Drawing and touch guide"), run: () => setHelpOpen(true) },
         { id: "device", label: bt("이 기기에서 할 수 있는 작업", "Tasks available on this device"), run: (trigger) => { if (guideSurface) requestStudioMobileDeviceGuide(`studio-editor-${guideSurface}`, trigger); } },
         { id: "view", label: bt("화면과 작업 환경", "Display and workspace"), run: requestStudioShellFloatingLayoutManagerOpen },
+        { id: "engine", label: bt("엔진 상태", "Engine status"), run: (trigger) => {
+          s.setMobileSheet(null);
+          openStudioSupergapRuntimeHub(() => moreRef.current ?? trigger);
+        } },
         { id: "status", label: bt("저장·화면 문제 해결", "Save and display troubleshooting"), run: requestStudioDrawingReliability },
       ]} />
     </div>

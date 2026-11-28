@@ -28,6 +28,7 @@ export const STUDIO_2D_WORKSPACE_SURFACES = [
 
 export const STUDIO_HOME_PATHNAME = "/studio" as const;
 export const STUDIO_DRAFT_CANVAS_PATHNAME = "/studio/canvas" as const;
+export const POSER_CUT_QUERY = "poserCut";
 
 export type StudioDccWorkbenchMode =
   (typeof STUDIO_DCC_WORKBENCH_MODES)[number];

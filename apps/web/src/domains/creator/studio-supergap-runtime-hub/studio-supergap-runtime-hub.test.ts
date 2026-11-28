@@ -505,19 +505,19 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     throw new Error("ECONNREFUSED");
   }) as unknown as typeof fetch;
 
-  it("브라우저 폴백 모드에서 연결 배지·접근성 region·44px 터치 타깃을 렌더링한다", async () => {
+  it("데스크톱 연결이 없으면 장치 상태를 알리고 44px로 다시 확인할 수 있다", async () => {
     const hub = createStudioSupergapRuntimeHub({
       loopbackConfig: { fetchImpl: unreachableFetch },
     });
 
     render(createElement(StudioSupergapStatusDrawer, { hub, autoBootstrap: true }));
 
-    const region = screen.getByRole("region", { name: "초격차 런타임 엔진 허브" });
+    const region = screen.getByRole("region", { name: "엔진 상태" });
     expect(region).toBeTruthy();
 
     await waitFor(() => {
       expect(screen.getByTestId("supergap-connection-pill").textContent).toContain(
-        "웹GPU 브라우저 모드 (자동 폴백)",
+        "네이티브 연결 없음",
       );
     });
 
@@ -526,7 +526,7 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(reprobeBtn.className).not.toContain("transition-all");
   });
 
-  it("네이티브 루프백 연결 시 데스크톱 네이티브 GPU/NPU 연결됨 배지와 Apple Metal 정보를 표시한다", async () => {
+  it("유효한 루프백 응답이 있으면 실제 데스크톱 연결과 Apple Metal 정보를 표시한다", async () => {
     const token = "drawer-apple-token";
     const hub = createStudioSupergapRuntimeHub({
       loopbackConfig: {
@@ -540,7 +540,7 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
 
     await waitFor(() => {
       expect(screen.getByTestId("supergap-connection-pill").textContent).toContain(
-        "데스크톱 네이티브 GPU/NPU 연결됨",
+        "데스크톱 앱 연결됨",
       );
     });
     expect(screen.getByTestId("supergap-hardware-summary").textContent).toContain("metal3");
@@ -549,9 +549,16 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     );
   });
 
-  it("전체 엔진 실시간 점검 버튼과 실물 입체 브러시 상태 버튼이 실제 상태를 갱신한다", async () => {
+  it("예제 점검 결과의 통과·추가 확인·실패를 장치 연결과 구분한다", async () => {
     const hub = createStudioSupergapRuntimeHub({
       loopbackConfig: { fetchImpl: unreachableFetch },
+    });
+    hub.registerExtensionSubsystem({
+      id: "failed-sample",
+      waveLabel: "Test",
+      titleKo: "실패한 테스트 예제",
+      capabilitySummaryKo: "테스트 예제",
+      async execute() { throw new Error("테스트 예제 실행 실패"); },
     });
 
     render(
@@ -572,9 +579,24 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     fireEvent.click(diagBtn);
 
     await waitFor(() => {
-      expect(screen.getByTestId("supergap-status-cadShaperPro3d").textContent).toBe("실시간 연결");
+      expect(screen.getByTestId("supergap-status-cadShaperPro3d").textContent).toBe("점검 통과");
     });
-    expect(screen.getByTestId("supergap-bridge-metrics").textContent).toContain("8/8 정상");
+    expect(screen.getByTestId("supergap-status-desktopNativeGpuNpuBridge").textContent).toBe("추가 확인");
+    expect(screen.getByTestId("supergap-status-failed-sample").textContent).toBe("점검 실패");
+    expect(screen.getByTestId("supergap-connection-pill").textContent).toBe("네이티브 연결 없음");
+    expect(screen.queryByText("실시간 연결")).toBeNull();
+
+    const report = hub.getSnapshot().lastReport;
+    if (!report) throw new Error("전체 점검 결과가 필요합니다.");
+    expect(report.liveConnectedCount).toBeGreaterThan(0);
+    expect(report.browserFallbackCount).toBeGreaterThan(0);
+    expect(report.errorCount).toBe(1);
+    expect(screen.getByTestId("supergap-bridge-metrics").textContent).toContain(
+      `최근 전체 점검 ${report.subsystems.length}개 · 통과 ${report.liveConnectedCount} · 추가 확인 ${report.browserFallbackCount} · 실패 1`,
+    );
+    expect(screen.getByTestId("supergap-subsystems-disclosure").querySelector("summary")?.textContent).toContain(
+      `${report.subsystems.length}개 중 ${report.subsystems.length}개 점검`,
+    );
   });
 
   it("개별 서브시스템 1-클릭 점검 버튼과 닫기 콜백이 정상 동작한다", async () => {
@@ -592,14 +614,18 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
       }),
     );
 
+    const brushGroup = screen.getByTestId("supergap-subsystems-disclosure").querySelector<HTMLDetailsElement>('[data-runtime-diagnostic-group="그리기와 색"]');
+    if (!brushGroup) throw new Error("그리기와 색 점검 그룹이 필요합니다.");
+    expect(brushGroup.open).toBe(false);
+    brushGroup.open = true;
     fireEvent.click(screen.getByTestId("supergap-run-neuralBrushAndProvenance"));
     await waitFor(() => {
       expect(screen.getByTestId("supergap-status-neuralBrushAndProvenance").textContent).toBe(
-        "실시간 연결",
+        "점검 통과",
       );
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "초격차 런타임 허브 닫기" }));
+    fireEvent.click(screen.getByRole("button", { name: "엔진 상태 닫기" }));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -651,7 +677,7 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(byId.get("wave98CentennialC2paArchive")?.status).toBe("live-connected");
   });
 
-  it("StudioSupergapRuntimeHubLazyHost가 열기 전 0 DOM 유지 후 토글 시 11종 허브 드로어를 지연 마운트한다", async () => {
+  it("열기 전 드로어가 없고 열면 현재 등록된 전체 진단 항목 수를 표시한다", async () => {
     closeStudioSupergapRuntimeHub();
     render(createElement(StudioSupergapRuntimeHubLazyHost));
     expect(screen.queryByTestId("studio-supergap-status-drawer")).toBeNull();
@@ -660,8 +686,31 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     await waitFor(() => {
       expect(screen.getByTestId("studio-supergap-status-drawer")).toBeTruthy();
     });
+    const disclosure = screen.getByTestId("supergap-subsystems-disclosure");
+    const registeredTestIds = createFullStudioSupergapRuntimeHub().getRegisteredSubsystems()
+      .map(({ id }) => `supergap-subsystem-${id}`).sort();
+    expect(disclosure.querySelector("summary")?.textContent).toContain(`${registeredTestIds.length}개 등록`);
 
-    fireEvent.keyDown(window, { key: "Escape" });
+    const groups = disclosure.querySelectorAll<HTMLDetailsElement>("[data-runtime-diagnostic-group]");
+    expect(Array.from(groups).every((group) => !group.open)).toBe(true);
+    const rows = disclosure.querySelectorAll('[data-testid^="supergap-subsystem-"]');
+    const rowTestIds = Array.from(rows, (row) => row.getAttribute("data-testid")).sort();
+    expect(rowTestIds).toEqual(registeredTestIds);
+
+    const newGroupById = {
+      wave91KinematicPenTwinCleanup: "입력과 화면",
+      wave87CausalTimeTravelCanvas: "그리기와 색",
+      wave90CurvilinearPerspectiveBrush: "그리기와 색",
+      wave88ReactiveTstudioLive: "장면과 출력",
+      wave89MultiverseCanonCompiler: "장면과 출력",
+      wave92GeoVariantComplianceShield: "검수와 인계",
+    };
+    for (const [id, label] of Object.entries(newGroupById)) {
+      expect(screen.getByTestId(`supergap-subsystem-${id}`)
+        .closest("[data-runtime-diagnostic-group]")?.getAttribute("data-runtime-diagnostic-group")).toBe(label);
+    }
+
+    fireEvent.keyDown(screen.getByRole("group", { name: "편집기 엔진 상태" }), { key: "Escape" });
     await waitFor(() => {
       expect(screen.queryByTestId("studio-supergap-status-drawer")).toBeNull();
     });

@@ -1,5 +1,6 @@
 import {
   Check,
+  ChevronDown,
   Copy,
   Feather,
   Layers,
@@ -18,10 +19,12 @@ import {
   runFreeAiZeroBillAssist,
   type FreeAiModeCategoryKo,
   type FreeAiQuotaStatusSnapshot,
+  type FreeAiZeroBillAssistInput,
   type FreeAiZeroBillAssistResponse,
   type FreeAiZeroBillModeId,
 } from "@/shared/ai/free-ai-zero-bill-cascade";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { StudioExportImageFacts } from "./StudioExportImageFacts";
@@ -32,17 +35,19 @@ const LazyStudioDesignStoryAi4SuitesPanel = lazy(
   () => import("../ai-creative-suites/StudioDesignStoryAi4SuitesPanel"),
 );
 
+interface SubmittedAssistResult {
+  readonly input: FreeAiZeroBillAssistInput;
+  readonly response: FreeAiZeroBillAssistResponse;
+}
+
 interface ModeWorkspace {
   readonly draft?: string;
   readonly running?: boolean;
-  readonly result?: FreeAiZeroBillAssistResponse;
+  readonly result?: SubmittedAssistResult;
   readonly statusMessage?: string | null;
 }
 
-type CategoryFilter = "전체" | FreeAiModeCategoryKo;
-
-const CATEGORY_TABS: readonly CategoryFilter[] = [
-  "전체",
+const MODE_CATEGORIES: readonly FreeAiModeCategoryKo[] = [
   "기획·스토리",
   "연출·3D·채색",
   "마감·효과·현지화",
@@ -60,11 +65,11 @@ export function StudioFreeAiAssistWorkbench({
   initialMode = "character-bible-forge",
   fetchImpl,
 }: StudioFreeAiAssistWorkbenchProps) {
+  const bt = useBilingual("studio.freeAiWorkbench");
   const [quota, setQuota] = useState<FreeAiQuotaStatusSnapshot>(() =>
     createOfflineZeroBillQuotaSnapshot(),
   );
   const [loadingQuota, setLoadingQuota] = useState(false);
-  const [category, setCategory] = useState<CategoryFilter>("전체");
   const [selectedMode, setSelectedMode] = useState<FreeAiZeroBillModeId>(initialMode);
   const [workspaces, setWorkspaces] = useState<Partial<Record<FreeAiZeroBillModeId, ModeWorkspace>>>({});
   const [copiedResult, setCopiedResult] = useState<FreeAiZeroBillAssistResponse | null>(null);
@@ -107,13 +112,6 @@ export function StudioFreeAiAssistWorkbench({
   }, [copiedResult]);
 
   const gauge = useMemo(() => computeZeroBillSafetyGauge(quota), [quota]);
-  const visibleModes = useMemo(
-    () =>
-      category === "전체"
-        ? FREE_AI_14_ASSIST_MODES
-        : FREE_AI_14_ASSIST_MODES.filter((item) => item.categoryKo === category),
-    [category],
-  );
   const currentSpec = useMemo(
     () =>
       FREE_AI_14_ASSIST_MODES.find((item) => item.id === selectedMode) ??
@@ -124,9 +122,16 @@ export function StudioFreeAiAssistWorkbench({
   const workspace = workspaces[selectedMode];
   const inputText = workspace?.draft ?? currentSpec.samplePromptKo;
   const running = workspace?.running ?? false;
-  const result = workspace?.result;
+  const otherRunningCount = Object.entries(workspaces)
+    .filter(([mode, state]) => mode !== selectedMode && state?.running).length;
+  const previousResult = workspace?.result;
+  const staleResult = previousResult !== undefined
+    && (previousResult.input.inputText !== inputText || previousResult.input.projectTitle !== projectTitle);
+  const result = previousResult && !staleResult && previousResult.response.mode === selectedMode
+    ? previousResult.response
+    : null;
   const statusMessage = workspace?.statusMessage;
-  const copied = result === copiedResult;
+  const copied = result !== null && result === copiedResult;
 
   const updateMode = (mode: FreeAiZeroBillModeId, changes: Partial<ModeWorkspace>) => {
     setWorkspaces((previous) => ({ ...previous, [mode]: { ...previous[mode], ...changes } }));
@@ -138,14 +143,15 @@ export function StudioFreeAiAssistWorkbench({
     if (jobs.has(mode)) return;
     const controller = new AbortController();
     jobs.set(mode, controller);
+    const submittedInput: FreeAiZeroBillAssistInput = { mode, inputText, projectTitle };
     updateMode(mode, { running: true, statusMessage: null });
     try {
       const response = await runFreeAiZeroBillAssist(
-        { mode, inputText, projectTitle },
+        submittedInput,
         { fetchImpl, signal: controller.signal },
       );
       if (jobs.get(mode) === controller) {
-        updateMode(mode, { result: response });
+        updateMode(mode, { result: { input: submittedInput, response } });
         void refreshQuota();
       }
     } catch {
@@ -198,25 +204,29 @@ export function StudioFreeAiAssistWorkbench({
       aria-labelledby="studio-free-ai-workbench-heading"
       className="mt-4 rounded-2xl border border-line bg-panel/80 p-4"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
-        <div>
-          <p className="flex items-center gap-1.5 text-[0.7rem] font-extrabold tracking-wide text-accent">
-            <ShieldCheck size={14} aria-hidden="true" />
-            {gauge.badgeTextKo}
-          </p>
-          <h3
-            id="studio-free-ai-workbench-heading"
-            className="mt-1 text-base font-black text-fg"
-          >
-            무과금 웹툰 AI 14모드 랩
-          </h3>
-          <p className="mt-0.5 text-xs leading-5 text-fg-2">{gauge.detailTextKo}</p>
-        </div>
+      <div className="border-b border-line pb-3">
+        <h3 id="studio-free-ai-workbench-heading" className="text-base font-black text-fg">
+          {bt("웹툰 창작 보조", "Webtoon creator assistant")}
+        </h3>
+        <p className="mt-1 flex items-center gap-1.5 text-[0.7rem] font-extrabold text-accent">
+          <ShieldCheck size={14} className="shrink-0" aria-hidden="true" />
+          {bt("창작자 이용료 ₩0 · 무료 경로만 사용", "Creator fee ₩0 · Free processing only")}
+        </p>
+        <p className="mt-0.5 text-xs leading-5 text-fg-2">{gauge.detailTextKo}</p>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex min-h-9 items-center rounded-full border border-success/35 bg-success-soft/20 px-3 text-xs font-extrabold text-success">
-            창작자 이용료 {quota.guaranteedZeroCostKrwLabel}
-          </span>
+      <details className="group mt-3 rounded-xl border border-line bg-card">
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between px-3 text-xs font-bold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+          {bt("할당량과 처리 방식", "Quota and processing")}
+          <ChevronDown size={16} aria-hidden="true" className="transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+        </summary>
+        <div className="p-3 pt-0">
+          <p className="mb-2 text-xs leading-5 text-fg-2">
+            {bt(
+              "무료 클라우드를 사용할 수 없으면 로컬 코치가 제안합니다.",
+              "When free cloud processing is unavailable, the local coach provides suggestions.",
+            )}
+          </p>
           <button
             type="button"
             onClick={() => void refreshQuota()}
@@ -234,126 +244,90 @@ export function StudioFreeAiAssistWorkbench({
             />
             할당량 새로고침
           </button>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-fg">서버 일일 할당량 (안전 한도 {Math.round(quota.safetyCutoffRatio * 100)}%)</span>
+            <span className="font-semibold text-fg-2">
+              사용률 {gauge.utilizationPct}% · 활성 클라우드 {gauge.activeCloudCount}/{gauge.configuredCloudCount}
+            </span>
+          </div>
+          <div
+            className="mt-2 h-2 w-full overflow-hidden rounded-full bg-panel"
+            role="progressbar"
+            aria-label="무료 AI 일일 안전 할당량 사용률"
+            aria-valuenow={gauge.utilizationPct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className={cn("h-full rounded-full transition-[width] duration-200 motion-reduce:transition-none", gaugeBarClass)}
+              style={{ width: `${gauge.utilizationPct}%` }}
+            />
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {quota.providers.map((provider) => (
+              <span
+                key={provider.id}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold",
+                  provider.tier === "local-fallback"
+                    ? "border-accent/35 bg-accent-soft/40 text-accent"
+                    : provider.blocked
+                      ? "border-danger/35 bg-danger-soft/20 text-danger"
+                      : provider.configured
+                        ? "border-success/35 bg-success-soft/20 text-success"
+                        : "border-line bg-panel text-fg-3",
+                )}
+              >
+                <span>{provider.labelKo}</span>
+                <span>
+                  {provider.tier === "local-fallback"
+                    ? "항상 준비"
+                    : provider.blocked
+                      ? provider.blockReason === "free_billing_unconfirmed"
+                        ? "무료 계정 확인 필요"
+                        : provider.blockedUntilUtc ? "UTC 자정까지 차단" : "모델 설정 확인 필요"
+                      : provider.configured
+                        ? `잔여 ${provider.remainingSafeRequests}회`
+                        : "미설정"}
+                </span>
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      </details>
 
-      <div className="mt-3 rounded-xl border border-line bg-card p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="font-bold text-fg">서버 일일 할당량 (안전 한도 {Math.round(quota.safetyCutoffRatio * 100)}%)</span>
-          <span className="font-semibold text-fg-2">
-            사용률 {gauge.utilizationPct}% · 활성 클라우드 {gauge.activeCloudCount}/{gauge.configuredCloudCount}
+      <div className="mt-4 space-y-1.5">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+          <label htmlFor="studio-free-ai-workbench-mode" className="text-xs font-bold text-fg">
+            {bt("작업 모드", "Work mode")}
+          </label>
+          <span aria-live="polite" aria-atomic="true" className="text-xs font-semibold text-fg-2">
+            {otherRunningCount > 0
+              ? bt("다른 모드 {count}개 분석 중", "Other modes running · {count}").replace("{count}", String(otherRunningCount))
+              : null}
           </span>
         </div>
-        <div
-          className="mt-2 h-2 w-full overflow-hidden rounded-full bg-panel"
-          role="progressbar"
-          aria-label="무료 AI 일일 안전 할당량 사용률"
-          aria-valuenow={gauge.utilizationPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
+        <select
+          id="studio-free-ai-workbench-mode"
+          aria-describedby="studio-free-ai-workbench-mode-description"
+          value={selectedMode}
+          onChange={(event) => {
+            const mode = FREE_AI_14_ASSIST_MODES.find((item) => item.id === event.target.value);
+            if (mode) setSelectedMode(mode.id);
+          }}
+          className="min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          <div
-            className={cn("h-full rounded-full transition-[width] duration-200", gaugeBarClass)}
-            style={{ width: `${gauge.utilizationPct}%` }}
-          />
-        </div>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {quota.providers.map((provider) => (
-            <span
-              key={provider.id}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold",
-                provider.tier === "local-fallback"
-                  ? "border-accent/35 bg-accent-soft/40 text-accent"
-                  : provider.blocked
-                    ? "border-danger/35 bg-danger-soft/20 text-danger"
-                    : provider.configured
-                      ? "border-success/35 bg-success-soft/20 text-success"
-                      : "border-line bg-panel text-fg-3",
-              )}
-            >
-              <span>{provider.labelKo}</span>
-              <span>
-                {provider.tier === "local-fallback"
-                  ? "항상 준비"
-                  : provider.blocked
-                    ? provider.blockReason === "free_billing_unconfirmed"
-                      ? "무료 계정 확인 필요"
-                      : provider.blockedUntilUtc ? "UTC 자정까지 차단" : "모델 설정 확인 필요"
-                    : provider.configured
-                      ? `잔여 ${provider.remainingSafeRequests}회`
-                      : "미설정"}
-              </span>
-            </span>
+          {MODE_CATEGORIES.map((category) => (
+            <optgroup key={category} label={category}>
+              {FREE_AI_14_ASSIST_MODES.filter((mode) => mode.categoryKo === category).map((mode) => (
+                <option key={mode.id} value={mode.id}>
+                  {mode.labelKo}{workspaces[mode.id]?.running ? bt(" · 분석 중", " · Running") : ""}
+                </option>
+              ))}
+            </optgroup>
           ))}
-        </div>
-      </div>
-
-      <div
-        className="mt-3 flex flex-wrap gap-1.5"
-        role="tablist"
-        aria-label="무과금 AI 모드 분야"
-      >
-        {CATEGORY_TABS.map((tab) => {
-          const active = category === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setCategory(tab)}
-              className={cn(
-                "min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
-                active
-                  ? "border-accent bg-accent text-on-accent"
-                  : "border-line bg-card text-fg-2 hover:border-accent/45 hover:text-fg",
-              )}
-            >
-              {tab}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleModes.map((mode) => {
-          const active = selectedMode === mode.id;
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setSelectedMode(mode.id)}
-              className={cn(
-                "flex min-h-16 flex-col items-start rounded-xl border p-3 text-left transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
-                active
-                  ? "border-accent bg-accent-soft/35 text-fg"
-                  : "border-line bg-card text-fg-2 hover:border-accent/40 hover:text-fg",
-              )}
-            >
-              <div className="flex w-full items-center justify-between gap-2">
-                <strong className="inline-flex items-center gap-1.5 text-xs font-extrabold text-fg">
-                  {mode.labelKo}
-                  {workspaces[mode.id]?.running ? (
-                    <>
-                      <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                      <span className="sr-only">분석 중</span>
-                    </>
-                  ) : null}
-                </strong>
-                <span className="rounded bg-panel px-1.5 py-0.5 text-[0.62rem] font-semibold text-fg-3">
-                  {mode.benchmarkLabel}
-                </span>
-              </div>
-              <span className="mt-1 text-[0.7rem] leading-4 text-fg-3">
-                {mode.descriptionKo}
-              </span>
-            </button>
-          );
-        })}
+        </select>
+        <p id="studio-free-ai-workbench-mode-description" className="text-xs leading-5 text-fg-2">{currentSpec.descriptionKo}</p>
       </div>
 
       <div className="mt-3 space-y-2">
@@ -367,9 +341,9 @@ export function StudioFreeAiAssistWorkbench({
           <button
             type="button"
             onClick={() => updateMode(selectedMode, { draft: currentSpec.samplePromptKo })}
-            className="min-h-9 rounded-lg px-2 text-xs font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="min-h-11 rounded-lg px-2 text-xs font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
-            초보자 예시 채우기
+            {bt("예시 채우기", "Use an example")}
           </button>
         </div>
         <textarea
@@ -388,47 +362,50 @@ export function StudioFreeAiAssistWorkbench({
             onChange={(draft) => updateMode("export-preflight-coach", { draft })}
           />
         )}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[0.7rem] text-fg-3">
-            유료 모델 호출 원천 차단 · 무료 소진 시 로컬 무과금 코치(₩0) 자동 전환
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={running}
+            onClick={() => void handleRun()}
+            data-testid="free-ai-workbench-run-btn"
+            className={buttonClass({
+              variant: "solid",
+              className: "min-h-11 gap-2",
+            })}
+          >
+            {running ? (
+              <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            ) : (
+              <Feather size={15} aria-hidden="true" />
+            )}
+            {running ? "₩0 무료 AI 분석 중…" : "₩0 무료 AI 실행"}
+          </button>
+          {running ? (
             <button
               type="button"
-              disabled={running}
-              onClick={() => void handleRun()}
-              data-testid="free-ai-workbench-run-btn"
+              data-testid="free-ai-workbench-cancel-btn"
+              onClick={handleCancel}
               className={buttonClass({
-                variant: "solid",
-                className: "min-h-11 gap-2",
+                variant: "outline",
+                className: "min-h-11 gap-1.5",
               })}
             >
-              {running ? (
-                <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-              ) : (
-                <Feather size={15} aria-hidden="true" />
-              )}
-              {running ? "₩0 무료 AI 분석 중…" : "₩0 무료 AI 실행"}
+              <X size={15} aria-hidden="true" />
+              요청 취소
             </button>
-            {running ? (
-              <button
-                type="button"
-                data-testid="free-ai-workbench-cancel-btn"
-                onClick={handleCancel}
-                className={buttonClass({
-                  variant: "outline",
-                  className: "min-h-11 gap-1.5",
-                })}
-              >
-                <X size={15} aria-hidden="true" />
-                요청 취소
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </div>
         {statusMessage ? (
           <p role="status" className="text-xs font-semibold text-fg-2">
             {statusMessage}
+          </p>
+        ) : null}
+        {staleResult ? (
+          <p role="status" className="text-xs font-semibold text-fg-2">
+            {bt(
+              "입력이 바뀌었어요. 다시 실행하거나 이전 입력으로 되돌리면 결과를 볼 수 있어요.",
+              "The draft changed. Run again or restore the previous draft to see its result.",
+            )}
           </p>
         ) : null}
       </div>
@@ -439,19 +416,18 @@ export function StudioFreeAiAssistWorkbench({
           className="mt-3 rounded-xl border border-accent/35 bg-card p-3.5 text-xs"
         >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-accent-soft px-2.5 py-0.5 font-bold text-accent">
-                {result.providerId} · {result.model}
-              </span>
-              <span className="font-semibold text-success">창작자 이용료 ₩0</span>
-            </div>
+            <span className="rounded-full bg-accent-soft px-2.5 py-0.5 font-bold text-accent">
+              {result.providerTier === "cloud-free"
+                ? bt("무료 클라우드", "Free cloud processing")
+                : bt("로컬 코치", "Local coach")}
+            </span>
             <button
               type="button"
               onClick={() => void handleCopyResult()}
               className={buttonClass({
                 variant: "outline",
                 size: "sm",
-                className: "min-h-10 gap-1.5",
+                className: "min-h-11 gap-1.5",
               })}
             >
               {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
@@ -471,6 +447,22 @@ export function StudioFreeAiAssistWorkbench({
               </li>
             ))}
           </ul>
+          <details className="group mt-2 rounded-lg border border-line">
+            <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-2.5 font-semibold text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+              {bt("처리 정보", "Processing details")}
+              <ChevronDown size={14} aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+            </summary>
+            <dl className="space-y-1.5 px-2.5 pb-2.5">
+              <div>
+                <dt className="font-semibold text-fg-2">{bt("공급자", "Provider")}</dt>
+                <dd className="break-all text-fg">{result.providerId}</dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-fg-2">{bt("모델", "Model")}</dt>
+                <dd className="break-all text-fg">{result.model}</dd>
+              </div>
+            </dl>
+          </details>
         </div>
       ) : null}
 
