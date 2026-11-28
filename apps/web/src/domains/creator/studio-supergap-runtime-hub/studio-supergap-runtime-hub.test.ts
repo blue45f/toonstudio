@@ -603,16 +603,16 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("createFullStudioSupergapRuntimeHub가 Wave 68~104 실전 확장까지 43종 전체를 오류 0건으로 진단한다", async () => {
+  it("createFullStudioSupergapRuntimeHub가 Wave 68~110 실전 확장까지 49종 전체를 오류 0건으로 진단한다", async () => {
     const hub = createFullStudioSupergapRuntimeHub({
       loopbackConfig: { fetchImpl: unreachableFetch },
     });
-    expect(hub.getRegisteredSubsystems().length).toBe(43);
+    expect(hub.getRegisteredSubsystems().length).toBe(49);
 
     const report = await hub.runDiagnosticSelfCheck();
     expect(report.allHealthy).toBe(true);
     expect(report.errorCount).toBe(0);
-    expect(report.subsystems.length).toBe(43);
+    expect(report.subsystems.length).toBe(49);
 
     const byId = new Map(report.subsystems.map((item) => [item.id, item]));
     expect(byId.get("wave68ShallowWaterFluid")?.status).toBe("live-connected");
@@ -655,7 +655,13 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(byId.get("wave102EmotionalColorScript")?.status).toBe("live-connected");
     expect(byId.get("wave103PerspectiveCrowdScatter")?.status).toBe("live-connected");
     expect(byId.get("wave104BalloonFluidTypography")?.status).toBe("live-connected");
-  });
+    expect(byId.get("wave105ActionSpeedlineImpactFx")?.status).toBe("live-connected");
+    expect(byId.get("wave106CharacterTurnaroundRig")?.status).toBe("live-connected");
+    expect(byId.get("wave107MultilingualFontTategaki")?.status).toBe("live-connected");
+    expect(byId.get("wave108VerticalScrollRhythm")?.status).toBe("live-connected");
+    expect(byId.get("wave109SmartThumbnailPackager")?.status).toBe("live-connected");
+    expect(byId.get("wave110LocalizationExpansionBridge")?.status).toBe("live-connected");
+  }, 20_000);
 
   it("StudioSupergapRuntimeHubLazyHost가 열기 전 0 DOM 유지 후 토글 시 11종 허브 드로어를 지연 마운트한다", async () => {
     closeStudioSupergapRuntimeHub();

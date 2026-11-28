@@ -603,8 +603,9 @@ export function createStudioSupergapRuntimeHub(options: StudioSupergapRuntimeHub
       emitSnapshot();
       try {
         const bridge = hardwareBridge ?? (await runHardwareBridgeBootstrap());
-        const subsystems: SupergapSubsystemExecutionResult[] = [];
-        for (const entry of collectAllEntries()) subsystems.push(await executeSingleEntry(entry, undefined, false));
+        const subsystems = await Promise.all(
+          collectAllEntries().map((entry) => executeSingleEntry(entry, undefined, false)),
+        );
         const liveConnectedCount = subsystems.filter((i) => i.status === "live-connected").length;
         const browserFallbackCount = subsystems.filter((i) => i.status === "browser-fallback").length;
         const errorCount = subsystems.length - liveConnectedCount - browserFallbackCount;
