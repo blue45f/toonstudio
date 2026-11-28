@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearStudioAssistantSessionState,
+  completeStudioAssistantRequest,
+  prepareStudioAssistantRequest,
   readStudioAssistantSessionState,
+  studioAssistantSessionKey,
   writeStudioAssistantSessionState,
   type StudioAssistantSessionSnapshot,
 } from "./studio-assistant-session-store";
 
 const draft: StudioAssistantSessionSnapshot = Object.freeze({ prompt: "다음 장면을 이어 쓰기", openAiMode: "script-to-cuts", lastResult: null });
-const key = "toonstudio:assistant-draft:v1:project-a";
+const key = studioAssistantSessionKey("project-a");
 function memoryStorage(): Storage {
   const values = new Map<string, string>();
   return {
@@ -85,7 +88,135 @@ describe("도우미 탭 초안 저장소 접근 거부", () => {
   });
 });
 
-it("이전 저장본의 입력과 유효 결과를 살리고 잘못된 결과만 폐기한다", () => {
+it("같은 작품에서도 게스트와 두 계정의 저장·조회·정리를 각각 격리한다", () => {
+  const storage = memoryStorage();
+  const projectId = "같은-작품";
+  const legacyKey = `toonstudio:assistant-draft:v1:${projectId}`;
+  const legacyRecord = JSON.stringify({ ...draft, prompt: "이전 로그인 원고" });
+  storage.setItem(legacyKey, legacyRecord);
+
+  const guestDraft = { ...draft, prompt: "새 게스트 원고" };
+  const firstDraft = { ...draft, prompt: "첫 작가 원고" };
+  const secondDraft = { ...draft, prompt: "둘째 작가 원고" };
+  expect(readStudioAssistantSessionState(projectId, storage)).toBeNull();
+  expect(readStudioAssistantSessionState(projectId, storage, "writer-a")).toBeNull();
+  writeStudioAssistantSessionState(projectId, guestDraft, storage);
+  writeStudioAssistantSessionState(projectId, firstDraft, storage, "writer-a");
+  writeStudioAssistantSessionState(projectId, secondDraft, storage, "writer-b");
+
+  expect(readStudioAssistantSessionState(projectId, storage, "writer-a")).toEqual(firstDraft);
+  clearStudioAssistantSessionState(projectId, storage, "writer-a");
+  expect(readStudioAssistantSessionState(projectId, storage, "writer-a")).toBeNull();
+  expect(readStudioAssistantSessionState(projectId, storage, "writer-b")).toEqual(secondDraft);
+  expect(readStudioAssistantSessionState(projectId, storage)).toEqual(guestDraft);
+  expect(storage.getItem(legacyKey)).toBe(legacyRecord);
+});
+
+describe("원고별 미확정 요청", () => {
+  const project = "project-a";
+  const owner = "writer-a";
+  const ownerKey = studioAssistantSessionKey(project, owner);
+  const storedDraft = () => readStudioAssistantSessionState(project, undefined, owner);
+
+  function ready(body: string, confirmedExpiredKey?: string) {
+    const prepared = prepareStudioAssistantRequest(project, owner, draft, body, confirmedExpiredKey);
+    if (prepared.kind !== "ready") throw new Error(`준비하지 못한 테스트 요청: ${prepared.kind}`);
+    return prepared.pending;
+  }
+
+  it("v2의 기존 단일 키를 재사용하고 본문과 신뢰할 수 없는 표식 필드는 저장하지 않는다", () => {
+    const body = "대사 교정에 쓴 합성 본문";
+    const original = ready(body);
+    const legacy = { ...draft, pendingRequest: { ...original, untrustedManuscript: "표식에 넣을 수 없는 원고" } };
+    window.sessionStorage.setItem(ownerKey, JSON.stringify(legacy));
+    expect(ready(body)).toEqual(original);
+
+    const second = ready("다른 작업의 합성 본문");
+    expect(ready(body)).toEqual(original);
+    const pending = storedDraft()?.pendingRequests;
+    expect(pending).toHaveLength(2);
+    expect(pending).toEqual(expect.arrayContaining([original, second]));
+    const serialized = window.sessionStorage.getItem(ownerKey);
+    expect(serialized).not.toBeNull();
+    expect(serialized).not.toContain(body);
+    expect(serialized).not.toContain("표식에 넣을 수 없는 원고");
+
+    window.sessionStorage.setItem(key, JSON.stringify(legacy));
+    expect(readStudioAssistantSessionState(project)?.pendingRequests).toBeUndefined();
+    writeStudioAssistantSessionState(project, draft);
+    expect(window.sessionStorage.getItem(key)).not.toContain(original.key);
+    expect(readStudioAssistantSessionState(project, undefined, "writer-b")).toBeNull();
+    window.sessionStorage.setItem(ownerKey, JSON.stringify({
+      ...draft, pendingRequest: { ...original, requestHash: "잘못된 해시" },
+    }));
+    expect(readStudioAssistantSessionState(project, undefined, owner)).toEqual(draft);
+  });
+
+  it("읽을 수 없는 표식이 섞인 저장본은 새로 쓰거나 유효한 키만 골라 보내지 않는다", () => {
+    const valid = ready("기존 원고");
+    const serialized = JSON.stringify({
+      ...draft, pendingRequests: [valid, { ...valid, requestHash: "손상된 해시" }],
+    });
+    window.sessionStorage.setItem(ownerKey, serialized);
+    expect(prepareStudioAssistantRequest(project, owner, draft, "기존 원고").kind).toBe("storage-unavailable");
+    expect(prepareStudioAssistantRequest(project, owner, draft, "새 원고").kind).toBe("storage-unavailable");
+    writeStudioAssistantSessionState(project, { ...draft, prompt: "새 초안" }, undefined, owner);
+    clearStudioAssistantSessionState(project, undefined, owner);
+    completeStudioAssistantRequest(project, owner, valid);
+    expect(window.sessionStorage.getItem(ownerKey)).toBe(serialized);
+  });
+
+  it("오래된 초안의 쓰기·지우기가 미확정 키를 없애거나 완료된 키를 되살리지 않는다", () => {
+    const first = ready("원고 A");
+    const staleDraft = storedDraft();
+    if (!staleDraft) throw new Error("저장된 테스트 초안이 없습니다.");
+    const second = ready("원고 B");
+    writeStudioAssistantSessionState(project, staleDraft, undefined, owner);
+    clearStudioAssistantSessionState(project, undefined, owner);
+    expect(ready("원고 A")).toEqual(first);
+    expect(ready("원고 B")).toEqual(second);
+    expect(storedDraft()?.pendingRequests).toEqual(expect.arrayContaining([first, second]));
+
+    completeStudioAssistantRequest(project, owner, { ...first, requestHash: second.requestHash });
+    expect(storedDraft()?.pendingRequests).toHaveLength(2);
+    completeStudioAssistantRequest(project, owner, second);
+    writeStudioAssistantSessionState(project, { ...staleDraft, pendingRequests: [first, second] }, undefined, owner);
+    expect(storedDraft()?.pendingRequests).toEqual([first]);
+    expect(ready("원고 A")).toEqual(first);
+    expect(ready("원고 B").key).not.toBe(second.key);
+  });
+
+  it("보관 한도에 도달하면 새 원고만 막고 만료된 키도 명시적 생성 전까지 남긴다", () => {
+    const now = vi.spyOn(Date, "now");
+    const issuedAt = 1_800_000_001_000;
+    now.mockReturnValue(issuedAt);
+    const entries = Array.from({ length: 32 }, (_, index) => ready(`합성 원고 ${index}`));
+    const [first, second] = entries;
+    if (!first || !second) throw new Error("보관 한도 테스트 키가 없습니다.");
+    expect(prepareStudioAssistantRequest(project, owner, draft, "33번째 원고").kind).toBe("pending-limit");
+    expect(prepareStudioAssistantRequest(project, "writer-b", draft, "합성 원고 0").kind).toBe("ready");
+    completeStudioAssistantRequest(project, "writer-b", first);
+    expect(storedDraft()?.pendingRequests).toHaveLength(32);
+    expect(ready("합성 원고 0")).toEqual(first);
+
+    now.mockReturnValue(issuedAt + 30 * 60 * 1_000);
+    expect(prepareStudioAssistantRequest(project, owner, draft, "33번째 원고").kind).toBe("pending-limit");
+    expect(prepareStudioAssistantRequest(project, owner, draft, "합성 원고 0")).toMatchObject({ kind: "expired", key: first.key });
+    const replacement = ready("합성 원고 0", first.key);
+    expect(replacement.key).not.toBe(first.key);
+    expect(replacement.requestHash).toBe(first.requestHash);
+    completeStudioAssistantRequest(project, owner, first);
+    expect(ready("합성 원고 0")).toEqual(replacement);
+    expect(storedDraft()?.pendingRequests).toHaveLength(32);
+    completeStudioAssistantRequest(project, owner, second);
+    const next = ready("33번째 원고");
+    const pending = storedDraft()?.pendingRequests;
+    expect(pending).toHaveLength(32);
+    expect(pending).toEqual(expect.arrayContaining([replacement, next, ...entries.slice(2)]));
+  });
+});
+
+it("소유 범위가 정해진 저장본에서 구형 입력 필드와 유효한 결과를 복원한다", () => {
   const storage = memoryStorage();
   const lastResult = {
     provider: "openai",

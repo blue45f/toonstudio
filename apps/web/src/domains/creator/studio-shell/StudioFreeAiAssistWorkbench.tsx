@@ -127,7 +127,7 @@ export function StudioFreeAiAssistWorkbench({
   const previousResult = workspace?.result;
   const staleResult = previousResult !== undefined
     && (previousResult.input.inputText !== inputText || previousResult.input.projectTitle !== projectTitle);
-  const result = previousResult && !staleResult && previousResult.response.mode === selectedMode
+  const result = !running && previousResult && !staleResult && previousResult.response.mode === selectedMode
     ? previousResult.response
     : null;
   const statusMessage = workspace?.statusMessage;
@@ -400,7 +400,7 @@ export function StudioFreeAiAssistWorkbench({
             {statusMessage}
           </p>
         ) : null}
-        {staleResult ? (
+        {!running && staleResult ? (
           <p role="status" className="text-xs font-semibold text-fg-2">
             {bt(
               "입력이 바뀌었어요. 다시 실행하거나 이전 입력으로 되돌리면 결과를 볼 수 있어요.",

@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionContext, type SessionContextValue } from "@/domains/auth/public/session/auth-session-store";
 import { useI18n } from "@/shared/lib/i18n";
+import { useApp } from "@/shared/lib/store";
 
 import {
   ALL_STUDIO_OPENAI_ASSIST_MODES,
@@ -21,9 +24,11 @@ import {
 import { createStudioProject } from "../studio-project-library-store";
 import {
   readStudioAssistantSessionState,
+  studioAssistantSessionKey,
   writeStudioAssistantSessionState,
 } from "./guided-flow/studio-assistant-session-store";
 import { StudioOpenAiAssistResultCard } from "./StudioOpenAiAssistResultCard";
+import { StudioOpenAiExtendedResultBody } from "./StudioOpenAiExtendedResultBody";
 import { StudioProjectAssistantPanel } from "./StudioProjectAssistantPanel";
 
 const EXTENDED_RESULTS: readonly StudioOpenAiExtendedStructuredResult[] = [
@@ -203,6 +208,14 @@ function makeSuccess(result: StudioOpenAiExtendedStructuredResult): StudioOpenAi
   };
 }
 
+function renderSessionPanel(panel: ReactElement) {
+  const ownerId = useApp.getState().userId;
+  const session: SessionContextValue = ownerId
+    ? { data: { user: { id: ownerId } }, ready: true, status: "authenticated", update: async () => null }
+    : { data: null, ready: true, status: "unauthenticated", update: async () => null };
+  return render(<SessionContext.Provider value={session}>{panel}</SessionContext.Provider>);
+}
+
 beforeEach(() => {
   window.sessionStorage.clear();
   window.localStorage.clear();
@@ -211,6 +224,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  useApp.getState().setSessionIdentity(null, null);
   window.sessionStorage.clear();
   window.localStorage.clear();
 });
@@ -256,6 +270,39 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
     }
   });
 
+  it("자동 단계가 없는 매크로는 수동 대기와 복사할 재개 조건을 표시한다", () => {
+    const summary = "분필 가루 레이어의 실제 ID를 확인한 뒤 편집기에서 불투명도를 19%로 맞추세요.";
+    const result: StudioOpenAiExtendedStructuredResult = {
+      mode: "mcp-workflow-macro", data: { macroTitle: "분필 가루", summary, zeroCostSafe: true, steps: [] },
+    };
+    expect(isValidStudioOpenAiStructuredResult(result)).toBe(true);
+    const onCopy = vi.fn();
+    render(<StudioOpenAiExtendedResultBody result={result} copiedKey={null} onCopy={onCopy} />);
+    expect(screen.getByText("자동 단계 없음 · 수동 확인 대기")).toBeTruthy();
+    expect(screen.getByText(summary)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "재개 조건 복사" }));
+    expect(onCopy).toHaveBeenCalledWith("mcp-macro", summary);
+  });
+
+  it.each([[null, "엔딩 점수 미평가"], [0, "엔딩 흡인력 AI 추정 0/100"]] as const)(
+    "엔딩 점수 %s를 저장·복원한 뒤 편집 추정과 미평가를 구별해 표시한다", (score, label) => {
+      const previous = EXTENDED_RESULTS.find(result => result.mode === "scroll-pacing-auditor");
+      if (!previous || previous.mode !== "scroll-pacing-auditor") throw new Error("스크롤 예시 누락");
+      const response = makeSuccess({ mode: previous.mode, data: { ...previous.data, cliffhangerScore: score } });
+      writeStudioAssistantSessionState("saved-ending", {
+        prompt: "원고", openAiMode: previous.mode, lastResult: response,
+      }, window.sessionStorage);
+      const restored = readStudioAssistantSessionState("saved-ending", window.sessionStorage)?.lastResult;
+      if (!restored) throw new Error("저장된 엔딩 결과 누락");
+      render(<StudioOpenAiAssistResultCard response={restored} />);
+      const card = screen.getByTestId("openai-extended-result-scroll-pacing-auditor");
+      expect(card.textContent).toContain(label);
+      expect(card.textContent).toContain(previous.data.cliffhangerTip);
+      if (score === null) expect(card.textContent).not.toContain("/100");
+    },
+  );
+
+  const authorId = "comparison-author";
   const comparisonProjectId = "project-original-input";
   const originalInput = "서연의 캐릭터 바이블을 정리해 줘";
   const statusResponse = () => Response.json({
@@ -268,7 +315,7 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
   });
 
   function renderComparisonPanel(fetchImpl: typeof fetch) {
-    return render(
+    return renderSessionPanel(
       <MemoryRouter>
         <StudioProjectAssistantPanel
           projectId={comparisonProjectId}
@@ -281,6 +328,7 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
   }
 
   it.each(["다음 요청을 위한 별도 초안", ""])("편집 후 다시 열어도 받은 결과의 원문을 유지한다 (%j)", async (editedDraft) => {
+    useApp.getState().setSessionIdentity(authorId, null);
     const fetchMock = vi.fn<typeof fetch>()
       .mockImplementationOnce(async () => statusResponse())
       .mockImplementationOnce(async () => Response.json(makeSuccess(EXTENDED_RESULTS[0])))
@@ -300,13 +348,32 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
     expect(await screen.findByTestId("openai-extended-result-character-bible-forge")).toBeTruthy();
     expect(screen.getByLabelText<HTMLTextAreaElement>("요청 내용").value).toBe(editedDraft);
     expect(screen.getByTestId("openai-original-vs-suggestion").textContent).toContain(originalInput);
-    expect(readStudioAssistantSessionState(comparisonProjectId)?.submittedPrompt).toBe(originalInput);
+    expect(readStudioAssistantSessionState(comparisonProjectId, window.sessionStorage, authorId)?.submittedPrompt).toBe(originalInput);
   });
 
-  it("이전 저장본에서 제출 원문이 없으면 입력과 결과만 복원한다", async () => {
+  it("로그인·게스트가 공유하던 v1 원고는 게스트 화면에서 복원하지 않는다", async () => {
+    const legacyKey = `toonstudio:assistant-draft:v1:${comparisonProjectId}`;
+    const previousDraft = JSON.stringify({
+      prompt: "이전 로그인 작가의 편집 중 원고",
+      openAiMode: "character-bible-forge",
+      lastResult: makeSuccess(EXTENDED_RESULTS[0]),
+    });
+    window.sessionStorage.setItem(legacyKey, previousDraft);
+    const fetchMock = vi.fn<typeof fetch>().mockImplementationOnce(async () => statusResponse());
+
+    renderComparisonPanel(fetchMock);
+    await screen.findByTestId("openai-mode-character-bible-forge");
+
+    expect(screen.getByLabelText<HTMLTextAreaElement>("요청 내용").value).not.toContain("이전 로그인 작가");
+    expect(screen.queryByTestId("openai-extended-result-character-bible-forge")).toBeNull();
+    expect(window.sessionStorage.getItem(legacyKey)).toBe(previousDraft);
+  });
+
+  it("같은 계정의 저장본에서 제출 원문이 없으면 입력과 결과만 복원한다", async () => {
+    useApp.getState().setSessionIdentity(authorId, null);
     const editedDraft = "보낸 원문과 다른 편집 중 초안";
     window.sessionStorage.setItem(
-      `toonstudio:assistant-draft:v1:${comparisonProjectId}`,
+      studioAssistantSessionKey(comparisonProjectId, authorId),
       JSON.stringify({
         prompt: editedDraft,
         openAiMode: "character-bible-forge",
@@ -323,6 +390,7 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
   });
 
   it.each(["append", "undo"])("컷 계획 %s 저장 실패 시 재시도하고 새 컷만 되돌린다", async (failedAction) => {
+    useApp.getState().setSessionIdentity(authorId, null);
     createStudioProject(window.localStorage, {
       id: "project-undo-test",
       title: "비 오는 보관소",
@@ -403,7 +471,7 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
         ),
       );
 
-    render(
+    renderSessionPanel(
       <MemoryRouter initialEntries={["/studio/p/project-undo-test/story"]}>
         <StudioProjectAssistantPanel
           projectId="project-undo-test"
@@ -539,7 +607,7 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
       return Promise.reject(new Error("offline"));
     });
 
-    render(
+    renderSessionPanel(
       <MemoryRouter initialEntries={["/studio/p/project-free-lab/story"]}>
         <StudioProjectAssistantPanel
           projectId="project-free-lab"
@@ -566,6 +634,7 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
   });
 
   it("오류 발생 후에도 입력 문장이 남고 재시도로 정상 결과를 복구한다", async () => {
+    useApp.getState().setSessionIdentity(authorId, null);
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
@@ -594,7 +663,7 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
         ),
       );
 
-    render(
+    renderSessionPanel(
       <MemoryRouter initialEntries={["/studio/p/project-retry/story"]}>
         <StudioProjectAssistantPanel
           projectId="project-retry"

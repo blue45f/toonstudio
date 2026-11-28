@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 
 import { dbPool } from "../../platform/database";
 
-import { STUDIO_AI_ADMISSION_GATE } from "./studio-ai-admission";
+import { STUDIO_AI_ADMISSION_GATE, STUDIO_AI_LEASE_GRACE_MS } from "./studio-ai-admission";
 import {
   isStudioAiSha256Digest,
   STUDIO_AI_IDEMPOTENCY_RECEIPT_RETENTION_MS,
@@ -174,6 +174,7 @@ WHERE "userId" = $1
   AND "requestHash" = $3::bytea
   AND "leaseFence" = $4::bigint
   AND "status" IN ('admitted', 'sent')
+  AND "expiresAt" > clock_timestamp()
   AND "attemptCount" < ${STUDIO_AI_MAX_PROVIDER_ATTEMPTS}
 RETURNING "userKeyHash"
 `;
@@ -290,6 +291,23 @@ export class PostgresStudioAiAdmissionRepository implements StudioAiAdmissionGat
     private readonly pool: StudioAiAdmissionSqlPool = dbPool,
     private readonly tokenFactory: () => string = randomLeaseToken
   ) {}
+
+  /** 창작 모드는 서로 병렬 실행한다. 동일 작업 키만 영수증으로 선점한다. */
+  async claimCreativeAssist(input: StudioAiReceiptMutationInput): Promise<StudioAiIdempotencyConflictReason | null> {
+    const values = receiptMutationValues(input);
+    await this.pool.query(DELETE_EXPIRED_RECEIPTS_SQL, [input.userId]);
+    const inserted = await this.pool.query(
+      `INSERT INTO "studio_ai_request_receipt" ("userId", "userKeyHash", "requestHash", "leaseFence", "status", "expiresAt")
+       VALUES ($1, $2::bytea, $3::bytea, $4::bigint, 'admitted',
+               clock_timestamp() + ($5::integer * interval '1 millisecond'))
+       ON CONFLICT DO NOTHING RETURNING "userKeyHash"`,
+      [...values, STUDIO_AI_LEASE_GRACE_MS],
+    );
+    if (inserted.rowCount === 1) return null;
+    const conflict = await this.pool.query<ReceiptConflictRow>(FIND_RECEIPT_CONFLICT_SQL, values.slice(0, 3));
+    if (!conflict.rows[0]) throw new Error("창작 작업의 영수증을 확인할 수 없습니다.");
+    return conflictReason(conflict.rows[0]);
+  }
 
   async acquire(input: StudioAiAdmissionAcquireInput): Promise<StudioAiAdmissionResult> {
     const userId = validUserId(input.userId);

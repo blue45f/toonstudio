@@ -163,7 +163,7 @@ export const ScrollPacingAuditorOutputSchema = z
   .object({
     rhythmVerdict: z.string().min(1).max(320),
     averageGapPx: z.number().int().min(16).max(1_600),
-    cliffhangerScore: z.number().int().min(0).max(100),
+    cliffhangerScore: z.number().int().min(0).max(100).nullable(),
     cliffhangerTip: z.string().min(1).max(320),
     beatPacing: z
       .array(
@@ -255,7 +255,6 @@ export const McpWorkflowMacroOutputSchema = z
           })
           .strict(),
       )
-      .min(2)
       .max(16),
   })
   .strict();
@@ -381,7 +380,7 @@ export type OpenAiAssistStructuredResult =
   | { readonly mode: "localization-glossary-check"; readonly data: z.infer<typeof LocalizationGlossaryCheckOutputSchema> }
   | { readonly mode: "mcp-workflow-macro"; readonly data: z.infer<typeof McpWorkflowMacroOutputSchema> };
 
-export const MODE_OUTPUT_SCHEMAS: Readonly<Record<StudioOpenAiAssistMode, z.ZodTypeAny>> = Object.freeze({
+export const MODE_OUTPUT_SCHEMAS = Object.freeze({
   "idea-remix": OpenAiIdeaRemixOutputSchema,
   "script-to-cuts": OpenAiScriptToCutsOutputSchema,
   "dialogue-polish": OpenAiDialoguePolishOutputSchema,
@@ -396,7 +395,7 @@ export const MODE_OUTPUT_SCHEMAS: Readonly<Record<StudioOpenAiAssistMode, z.ZodT
   "thumbnail-hook-optimizer": ThumbnailHookOptimizerOutputSchema,
   "localization-glossary-check": LocalizationGlossaryCheckOutputSchema,
   "mcp-workflow-macro": McpWorkflowMacroOutputSchema,
-});
+} satisfies Record<StudioOpenAiAssistMode, z.ZodTypeAny>);
 
 export function validateAssistModeStructuredOutput(
   mode: StudioOpenAiAssistMode,

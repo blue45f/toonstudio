@@ -1,6 +1,7 @@
 import { Check, Copy, ListPlus, Undo2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { exportPreflightReviewScope, formatExportPreflightReview } from "@/shared/ai/export-preflight-review-scope";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -324,7 +325,9 @@ export function StudioOpenAiAssistResultCard({
 
       {result.mode === "export-preflight-coach" ? (
         <div className="mt-3 space-y-3 text-xs">
-          <p className="font-semibold text-fg">{result.data.readinessSummary}</p>
+          <p className="whitespace-pre-line font-semibold text-fg">
+            {formatExportPreflightReview(result.data.readinessSummary, bt(exportPreflightReviewScope.ko, exportPreflightReviewScope.en))}
+          </p>
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel/70 p-3">
             <div>
               <span className="text-[0.68rem] font-bold text-accent">

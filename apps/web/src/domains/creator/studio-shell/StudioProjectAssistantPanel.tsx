@@ -17,6 +17,8 @@ import {
   useBilingual,
   useBilingualLocalizer,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
+import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
 
 import type { StudioAiAssistToolId } from "../ai/studio-ai-assist-ux";
@@ -37,12 +39,15 @@ import {
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
 import {
-  clearStudioAssistantSessionState,
+  completeStudioAssistantRequest,
   defaultOpenAiModeForSection,
+  prepareStudioAssistantRequest,
   readStudioAssistantSessionState,
+  studioAssistantSessionKey,
   STUDIO_ASSISTANT_SUGGESTIONS,
   writeStudioAssistantSessionState,
   type AssistantSuggestionSpec,
+  type StudioAssistantPendingRequest,
   type StudioProjectAssistantSectionId,
 } from "./guided-flow/studio-assistant-session-store";
 import { StudioOpenAiAssistResultCard } from "./StudioOpenAiAssistResultCard";
@@ -119,7 +124,13 @@ function readLocalProjectContext(projectId: string): {
  * 프로젝트별 key 경계로 세션 복원 상태를 격리하고, 진행 중인 요청은 언제든 취소할 수 있다.
  */
 export function StudioProjectAssistantPanel(props: StudioProjectAssistantPanelProps) {
-  return <StudioProjectAssistantPanelBody key={props.projectId} {...props} />;
+  const session = useSession();
+  const storeOwner = useApp((state) => state.userId);
+  const sessionOwner = session.data?.user.id ?? null;
+  const identityPending = !session.ready || sessionOwner !== storeOwner;
+  const ownerId = identityPending ? null : sessionOwner;
+  return <StudioProjectAssistantPanelBody key={studioAssistantSessionKey(props.projectId, ownerId)}
+    ownerId={ownerId} identityPending={identityPending} {...props} />;
 }
 
 function StudioProjectAssistantPanelBody({
@@ -127,7 +138,9 @@ function StudioProjectAssistantPanelBody({
   section,
   locale = "ko",
   fetchImpl,
-}: StudioProjectAssistantPanelProps) {
+  ownerId,
+  identityPending,
+}: StudioProjectAssistantPanelProps & { readonly ownerId: string | null; readonly identityPending: boolean }) {
   const bt = useBilingual("StudioProjectAssistantPanel");
   const l = useBilingualLocalizer("studioProjectAssistant");
   const navigate = useNavigate();
@@ -142,10 +155,11 @@ function StudioProjectAssistantPanelBody({
     : "";
 
   const initialRestored = useMemo(
-    () => readStudioAssistantSessionState(projectId),
-    [projectId],
+    () => readStudioAssistantSessionState(projectId, undefined, ownerId),
+    [projectId, ownerId],
   );
 
+  const [expiredKey, setExpiredKey] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<StudioAiAssistToolId>(
     suggestions[0]?.tool ?? "composition",
   );
@@ -191,30 +205,20 @@ function StudioProjectAssistantPanelBody({
     };
   }, []);
 
-  useEffect(() => {
-    if (
-      completedRequest === null &&
-      (!prompt.trim() || (prompt === defaultPrompt && openAiMode === defaultMode))
-    ) {
-      clearStudioAssistantSessionState(projectId);
-      return;
-    }
-    writeStudioAssistantSessionState(projectId, {
-      prompt,
-      openAiMode,
-      lastResult: completedRequest?.result ?? null,
-      submittedPrompt: completedRequest?.submittedPrompt,
-    });
-  }, [
-    projectId,
+  const draftSnapshot = useMemo(() => ({
     prompt,
     openAiMode,
-    completedRequest,
-    defaultPrompt,
-    defaultMode,
-  ]);
+    lastResult: completedRequest?.result ?? null,
+    submittedPrompt: completedRequest?.submittedPrompt,
+  }), [prompt, openAiMode, completedRequest]);
+
+  useEffect(() => {
+    const isDefaultDraft = draftSnapshot.prompt === defaultPrompt && draftSnapshot.openAiMode === defaultMode;
+    writeStudioAssistantSessionState(projectId, draftSnapshot, undefined, ownerId, isDefaultDraft);
+  }, [projectId, ownerId, draftSnapshot, defaultPrompt, defaultMode]);
 
   const chooseSuggestion = (suggestion: AssistantSuggestionSpec) => {
+    setExpiredKey(null);
     setSelectedTool(suggestion.tool);
     setOpenAiMode(suggestion.openAiMode);
     setPrompt(l(suggestion.prompt.ko, suggestion.prompt.en));
@@ -226,7 +230,7 @@ function StudioProjectAssistantPanelBody({
     inFlightAbortRef.current?.abort();
     inFlightAbortRef.current = null;
     setRunningOpenAi(false);
-    clearStudioAssistantSessionState(projectId);
+    setExpiredKey(null);
     const first = suggestions[0];
     setSelectedTool(first?.tool ?? "composition");
     setOpenAiMode(defaultMode);
@@ -279,8 +283,14 @@ function StudioProjectAssistantPanelBody({
     }
   };
 
-  const runOpenAiAssist = async () => {
-    if (runningOpenAi || modelRetired) return;
+  const runOpenAiAssist = async (confirmedExpiredKey?: string) => {
+    if (inFlightAbortRef.current || modelRetired) return;
+    if (identityPending || !ownerId) {
+      setError(identityPending
+        ? bt("로그인 상태를 확인하고 있어요. 확인이 끝나면 다시 시도해 주세요.", "Checking your session. Try again when it is ready.")
+        : bt("OpenAI 초안을 요청하려면 먼저 로그인해 주세요.", "Sign in to request an OpenAI draft."));
+      return;
+    }
     const trimmed = prompt.trim();
     if (!trimmed) {
       setError(
@@ -291,13 +301,14 @@ function StudioProjectAssistantPanelBody({
       );
       return;
     }
-    inFlightAbortRef.current?.abort();
+    const generation = useApp.getState().authGeneration;
     const controller = new AbortController();
     inFlightAbortRef.current = controller;
     setRunningOpenAi(true);
     setError(null);
     setStatusMessage(null);
 
+    let dispatchedRequest: StudioAssistantPendingRequest | undefined;
     const localProject = readLocalProjectContext(projectId);
     const response = await runStudioOpenAiCreativeAssist(
       {
@@ -307,7 +318,32 @@ function StudioProjectAssistantPanelBody({
         genreOrTone: localProject.genreOrTone,
         targetPlatform: localProject.targetPlatform,
       },
-      { fetchImpl, signal: controller.signal },
+      {
+        fetchImpl,
+        signal: controller.signal,
+        getIdempotencyKey(body) {
+          const prepared = prepareStudioAssistantRequest(projectId, ownerId, draftSnapshot, body, confirmedExpiredKey);
+          if (prepared.kind === "expired") {
+            setExpiredKey(prepared.key);
+            return { code: "OPENAI_RETRY_WINDOW_EXPIRED",
+              message: bt("이전 요청의 중복 확인 기간이 지났어요. 크레딧을 다시 사용할 수 있는 새 초안을 직접 선택해 주세요.",
+                "The previous request can no longer be checked. Choose a new draft to allow another use of credits.") };
+          }
+          if (prepared.kind === "pending-limit") {
+            return { code: "OPENAI_PENDING_REQUEST_LIMIT",
+              message: bt("이 작품에서 결과를 확인하지 못한 요청이 32개 있어요. 먼저 이전 원고의 결과를 확인한 뒤 새 초안을 요청해 주세요.",
+                "This project has 32 unconfirmed requests. Check a previous draft’s result before starting a new one.") };
+          }
+          if (prepared.kind === "storage-unavailable") {
+            return { code: "OPENAI_RETRY_STORAGE_UNAVAILABLE",
+              message: bt("요청 키를 이 탭에 저장할 수 없어 생성을 시작하지 못했어요. 브라우저의 탭 저장소를 확인해 주세요.",
+                "Drafting could not start because this tab could not save the request key. Check browser storage.") };
+          }
+          setExpiredKey(null);
+          dispatchedRequest = prepared.pending;
+          return prepared.pending.key;
+        },
+      },
     );
 
     if (inFlightAbortRef.current !== controller || controller.signal.aborted) {
@@ -315,11 +351,20 @@ function StudioProjectAssistantPanelBody({
     }
     inFlightAbortRef.current = null;
     setRunningOpenAi(false);
+    if (useApp.getState().authGeneration !== generation) return;
     if (!response.ok) {
       if (response.code !== "CLIENT_ABORTED") {
-        setError(response.message);
+        if (response.status === 401) setCompletedRequest(null);
+        const message = response.code === "OPENAI_IDEMPOTENCY_UNAVAILABLE"
+          ? bt("기존 생성 요청의 상태를 확인할 수 없어요. 잠시 후 같은 입력으로 다시 시도해 주세요.",
+              "The previous request status is unavailable. Retry the same input in a moment.")
+          : response.message;
+        setError(`${message} (${response.code})`);
       }
       return;
+    }
+    if (dispatchedRequest) {
+      completeStudioAssistantRequest(projectId, ownerId, dispatchedRequest, { lastResult: response.data, submittedPrompt: trimmed });
     }
     setCompletedRequest({ result: response.data, submittedPrompt: trimmed });
   };
@@ -461,6 +506,7 @@ function StudioProjectAssistantPanelBody({
               data-testid={`openai-mode-${modeItem.id}`}
               aria-pressed={active}
               onClick={() => {
+                setExpiredKey(null);
                 setOpenAiMode(modeItem.id);
                 setError(null);
                 setStatusMessage(null);
@@ -532,6 +578,7 @@ function StudioProjectAssistantPanelBody({
         id="project-assistant-prompt"
         value={prompt}
         onChange={(event) => {
+          setExpiredKey(null);
           setPrompt(event.target.value);
           setError(null);
           setStatusMessage(null);
@@ -582,6 +629,12 @@ function StudioProjectAssistantPanelBody({
               ? bt("초안 만드는 중…", "Drafting…")
               : bt("OpenAI로 초안 받기", "Draft with OpenAI")}
           </button>
+          {expiredKey && !runningOpenAi ? (
+            <button type="button" className={buttonClass({ variant: "outline", className: "min-h-11" })}
+              onClick={() => void runOpenAiAssist(expiredKey)}>
+              {bt("새 요청으로 초안 생성", "Generate draft as a new request")}
+            </button>
+          ) : null}
           {runningOpenAi ? (
             <button
               type="button"

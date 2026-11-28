@@ -6,13 +6,13 @@ import { z } from "zod";
 
 import { buildModeSystemInstruction } from "./studio-openai-prompt-catalog";
 
-it("매크로 프롬프트의 네 도구 인자와 열거값을 실제 로컬 MCP 목록에 맞춘다", () => {
+it("매크로 프롬프트의 다섯 도구 인자와 열거값을 실제 로컬 MCP 목록에 맞춘다", () => {
   const cli = resolve(__dirname, "../../../../../../tools/toonstudio-mcp/cli.mjs");
   const inventory = execFileSync(process.execPath, [cli, "list", "--dry-run"], { env: {}, encoding: "utf8" });
   const manifest = z.array(z.object({ name: z.string(), inputSchema: z.unknown() })).parse(JSON.parse(inventory));
   const inputSchema = z.object({ properties: z.record(z.string(), z.object({ enum: z.array(z.string()).optional() })) });
   const prompt = buildModeSystemInstruction("mcp-workflow-macro");
-  for (const name of ["studio.canvas.create", "studio.bg3d.compose_scene", "studio.photoshop.apply_layer_fx", "studio.export.preflight_check"]) {
+  for (const name of ["studio.canvas.create", "studio.canvas.add_layer", "studio.bg3d.compose_scene", "studio.photoshop.apply_layer_fx", "studio.export.preflight_check"]) {
     const tool = manifest.find((entry) => entry.name === name);
     if (!tool) throw new Error(`도구를 찾을 수 없습니다: ${name}`);
     const { properties } = inputSchema.parse(tool.inputSchema);

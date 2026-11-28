@@ -115,7 +115,7 @@ export class StudioOpenAiCreativeAssistController {
   ) {
     const actor = resolveOpenAiAssistActorKey(userId, request);
     return withRequestAbort(request, response, (signal) =>
-      this.assistService.assist(actor, body, { signal }),
+      this.assistService.assist(actor, body, { signal, idempotencyKey: request.headers?.["idempotency-key"] }),
     );
   }
 }

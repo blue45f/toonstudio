@@ -12,7 +12,7 @@ interface PendingRequest {
   readonly finish: (response: Response) => void;
 }
 
-function setup() {
+function setup(projectTitle?: string) {
   const pending: PendingRequest[] = [];
   const fetchImpl = vi.fn<typeof fetch>((_url, init) => {
     if (init?.method !== "POST") return Promise.resolve(new Response(null, { status: 503 }));
@@ -22,7 +22,7 @@ function setup() {
     // 이미 서버에 도착한 응답처럼, 취소 후에도 테스트에서 완료 순서를 지정할 수 있다.
     return new Promise((finish) => pending.push({ mode, inputText, signal, finish }));
   });
-  const view = render(<StudioFreeAiAssistWorkbench initialMode="script-to-cuts" fetchImpl={fetchImpl} />);
+  const view = render(<StudioFreeAiAssistWorkbench initialMode="script-to-cuts" fetchImpl={fetchImpl} projectTitle={projectTitle} />);
   return { pending, fetchImpl, view };
 }
 
@@ -119,6 +119,60 @@ it("같은 모드의 연속 실행을 막고 선택한 요청만 취소하며 �
   selectDialogue();
   expect(screen.getByRole("button", { name: "요청 취소" })).toBeTruthy();
   await finish(pending[1]);
+});
+
+it("같은 원고를 재실행해도 지난 결과는 숨기고 취소 후 제출 원고를 복원하면 다시 보여 준다", async () => {
+  const { pending } = setup();
+  const originalDraft = "1컷: 노란 우산을 접는다.";
+  edit(originalDraft);
+  run();
+  await finish(pending[0]);
+  expect(result().textContent).toContain("노란 우산");
+
+  selectDialogue();
+  edit("작은 등대를 찾자.");
+  run();
+  await finish(pending[1]);
+  selectCuts();
+
+  const nextDraft = "1컷: 파란 우체통을 연다.";
+  run();
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+  expect(screen.queryByRole("button", { name: "결과 복사" })).toBeNull();
+  edit(nextDraft);
+  selectDialogue();
+  expect(result().textContent).toContain("작은 등대");
+  selectCuts();
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: "요청 취소" }));
+  expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe(nextDraft);
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+  expect(screen.queryByRole("button", { name: "결과 복사" })).toBeNull();
+  edit(originalDraft);
+  expect(result().textContent).toContain("노란 우산");
+  expect(within(result()).getByRole("button", { name: "결과 복사" })).toBeTruthy();
+
+  edit(nextDraft);
+  run();
+  await finish(pending[2]);
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+  await finish(pending[3]);
+  expect(result().textContent).toContain("파란 우체통");
+  expect(result().textContent).not.toContain("노란 우산");
+});
+
+it("대기 중 작품 제목이 바뀌면 같은 모드와 원고의 응답도 원래 작품에서만 복사할 수 있다", async () => {
+  const { pending, view, fetchImpl } = setup("밤 기차");
+  edit("1컷: 표 한 장을 접는다.");
+  run();
+  view.rerender(<StudioFreeAiAssistWorkbench initialMode="script-to-cuts" fetchImpl={fetchImpl} projectTitle="새벽 기차" />);
+  await finish(pending[0]);
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+  expect(screen.queryByRole("button", { name: "결과 복사" })).toBeNull();
+  view.rerender(<StudioFreeAiAssistWorkbench initialMode="script-to-cuts" fetchImpl={fetchImpl} projectTitle="밤 기차" />);
+  expect(result().textContent).toContain("밤 기차");
+  expect(within(result()).getByRole("button", { name: "결과 복사" })).toBeTruthy();
 });
 
 it("빈 원고도 유지하고 작업대를 닫으면 모든 요청을 취소해 늦은 응답이 후속 조회를 만들지 않는다", async () => {

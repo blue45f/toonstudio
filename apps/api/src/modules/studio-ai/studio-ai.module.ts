@@ -30,6 +30,7 @@ import {
   StudioFreeAiController,
   StudioOpenAiCreativeAssistController,
 } from "./studio-openai-creative-assist.controller";
+import { StudioOpenAiAssistIdempotency } from "./openai-assist/studio-openai-assist-idempotency";
 import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assist.service";
 
 @Module({
@@ -62,6 +63,7 @@ import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assi
     Studio3dGenerationService,
     StudioMediaInferenceService,
     StudioFreeAiZeroBillRouter,
+    StudioOpenAiAssistIdempotency,
     StudioOpenAiCreativeAssistService,
     {
       provide: STUDIO_AI_COMIC_DIRECTOR_REPOSITORY,

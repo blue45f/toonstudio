@@ -237,6 +237,11 @@
       "import": "./src/studio-approved-dialogue-review.ts",
       "default": "./src/studio-approved-dialogue-review.ts"
     },
+    "./studio-assist-local-macro": {
+      "types": "./src/studio-assist-local-macro.ts",
+      "import": "./src/studio-assist-local-macro.ts",
+      "default": "./src/studio-assist-local-macro.ts"
+    },
     "./studio-assist-local-script": {
       "types": "./src/studio-assist-local-script.ts",
       "import": "./src/studio-assist-local-script.ts",

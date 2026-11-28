@@ -1,4 +1,5 @@
-import { buildLocalColorMood } from "@toonstudio/studio-project-model/character-art-style";
+import { buildLocalWorkflowMacro } from "@toonstudio/contracts/studio-assist-local-macro";
+import { buildLocalColorMood, buildLocalPhotoshopFx } from "@toonstudio/studio-project-model/character-art-style";
 import type {
   OpenAiAssistStructuredResult,
   StudioOpenAiAssistMode,
@@ -215,36 +216,16 @@ export function buildDeterministicAssistResult(
       };
 
     case "photoshop-fx-recipe":
-      return {
-        mode,
-        data: {
-          lookNameKo: "웹툰 시네마틱 림라이트 · 비파괴 마감 레시피",
-          summary: `"${snippet}" 컷의 인물을 배경에서 또렷하게 띄우는 비파괴 레이어 FX 및 ACR 수치입니다.`,
-          layerStyles: [
-            { effect: "Outer Glow (외곽 광선)", blendMode: "screen", opacityPct: 38, paramsSummary: "크기 18px · 스프레드 8% · 따뜻한 키 라이트 톤" },
-            { effect: "Gradient Overlay (분위기 그라데이션)", blendMode: "soft-light", opacityPct: 24, paramsSummary: "상단 쿨톤 → 하단 웜톤 110도 각도" },
-            { effect: "Drop Shadow (깊이 그림자)", blendMode: "multiply", opacityPct: 28, paramsSummary: "거리 10px · 크기 22px · 채도 낮은 네이비 섀도" },
-          ],
-          cameraRaw: {
-            exposure: 0.15,
-            contrast: 12,
-            clarity: 14,
-            dehaze: 8,
-            temperatureShift: 6,
-            grainPct: 9,
-          },
-          nonDestructiveTip: "모든 효과는 스마트 오브젝트와 별도 조정 레이어 그룹에 묶어 수정 시 선화 원본을 훼손하지 마세요.",
-        },
-      };
+      return { mode, data: buildLocalPhotoshopFx(input.inputText) };
 
     case "scroll-pacing-auditor":
       return {
         mode,
         data: {
-          rhythmVerdict: "컷 사이의 여백을 바꿔 보며 읽는 속도를 비교할 수 있는 구성 예시입니다. 여백과 엔딩 점수는 템플릿 예시값입니다.",
-          averageGapPx: 260,
-          cliffhangerScore: 82,
-          cliffhangerTip: "마지막 컷 직전 400px 이상의 백색/암전 여백을 두어 엔딩 대사의 충격을 극대화하세요.",
+          rhythmVerdict: "컷 사이의 여백을 바꿔 보며 읽는 속도를 비교하는 구성 예시입니다.",
+          averageGapPx: 273,
+          cliffhangerScore: null,
+          cliffhangerTip: "마지막 컷에서 해결된 일과 다음 화에 남겨 둔 질문을 따로 적어 보세요. 끝컷 직전의 여백을 바꾼 두 버전을 휴대전화에서 비교하세요.",
           beatPacing: [
             { section: "도입 훅 (1~5컷)", pacing: "tight", recommendedGapPx: 160, readerRetentionNote: "3초 안에 사건 질문을 던져 첫 스크롤 이탈을 막으세요." },
             { section: "갈등 전개 (중반)", pacing: "steady", recommendedGapPx: 240, readerRetentionNote: "대사 컷과 무대사 반응 컷을 번갈아 배치해 피로를 줄이세요." },
@@ -290,33 +271,6 @@ export function buildDeterministicAssistResult(
       };
 
     case "mcp-workflow-macro":
-      return {
-        mode,
-        data: {
-          macroTitle: `${title} 무과금 풀스튜디오 MCP 자동화 매크로`,
-          summary: `"${snippet}" 작업의 로컬 제작 예시입니다. 외곽광선 효과는 실제 대상 레이어 ID를 확인한 뒤 적용하고, 말풍선 여백은 원고에서 직접 확인하세요.`,
-          zeroCostSafe: true,
-          steps: [
-            {
-              stepOrder: 1,
-              toolName: "studio.canvas.create",
-              reasonKo: "표준 세로 웹툰 규격(800×1280)의 작업 캔버스를 초기화합니다.",
-              argumentsJson: JSON.stringify({ title, width: 800, height: 1280 }),
-            },
-            {
-              stepOrder: 2,
-              toolName: "studio.bg3d.compose_scene",
-              reasonKo: "장면 분위기에 맞는 3D 카메라 구도와 조명을 세팅합니다.",
-              argumentsJson: JSON.stringify({ sceneName: title, lensMm: 35, timeOfDay: "golden-hour" }),
-            },
-            {
-              stepOrder: 3,
-              toolName: "studio.export.preflight_check",
-              reasonKo: "플랫폼 최소 폭을 검사하고 권리 검토가 확인될 때까지 출고를 차단합니다.",
-              argumentsJson: JSON.stringify({ platform: "naver-webtoon", requireCleanRightsBom: true, rightsBomClean: false }),
-            },
-          ],
-        },
-      };
+      return { mode, data: buildLocalWorkflowMacro(input.inputText, title) };
   }
 }

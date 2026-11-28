@@ -60,6 +60,7 @@ export function summarizeFreeAiProductionDirections(
       return {
         headlineKo: macroTitle,
         bulletsKo: [
+          ...(orderedSteps.length ? [] : ["자동 단계 없음 · 수동 확인 대기"]),
           summary,
           `응답에 표시된 무과금 여부 · ${zeroCostSafe ? "예" : "아니요"}`,
           ...orderedSteps.map(({ stepOrder, toolName, reasonKo, argumentsJson }) =>
