@@ -267,6 +267,13 @@
     --studio-reference-elevation: none; background: Canvas;
   }
   [data-studio-3d-reference] :is(.character-library, .character-category-rail__icon, .character-performance-strip, [data-character-primary-save], [data-character-shaper-summary], [data-bg3d-workspace-header]) { background: Canvas; box-shadow: none; }
+  /* 브라우저가 강조 그라데이션을 제거하거나 글자 뒤에 불투명한 사각형을 칠하지 않게 시스템 색상 쌍을 그대로 그린다. */
+  [data-studio-3d-reference] :is([data-character-primary-save], [data-character-dock-action="insert"], [data-character-shaper-camera-pill-bar] [role="group"] button[aria-pressed="true"]):enabled {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
   [data-studio-3d-reference] :is(.character-library, .character-category-rail, .character-performance-strip, .character-subslot-tabs) button { border: 1px solid ButtonText; }
   .character-subslot-tabs__dot, .character-category-rail button[data-character-category-changed="true"] .character-category-rail__icon::after { background: Highlight; box-shadow: none; }
   [data-studio-3d-reference] button[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
