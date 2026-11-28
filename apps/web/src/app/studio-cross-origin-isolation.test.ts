@@ -159,11 +159,26 @@ describe("Studio cross-origin isolation headers", () => {
       secFetchDest: "script",
     })).toBe(false);
     expect(isStudioCrossOriginIsolationWorkerRequest({
+      url: "/src/domains/catalog/thumbnail.worker.ts",
+      method: "GET",
+      accept: "*/*",
+      secFetchDest: "empty",
+    })).toBe(false);
+    expect(isStudioCrossOriginIsolationWorkerRequest({
       url: "/assets/studio.worker.js",
       method: "POST",
       accept: "*/*",
       secFetchDest: "worker",
     })).toBe(false);
+  });
+
+  it.each([
+    "/assets/character-authoring.worker-Ab12_X-y.js",
+    "/src/domains/creator/character-platform/runtime/character-authoring.worker.ts?worker_file&type=module",
+  ])("서비스 워커가 다시 요청한 캐릭터 저작 Worker에도 격리 헤더를 적용한다 (%s)", (url) => {
+    expect(isStudioCrossOriginIsolationWorkerRequest({
+      url, method: "GET", accept: "*/*", secFetchDest: "empty",
+    })).toBe(true);
   });
 
   it.each(["document", "iframe"])(
