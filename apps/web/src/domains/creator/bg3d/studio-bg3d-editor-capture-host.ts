@@ -380,6 +380,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
   }
   h.requestUserClose = requestUserClose;
   async function handleSaveToLibrary() {
+    if (placementActive || placementSessionRef?.current?.phase === "preview") return;
     if (
       captureInFlightRef.current || isCapturing ||
       destructiveMutationGuardRef.current.blocksClose || insertBlocked ||
@@ -483,7 +484,6 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
       const idata = new ImageData(new Uint8ClampedArray(captured.rgba), captured.width, captured.height);
       ctx.putImageData(idata, 0, 0);
       const dataUrl = canvas.toDataURL("image/png");
-      const hashUrl = `${dataUrl}#${encodeURIComponent(adapted.serialized)}`;
       const receiptAuthority = verifySharedCharacterCaptureAuthority(
         sharedCharacterAuthorityLease,
         "receipt",
@@ -496,7 +496,8 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
       assertStudioBg3dCaptureEnvironmentCurrent(captured, expectedEnvironmentFingerprint);
       await saveAsset({
         name: "내 3D 장면",
-        dataUrl: hashUrl,
+        dataUrl,
+        bg3dScene: adapted.document,
         width: captured.width,
         height: captured.height,
         kind: "bg3d",

@@ -10,7 +10,7 @@ import { StudioVirtualSpaceNpcDialoguePanel, type StudioNpcDialogueAction } from
 import { StudioWorldAuthoringEntry } from "../StudioWorldAuthoringEntry";
 import type { StudioVirtualArtStyleKey } from "../studio-virtual-space-art-style";
 import type { StudioEntryCodeRecord } from "../studio-virtual-space-entry-code";
-import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
+import type { StudioVirtualSpaceEngineBridge, StudioVirtualSpaceWalkReport } from "../studio-virtual-space-engine-bridge";
 import type { StudioVirtualExperiencePreference } from "../studio-virtual-space-experience-preference";
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { distanceBetween, TALK_DISTANCE } from "../studio-virtual-space-page-helpers";
@@ -68,7 +68,7 @@ export interface VirtualSpaceStagePopoversProps {
   readonly overlays: ReturnType<typeof useVirtualSpaceOverlays>;
   readonly minimapPeople: readonly { readonly id: string; readonly name: string; readonly point: StudioVirtualSpacePoint }[];
   readonly highlightRoomIds: readonly string[];
-  readonly queuePathTo: (point: StudioVirtualSpacePoint) => void;
+  readonly queuePathTo: (point: StudioVirtualSpacePoint, report?: StudioVirtualSpaceWalkReport) => (() => void) | undefined;
   readonly quickTravelTo: (point: StudioVirtualSpacePoint) => void;
   readonly selectPlace: (placeId: string) => void;
   readonly activateAction: (action: StudioWorldInteractionDefinition["action"]) => void;
@@ -173,6 +173,7 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
           focusFirst={false}
         >
           <SpaceMinimap
+            key={`${worldManifest.id}:${stageKind}`}
             manifest={worldManifest}
             self={snapshot.self}
             people={minimapPeople}
@@ -181,6 +182,11 @@ export function VirtualSpaceStagePopovers(props: VirtualSpaceStagePopoversProps)
             destination={moveDestination ?? null}
             highlightRoomIds={highlightRoomIds}
             onMoveTo={(pt) => { overlays.setMapOpen(false); queuePathTo(pt); }}
+            onRequestWalk={stageKind === "office2d" ? queuePathTo : undefined}
+            onWalkAccepted={() => {
+              overlays.setMapOpen(false);
+              globalThis.requestAnimationFrame(() => engineBridge.focusWorld());
+            }}
             onJumpTo={(pt) => { overlays.setMapOpen(false); quickTravelTo(pt); }}
             onJumpToPlace={(id) => { overlays.setMapOpen(false); selectPlace(id); }}
           />

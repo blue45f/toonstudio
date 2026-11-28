@@ -66,26 +66,34 @@ export function SheetHandle({
   state,
   onChange,
   buttonRef,
+  placementActive,
   onOpenInsertSettings,
 }: {
   readonly state: StudioBg3dAssistantSheetState;
   readonly onChange: (state: StudioBg3dAssistantSheetState) => void;
   readonly buttonRef: Ref<HTMLButtonElement>;
+  readonly placementActive: boolean;
   readonly onOpenInsertSettings: (() => void) | undefined;
 }) {
   const bt = useBilingual("StudioBg3dSceneAssistantChrome");
   const next = state === "peek" ? "half" : state === "half" ? "full" : "peek";
-  const insertSettingsLabel = onOpenInsertSettings ? bt("삽입 설정 열기", "Open insert settings") : null;
+  const revealPlacement = placementActive && state !== "peek";
+  const holdInsertSettings = placementActive && state === "peek" && Boolean(onOpenInsertSettings);
+  const actionLabel = revealPlacement
+    ? bt("배치 화면 보기", "Show placement")
+    : holdInsertSettings ? bt("배치 확정 또는 취소 필요", "Confirm or cancel placement")
+      : onOpenInsertSettings ? bt("삽입 설정 열기", "Open insert settings") : null;
   return (
     <button
       ref={buttonRef}
       type="button"
       className="scene-assistant__sheet-handle"
-      aria-label={insertSettingsLabel ?? (state === "full" ? "도구 패널 접기" : "도구 패널 펼치기")}
-      onClick={onOpenInsertSettings ?? (() => onChange(next))}
+      aria-label={actionLabel ?? (state === "full" ? "도구 패널 접기" : "도구 패널 펼치기")}
+      aria-disabled={holdInsertSettings || undefined}
+      onClick={holdInsertSettings ? undefined : onOpenInsertSettings ?? (() => onChange(revealPlacement ? "peek" : next))}
     >
-      {insertSettingsLabel ? <strong className="scene-assistant__crop-preview-return-label">{insertSettingsLabel}</strong> : <span aria-hidden />}
-      {state === "full" ? <ChevronDown size={16} aria-hidden /> : <ChevronUp size={16} aria-hidden />}
+      {actionLabel ? <strong className="scene-assistant__crop-preview-return-label">{actionLabel}</strong> : <span aria-hidden />}
+      {!holdInsertSettings ? (revealPlacement || state === "full" ? <ChevronDown size={16} aria-hidden /> : <ChevronUp size={16} aria-hidden />) : null}
     </button>
   );
 }
@@ -93,9 +101,11 @@ export function SheetHandle({
 export function AssistantStepper({
   step,
   onStepChange,
+  finishDisabled,
 }: {
   readonly step: StudioBg3dAssistantStep;
   readonly onStepChange: (step: StudioBg3dAssistantStep) => void;
+  readonly finishDisabled: boolean;
 }) {
   const activeIndex = studioBg3dAssistantStepIndex(step);
   return (
@@ -109,6 +119,7 @@ export function AssistantStepper({
             type="button"
             aria-label={`${item.number}. ${item.label}`}
             aria-current={current ? "step" : undefined}
+            disabled={finishDisabled && item.id === "finish"}
             className="scene-assistant__step"
             data-current={current || undefined}
             data-complete={complete || undefined}

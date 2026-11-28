@@ -9,6 +9,8 @@ import {
   type StudioAssetContentHash,
 } from "./studio-upload-image-safety";
 
+import type { StudioBg3dSceneDocument } from "./contracts/studio-bg3d-scene-document";
+
 export {
   canonicalizeStudioAssetContentHash,
   STUDIO_ASSET_DATA_URL_MAX_CHARS,
@@ -37,6 +39,7 @@ export interface StudioAssetRightsMetadata {
 }
 
 export interface StudioAssetSaveInput {
+  bg3dScene?: StudioBg3dSceneDocument;
   bundleSourceCredit?: StudioBundleSourceCredit;
   name: string;
   dataUrl: string;
@@ -87,6 +90,7 @@ export type StudioAssetContentIdentityCandidateMap = ReadonlyMap<
 export interface StudioAssetLibraryPort {
   save(input: StudioAssetSaveInput): Promise<StudioAssetWithContentHash>;
   list(): Promise<StudioAsset[]>;
+  readBg3dScene?(asset: Pick<StudioAsset, "id" | "kind" | "contentHash">): Promise<StudioBg3dSceneDocument | null>;
   /** Pure snapshot read for staged archive validation; must not reconcile refs or sweep storage. */
   listReadOnly?(): Promise<StudioAsset[]>;
   findByContentIdentities(
@@ -460,6 +464,7 @@ async function legacySaveAsset(
   indexedDb: IDBFactory | null,
   input: StudioAssetSaveInput,
 ): Promise<StudioAssetWithContentHash> {
+  if (input.bg3dScene !== undefined) throw new TypeError("이전 소재 저장소는 편집 가능한 3D 장면 저장을 지원하지 않습니다.");
   const record = await ensureStudioAssetContentHash(createAssetRecord(input));
   await withLegacyDatabase(indexedDb, async (db) => {
     const tx = db.transaction(STORE, "readwrite");
@@ -723,6 +728,15 @@ export async function saveAsset(
 
 export async function listAssets(): Promise<StudioAsset[]> {
   return (await productPort()).list();
+}
+
+/** 사용자가 선택한 로컬 소재의 편집 원본만 읽는다. 썸네일·공유 경로에는 PNG만 전달한다. */
+export async function readStudioAssetBg3dScene(
+  asset: Pick<StudioAsset, "id" | "kind" | "contentHash">,
+): Promise<StudioBg3dSceneDocument | null> {
+  if (asset.kind !== "bg3d") return null;
+  const port = await productPort();
+  return port.readBg3dScene ? port.readBg3dScene(asset) : null;
 }
 
 export async function listAssetsReadOnly(): Promise<StudioAsset[]> {

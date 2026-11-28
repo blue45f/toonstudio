@@ -114,13 +114,8 @@ export function StudioInspectorSelectionSection({
     replaceDrawWithHokusaiNaturalMedia,
     prepareNativeBrushDocumentConversion,
     selected,
-    selectedBg3dEditSource,
     selectedBubbleTailGeometry,
     selectedContentMutationLocked,
-    setBg3dInitialDataUrl,
-    setBg3dInitialElementId,
-    setBg3dInitialScene,
-    setBg3dOpen,
     setBubbleShapeEditActive,
     setExtendedBlendMode,
     setExtendedBlendOpacity,
@@ -130,7 +125,6 @@ export function StudioInspectorSelectionSection({
     setPanelSplitActive,
     setPanelSplitHint,
     setPanelSplitRatio,
-    onEditVrmElement,
     setSharedDocumentNotice,
     setTool,
     splitFrameSelected,
@@ -185,8 +179,8 @@ export function StudioInspectorSelectionSection({
                 className="m-0 min-w-0 border-0 p-0 disabled:[&_button]:cursor-not-allowed disabled:[&_button]:opacity-50 disabled:[&_input]:cursor-not-allowed disabled:[&_input]:opacity-55 disabled:[&_select]:cursor-not-allowed disabled:[&_select]:opacity-55 disabled:[&_textarea]:cursor-not-allowed disabled:[&_textarea]:opacity-55"
               >
                 <legend className="sr-only">선택 요소 편집 설정</legend>
-                <Suspense fallback={<StudioPanelLoading label={tPanelLoading("studio.canvas.panelLoading.workPanel", "작업 패널을 여는 중...")} />}>
                 <p className="mb-2 text-xs font-semibold text-fg-3">선택한 요소</p>
+                <Suspense fallback={<StudioPanelLoading label={tPanelLoading("studio.canvas.panelLoading.workPanel", "작업 패널을 여는 중...")} />}>
 
               {selected.type === "draw" && (
                 <StudioInspectorShapeSection
@@ -670,18 +664,10 @@ export function StudioInspectorSelectionSection({
               <StudioInspectorSelectedImageTools model={model} tabA11y={tabA11y} />
 
               <StudioInspectorOrderAlignSection
-                selected={selected}
-                selectedBg3dEditSource={selectedBg3dEditSource}
-                patchEl={patchEl}
                 reorder={reorder}
                 alignSelected={alignSelected}
                 duplicateSelected={duplicateSelected}
                 removeSelected={removeSelected}
-                onEditVrmElement={onEditVrmElement}
-                setBg3dInitialScene={setBg3dInitialScene}
-                setBg3dInitialDataUrl={setBg3dInitialDataUrl}
-                setBg3dInitialElementId={setBg3dInitialElementId}
-                setBg3dOpen={setBg3dOpen}
               />
                 </Suspense>
               </fieldset>

@@ -13,6 +13,7 @@ import {
   lazy,
   useCallback,
   useEffect,
+  useEffectEvent,
   useId,
   useMemo,
   useRef,
@@ -117,25 +118,27 @@ export function StudioExpandedToolsDrawer({
     setStatusMessage("도구 목록으로 돌아왔습니다.");
   }, []);
 
+  const handleEscape = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    if (event.key !== "Escape" || event.defaultPrevented) return;
+    if (activeLaunched) {
+      event.preventDefault();
+      event.stopPropagation();
+      handleReturnToList();
+      return;
+    }
+    onClose?.();
+  });
+
   useEffect(() => {
     if (!open) {
       setActiveLaunched(null);
       pendingFocusRestoreRef.current = false;
       return;
     }
-    const handleGlobalKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (activeLaunched) {
-        event.preventDefault();
-        event.stopPropagation();
-        handleReturnToList();
-        return;
-      }
-      onClose?.();
-    };
+    const handleGlobalKey = (event: globalThis.KeyboardEvent) => handleEscape(event);
     window.addEventListener("keydown", handleGlobalKey);
     return () => window.removeEventListener("keydown", handleGlobalKey);
-  }, [open, activeLaunched, handleReturnToList, onClose]);
+  }, [open]);
 
   useEffect(() => {
     if (!open || activeLaunched !== null || !pendingFocusRestoreRef.current) return;

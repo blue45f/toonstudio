@@ -165,6 +165,7 @@ export function StudioAssetToolPopoverBody({
     addFocusLines,
     addFxOverlay,
     addRenderedImage,
+    insertSavedBg3dMaterial,
     addSceneTemplate,
     addSfxPreset,
     addSpeedLines,
@@ -720,6 +721,8 @@ export function StudioAssetToolPopoverBody({
                     renamingAssetName={renamingAssetName}
                     setRenamingAssetName={setRenamingAssetName}
                     handleRenameAsset={handleRenameAsset}
+                    onUseLocalBg3dAsset={insertSavedBg3dMaterial
+                      ? (asset) => insertSavedBg3dMaterial(asset, { closeMenu: true }) : undefined}
                     onUseLocalAsset={(asset) => completeStudioAssetInsertion(
                       () => insertStudioAssetWithBundleCredit(asset, addRenderedImage),
                       () => setMenu(null)

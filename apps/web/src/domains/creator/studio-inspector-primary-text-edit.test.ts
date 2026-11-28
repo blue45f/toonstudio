@@ -6,6 +6,10 @@ const body = readFileSync(
   new URL("./StudioInspectorAsideBody.tsx", import.meta.url),
   "utf8",
 );
+const shell = readFileSync(
+  new URL("./StudioInspectorAsideShell.tsx", import.meta.url),
+  "utf8",
+);
 const selection = readFileSync(
   new URL("./StudioInspectorSelectionSection.tsx", import.meta.url),
   "utf8",
@@ -28,5 +32,19 @@ describe("Inspector text and balloon primary action", () => {
     expect(body).toContain('selected.type === "bubble" ? "대사 편집" : "글자 편집"');
     expect(body.match(/startEditText\(selected\.id\)/gu)).toHaveLength(1);
     expect(selection).not.toContain("startEditText");
+  });
+});
+
+describe("Inspector 3D primary action", () => {
+  it("mounts after navigation, before summary and details, with the single-selection edit gate", () => {
+    const slot = shell.indexOf("<StudioInspectorSceneEditActions");
+    expect(slot).toBeGreaterThan(shell.indexOf("<StudioInspectorNavigator"));
+    expect(slot).toBeLessThan(shell.indexOf("<StudioEditTargetSummary"));
+    expect(slot).toBeLessThan(shell.indexOf("{children}"));
+    expect(shell.slice(slot)).toMatch(
+      /active=\{\s*inspectorLayout.primary === "properties"\s*&& inspectorContentMode === "selection"\s*&& marqueeIds.length <= 1\s*\}/u,
+    );
+    expect(shell).toContain("gate={inspectorInteractionPolicy.selection}");
+    expect(selection).not.toContain("<StudioInspectorSceneEditActions");
   });
 });

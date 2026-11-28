@@ -107,6 +107,9 @@ function routeUnifiedAsset(
         canvasHeight: toolBelt.canvasH,
         selectionBounds,
       });
+      if (item.source.value.kind === "bg3d" && handlers.insertSavedBg3dMaterial) {
+        return handlers.insertSavedBg3dMaterial(item.source.value, { placement });
+      }
       if (!placement) {
         return insertStudioAssetWithBundleCredit(item.source.value, handlers.addRenderedImage);
       }

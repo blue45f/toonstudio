@@ -20,6 +20,10 @@ import {
   STUDIO_ASSET_DATA_URL_MAX_CHARS,
 } from "./studio-asset-library";
 import { acquireStudioLocalDatabase } from "./studio-local-database-runtime";
+import {
+  assertStudioAssetBg3dSceneSave, publishStudioAssetBg3dScene, readStudioAssetBg3dSceneSidecar,
+  removeStudioAssetBg3dSceneSidecar,
+} from "./live/studio-asset-library-bg3d-sidecar";
 import { studioBundleSourceCreditProperties } from "./catalog/studio-bundle-source-credit";
 import {
   createStudioOpfsAssetStore,
@@ -44,10 +48,9 @@ import type {
 import type { StudioLocalDatabase } from "./studio-local-database";
 
 import {
-  StudioAssetLibraryCommitAggregateError,
+  asRepositoryError, errorDetail, StudioAssetLibraryCommitAggregateError,
   StudioAssetLibraryRepositoryError,
   type StudioAssetLibraryFieldLabelCode,
-  type StudioAssetLibraryOperationCode,
   type StudioAssetLibraryRepositoryErrorSubcode,
 } from "./studio-asset-library-repository-error";
 
@@ -101,8 +104,6 @@ export function isStudioAssetLibraryMemoryFallbackError(
     && (error.code === "unavailable" || error.code === "quota-exceeded");
 }
 
-
-
 export interface StudioAssetManifestV1 {
   readonly version: typeof MANIFEST_VERSION;
   readonly totalBytes: number;
@@ -129,6 +130,7 @@ export interface StudioAssetQueryPage {
 
 export interface StudioAssetLibraryRepository extends StudioAssetLibraryPort {
   readonly authority: "sqlite-opfs";
+  readBg3dScene: NonNullable<StudioAssetLibraryPort["readBg3dScene"]>;
   listReadOnly(): Promise<StudioAsset[]>;
   query(input?: StudioAssetQuery): Promise<StudioAssetQueryPage>;
   cleanupOrphans(): Promise<number>;
@@ -142,35 +144,6 @@ export interface StudioAssetLibraryRepositoryOptions {
   readonly runExclusive?: StudioAssetLibraryRunExclusive | null;
   readonly now?: () => number;
   readonly createId?: () => string;
-}
-
-function errorDetail(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function asRepositoryError(
-  error: unknown,
-  operation: StudioAssetLibraryOperationCode,
-): StudioAssetLibraryRepositoryError {
-  if (error instanceof StudioAssetLibraryRepositoryError) return error;
-  const detail = errorDetail(error);
-  const errorCode = typeof error === "object" && error !== null && "code" in error
-    ? (error as { readonly code?: unknown }).code
-    : null;
-  if (errorCode === "QUOTA_EXCEEDED" || /quota|SQLITE_FULL|disk is full|space/i.test(detail)) {
-    return new StudioAssetLibraryRepositoryError(
-      "quota-exceeded",
-      "quotaExceeded",
-      { operation },
-      { cause: error },
-    );
-  }
-  return new StudioAssetLibraryRepositoryError(
-    "unavailable",
-    "operationFailed",
-    { operation, detail },
-    { cause: error },
-  );
 }
 
 function invalid(subcode: StudioAssetLibraryRepositoryErrorSubcode, params?: Readonly<Record<string, string>>): never {
@@ -743,6 +716,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
           || decoded.bytes.byteLength > STUDIO_ASSET_LIBRARY_LIMITS.individualBytes) {
           invalid("bytesOutOfRange");
         }
+        const scene = assertStudioAssetBg3dSceneSave(input, decoded);
         const id = createId();
         const record = createAssetRecord(input, id, now());
         const name = boundedCanonicalText(
@@ -791,10 +765,12 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
           ...studioBundleSourceCreditProperties(record),
         });
         await verifiedBytes(store, entry);
-        const next = await commitManifest(database, store, current, [
-          entry,
-          ...current.entries,
-        ]);
+        const commit = () => commitManifest(database, store, current, [entry, ...current.entries]);
+        const next = scene === undefined ? await commit() : await publishStudioAssetBg3dScene({
+          database, entry, scene, commit,
+          canDiscard: async () => serializeStudioAssetManifest((await readManifest(database)).entries)
+            === serializeStudioAssetManifest(current.entries),
+        });
         const committed = next.entries.find(({ id: currentId }) => currentId === entry.id);
         if (!committed) corrupt("committedEntryMissing");
         return entryToAsset(committed, input.dataUrl);
@@ -817,6 +793,16 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
         };
         return runExclusive ? runExclusive(read) : read();
       });
+    },
+
+    async readBg3dScene(asset) {
+      await mutationTail;
+      if (asset.kind !== "bg3d" || !ID_PATTERN.test(asset.id) || !canonicalizeStudioAssetContentHash(asset.contentHash)) return null;
+      const read = async () => {
+        const database = await acquireDatabase();
+        return readStudioAssetBg3dSceneSidecar(database, asset, async () => (await readManifest(database)).entries);
+      };
+      return runExclusive ? runExclusive(read) : read();
     },
 
     async listReadOnly() {
@@ -905,13 +891,15 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
       return enqueue(() => mutation(async (database, store) => {
         if (!ID_PATTERN.test(id)) invalid("deleteIdInvalid");
         const current = await readManifest(database);
-        if (!current.entries.some((entry) => entry.id === id)) return;
+        const matching = current.entries.find((entry) => entry.id === id);
+        if (!matching) return;
         await commitManifest(
           database,
           store,
           current,
           current.entries.filter((entry) => entry.id !== id),
         );
+        if (matching.kind === "bg3d") await removeStudioAssetBg3dSceneSidecar(database, id);
       }));
     },
 
@@ -930,6 +918,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
           current,
           current.entries.filter((entry) => entry.id !== id),
         );
+        if (matching.kind === "bg3d") await removeStudioAssetBg3dSceneSidecar(database, id);
         return true;
       }));
     },

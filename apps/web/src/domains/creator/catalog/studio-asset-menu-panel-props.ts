@@ -38,6 +38,7 @@ export interface StudioAssetMenuPanelProps {
   setRenamingAssetName: Dispatch<SetStateAction<string>>;
   handleRenameAsset: (id: string) => void;
   onUseLocalAsset: (asset: StudioAsset) => boolean;
+  onUseLocalBg3dAsset?: (asset: StudioAsset) => Promise<boolean>;
   onShareAsset: (asset: StudioAsset, options: StudioAssetShareOptions) => void;
   onDeleteAsset: (id: string) => void;
   publishingId: string | null;
