@@ -110,8 +110,11 @@ test("실제 캐릭터와 핵심 조작이 화면 안에서 겹치지 않고 도
       await expect(confirm).toBeFocused();
       await assertGuideOutsideStage(stage, guide, true);
       await capture(page, info, "가로-회전-모델과-조작-안내");
-      await page.setViewportSize({ width: 320, height: 568 });
+      await page.setViewportSize({ width: 768, height: 1024 });
       await expect(root).not.toHaveAttribute("data-character-shaper-landscape", "true");
+      await expect(confirm).toBeFocused();
+      await assertGuideOutsideStage(stage, guide, false);
+      await page.setViewportSize({ width: 320, height: 568 });
       await expect(confirm).toBeFocused();
       await activate(confirm, info);
     }

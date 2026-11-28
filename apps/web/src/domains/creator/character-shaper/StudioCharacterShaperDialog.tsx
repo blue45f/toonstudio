@@ -98,8 +98,8 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
   const isDesktop = useMediaQuery(CHARACTER_SHAPER_DESKTOP_QUERY);
   const isTablet = useMediaQuery(CHARACTER_SHAPER_TABLET_QUERY);
   const touchLandscape = useMediaQuery(CHARACTER_SHAPER_TOUCH_LANDSCAPE_QUERY);
-  const touchPortrait = useMediaQuery(CHARACTER_SHAPER_TOUCH_PORTRAIT_QUERY);
-  const layout: CharacterShaperLayout = touchLandscape || touchPortrait ? "mobile" : isDesktop ? "desktop" : isTablet ? "tablet" : "mobile";
+  const touchLayout = useMediaQuery(`${CHARACTER_SHAPER_TOUCH_LANDSCAPE_QUERY}, ${CHARACTER_SHAPER_TOUCH_PORTRAIT_QUERY}`);
+  const layout: CharacterShaperLayout = touchLayout ? "mobile" : isDesktop ? "desktop" : isTablet ? "tablet" : "mobile";
   const [ui, dispatch] = useReducer(reduceCharacterShaperUiState, undefined, () => createCharacterShaperUiState({ mobileSheet: layout === "mobile" ? "collapsed" : "half" }));
   const { framing: outputFraming, setFraming: setOutputFraming } = useCharacterShaperOutputSettings();
   const sessionSettings = useCharacterShaperSessionSettings();
