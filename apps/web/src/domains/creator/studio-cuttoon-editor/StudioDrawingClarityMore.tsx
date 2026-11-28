@@ -123,7 +123,7 @@ export function StudioDrawingClarityMore({ id, hostId, purpose, actions, filterI
       title={bt("원고 도구", "Draft tools")} kind="tools" returnFocus={() => trigger.current} onClose={() => setOpen(false)}>
       {(finish) => <StudioDrawingClarityTaskActions actions={actions} filterItems={filterItems} run={(action) => {
         const source = trigger.current;
-        if (source) finish(() => action.run(source), action.id === "character3d");
+        if (source) finish(() => action.run(source), action.id === "character3d" || action.id === "expanded");
       }} />}
     </StudioDrawingClarityTaskDialog>, document.body) : null}
   </>;

@@ -103,10 +103,55 @@ describe("StudioExpandedToolsDrawer", () => {
         matches.length,
       );
     }
+    expect(screen.getByTestId("expanded-tools-tab-all").getAttribute("aria-selected")).toBe("true");
+    fireEvent.change(searchInput, { target: { value: "" } });
+    expect(charTab.getAttribute("aria-selected")).toBe("true");
 
     // Escape 키로 서랍 닫기
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("분류에서 연속 화살표와 Home·End로 선택·초점을 옮기고 가려진 탭을 표시한다", () => {
+    render(<StudioExpandedToolsDrawer open embeddedInModal initialCategory="bg3d-dcc" />);
+    const rail = screen.getByRole("tablist");
+    const tabs = screen.getAllByRole<HTMLButtonElement>("tab");
+    const all = screen.getByTestId("expanded-tools-tab-all");
+    const bg = screen.getByTestId("expanded-tools-tab-bg3d-dcc");
+    const character = screen.getByTestId("expanded-tools-tab-character-3d");
+    const story = screen.getByTestId("expanded-tools-tab-story-planning");
+    const motion = screen.getByTestId("expanded-tools-tab-motion-production");
+    vi.spyOn(rail, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 300, 48));
+    for (const [tab, left] of [[all, 0], [character, 280], [story, 380], [motion, 480]] as const) {
+      vi.spyOn(tab, "getBoundingClientRect").mockImplementation(() => new DOMRect(left - rail.scrollLeft, 0, 100, 48));
+    }
+
+    function press(key: string): void {
+      fireEvent.keyDown(document.activeElement ?? document.body, { key });
+    }
+    function expectTab(target: HTMLElement, scrollLeft: number): void {
+      expect(document.activeElement).toBe(target);
+      expect(tabs.filter((tab) => tab.getAttribute("aria-selected") === "true")).toEqual([target]);
+      expect(tabs.filter((tab) => tab.tabIndex === 0)).toEqual([target]);
+      expect(rail.scrollLeft).toBe(scrollLeft);
+    }
+
+    bg.focus();
+    press("ArrowRight");
+    expectTab(character, 80);
+    press("ArrowRight");
+    expectTab(story, 180);
+    press("Home");
+    expectTab(all, 0);
+    rail.scrollLeft = 64;
+    press("Home");
+    expectTab(all, 0);
+    press("End");
+    expectTab(motion, 280);
+    press("ArrowRight");
+    expectTab(all, 0);
+    press("ArrowLeft");
+    expectTab(motion, 280);
   });
 
   it("카드 호버 예열 및 클릭 시 동적 로더를 호출하고 상태를 안내한다", async () => {

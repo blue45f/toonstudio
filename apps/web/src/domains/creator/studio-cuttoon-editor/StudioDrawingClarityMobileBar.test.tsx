@@ -9,6 +9,7 @@ import { defaultStudioAppSettings } from "../studio-app-settings";
 import { createStudioWorkspaceDefaultState } from "../studio-workspaces";
 import { registerStudioCommandSearchHost, subscribeStudioCommandSearchRequests } from "../studio-help-center-channel";
 import { subscribeStudioAllTools } from "../studio-toolbar-channel";
+import { StudioDocumentLayoutContext, type StudioDocumentLayoutRuntime } from "../studio-router/studio-document-layout-context";
 import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
 import { MobileFullEditNotice } from "../studio-shell/MobileFullEditNotice";
 import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
@@ -31,6 +32,7 @@ function session(): MobileFixture {
   return {
     currentWorkspaceOwnerScope: "guest", isMobile: true, mobileImmersive: true, canvasOnlyMode: false,
     workspaceState: state, workMode: "all", uiDensityMode: "simple", appSettings: defaultStudioAppSettings(),
+    studioAuthUserId: null,
     location: { pathname: "/studio/canvas", search: "?uiMode=basic", hash: "", state: null, key: "mobile" },
     studioDrawingClarityBaseline: { ownerScope: "guest", source: "default", state },
     title: "나의 첫 웹툰", activePageIndex: 0, studioMenubarActivePageLabel: "1페이지", studioMainMenuGroups: [],
@@ -103,6 +105,56 @@ describe("웹 모바일 기본 상단", () => {
     } finally {
       modal.restore();
     }
+  });
+
+  it("더보기의 그리기 도구에서 원고를 떠나지 않고 전문 도구 하나를 열고 호출 위치로 돌아온다", async () => {
+    const value = session();
+    const native = nativeModal();
+    try {
+      show(value);
+      expect(screen.queryByTestId("studio-expanded-tools-drawer")).toBeNull();
+      const trigger = more("drawing");
+      fireEvent.click(screen.getByRole("button", { name: /^확장 전문 도구$/u }));
+      const drawer = await screen.findByTestId("studio-expanded-tools-drawer");
+      const modal = screen.getByRole("dialog", { name: /^확장 전문 도구$/u });
+      expect(modal.contains(drawer)).toBe(true);
+      expect(screen.getAllByRole("dialog")).toHaveLength(1);
+      expect(value.studioMobileEditingDockHandlers.openInspectorRoute).not.toHaveBeenCalled();
+      expect(document.querySelector("[data-studio-all-tools-direct]")).toBeNull();
+      expect(screen.queryByRole("searchbox")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: /^확장 도구 검색$/u }));
+      const search = screen.getByRole("searchbox");
+      expect(document.activeElement).toBe(search);
+      fireEvent.change(search, { target: { value: "Shaper" } });
+      expect(search).toHaveProperty("value", "Shaper");
+      fireEvent.keyDown(modal, { key: "Escape" });
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog", { name: /^확장 전문 도구$/u })).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+      });
+    } finally {
+      native.restore();
+    }
+  });
+
+  it("다음 프레임 전에 동일 원고·룸의 로그인 소유자가 바뀌면 이전 전문 도구 요청을 열지 않는다", async () => {
+    const value = session();
+    const layout: StudioDocumentLayoutRuntime = {
+      documentKey: "new-draft", projectId: null, documentId: null, draftId: null, documentWorkspace: null, draftSessionEpoch: 0,
+      instantWorkId: "guest-room", liveRoomParam: "guest-room", liveInviteRoleParam: null, remixId: null, workId: null,
+    };
+    const renderOwner = (current: MobileFixture) =>
+      <StudioDocumentLayoutContext.Provider value={layout}>
+        <StudioDrawingClarityProvider session={current}><Surface value={current} /></StudioDrawingClarityProvider>
+      </StudioDocumentLayoutContext.Provider>;
+    const view = render(renderOwner(value));
+    more("drawing");
+    fireEvent.click(screen.getByRole("button", { name: /^확장 전문 도구$/u }));
+    view.rerender(renderOwner({ ...value, studioAuthUserId: "other-owner" }));
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
+    expect(screen.queryByRole("dialog", { name: /^확장 전문 도구$/u })).toBeNull();
   });
 
   it("동일한 원고·페이지 이름은 반복하지 않고 다른 페이지 문맥은 유지한다", () => {

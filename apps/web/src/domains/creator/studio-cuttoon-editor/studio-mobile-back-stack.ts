@@ -62,20 +62,20 @@ function queryVisibleForeignModals(root: ParentNode, routedSurface?: string, rou
 }
 
 function dismissForeignModal(modal: HTMLElement): void {
-  const doc = modal.ownerDocument;
-  const active = doc.activeElement;
-  const dispatchTarget =
-    active instanceof HTMLElement && modal.contains(active) ? active : modal;
-  const escapeEvent = new KeyboardEvent("keydown", {
+  if (modal.dataset.studioDrawingTask === "expanded-tools") {
+    modal.dispatchEvent(new Event("cancel", { bubbles: true, cancelable: true }));
+    return;
+  }
+  const active = modal.ownerDocument.activeElement;
+  const target = active instanceof HTMLElement && modal.contains(active) ? active : modal;
+  if (!target.dispatchEvent(new KeyboardEvent("keydown", {
     key: "Escape",
     code: "Escape",
     keyCode: 27,
     which: 27,
     bubbles: true,
     cancelable: true,
-  });
-  dispatchTarget.dispatchEvent(escapeEvent);
-  if (escapeEvent.defaultPrevented) return;
+  }))) return;
 
   const closeBtn = modal.querySelector<HTMLButtonElement>(
     'button[data-studio-mobile-sheet-close="true"], button[aria-label*="닫기"], button[title*="닫기"], button[aria-label*="Close"]',

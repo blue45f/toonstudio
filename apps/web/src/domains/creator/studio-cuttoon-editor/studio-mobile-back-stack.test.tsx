@@ -74,6 +74,43 @@ function createFakeHistory(initialPath = "/studio/p/proj-1/d/doc-1") {
 }
 
 describe("resolveStudioMobileBackLayers", () => {
+  it("전문 도구의 실행 화면도 시스템 뒤로 한 번으로 닫고 키보드 Escape를 보내지 않는다", () => {
+    const domRoot = document.createElement("div");
+    const drawer = document.createElement("dialog");
+    drawer.open = true;
+    drawer.dataset.studioDrawingTask = "expanded-tools";
+    const runner = document.createElement("button");
+    drawer.append(runner);
+    domRoot.append(drawer);
+    const returnToList = vi.fn((event: Event) => event.preventDefault());
+    const closeDrawer = vi.fn(() => { drawer.open = false; });
+    drawer.addEventListener("keydown", returnToList);
+    drawer.addEventListener("cancel", closeDrawer);
+    const history = createFakeHistory("/studio/canvas?room=guest-existing");
+    const controller = createStudioMobileHistorySyncController(history.adapter);
+    const unsubscribe = history.subscribe((event) => { controller.handlePopState(event); });
+    const resolve = () => resolveStudioMobileBackLayers({
+      isMobile: true, mobileSheet: null, dismissActiveMobileSheet: vi.fn(),
+      menuOpen: false, dismissMenu: vi.fn(), quickActionsOpen: false, dismissQuickActions: vi.fn(),
+      quickAccessPaletteOpen: false, dismissQuickAccessPalette: vi.fn(), shortcutsOpen: false, dismissShortcuts: vi.fn(), domRoot,
+    });
+    try {
+      const href = history.adapter.getHref();
+      controller.syncLayers(resolve());
+      expect(controller.getPushedDepth()).toBe(1);
+      expect(history.adapter.getState()).toMatchObject({ __studioMobileBackLayer: "modal:drawing-task:expanded-tools" });
+      expect(history.systemBack().immediateStopped).toBe(true);
+      expect(closeDrawer).toHaveBeenCalledOnce();
+      expect(returnToList).not.toHaveBeenCalled();
+      expect(history.adapter.getHref()).toBe(href);
+      controller.syncLayers(resolve());
+      expect(controller.getPushedDepth()).toBe(0);
+    } finally {
+      unsubscribe();
+      controller.dispose();
+    }
+  });
+
   it("데스크톱(isMobile=false)에서는 빈 스택을 반환한다", () => {
     const layers = resolveStudioMobileBackLayers({
       isMobile: false,

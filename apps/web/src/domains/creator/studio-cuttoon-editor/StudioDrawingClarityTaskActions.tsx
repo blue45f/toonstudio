@@ -8,7 +8,7 @@ import type { StudioDrawingClarityAction } from "./StudioDrawingClarityMore";
 
 const TASKS = [
   { id: "document", ko: "원고와 레이어", en: "Draft and layers", detailKo: "페이지 · 레이어 · 소재", detailEn: "Pages, layers and assets", ids: ["pages", "layers", "assets", "history"], art: "storyboard" },
-  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 필터 · 전체 도구", detailEn: "Pen settings, filters and all tools", ids: ["brush", "bubble", "character3d", "all", "search"], art: "drawingDesk" },
+  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 필터 · 전체 도구", detailEn: "Pen settings, filters and all tools", ids: ["brush", "bubble", "character3d", "all", "expanded", "search"], art: "drawingDesk" },
   { id: "output", ko: "내보내기와 협업", en: "Export and collaboration", detailKo: "파일 출력 · 함께 작업", detailEn: "Output files and work together", ids: ["export", "team"], art: "manuscript" },
   { id: "workspace", ko: "화면과 도움말", en: "Display and help", detailKo: "작업 배치 · 사용 방법 · 문제 해결", detailEn: "Workspace, guides and recovery", ids: ["windows", "view", "help", "device", "status"], art: "tools" },
 ] as const;
