@@ -53,6 +53,7 @@ export const PERF_BUDGET_TEST_FILES = Object.freeze([
   "apps/web/src/domains/creator/wasm64-wave12-crown/wasm64-wave12-crown.test.ts",
   "apps/web/src/domains/creator/wasm64-wave15-structural/wasm64-wave15-structural.test.ts",
   "apps/web/src/domains/creator/wasm64-wave23-autonomous-cadence/wasm64-wave23-autonomous-cadence.test.ts",
+  "apps/web/src/domains/creator/wasm64-wave33-webgpu-crdt-layout/wasm64-wave33-webgpu-crdt-layout.test.ts",
   "apps/web/src/domains/creator/wasm64-wave6-moonshot/wasm64-wave6-moonshot.test.ts",
   "apps/web/src/domains/creator/wasm64-wave7-sovereign/wasm64-wave7-sovereign.test.ts",
   "apps/web/src/domains/creator/webgpu-crowd-director/webgpu-crowd-director.test.ts",
