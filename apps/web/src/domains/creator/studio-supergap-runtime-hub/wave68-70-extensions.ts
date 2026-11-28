@@ -25,6 +25,7 @@ import { registerWave123To128Extensions } from "./wave123-128-extensions";
 import { registerWave129To134Extensions } from "./wave129-134-extensions";
 import { registerWave135To140Extensions } from "./wave135-140-extensions";
 import { registerWave141To146Extensions } from "./wave141-146-extensions";
+import { registerWave147To152Extensions } from "./wave147-152-extensions";
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
 
@@ -204,7 +205,7 @@ export function registerWave68To70Extensions(hub: StudioSupergapRuntimeHub): Stu
   return hub;
 }
 
-/** Wave 54~67 내장 8종 + Wave 68~70 3종 + Wave 73~80 8종 + Wave 81~86 6종 + Wave 87~92 6종 + Wave 93~98 6종 + Wave 99~104 6종 + Wave 105~110 6종 + Wave 111~116 6종 + Wave 117~122 6종 + Wave 123~128 6종 + Wave 129~134 6종 + Wave 135~140 6종 + Wave 141~146 6종(총 85개 엔진)이 결합된 풀 허브를 생성한다. */
+/** Wave 54~67 내장 8종 + Wave 68~70 3종 + Wave 73~80 8종 + Wave 81~86 6종 + Wave 87~92 6종 + Wave 93~98 6종 + Wave 99~104 6종 + Wave 105~110 6종 + Wave 111~116 6종 + Wave 117~122 6종 + Wave 123~128 6종 + Wave 129~134 6종 + Wave 135~140 6종 + Wave 141~146 6종 + Wave 147~152 6종(총 91개 엔진)이 결합된 풀 허브를 생성한다. */
 export function createFullStudioSupergapRuntimeHub(
   options: StudioSupergapRuntimeHubOptions = {},
 ): StudioSupergapRuntimeHub {
@@ -222,5 +223,6 @@ export function createFullStudioSupergapRuntimeHub(
   registerWave129To134Extensions(hub);
   registerWave135To140Extensions(hub);
   registerWave141To146Extensions(hub);
+  registerWave147To152Extensions(hub);
   return hub;
 }

@@ -113,3 +113,8 @@ export {
   createWave141To146ExtensionSubsystems,
   registerWave141To146Extensions,
 } from "./wave141-146-extensions";
+
+export {
+  createWave147To152ExtensionSubsystems,
+  registerWave147To152Extensions,
+} from "./wave147-152-extensions";
