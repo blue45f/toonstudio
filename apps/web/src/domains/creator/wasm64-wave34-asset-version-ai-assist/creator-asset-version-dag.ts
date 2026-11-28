@@ -154,9 +154,9 @@ export interface EpisodeRightsBomReport {
   readonly summaryKo: string;
 }
 
-const FNV1A_64_OFFSET_BASIS = 0xcbf29ce484222325n;
-const FNV1A_64_PRIME = 0x00000100000001b3n;
-const FNV1A_64_MASK = 0xffffffffffffffffn;
+const FNV1A_64_OFFSET_BASIS = BigInt("0xcbf29ce484222325");
+const FNV1A_64_PRIME = BigInt("0x00000100000001b3");
+const FNV1A_64_MASK = BigInt("0xffffffffffffffff");
 const UTF8_ENCODER = new TextEncoder();
 
 /** UTF-8 바이트 열에 대한 표준 64-bit FNV-1a 해시를 16자리 소문자 16진수로 반환한다. */
