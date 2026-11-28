@@ -239,17 +239,48 @@ test("실제 헤어 메시 미리보기·확정·V3 저장·재열기를 끝까�
   let panel = await openAuthoringTools(root, page, info);
   await activate(panel.getByRole("tab", { name: "헤어 저작", exact: true }), info);
   const groom = panel.getByRole("region", { name: "헤어 가이드 편집", exact: true });
+  const preview = groom.getByRole("button", { name: "헤어 미리보기", exact: true });
+  const apply = groom.getByRole("button", { name: "헤어 적용", exact: true });
+  const groupName = groom.getByLabel("그룹 이름", { exact: true });
+  const draftName = "모바일 브라우저 검증 헤어";
+  async function createDraft() {
+    await activate(groom.getByRole("button", { name: "그룹 추가", exact: true }), info);
+    await groupName.fill(draftName);
+    await activate(groom.getByRole("button", { name: "가이드 추가", exact: true }), info);
+  }
+  async function previewDraft() {
+    await activate(preview, info);
+    await expect(apply).toBeEnabled({ timeout: 60_000 });
+  }
   await expect(groom.getByRole("button", { name: "그룹 추가", exact: true })).toBeEnabled();
-  await activate(groom.getByRole("button", { name: "그룹 추가", exact: true }), info);
-  await groom.getByLabel("그룹 이름", { exact: true }).fill("모바일 브라우저 검증 헤어");
-  await activate(groom.getByRole("button", { name: "가이드 추가", exact: true }), info);
-  await activate(groom.getByRole("button", { name: "헤어 미리보기", exact: true }), info);
-  await expect(groom.getByRole("button", { name: "헤어 적용", exact: true })).toBeEnabled({ timeout: 60_000 });
+  await createDraft();
+  await previewDraft();
+  if (info.project.name === "small-phone" || info.project.name === "phone") {
+    await expect(panel).toHaveAttribute("data-groom-preview", "true");
+    const stage = root.locator("[data-character-shaper-stage]");
+    const stageBox = await stage.boundingBox();
+    const panelBox = await panel.boundingBox();
+    if (!stageBox || !panelBox) throw new Error("헤어 미리보기의 모델과 조작 시트가 모두 보여야 합니다.");
+    expect(stageBox.height).toBeGreaterThanOrEqual(120);
+    expect(panelBox.y).toBeGreaterThanOrEqual(stageBox.y + stageBox.height - 1);
+    await stage.locator("canvas").first().click({ trial: true, position: { x: stageBox.width / 2, y: stageBox.height / 4 } });
+    const edit = groom.getByRole("button", { name: "헤어 가이드 편집", exact: true });
+    const cancel = groom.getByRole("button", { name: "헤어 취소", exact: true });
+    for (const control of [apply, edit, cancel]) await assertUsableControl(control);
+    await capture(page, info, "모바일-모델과-헤어-미리보기-시트");
+    await activate(edit, info);
+    await expect(groupName).toHaveValue(draftName);
+    await previewDraft();
+    await activate(cancel, info);
+    await expect(groupName).toHaveCount(0);
+    await createDraft();
+    await previewDraft();
+  }
   await capture(page, info, "실제-헤어-Worker-미리보기");
-  await activate(groom.getByRole("button", { name: "헤어 적용", exact: true }), info);
+  await activate(apply, info);
   const saved = await downloadAuthoringDocument(page, panel, info, "character-with-groom.json");
   expect(saved.groom.groups).toHaveLength(1);
-  expect(saved.groom.groups[0]?.name).toBe("모바일 브라우저 검증 헤어");
+  expect(saved.groom.groups[0]?.name).toBe(draftName);
   expect(saved.groom.groups[0]?.guides.length).toBeGreaterThan(0);
   await activate(panel.getByRole("button", { name: "지금 저장", exact: true }), info);
   await expect(panel.locator("dd").filter({ hasText: "저장 완료" }).first()).toBeVisible();
