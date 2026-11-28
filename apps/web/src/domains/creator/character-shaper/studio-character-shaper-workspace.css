@@ -414,6 +414,21 @@
   height: auto;
 }
 
+/* 가이드 미리보기 동안에만 원래 편집 시트를 접어 두고, 실제 미리보기 버튼 높이만큼 모델 아래에 자리를 둔다. */
+[data-character-shaper-layout="mobile"]:has(> [data-groom-preview="true"]) {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+[data-character-shaper-layout="mobile"] > [data-character-authoring-workbench="true"][data-groom-preview="true"] {
+  position: relative;
+  inset: auto;
+  justify-self: center;
+  margin-block: 4px;
+}
+[data-character-shaper-layout="mobile"]:has(> [data-groom-preview="true"]) :is([data-character-shaper-mobile-tools], [data-character-shaper-dock], [data-character-shaper-hud], [data-character-gesture-guide], [data-character-viewport-focus]) {
+  display: none;
+}
+
 [data-character-shaper-layout="mobile"] [data-character-shaper-hud="true"] {
   position: static;
   background: var(--color-panel);
