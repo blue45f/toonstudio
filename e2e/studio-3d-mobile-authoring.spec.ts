@@ -60,6 +60,18 @@ async function capture(page: Page, info: TestInfo, label: string): Promise<void>
   await info.attach(label, { body: await page.screenshot(), contentType: "image/png" });
 }
 
+async function assertGuideOutsideStage(stage: Locator, guide: Locator, landscape: boolean): Promise<void> {
+  const stageBox = await stage.boundingBox();
+  const guideBox = await guide.boundingBox();
+  if (!stageBox || !guideBox) throw new Error("무대와 안내의 표시 영역이 필요합니다.");
+  const intersectionWidth = Math.min(stageBox.x + stageBox.width, guideBox.x + guideBox.width) - Math.max(stageBox.x, guideBox.x);
+  const intersectionHeight = Math.min(stageBox.y + stageBox.height, guideBox.y + guideBox.height) - Math.max(stageBox.y, guideBox.y);
+  expect(Math.min(intersectionWidth, intersectionHeight)).toBeLessThanOrEqual(1);
+  if (!landscape) expect(guideBox.y).toBeGreaterThanOrEqual(stageBox.y + stageBox.height - 1);
+  expect(stageBox.width).toBeGreaterThanOrEqual(160);
+  expect(stageBox.height).toBeGreaterThanOrEqual(landscape ? 120 : 180);
+}
+
 async function collapseMobile(root: Locator, info: TestInfo): Promise<void> {
   const control = root.getByRole("button", { name: "모델 크게 보기", exact: true });
   if (await control.count()) await activate(control, info);
@@ -84,13 +96,25 @@ test("실제 캐릭터와 핵심 조작이 화면 안에서 겹치지 않고 도
   }
   const guide = root.getByRole("region", { name: "화면 조작 안내", exact: true });
   if (await guide.isVisible()) {
-    if (info.project.name === "small-phone" || info.project.name === "phone") {
-      const guideBox = await guide.boundingBox();
-      if (!guideBox) throw new Error("첫 사용 안내의 표시 영역이 없습니다.");
-      expect(guideBox.y).toBeGreaterThanOrEqual(box.y + box.height - 1);
+    const confirm = guide.getByRole("button", { name: "확인", exact: true });
+    await assertGuideOutsideStage(stage, guide, info.project.name === "landscape");
+    if (info.project.name === "small-phone" || info.project.name === "phone" || info.project.name === "tablet") {
       await capture(page, info, "첫-화면-모델과-조작-안내");
     }
-    await activate(guide.getByRole("button", { name: "확인", exact: true }), info);
+    await activate(confirm, info);
+    if (info.project.name === "small-phone") {
+      await activate(root.getByRole("button", { name: "화면 조작 안내 보기", exact: true }), info);
+      await confirm.focus();
+      await page.setViewportSize({ width: 844, height: 390 });
+      await expect(root).toHaveAttribute("data-character-shaper-landscape", "true");
+      await expect(confirm).toBeFocused();
+      await assertGuideOutsideStage(stage, guide, true);
+      await capture(page, info, "가로-회전-모델과-조작-안내");
+      await page.setViewportSize({ width: 320, height: 568 });
+      await expect(root).not.toHaveAttribute("data-character-shaper-landscape", "true");
+      await expect(confirm).toBeFocused();
+      await activate(confirm, info);
+    }
   }
   await activate(root.getByRole("button", { name: "전신", exact: true }), info);
   await expect(root.getByRole("button", { name: "전신", exact: true })).toHaveAttribute("aria-pressed", "true");

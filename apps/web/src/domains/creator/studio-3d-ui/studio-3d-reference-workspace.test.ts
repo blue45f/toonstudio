@@ -72,3 +72,12 @@ it("3D 참조 작업면과 캐릭터 셰이퍼에 도메인 조작 색을 연결
   expect(contrastPalette).toContain("--color-on-accent: var(--ui-palette-on-accent);");
   expect(css).toContain("--color-on-accent: HighlightText;");
 });
+
+it("강제 색상에서 캐릭터 저장·삽입과 선택한 카메라 버튼이 시스템 선택 색상을 짝으로 사용한다", () => {
+  const buttons = block('[data-studio-3d-reference] :is([data-character-primary-save], [data-character-dock-action="insert"], [data-character-shaper-camera-pill-bar] [role="group"] button[aria-pressed="true"]):enabled');
+  const forcedColors = /@media \(forced-colors: active\) \{[\s\S]*?\n\}/u.exec(css)?.[0];
+  expect(forcedColors).toContain(buttons);
+  expect(buttons).toContain("forced-color-adjust: none;");
+  expect(buttons).toContain("background: Highlight;");
+  expect(buttons).toContain("color: HighlightText;");
+});
