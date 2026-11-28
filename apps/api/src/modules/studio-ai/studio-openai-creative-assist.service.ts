@@ -12,6 +12,7 @@ import {
 
 import type { ApprovedDialoguePair } from "@toonstudio/contracts/studio-approved-dialogue-review";
 
+import { StudioOpenAiAssistIdempotency, type CreativeAssistSendBoundary } from "./openai-assist/studio-openai-assist-idempotency";
 import { prepareApprovedDialogueReview } from "./openai-assist/approved-dialogue-review";
 import { buildDeterministicAssistResult } from "./openai-assist/studio-assist-deterministic-fallback";
 import { checkScrollEndingEvidence, withoutUnverifiedEndingScore } from "./openai-assist/studio-scroll-ending-evidence";
@@ -64,6 +65,10 @@ const MULTI_RECORD_NON_REASONING_MODES: ReadonlySet<StudioOpenAiAssistMode> = ne
 ]);
 const LONG_INPUT_OUTPUT_HEADROOM_CHARS = 800;
 const MAX_ERROR_BODY_BYTES = 8_192;
+const PRE_INFERENCE_RATE_LIMIT_CODES = new Set([
+  "rate_limit_exceeded", "insufficient_quota", "billing_hard_limit_reached",
+  "credit_balance_exhausted", "project_spend_limit_exceeded", "organization_spend_limit_exceeded",
+]);
 
 interface OpenAiRequestOptions {
   readonly env?: EnvLike;
@@ -87,7 +92,8 @@ export class StudioOpenAiCreativeAssistService {
   private readonly rateLimiter = new StudioOpenAiRateLimiter();
   private readonly zeroBillRouter: StudioFreeAiZeroBillRouter;
 
-  constructor(zeroBillRouter?: StudioFreeAiZeroBillRouter) {
+  constructor(zeroBillRouter?: StudioFreeAiZeroBillRouter,
+    private readonly idempotency: StudioOpenAiAssistIdempotency = new StudioOpenAiAssistIdempotency()) {
     this.zeroBillRouter = zeroBillRouter ?? new StudioFreeAiZeroBillRouter();
   }
 
@@ -253,14 +259,14 @@ export class StudioOpenAiCreativeAssistService {
   async assist(
     actorIdentifier: string,
     input: StudioOpenAiCreativeAssistRequest,
-    options: OpenAiRequestOptions = {},
+    options: OpenAiRequestOptions & { readonly idempotencyKey?: unknown } = {},
   ) {
     if (input.allowZeroBillCascade === true) {
       return this.assistWithZeroBillCascade(actorIdentifier, input, options);
     }
 
     const prepared = this.prepareMaskedUserPrompt(input);
-    return this.requestStructuredCompletion(actorIdentifier, {
+    const complete = (boundary?: CreativeAssistSendBoundary) => this.requestStructuredCompletion(actorIdentifier, {
       ...prepared,
       systemInstruction: buildModeSystemInstruction(input.mode),
       schemaSpec: MODE_JSON_SCHEMAS[input.mode],
@@ -268,7 +274,9 @@ export class StudioOpenAiCreativeAssistService {
       assistMode: input.mode,
       rawInputLength: input.inputText.length,
       parse: (raw) => this.parseModeOutput(input.mode, raw, prepared.maskedInput.inputText),
-    }, options);
+    }, options, boundary);
+    return options.idempotencyKey === undefined ? complete()
+      : this.idempotency.run(actorIdentifier, input, options.idempotencyKey, complete);
   }
 
   reviewApprovedDialogue(actorIdentifier: string, input: ApprovedDialoguePair, options: OpenAiRequestOptions = {}) {
@@ -279,6 +287,7 @@ export class StudioOpenAiCreativeAssistService {
     actorIdentifier: string,
     completion: StructuredCompletion<T>,
     options: OpenAiRequestOptions,
+    boundary?: CreativeAssistSendBoundary,
   ) {
     const env = options.env ?? process.env;
     const config = resolveStudioOpenAiCreativeConfig(env);
@@ -351,8 +360,21 @@ export class StudioOpenAiCreativeAssistService {
         : needsLongNonReasoningOutput
           ? Math.max(baseMaxTokens, NON_REASONING_LONG_OUTPUT_TOKENS)
           : baseMaxTokens;
+      if (boundary) {
+        try {
+          await boundary.authorize();
+          if (controller.signal.aborted) {
+            throw new HttpException(timedOut
+              ? { code: "OPENAI_TIMEOUT", message: "요청 전 대기 시간이 지났어요." }
+              : { code: "CLIENT_ABORTED", message: "요청이 취소되었어요." }, timedOut ? 504 : 499);
+          }
+        } catch (cause) {
+          quota.release();
+          throw cause;
+        }
+      }
       try {
-        response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, {
+        const requestInit: RequestInit = {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -374,7 +396,9 @@ export class StudioOpenAiCreativeAssistService {
             },
           }),
           signal: controller.signal,
-        });
+        };
+        boundary?.dispatched();
+        response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, requestInit);
         // fetch가 헤더를 받은 뒤에도 본문 완료까지 같은 timeout/취소 신호를 유지한다.
         responseText = await response.text();
       } catch {
@@ -402,6 +426,10 @@ export class StudioOpenAiCreativeAssistService {
           quota.release();
         }
         const errorCode = this.readSafeOpenAiErrorCode(responseText);
+        if (response.status === 401 || response.status === 403 ||
+            (response.status === 429 && errorCode && PRE_INFERENCE_RATE_LIMIT_CODES.has(errorCode))) {
+          boundary?.rejectedBeforeInference();
+        }
         if (isOpenAiFreeShareModel(config.model) && (response.status === 402 || response.status === 429)) {
           this.zeroBillRouter.blockProviderUntilUtcMidnight(
             "openai-free-share",
@@ -661,3 +689,5 @@ export class StudioOpenAiCreativeAssistService {
 // 파라미터 데코레이터 문법(TS1206) 없이 동일한 NestJS 선택적 DI 메타데이터를 등록한다.
 Inject(StudioFreeAiZeroBillRouter)(StudioOpenAiCreativeAssistService, undefined, 0);
 Optional()(StudioOpenAiCreativeAssistService, undefined, 0);
+Inject(StudioOpenAiAssistIdempotency)(StudioOpenAiCreativeAssistService, undefined, 1);
+Optional()(StudioOpenAiCreativeAssistService, undefined, 1);

@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import { HttpException, UnauthorizedException } from "@nestjs/common";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { StudioOpenAiAssistIdempotency } from "./openai-assist/studio-openai-assist-idempotency";
 import {
   isOpenAiFreeShareModel,
   StudioOpenAiRateLimiter,
@@ -571,6 +572,24 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(limiter.trackedActorCount).toBe(1);
   });
 
+  it("새 작업 키와 기존 무키 클라이언트를 같은 POST 경계에서 처리하고 잘못된 키를 거절한다", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const controller = new StudioOpenAiCreativeAssistController(service);
+    const body = { mode: "dialogue-polish", inputText: "다시 만난 두 사람의 대사." } as const;
+    const invalid = createRequestResponseHarness({ "Idempotency-Key": "공백 포함" });
+    await expect(controller.assist("creator", body, invalid.request, invalid.response)).rejects.toMatchObject({
+      status: 400, response: { code: "OPENAI_INVALID_IDEMPOTENCY_KEY" },
+    });
+    const relay = vi.spyOn(service, "assist").mockRejectedValue(new Error("경계 확인"));
+    for (const headers of [{ "Idempotency-Key": "creative-request-01" }, {}]) {
+      const { request, response } = createRequestResponseHarness(headers as Record<string, string>);
+      await expect(controller.assist("creator", body, request, response)).rejects.toThrow("경계 확인");
+      expect(relay).toHaveBeenLastCalledWith("user:creator", body, {
+        signal: expect.any(AbortSignal), idempotencyKey: headers["Idempotency-Key"],
+      });
+    }
+  });
+
   it("requires authenticated user in controller and propagates client disconnect abort", async () => {
     const assistSpy = vi.fn(
       async (_actor: string, _body: StudioOpenAiCreativeAssistDto, opts?: { signal?: AbortSignal }) => {
@@ -735,8 +754,11 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
       StudioOpenAiCreativeAssistService,
     ) as number[];
 
-    expect(declared).toEqual([{ index: 0, param: StudioFreeAiZeroBillRouter }]);
-    expect(optional).toEqual([0]);
+    expect(declared).toEqual([
+      { index: 0, param: StudioFreeAiZeroBillRouter },
+      { index: 1, param: StudioOpenAiAssistIdempotency },
+    ]);
+    expect(optional).toEqual([0, 1]);
 
     const injectedRouter = new StudioFreeAiZeroBillRouter();
     const quotaSpy = vi.spyOn(injectedRouter, "getFreeQuotaStatus");

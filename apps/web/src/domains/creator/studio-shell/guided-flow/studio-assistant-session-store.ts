@@ -1,3 +1,6 @@
+import { sha256HexPortable } from "@toonstudio/contracts/sha256-portable";
+
+import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 import type { BilingualText } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { StudioAiAssistToolId } from "../../ai/studio-ai-assist-ux";
@@ -200,16 +203,41 @@ export function defaultOpenAiModeForSection(
   return "export-preflight-coach";
 }
 
-const SESSION_KEY_PREFIX = "toonstudio:assistant-draft:v1:";
+const SESSION_KEY_PREFIX = "toonstudio:assistant-draft:v2:";
+
+/** 이전 프로젝트 단독 키에는 소유자 정보가 없어 자동 복원하지 않는다. */
+export function studioAssistantSessionKey(projectId: string, ownerId: string | null = null): string {
+  const scope = ownerId === null ? ["guest", projectId] : ["account", ownerId, projectId];
+  return SESSION_KEY_PREFIX + JSON.stringify(scope);
+}
+
+export interface StudioAssistantPendingRequest {
+  readonly key: string;
+  readonly requestHash: string;
+  readonly issuedAt: number;
+}
+
+// 서버의 유료 작업 영수증 보존 기간이다. 만료하면 사용자가 새 생성을 직접 선택해야 한다.
+const RECEIPT_RETENTION_MS = 30 * 60 * 1_000;
+
+function readPendingRequest(value: unknown): StudioAssistantPendingRequest | undefined {
+  if (!isRecord(value) || typeof value.key !== "string" ||
+    !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u.test(value.key) ||
+    typeof value.requestHash !== "string" || !/^[a-f0-9]{64}$/u.test(value.requestHash) ||
+    typeof value.issuedAt !== "number" || !Number.isSafeInteger(value.issuedAt) || value.issuedAt <= 0) return undefined;
+  return { key: value.key, requestHash: value.requestHash, issuedAt: value.issuedAt };
+}
+
 const MAX_PROMPT_CHARS = 6_000;
 // 기존 결과 저장 공간에 제출 원문 필드의 최대 JSON 이스케이프 길이를 더한다.
-const MAX_SESSION_CHARS = 64_000 + ',"submittedPrompt":""'.length + MAX_PROMPT_CHARS * 6;
+const MAX_SESSION_CHARS = 64_000 + ',"submittedPrompt":""'.length + MAX_PROMPT_CHARS * 6 + 256;
 
 export interface StudioAssistantSessionSnapshot {
   readonly prompt: string;
   readonly openAiMode: StudioOpenAiAssistMode;
   readonly lastResult: StudioOpenAiAssistSuccess | null;
   readonly submittedPrompt?: string;
+  readonly pendingRequest?: StudioAssistantPendingRequest;
 }
 
 function readSubmittedPrompt(value: unknown): string | undefined {
@@ -231,11 +259,12 @@ function resolveStudioAssistantSessionStorage(override: Storage | null | undefin
 export function readStudioAssistantSessionState(
   projectId: string,
   storageOverride?: Storage | null,
+  ownerId: string | null = null,
 ): StudioAssistantSessionSnapshot | null {
   const storage = resolveStudioAssistantSessionStorage(storageOverride);
   if (!storage || !projectId) return null;
   try {
-    const raw = storage.getItem(`${SESSION_KEY_PREFIX}${projectId}`);
+    const raw = storage.getItem(studioAssistantSessionKey(projectId, ownerId));
     if (!raw || raw.length > MAX_SESSION_CHARS) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!isRecord(parsed)) return null;
@@ -252,7 +281,8 @@ export function readStudioAssistantSessionState(
     const lastResult = isValidStudioOpenAiAssistSuccess(parsed.lastResult)
       ? parsed.lastResult
       : null;
-    if (!prompt.trim() && lastResult === null) {
+    const pendingRequest = ownerId ? readPendingRequest(parsed.pendingRequest) : undefined;
+    if (!prompt.trim() && lastResult === null && !pendingRequest) {
       return null;
     }
     const submittedPrompt = lastResult ? readSubmittedPrompt(parsed.submittedPrompt) : undefined;
@@ -261,6 +291,7 @@ export function readStudioAssistantSessionState(
       openAiMode: rawMode,
       lastResult,
       ...(submittedPrompt === undefined ? {} : { submittedPrompt }),
+      ...(pendingRequest ? { pendingRequest } : {}),
     };
   } catch {
     return null;
@@ -271,24 +302,26 @@ export function writeStudioAssistantSessionState(
   projectId: string,
   snapshot: StudioAssistantSessionSnapshot,
   storageOverride?: Storage | null,
+  ownerId: string | null = null,
 ): void {
   const storage = resolveStudioAssistantSessionStorage(storageOverride);
   if (!storage || !projectId || !isStudioOpenAiAssistMode(snapshot.openAiMode)) return;
   const sanitizedResult = isValidStudioOpenAiAssistSuccess(snapshot.lastResult)
     ? snapshot.lastResult
     : null;
-  if (!snapshot.prompt.trim() && sanitizedResult === null) {
-    clearStudioAssistantSessionState(projectId, storage);
+  if (!snapshot.prompt.trim() && sanitizedResult === null && !snapshot.pendingRequest) {
+    clearStudioAssistantSessionState(projectId, storage, ownerId);
     return;
   }
   try {
     storage.setItem(
-      `${SESSION_KEY_PREFIX}${projectId}`,
+      studioAssistantSessionKey(projectId, ownerId),
       JSON.stringify({
         prompt: snapshot.prompt.slice(0, MAX_PROMPT_CHARS),
         openAiMode: snapshot.openAiMode,
         lastResult: sanitizedResult,
         submittedPrompt: sanitizedResult ? readSubmittedPrompt(snapshot.submittedPrompt) : undefined,
+        pendingRequest: ownerId ? readPendingRequest(snapshot.pendingRequest) : undefined,
       }),
     );
   } catch {
@@ -299,12 +332,40 @@ export function writeStudioAssistantSessionState(
 export function clearStudioAssistantSessionState(
   projectId: string,
   storageOverride?: Storage | null,
+  ownerId: string | null = null,
 ): void {
   const storage = resolveStudioAssistantSessionStorage(storageOverride);
   if (!storage || !projectId) return;
   try {
-    storage.removeItem(`${SESSION_KEY_PREFIX}${projectId}`);
+    storage.removeItem(studioAssistantSessionKey(projectId, ownerId));
   } catch {
     // 무시
   }
+}
+
+/** 송신 전에 같은 탭의 계정별 기록을 다시 읽어, 보관을 확인한 작업 키만 반환한다. */
+export function prepareStudioAssistantRequest(
+  projectId: string,
+  ownerId: string,
+  snapshot: StudioAssistantSessionSnapshot,
+  requestBody: string,
+  confirmedExpiredKey?: string,
+): { kind: "ready"; pending: StudioAssistantPendingRequest } | { kind: "expired"; key: string } | { kind: "storage-unavailable" } {
+  const previous = readStudioAssistantSessionState(projectId, undefined, ownerId)?.pendingRequest ?? snapshot.pendingRequest;
+  const requestHash = sha256HexPortable(new TextEncoder().encode(requestBody));
+  const now = Date.now();
+  let pending: StudioAssistantPendingRequest;
+  if (previous?.requestHash === requestHash && previous.key !== confirmedExpiredKey) {
+    const age = now - previous.issuedAt;
+    if (age < 0 || age >= RECEIPT_RETENTION_MS) return { kind: "expired", key: previous.key };
+    pending = previous;
+  } else {
+    pending = { key: createSecureRandomUuid(), requestHash, issuedAt: now };
+  }
+  writeStudioAssistantSessionState(projectId, { ...snapshot, pendingRequest: pending }, undefined, ownerId);
+  const stored = readStudioAssistantSessionState(projectId, undefined, ownerId)?.pendingRequest;
+  if (stored?.key !== pending.key || stored.requestHash !== requestHash || stored.issuedAt !== pending.issuedAt) {
+    return { kind: "storage-unavailable" };
+  }
+  return { kind: "ready", pending };
 }

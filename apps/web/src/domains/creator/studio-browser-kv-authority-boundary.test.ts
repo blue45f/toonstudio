@@ -362,7 +362,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-work-status.ts", "local-storage-cleanup", '"toonstudio:virtual-space:work-status:v1"', 1, CLEANUP_ONLY, "studio-virtual-space-work-status.storage.test.ts가 명시적 배지 해제 시 해당 키만 제거하고 삭제 실패 시 기존 배지·다른 키를 유지함을 검증한다."),
   // 2026-11-12: 함수/주입 포트로 감싸진 sessionStorage 두 곳만 아래 payload·기본 저장소 변이 계약과 함께 허용한다.
   allow("apps/web/src/domains/creator/studio-shell/ActiveProjectContextBridge.tsx", "durable-storage-write", '"toonstudio:active-project-bridge:return:v1"', 1, "현재 history entry의 작품 선택·메뉴·초점 복귀용 탭 표식이며 원고·검색 query·저장 상태는 포함하지 않는다.", "ActiveProjectContextBridge.test.tsx가 native Back/SPA POP 복원과 소비 후 제거·저장 거부를 검증한다. 아래 계약은 sessionStorage 전용 getter와 정확한 다섯 필드 payload를 고정한다."),
-  allow("apps/web/src/domains/creator/studio-shell/guided-flow/studio-assistant-session-store.ts", "durable-storage-write", '`${SESSION_KEY_PREFIX}${projectId}`', 1, "프로젝트별 도우미 입력·모드·검증된 응답의 같은 탭 UI 초안이며 원고 또는 기획 데이터의 정본 저장소가 아니다.", "StudioProjectAssistantPanel.test.tsx가 작품별 분리와 취소 시 입력 보존을 검증한다. 제출 원문은 검증을 통과한 응답과 함께 기록하고 탭 안에서만 복원한다."),
+  allow("apps/web/src/domains/creator/studio-shell/guided-flow/studio-assistant-session-store.ts", "durable-storage-write", 'studioAssistantSessionKey(projectId,ownerId)', 1, "게스트와 계정별로 나눈 프로젝트 탭 초안에 입력·모드·검증된 응답과 중복 생성 방지용 요청 표식만 기록한다.", "StudioProjectAssistantPanel.test.tsx와 studio-assistant-session-store.test.ts가 소유자·작품별 분리, 취소 시 입력 보존과 같은 탭의 요청 재시도를 검증한다."),
   // 2026-11-07: 문서 권위가 아닌 정리와 표시 설정을 실제 저장 payload·복원 테스트로 검토했다.
   allow("apps/web/src/domains/creator/studio-shell/StudioSaveFirstProjectLibraryPage.tsx", "local-storage-cleanup", "studioProjectDocumentStorageKey(project.id)", 1, CLEANUP_ONLY, "프로젝트 제거 성공 뒤 해당 project.id의 메타데이터 키만 removeItem 한다. 아래 변이 검증은 같은 소유자의 setItem·다른 키·추가 호출을 거부한다."),
   allow("apps/web/src/domains/creator/virtual-space/office2d/studio-virtual-space-stage-mode.ts", "local-storage-write", '"toonstudio:virtual-space-stage-mode:v1"', 1, UI_ONLY, "studio-virtual-space-stage-mode.test.ts가 2d/3d enum만 저장하고 잘못된 값과 저장 실패를 거부하며 URL 우선권과 기본값 복원을 검증한다."),
@@ -897,13 +897,18 @@ describe("Studio browser-KV authority boundary", () => {
     },
     {
       owner: "studio-shell/guided-flow/studio-assistant-session-store.ts",
-      key: '`${SESSION_KEY_PREFIX}${projectId}`',
-      call: "storage.setItem(`${SESSION_KEY_PREFIX}${projectId}`,JSON.stringify({prompt:snapshot.prompt.slice(0,MAX_PROMPT_CHARS),openAiMode:snapshot.openAiMode,lastResult:sanitizedResult,submittedPrompt:sanitizedResult?readSubmittedPrompt(snapshot.submittedPrompt):undefined,}),)",
+      key: 'studioAssistantSessionKey(projectId,ownerId)',
+      call: "storage.setItem(studioAssistantSessionKey(projectId,ownerId),JSON.stringify({prompt:snapshot.prompt.slice(0,MAX_PROMPT_CHARS),openAiMode:snapshot.openAiMode,lastResult:sanitizedResult,submittedPrompt:sanitizedResult?readSubmittedPrompt(snapshot.submittedPrompt):undefined,pendingRequest:ownerId?readPendingRequest(snapshot.pendingRequest):undefined,}),)",
       required: [
         'if(override!==undefined)returnoverride;',
         'returntypeofwindow==="undefined"?null:window.sessionStorage;',
         'conststorage=resolveStudioAssistantSessionStorage(storageOverride);',
-        'constSESSION_KEY_PREFIX="toonstudio:assistant-draft:v1:";',
+        'constSESSION_KEY_PREFIX="toonstudio:assistant-draft:v2:";',
+        'ownerId===null?["guest",projectId]:["account",ownerId,projectId]',
+        'getItem(studioAssistantSessionKey(projectId,ownerId))',
+        'removeItem(studioAssistantSessionKey(projectId,ownerId))',
+        'constpendingRequest=ownerId?readPendingRequest(parsed.pendingRequest):undefined;',
+        'return{key:value.key,requestHash:value.requestHash,issuedAt:value.issuedAt};',
         'constMAX_PROMPT_CHARS=6_000;',
         'raw.length>MAX_SESSION_CHARS',
         'value.length<=MAX_PROMPT_CHARS',

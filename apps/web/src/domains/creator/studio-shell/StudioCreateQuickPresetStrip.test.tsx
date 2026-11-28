@@ -12,6 +12,7 @@ import { readStudioProjectLibrary } from "../studio-project-library-store";
 import {
   clearStudioAssistantSessionState,
   readStudioAssistantSessionState,
+  studioAssistantSessionKey,
   writeStudioAssistantSessionState,
 } from "./guided-flow/studio-assistant-session-store";
 import { StudioBeginnerQuickTipsBar } from "./guided-flow/StudioBeginnerQuickTipsBar";
@@ -254,7 +255,7 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(widthInput.value).toBe(initialWidth);
   });
 
-  it("AI 보조 세션 저장소가 프로젝트별 초안·구버전 호환을 복원하고 손상된 mode/result 및 빈 초안은 안전하게 정리한다", () => {
+  it("AI 보조 세션 저장소가 소유 범위가 정해진 초안에서 구형 입력 필드를 복원하고 손상된 mode/result 및 빈 초안은 안전하게 정리한다", () => {
     writeStudioAssistantSessionState(
       "proj-alpha",
       {
@@ -280,11 +281,11 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
       window.sessionStorage,
     );
     expect(readStudioAssistantSessionState("proj-alpha", window.sessionStorage)).toBeNull();
-    expect(window.sessionStorage.getItem("toonstudio:assistant-draft:v1:proj-alpha")).toBeNull();
+    expect(window.sessionStorage.getItem(studioAssistantSessionKey("proj-alpha"))).toBeNull();
 
     // 손상된 mode 거부
     window.sessionStorage.setItem(
-      "toonstudio:assistant-draft:v1:proj-corrupt-mode",
+      studioAssistantSessionKey("proj-corrupt-mode"),
       JSON.stringify({
         openAiMode: "invalid-mode",
         prompt: "손상된 모드",
@@ -297,7 +298,7 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
 
     // 손상된 lastResult(필수 필드·data 배열 누락)는 null로 정화하고 정상 prompt는 보존한다.
     window.sessionStorage.setItem(
-      "toonstudio:assistant-draft:v1:proj-corrupt-result",
+      studioAssistantSessionKey("proj-corrupt-result"),
       JSON.stringify({
         openAiMode: "idea-remix",
         prompt: "정상 프롬프트",
@@ -319,7 +320,7 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
 
     // 구버전 inputText/mode 키 호환 복원
     window.sessionStorage.setItem(
-      "toonstudio:assistant-draft:v1:proj-legacy",
+      studioAssistantSessionKey("proj-legacy"),
       JSON.stringify({
         mode: "script-to-cuts",
         inputText: "구버전 세션 초안",

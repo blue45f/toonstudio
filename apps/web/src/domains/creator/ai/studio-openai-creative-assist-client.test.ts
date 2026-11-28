@@ -62,6 +62,37 @@ describe("studio-openai-creative-assist-client", () => {
     expect(await request({ ...response, result: brokenResult }, "continuity-plot-audit")).toMatchObject(invalid);
   });
 
+  it("실제 전송 본문으로 요청 키를 결정하고 인증·CSRF와 함께 보낸다", async () => {
+    const key = crypto.randomUUID();
+    const getIdempotencyKey = vi.fn(() => key);
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({
+      code: "OPENAI_REQUEST_IN_PROGRESS", message: "이 초안을 이미 처리하고 있어요.",
+    }, { status: 425 }));
+    const result = await runStudioOpenAiCreativeAssist(
+      { mode: "dialogue-polish", inputText: "  합성 원고  ", projectTitle: "  작품  ", targetPlatform: "cuttoon" },
+      { fetchImpl, sessionToken: "test-session", getIdempotencyKey },
+    );
+    const init = fetchImpl.mock.calls[0]?.[1];
+    const headers = new Headers(init?.headers);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(getIdempotencyKey).toHaveBeenCalledWith(init?.body);
+    expect(JSON.parse(String(init?.body))).toEqual({ mode: "dialogue-polish", inputText: "합성 원고", projectTitle: "작품", targetPlatform: "cuttoon" });
+    expect(headers.get("Idempotency-Key")).toBe(key);
+    expect(headers.get("x-user-id")).toBe("test-session");
+    expect(headers.has("x-toonstudio-csrf")).toBe(true);
+    expect(result).toMatchObject({ ok: false, status: 425, code: "OPENAI_REQUEST_IN_PROGRESS", message: "이 초안을 이미 처리하고 있어요." });
+  });
+
+  it("안전한 요청 키를 만들 수 없으면 서버에 보내지 않는다", async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+    const result = await runStudioOpenAiCreativeAssist(
+      { mode: "idea-remix", inputText: "합성 원고" },
+      { fetchImpl, getIdempotencyKey() { throw new Error("unavailable"); } },
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: false, code: "CLIENT_REQUEST_KEY_UNAVAILABLE" });
+  });
+
   it("서버가 연결되지 않았을 때도 오류 없이 안전한 미설정 안내 상태를 반환한다", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
     const status = await fetchStudioOpenAiAssistStatus({ fetchImpl: fetchMock });

@@ -5,6 +5,7 @@ import {
 } from "@toonstudio/contracts/studio-openai-assist-result";
 
 import { withCsrfProtection } from "@/shared/lib/csrf";
+import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 import { useApp } from "@/shared/lib/store";
 
 export {
@@ -497,6 +498,8 @@ export async function runStudioOpenAiCreativeAssist(
     readonly signal?: AbortSignal;
     readonly sessionToken?: string | null;
     readonly timeoutMs?: number;
+    /** 같은 논리 요청의 재시도에는 같은 키를 반환한다. 인자로 실제 전송 JSON을 받는다. */
+    readonly getIdempotencyKey?: (requestBody: string) => string | { code: string; message: string };
   } = {},
 ): Promise<StudioOpenAiAssistCallResult> {
   const trimmed = input.inputText.trim();
@@ -549,9 +552,30 @@ export async function runStudioOpenAiCreativeAssist(
     if (options.signal?.aborted) {
       return { ok: false, status: 499, code: "CLIENT_ABORTED", message: "요청을 취소했어요." };
     }
+    const requestBody = JSON.stringify({
+      mode: input.mode,
+      inputText: trimmed,
+      ...(input.projectTitle?.trim() ? { projectTitle: input.projectTitle.trim().slice(0, 120) } : {}),
+      ...(input.genreOrTone?.trim() ? { genreOrTone: input.genreOrTone.trim().slice(0, 80) } : {}),
+      ...(input.targetPlatform ? { targetPlatform: input.targetPlatform } : {}),
+    });
+    let idempotencyKey: string;
+    try {
+      const prepared = options.getIdempotencyKey?.(requestBody) ?? createSecureRandomUuid();
+      if (typeof prepared !== "string") return { ok: false, status: 0, ...prepared };
+      idempotencyKey = prepared;
+    } catch {
+      return {
+        ok: false,
+        status: 0,
+        code: "CLIENT_REQUEST_KEY_UNAVAILABLE",
+        message: "안전한 요청 ID를 만들 수 없어 초안을 요청하지 못했어요.",
+      };
+    }
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
+      "Idempotency-Key": idempotencyKey,
     };
     if (sessionToken) headers["x-user-id"] = sessionToken;
 
@@ -561,13 +585,7 @@ export async function runStudioOpenAiCreativeAssist(
         method: "POST",
         credentials: "include",
         headers,
-        body: JSON.stringify({
-          mode: input.mode,
-          inputText: trimmed,
-          ...(input.projectTitle?.trim() ? { projectTitle: input.projectTitle.trim().slice(0, 120) } : {}),
-          ...(input.genreOrTone?.trim() ? { genreOrTone: input.genreOrTone.trim().slice(0, 80) } : {}),
-          ...(input.targetPlatform ? { targetPlatform: input.targetPlatform } : {}),
-        }),
+        body: requestBody,
         signal: controller.signal,
       }),
     );
@@ -618,7 +636,7 @@ export async function runStudioOpenAiCreativeAssist(
         ok: false,
         status: 504,
         code: "CLIENT_TIMEOUT",
-        message: "응답 시간이 길어 요청을 중단했어요. 입력 내용을 조금 줄여 다시 시도해 주세요.",
+        message: "응답 시간이 초과됐어요. 이미 전달됐을 수 있으니 같은 입력으로 결과를 다시 확인해 주세요.",
       };
     }
     if (options.signal?.aborted) {
