@@ -39,6 +39,7 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
   const routedSurface = admittedPoserVrmOpen ? "poser" : admittedCharacterShaperOpen ? "character"
     : admittedBg3dOpen ? "bg3d" : studioRoute.surface;
   const controllerRef = useRef<StudioMobileHistorySyncController | null>(null);
+  const handoffOwner = useRef({});
 
   const ensureController = (): StudioMobileHistorySyncController | null => {
     if (controllerRef.current === null && typeof window !== "undefined") {
@@ -48,7 +49,7 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
         getState: () => window.history.state,
         pushState: (state, url) => window.history.pushState(state, "", url),
         go: (delta) => window.history.go(delta),
-      });
+      }, { handoffScope: window.history, handoffOwner: handoffOwner.current });
     }
     return controllerRef.current;
   };
@@ -77,6 +78,20 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
       document.removeEventListener(STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE, bump);
     };
   }, [isMobile]);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    ensureController();
+    const onPopState = (event: PopStateEvent) => {
+      controllerRef.current?.handlePopState(event);
+    };
+    window.addEventListener("popstate", onPopState, true);
+    return () => {
+      window.removeEventListener("popstate", onPopState, true);
+      controllerRef.current?.dispose();
+      controllerRef.current = null;
+    };
+  }, []);
 
   useLayoutEffect(() => {
     void domRevision;
@@ -113,20 +128,6 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
     shortcutsOpen,
     routedSurface,
   ]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    ensureController();
-    const onPopState = (event: PopStateEvent) => {
-      controllerRef.current?.handlePopState(event);
-    };
-    window.addEventListener("popstate", onPopState, true);
-    return () => {
-      window.removeEventListener("popstate", onPopState, true);
-      controllerRef.current?.dispose();
-      controllerRef.current = null;
-    };
-  }, []);
 
   return null;
 }

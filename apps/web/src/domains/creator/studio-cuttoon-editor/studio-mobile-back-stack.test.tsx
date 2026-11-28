@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, act } from "@testing-library/react";
+import { render, act, waitFor } from "@testing-library/react";
 import { StrictMode, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -337,6 +337,52 @@ describe("createStudioMobileHistorySyncController", () => {
 });
 
 describe("StudioMobileBackStackHost (React StrictMode)", () => {
+  it("다른 계정의 같은 주소에서 이전 도구의 가드를 지우고 실제 이전 페이지로 돌아간다", async () => {
+    const originalHref = window.location.href;
+    const originalState = window.history.state;
+    const previousPath = "/studio-account-back-origin";
+    const currentPath = "/studio/canvas?room=account-back-proof";
+    const closeOldDrawer = vi.fn();
+    const routerPop = vi.fn();
+    const session = {
+      isMobile: true, studioRoute: { surface: "canvas" }, menu: null, mobileSheet: null,
+    } as StudioCuttoonEditorViewSession;
+    const view = (actor: "a" | "b") => <StrictMode>
+      <section key={actor}>
+        {actor === "a" ? (
+          <dialog open data-studio-mobile-expanded-tools="true" data-studio-drawing-task="expanded-tools" onCancel={closeOldDrawer} />
+        ) : null}
+        <StudioMobileBackStackHost {...session} />
+      </section>
+    </StrictMode>;
+
+    window.history.replaceState({ key: "account-back-origin", idx: 0 }, "", previousPath);
+    window.history.pushState({ key: "account-back-studio", idx: 1 }, "", currentPath);
+    const push = vi.spyOn(window.history, "pushState");
+    window.addEventListener("popstate", routerPop);
+    const screen = render(view("a"));
+    try {
+      expect(window.history.state).toMatchObject({ __studioMobileBackLayer: "modal:drawing-task:expanded-tools" });
+      expect(push).toHaveBeenCalledOnce();
+
+      screen.rerender(view("b"));
+      await waitFor(() => expect(window.history.state).toEqual({ key: "account-back-studio", idx: 1 }));
+      expect(window.location.pathname + window.location.search).toBe(currentPath);
+      expect(routerPop).not.toHaveBeenCalled();
+      expect(closeOldDrawer).not.toHaveBeenCalled();
+
+      act(() => window.history.back());
+      await waitFor(() => expect(window.location.pathname).toBe(previousPath));
+      expect(routerPop).toHaveBeenCalledOnce();
+      expect(closeOldDrawer).not.toHaveBeenCalled();
+    } finally {
+      screen.unmount();
+      window.removeEventListener("popstate", routerPop);
+      push.mockRestore();
+      window.history.replaceState(originalState, "", originalHref);
+    }
+  });
+
   it("원고 URL보다 먼저 마운트한 포저와 종료 중인 포저가 가드 항목을 만들지 않는다", () => {
     const push = vi.spyOn(window.history, "pushState");
     const renderHost = (open: boolean) => <>

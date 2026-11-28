@@ -218,6 +218,45 @@ export interface StudioMobileHistorySyncController {
   readonly dispose: () => void;
 }
 
+interface StudioMobileHistoryEntry {
+  readonly key?: string;
+  readonly idx?: number;
+  readonly __studioMobileBackSession?: string;
+  readonly __studioMobileBackDepth?: number;
+}
+
+interface StudioMobileGuardReceipt {
+  readonly href: string;
+  readonly key: StudioMobileHistoryEntry["key"];
+  readonly idx: StudioMobileHistoryEntry["idx"];
+  readonly session: string;
+  readonly depth: number;
+}
+
+interface StudioMobileGuardRewind {
+  readonly from: StudioMobileGuardReceipt;
+  readonly to: number;
+  readonly retired: boolean;
+}
+
+const releasedStudioMobileGuards = new WeakMap<object, {
+  readonly owner?: object;
+  readonly receipt: StudioMobileGuardReceipt;
+  readonly rewind: StudioMobileGuardRewind | null;
+}>();
+
+function matchesStudioMobileGuard(
+  receipt: StudioMobileGuardReceipt,
+  href: string,
+  state: StudioMobileHistoryEntry | null,
+  depth = receipt.depth,
+): boolean {
+  if (href !== receipt.href || state?.key !== receipt.key || state?.idx !== receipt.idx) return false;
+  return depth === 0
+    ? state?.__studioMobileBackSession === undefined
+    : state?.__studioMobileBackSession === receipt.session && state.__studioMobileBackDepth === depth;
+}
+
 /**
  * 열려 있는 모바일 패널 스택 깊이(`layers.length`)와 브라우저 히스토리 가드 엔트리 수를
  * 양방향 동기화한다.
@@ -227,18 +266,27 @@ export interface StudioMobileHistorySyncController {
  */
 export function createStudioMobileHistorySyncController(
   historyAdapter: BrowserHistoryAdapter,
-  options?: { readonly onBeforeGenuineLeave?: () => void },
+  options?: {
+    readonly onBeforeGenuineLeave?: () => void;
+    readonly handoffScope?: object;
+    readonly handoffOwner?: object;
+  },
 ): StudioMobileHistorySyncController {
-  const sessionToken = `studio-mobile-back-${Math.random().toString(36).slice(2, 10)}`;
+  let sessionToken = `studio-mobile-back-${Math.random().toString(36).slice(2, 10)}`;
   const initialPathname = historyAdapter.getPathname();
+  const handoffScope = options?.handoffScope;
   let currentLayers: readonly StudioMobilePanelLayer[] = [];
   let pushedDepth = 0;
-  let guardedHref: string | null = null;
-  let guardedEntryKey: unknown;
+  let guardedEntry: Omit<StudioMobileGuardReceipt, "session" | "depth"> | null = null;
   let pendingPopTargetDepth: number | null = null;
-  let rewindingHistory = false;
+  let rewind: StudioMobileGuardRewind | null = null;
   let pendingTimer: ReturnType<typeof setTimeout> | null = null;
   let rewindSafetyTimer: ReturnType<typeof setTimeout> | null = null;
+  let disposed = false;
+
+  const getEntry = () => historyAdapter.getState() as StudioMobileHistoryEntry | null;
+  const matchesCurrent = (receipt: StudioMobileGuardReceipt, depth = receipt.depth) =>
+    matchesStudioMobileGuard(receipt, historyAdapter.getHref(), getEntry(), depth);
 
   const clearPendingTimer = () => {
     if (pendingTimer !== null) {
@@ -247,25 +295,61 @@ export function createStudioMobileHistorySyncController(
     }
   };
 
-  const clearRewindTimer = () => {
+  const clearRewind = () => {
     if (rewindSafetyTimer !== null) {
       clearTimeout(rewindSafetyTimer);
       rewindSafetyTimer = null;
     }
+    rewind = null;
   };
 
-  return {
+  const waitForRewind = (next: StudioMobileGuardRewind) => {
+    clearRewind();
+    rewind = next;
+    rewindSafetyTimer = setTimeout(clearRewind, 250);
+  };
+
+  const startRewind = (from: StudioMobileGuardReceipt, to: number, retired: boolean) => {
+    // 같은 키와 주소여도 실제 상단 가드가 다르면 새 창을 자동으로 이탈하지 않는다.
+    if (!matchesCurrent(from)) return false;
+    waitForRewind({ from, to, retired });
+    historyAdapter.go(to - from.depth);
+    return true;
+  };
+
+  const acceptHandoff = (): boolean => {
+    if (!handoffScope || pushedDepth > 0 || rewind) return false;
+    const released = releasedStudioMobileGuards.get(handoffScope);
+    if (!released) return false;
+    releasedStudioMobileGuards.delete(handoffScope);
+    const { owner, receipt, rewind: pending } = released;
+    if (!matchesCurrent(receipt) && !(pending && matchesCurrent(receipt, pending.to))) return false;
+
+    // 같은 React 소유자의 effect 재설정은 깊이만 재사용한다. 콜백은 새로 계산한다.
+    const sameOwner = !pending?.retired && owner !== undefined && owner === options?.handoffOwner;
+    if (sameOwner) {
+      sessionToken = receipt.session;
+      guardedEntry = { href: receipt.href, key: receipt.key, idx: receipt.idx };
+      pushedDepth = pending?.to ?? receipt.depth;
+    }
+    if (pending) {
+      waitForRewind({ ...pending, retired: !sameOwner });
+      return true;
+    }
+    return !sameOwner && startRewind(receipt, 0, true);
+  };
+
+  const controller: StudioMobileHistorySyncController = {
     syncLayers(layers) {
+      if (disposed) return;
       currentLayers = layers;
-      if (historyAdapter.getPathname() !== initialPathname) {
-        return;
-      }
+      if (historyAdapter.getPathname() !== initialPathname || acceptHandoff() || rewind) return;
+
       // 같은 원고에서도 워크스페이스 이동은 실제 라우터 항목이다. 이전 모달 가드로 되감지 않는다.
-      const state = historyAdapter.getState() as { __studioMobileBackSession?: unknown; key?: unknown } | null;
+      const state = getEntry();
       if (pushedDepth > 0 && state?.__studioMobileBackSession !== sessionToken && pendingPopTargetDepth === null) {
-        // 브라우저는 popstate 전달 전에 현재 항목을 바꾼다. 그 사이의 React 레이아웃이
-        // 같은 원고 키에서 사라진 가드를 다시 쌓으면 작가는 뒤로 가기를 두 번 눌러야 한다.
-        if (historyAdapter.getHref() === guardedHref && state?.key === guardedEntryKey) return;
+        // popstate 전달 전에 React가 같은 원고로 다시 그려도 닫히는 가드를 중복으로 쌓지 않는다.
+        if (guardedEntry?.href === historyAdapter.getHref() && state?.key === guardedEntry.key && state?.idx === guardedEntry.idx) return;
         pushedDepth = 0;
       }
       const desiredDepth = layers.length;
@@ -280,43 +364,43 @@ export function createStudioMobileHistorySyncController(
       }
 
       if (desiredDepth > pushedDepth) {
-        guardedHref = historyAdapter.getHref();
-        guardedEntryKey = state?.key;
-        const baseState =
-          typeof historyAdapter.getState() === "object" && historyAdapter.getState() !== null
-            ? (historyAdapter.getState() as Record<string, unknown>)
-            : {};
+        const href = historyAdapter.getHref();
+        guardedEntry = { href, key: state?.key, idx: state?.idx };
         while (pushedDepth < desiredDepth) {
           pushedDepth += 1;
           historyAdapter.pushState(
             {
-              ...baseState,
+              ...state,
               __studioMobileBackSession: sessionToken,
               __studioMobileBackDepth: pushedDepth,
               __studioMobileBackLayer: layers[pushedDepth - 1]?.id,
             },
-            historyAdapter.getHref(),
+            href,
           );
         }
-      } else if (desiredDepth < pushedDepth && !rewindingHistory) {
-        const delta = pushedDepth - desiredDepth;
+      } else if (desiredDepth < pushedDepth && guardedEntry) {
+        const receipt = { ...guardedEntry, session: sessionToken, depth: pushedDepth };
         pushedDepth = desiredDepth;
-        rewindingHistory = true;
-        clearRewindTimer();
-        rewindSafetyTimer = setTimeout(() => {
-          rewindingHistory = false;
-          rewindSafetyTimer = null;
-        }, 250);
-        historyAdapter.go(-delta);
+        startRewind(receipt, desiredDepth, false);
       }
     },
 
     handlePopState(event) {
-      if (rewindingHistory) {
-        rewindingHistory = false;
-        clearRewindTimer();
-        event.stopImmediatePropagation();
-        return true;
+      if (disposed) return false;
+      if (rewind) {
+        const { from, to, retired } = rewind;
+        clearRewind();
+        const href = historyAdapter.getHref();
+        if (matchesStudioMobileGuard(from, href, event.state as StudioMobileHistoryEntry | null, to)
+          && matchesCurrent(from, to)) {
+          event.stopImmediatePropagation();
+          if (!(retired && to > 0 && startRewind({ ...from, depth: to }, 0, true))) controller.syncLayers(currentLayers);
+          return true;
+        }
+        // 새 라우터 항목에 도착한 popstate는 이전 소유자 정리와 무관하다.
+        pushedDepth = 0;
+        options?.onBeforeGenuineLeave?.();
+        return false;
       }
 
       if (pushedDepth > 0 && currentLayers.length > 0) {
@@ -342,11 +426,21 @@ export function createStudioMobileHistorySyncController(
     },
 
     dispose() {
+      if (disposed) return;
+      disposed = true;
+      // 브라우저를 이동하지 않고 검증된 가드 정보만 넘긴다. 이전 원고의 닫기·초점 함수는 보관하지 않는다.
+      const receipt = rewind?.from ?? (guardedEntry && pushedDepth > 0
+        ? { ...guardedEntry, session: sessionToken, depth: pushedDepth }
+        : null);
+      if (handoffScope && receipt && (matchesCurrent(receipt) || (rewind && matchesCurrent(receipt, rewind.to)))) {
+        releasedStudioMobileGuards.set(handoffScope, { owner: options?.handoffOwner, receipt, rewind });
+      }
       clearPendingTimer();
-      clearRewindTimer();
+      clearRewind();
+      currentLayers = [];
       pushedDepth = 0;
       pendingPopTargetDepth = null;
-      rewindingHistory = false;
     },
   };
+  return controller;
 }
