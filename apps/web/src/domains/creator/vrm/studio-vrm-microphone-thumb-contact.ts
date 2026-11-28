@@ -4,6 +4,7 @@ import { bookCoverDistance } from "./studio-vrm-book-cover-grip";
 import {
   planStudioVrmContactReplay,
   releaseStudioVrmContactReplay,
+  sameStudioVrmContactValues,
   type StudioVrmContactReplay,
 } from "./studio-vrm-contact-refinement";
 import { getStudioVrmJointLimit } from "./studio-vrm-joint-limits";
@@ -16,7 +17,7 @@ import type { Object3D, SkinnedMesh } from "three";
 type Digit = "Thumb" | "Index" | "Middle" | "Ring" | "Little";
 type Influence = { frame: number; local: Vector3; weight: number };
 type SkinPoint = { influences: Influence[]; pad: boolean; radius: number };
-type ContactPass = { run(): void; release(): boolean };
+type ContactPass = { run(): void; runUntil(deadline: number): boolean; release(): boolean };
 
 const THUMB_JOINTS = ["Metacarpal", "Proximal", "Distal"] as const;
 const FINGER_JOINTS = ["Proximal", "Intermediate", "Distal"] as const;
@@ -44,7 +45,7 @@ const drawnDigitIndices = new WeakMap<SkinnedMesh, WeakMap<Object3D, {
   skinIndex: object; skinWeight: object; order: object | null;
 }>>();
 
-function digitSkin(vrm: VRM, names: VRMHumanBoneName[], frames: Object3D[], firstFrame: number): SkinPoint[] {
+function* digitSkin(vrm: VRM, names: VRMHumanBoneName[], frames: Object3D[], firstFrame: number): Generator<void, SkinPoint[]> {
   const raw = names.map(name => vrm.humanoid.getRawBoneNode(name));
   if (raw.some(bone => !bone)) return [];
   const side = names[0]?.startsWith("right") ? "right" : "left";
@@ -61,15 +62,15 @@ function digitSkin(vrm: VRM, names: VRMHumanBoneName[], frames: Object3D[], firs
   const selected: { mesh: SkinnedMesh; vertex: number; frameIndices: number[] }[] = [];
   vrm.humanoid.update();
   vrm.scene.updateMatrixWorld(true);
-  vrm.scene.traverseVisible(object => {
-    const mesh = object as SkinnedMesh;
-    if (!mesh.isSkinnedMesh) return;
+  const meshes: SkinnedMesh[] = [];
+  vrm.scene.traverseVisible(object => { if ((object as SkinnedMesh).isSkinnedMesh) meshes.push(object as SkinnedMesh); });
+  for (const mesh of meshes) {
     const frameIndices = mesh.skeleton.bones.map(bone => raw.findIndex(node => node === bone) + 1);
-    if (!frameIndices.some(index => index >= firstFrame)) return;
+    if (!frameIndices.some(index => index >= firstFrame)) continue;
     const geometry = mesh.geometry;
     const indices = geometry.getAttribute("skinIndex");
     const weights = geometry.getAttribute("skinWeight");
-    if (!indices || !weights) return;
+    if (!indices || !weights) continue;
     const order = geometry.index;
     const material = mesh.material;
     const groups = Array.isArray(material)
@@ -85,7 +86,7 @@ function digitSkin(vrm: VRM, names: VRMHumanBoneName[], frames: Object3D[], firs
     if (previous?.geometry === geometry && previous.skeleton === mesh.skeleton && previous.drawKey === drawKey
       && previous.skinIndex === indices && previous.skinWeight === weights && previous.order === order) {
       previous.vertices.forEach(vertex => selected.push({ mesh, vertex, frameIndices }));
-      return;
+      continue;
     }
     const vertexLists = families.map(() => [] as number[]);
     const digitByIndex = mesh.skeleton.bones.map(bone => digitByBone.get(bone) ?? -1);
@@ -94,6 +95,7 @@ function digitSkin(vrm: VRM, names: VRMHumanBoneName[], frames: Object3D[], firs
     for (const group of groups) {
       const end = Math.min(group.start + group.count, geometry.drawRange.start + geometry.drawRange.count, order?.count ?? indices.count);
       for (let n = Math.max(group.start, geometry.drawRange.start); n < end; n++) {
+        if (n % 512 === 0) yield;
         const vertex = order ? order.getX(n) : n;
         if (seen[vertex]) continue;
         seen[vertex] = 1;
@@ -117,12 +119,13 @@ function digitSkin(vrm: VRM, names: VRMHumanBoneName[], frames: Object3D[], firs
       byDigit.set(bones[1], { geometry, skeleton: mesh.skeleton, skinIndex: indices, skinWeight: weights, order, drawKey, vertices });
       if (bones[1] === raw[1]) vertices.forEach(vertex => selected.push({ mesh, vertex, frameIndices }));
     }
-  });
+  }
 
   const cloud: SkinPoint[] = [];
   const count = Math.min(selected.length, MAX_POINTS);
   const base = new Vector3();
   for (let n = 0; n < count; n++) {
+    if (n % 48 === 0) yield;
     const { mesh, vertex, frameIndices } = selected[Math.floor(n * selected.length / count)]!;
     const indices = mesh.geometry.getAttribute("skinIndex");
     const weights = mesh.geometry.getAttribute("skinWeight");
@@ -204,6 +207,7 @@ export function createFittedDigitContactPass(
   let cloud: SkinPoint[] | null = null;
   let cache: StudioVrmContactReplay | null = null;
   let invalid = false;
+  let pending: { task: Generator<void>; input: number[]; shape: number[]; context: number[] } | null = null;
 
   const read = () => joints.flatMap(bone => [bone.rotation.x, bone.rotation.y, bone.rotation.z]);
   const shape = () => joints.flatMap(bone => [...bone.position.toArray(), ...bone.scale.toArray()]);
@@ -212,6 +216,7 @@ export function createFittedDigitContactPass(
     joints[0]!.updateWorldMatrix(true, true);
   };
   const release = () => {
+    pending = null;
     const previous = cache;
     cache = null;
     const original = releaseStudioVrmContactReplay(previous, read(), shape());
@@ -245,65 +250,78 @@ export function createFittedDigitContactPass(
       + 0.6 * Math.max(0, pad - 0.001) ** 2 + angularCost * (handSize * 0.009) ** 2;
   }
 
-  return {
-    release,
-    run() {
-      if (invalid) return;
-      if (frames.some((bone, idx) => bone !== vrm.humanoid.getNormalizedBoneNode(idx ? names[idx - 1]! : handName))) { release(); return; }
-      hand.updateWorldMatrix(true, false);
-      const det = hand.matrixWorld.determinant();
-      if (!Number.isFinite(det) || Math.abs(det) < 1e-12) { release(); return; }
-      hand.localToWorld(center.set(...resolved.socketPosition));
-      if (center.distanceTo(hand.getWorldPosition(sample)) > handSize * 1.8) { release(); return; }
-      hand.getWorldQuaternion(rotation).multiply(localRotation).normalize();
-      inverseGrip.compose(center, rotation, worldScale).invert();
-      const context = affine[0]!.multiplyMatrices(inverseGrip, hand.matrixWorld).elements;
-      const current = read(), structure = shape();
-      if (![...current, ...structure, ...context].every(Number.isFinite)) { release(); return; }
-      const plan = planStudioVrmContactReplay(cache, current, structure, context);
-      if (plan.kind === "unchanged") return;
-      if (plan.kind === "replay") { apply(plan.angles); return; }
-      const input = [...plan.angles];
-      apply(input);
-      try {
-        if (!cloud) {
-          cloud = typeof vrm.humanoid.getRawBoneNode === "function" ? digitSkin(vrm, names, frames, book ? 1 : 2) : [];
-          if (!cloud.length) cloud = phalanxCapsules(frames, handSize);
-        }
-        if (!cloud.length) return;
-        let best = [...input], bestScore = score(input, input);
-        if (!Number.isFinite(bestScore)) return;
-        // Search opposition at CMC/MCP as well as flexion. Fixed budget, no per-frame skin scan.
-        const keys = digit === "Thumb" ? [1, 2, 0, 4, 5, 8] : [2, 5, 8, 1, 0];
-        const maxDelta = MathUtils.degToRad(48);
-        for (const stepDeg of [24, 12, 6, 3, 1.5]) {
-          if (bestScore < 1e-8) break;
-          const step = MathUtils.degToRad(stepDeg);
-          for (const key of keys) {
-            const pivot = best[key]!, limit = limits[key]!;
-            for (const sign of [-1, 1]) {
-              const lo = Math.max(input[key]! - maxDelta, Math.min(input[key]!, limit.hardMin));
-              const hi = Math.min(input[key]! + maxDelta, Math.max(input[key]!, limit.hardMax));
-              const value = MathUtils.clamp(pivot + sign * step, lo, hi);
-              if (Math.abs(value - pivot) < 1e-7) continue;
-              const angles = [...best];
-              angles[key] = value;
-              apply(angles);
-              const loss = score(input, angles);
-              if (loss < bestScore) { best = angles; bestScore = loss; }
-            }
+  function* fit(input: number[], structure: number[], context: number[]) {
+    apply(input);
+    try {
+      if (!cloud) {
+        cloud = typeof vrm.humanoid.getRawBoneNode === "function" ? yield* digitSkin(vrm, names, frames, book ? 1 : 2) : [];
+        if (!cloud.length) cloud = phalanxCapsules(frames, handSize);
+      }
+      if (!cloud.length) return;
+      let best = [...input], bestScore = score(input, input);
+      if (!Number.isFinite(bestScore)) return;
+      // Search opposition at CMC/MCP as well as flexion. Fixed budget, no per-frame skin scan.
+      const keys = digit === "Thumb" ? [1, 2, 0, 4, 5, 8] : [2, 5, 8, 1, 0];
+      const maxDelta = MathUtils.degToRad(48);
+      for (const stepDeg of [24, 12, 6, 3, 1.5]) {
+        if (bestScore < 1e-8) break;
+        const step = MathUtils.degToRad(stepDeg);
+        for (const key of keys) {
+          // 다음 프레임에 이어갈 때 시험 각도가 화면이나 원고에 남지 않게 한다.
+          apply(input);
+          yield;
+          const pivot = best[key]!, limit = limits[key]!;
+          for (const sign of [-1, 1]) {
+            const lo = Math.max(input[key]! - maxDelta, Math.min(input[key]!, limit.hardMin));
+            const hi = Math.min(input[key]! + maxDelta, Math.max(input[key]!, limit.hardMax));
+            const value = MathUtils.clamp(pivot + sign * step, lo, hi);
+            if (Math.abs(value - pivot) < 1e-7) continue;
+            const angles = [...best];
+            angles[key] = value;
+            apply(angles);
+            const loss = score(input, angles);
+            if (loss < bestScore) { best = angles; bestScore = loss; }
           }
         }
-        apply(best);
-        cache = { input, output: best, shape: structure, context: [...context] };
-      } catch {
-        invalid = true;
-        cache = null;
-      } finally {
-        if (!cache || cache.input !== input) apply(input);
       }
-    },
-  };
+      apply(best);
+      cache = { input, output: best, shape: structure, context };
+    } catch {
+      invalid = true;
+      cache = null;
+    } finally {
+      if (!cache || cache.input !== input) apply(input);
+    }
+  }
+  function runUntil(deadline: number) {
+    if (invalid) return true;
+    if (frames.some((bone, idx) => bone !== vrm.humanoid.getNormalizedBoneNode(idx ? names[idx - 1]! : handName))) { release(); return true; }
+    if (!hand) return true;
+    hand.updateWorldMatrix(true, false);
+    const det = hand.matrixWorld.determinant();
+    if (!Number.isFinite(det) || Math.abs(det) < 1e-12) { release(); return true; }
+    hand.localToWorld(center.set(...resolved.socketPosition));
+    if (center.distanceTo(hand.getWorldPosition(sample)) > handSize * 1.8) { release(); return true; }
+    hand.getWorldQuaternion(rotation).multiply(localRotation).normalize();
+    inverseGrip.compose(center, rotation, worldScale).invert();
+    const context = affine[0]!.multiplyMatrices(inverseGrip, hand.matrixWorld).elements;
+    const current = read(), structure = shape();
+    if (![...current, ...structure, ...context].every(Number.isFinite)) { release(); return true; }
+    if (!pending || !sameStudioVrmContactValues(current, pending.input)
+      || !sameStudioVrmContactValues(structure, pending.shape) || !sameStudioVrmContactValues(context, pending.context)) {
+      pending = null;
+      const plan = planStudioVrmContactReplay(cache, current, structure, context);
+      if (plan.kind === "unchanged") return true;
+      if (plan.kind === "replay") { apply(plan.angles); return true; }
+      const input = [...plan.angles], basis = [...context];
+      pending = { task: fit(input, structure, basis), input, shape: structure, context: basis };
+    }
+    while (pending && (deadline === Infinity || performance.now() < deadline)) {
+      if (pending.task.next().done) pending = null;
+    }
+    return !pending;
+  }
+  return { release, runUntil, run: () => { runUntil(Infinity); } };
 }
 
 export const createFittedThumbContactPass = createFittedDigitContactPass;

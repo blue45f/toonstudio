@@ -535,7 +535,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       metrics={effectivePropRigMetrics}
                       rigRevision={proportionRigRevision}
                       lockedBones={lockedPoseBones} capturePaused={isCapturing}
-                      idleBookPoseId={idleAnimation || ikConstraints.some((constraint: StudioVrmIkConstraint) => constraint.enabled) ? undefined : h.activePoseId}
+                      idleGripPoseId={idleAnimation || ikConstraints.some((constraint: StudioVrmIkConstraint) => constraint.enabled) ? undefined : h.activePoseId}
                       disabled={webcamActive || broadcastPreviewActive || persistentIkReconciling || jointHandleInteracting || isViewportHandIkDragging || texturePaintInteractionEnabled}
                     />
                   ) : null}

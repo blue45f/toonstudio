@@ -1,5 +1,5 @@
 import * as THREE from "three";
-
+import { resolveStudioVrmHeldPropContacts } from "./studio-vrm-held-prop-contacts";
 import {
   resolveStudioVrmHeadwearCrownCompression,
   type StudioVrmHeadwearCrownCompression,
@@ -1463,7 +1463,7 @@ export function inspectAutoGripReadiness(
   ));
   if (
     countValidAutoGripContactsForHand(
-      prospectiveItems,
+      resolveStudioVrmHeldPropContacts(prospectiveItems, metrics),
       hand,
       resolveDefinition,
       metrics,
@@ -1491,7 +1491,7 @@ export function createAutoGripFingerOverrides(
     // 소품을 덮어쓰지 않고 해당 손만 fail-closed해 결정성과 관통 방지를 지킨다.
     posesByHand.set(hand, posesByHand.has(hand) ? null : pose);
   };
-  for (const item of items) {
+  for (const item of resolveStudioVrmHeldPropContacts(items, metrics)) {
     if ((item.rig?.autoFingerPose ?? false) !== true) continue;
     const side = handSide(item.bone);
     if (!side) continue;

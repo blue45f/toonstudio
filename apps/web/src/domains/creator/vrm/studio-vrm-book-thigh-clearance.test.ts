@@ -5,7 +5,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
 import { pickNaturalIdlePose } from "../studio-pose-presets";
-import { bookClearanceItems, createIdleBookThighClearance } from "./studio-vrm-book-thigh-clearance";
+import { idleGripClearanceItems, createIdleGripBodyClearance } from "./studio-vrm-idle-grip-body-clearance";
 import { applyFingerRotations, applyPoseToVrm, correctVrmHangingHandPalmTwist, stripFingerBones } from "./studio-vrm-poser-utils";
 import { retargetStudioVrmPresetTorso } from "./studio-vrm-preset-torso";
 import { createAutoGripFingerOverrides, measureVrmPropRigMetrics, resolvePropAttachment } from "./studio-vrm-prop-rig";
@@ -87,15 +87,15 @@ describe("자연 대기 자세의 책과 허벅지", () => {
       .flatMap(name => vrm.humanoid.getNormalizedBoneNode(name)?.quaternion.toArray() ?? []);
     const input = original();
 
-    expect(bookClearanceItems([item], metrics, pose.id)).toEqual([item]);
-    for (const otherPose of ["manual-pose", "walk", undefined]) expect(bookClearanceItems([item], metrics, otherPose)).toEqual([]);
-    expect(bookClearanceItems([{ ...item, rig: { ...item.rig, mode: "custom" } }], metrics, pose.id)).toEqual([]);
-    expect(bookClearanceItems([{ ...item, rig: { ...item.rig, anchorId: "primary" } }], metrics, pose.id)).toEqual([]);
+    expect(idleGripClearanceItems([item], metrics, pose.id)).toEqual([item]);
+    for (const otherPose of ["manual-pose", "walk", undefined]) expect(idleGripClearanceItems([item], metrics, otherPose)).toEqual([]);
+    expect(idleGripClearanceItems([{ ...item, rig: { ...item.rig, mode: "custom" } }], metrics, pose.id)).toEqual([]);
+    expect(idleGripClearanceItems([{ ...item, rig: { ...item.rig, anchorId: "primary" } }], metrics, pose.id)).toEqual([]);
     const mug = createPropInstance("mug", "mug-clearance-test");
     if (!mug) throw new Error("머그 장착점이 없습니다.");
-    expect(bookClearanceItems([mug], metrics, pose.id)).toEqual([]);
-    expect(createIdleBookThighClearance(vrm, item, metrics, book, ["leftLowerArm"])).toBeNull();
-    const pass = createIdleBookThighClearance(vrm, item, metrics, book, []);
+    expect(idleGripClearanceItems([mug, item], metrics, pose.id)).toEqual([mug, item]);
+    expect(createIdleGripBodyClearance(vrm, item, metrics, book, ["leftLowerArm"])).toBeNull();
+    const pass = createIdleGripBodyClearance(vrm, item, metrics, book, []);
     if (!pass) throw new Error("책 대기 자세 보정을 준비하지 못했습니다.");
     expect(legVerticesInsideBook(vrm, book, fit) > 0).toBe(overlaps);
     pass.run();
