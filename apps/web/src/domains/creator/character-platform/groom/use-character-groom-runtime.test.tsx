@@ -47,7 +47,7 @@ describe("useCharacterGroomRuntime 준비와 복원", () => {
     { name: "시온", meta: "0" as const, rotation: [0, 0, 0, 1] as const, front: -1, originalHairColor: "#131b2a" },
   ])("$name 원본 축에서 새 가이드의 정수리·이마·폭을 맞추고 이전 가이드의 원시 좌표를 보존한다", async ({ meta, rotation, front, originalHairColor }) => {
     const f = fixture(meta);
-    f.head.quaternion.set(...rotation);
+    f.head.quaternion.fromArray(rotation);
     f.head.position.y = f.normalizedHead.position.y = 1.4;
     vi.mocked(executeCharacterAuthoringTaskInBrowser).mockImplementation(async (task) => executeCharacterAuthoringTask(task));
     const originalHairMaterial = { baseColor: originalHairColor, rimColor: "#000000" };
