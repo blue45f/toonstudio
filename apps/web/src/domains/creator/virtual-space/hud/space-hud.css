@@ -54,6 +54,14 @@ body:has(.space-hud) [data-site-ost="mounted"] { display: none !important; }
 .space-hud *,
 .space-hud *::before,
 .space-hud *::after { box-sizing: border-box; }
+@media (forced-colors: none) {
+  :root:not([data-design-theme="contrast"]) .space-hud[data-studio-live-shell="true"] {
+    --color-accent: var(--spectrum-pigment-collab);
+    --color-accent-2: color-mix(in oklch, var(--spectrum-pigment-collab) 88%, var(--color-fg));
+    --color-accent-soft: var(--spectrum-pigment-collab-soft);
+    --color-on-accent: var(--spectrum-pigment-collab-on);
+  }
+}
 .space-hud :is(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;

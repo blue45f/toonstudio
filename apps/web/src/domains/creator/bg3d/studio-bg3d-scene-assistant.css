@@ -1147,6 +1147,20 @@
   color: var(--color-accent);
 }
 
+.scene-assistant__crop-preview-action {
+  display: none;
+}
+
+.scene-assistant__crop-preview-return-label {
+  color: var(--color-fg);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.scene-assistant__sheet-handle:has(.scene-assistant__crop-preview-return-label):focus-visible {
+  outline-offset: -3px;
+}
+
 .scene-assistant__save {
   color: var(--color-accent);
 }
@@ -1557,7 +1571,7 @@
 @media (max-width: 1023px) {
   [data-bg3d-simplified] [data-bg3d-viewport-frame="true"] {
     padding: 0.5rem;
-    padding-bottom: 6.5rem;
+    padding-bottom: var(--assistant-mobile-peek-viewport-reserve, 6.5rem);
   }
 
   [data-bg3d-simplified] [data-testid="studio-bg3d-viewport"] {
@@ -1577,6 +1591,23 @@
 
 [data-bg3d-simplified] [data-bg3d-viewport-control="true"] > div:has([aria-label="이동"]) {
   display: none !important;
+}
+
+/* 좁은 캔버스에서는 양쪽 도구 열 사이에 간격을 두고 공간 구도를 왼쪽 행에 고정한다. */
+@media (width < 640px) {
+  [data-bg3d-simplified] [data-bg3d-viewport-control="true"]:has(> [data-bg3d-environment-camera-action]) {
+    /* 오른쪽의 44px 버튼 두 개, 양쪽 캔버스 여백, 버튼과 도구 열 사이 간격을 확보한다. */
+    max-inline-size: calc(100% - max(5.5rem, 88px) - 1.75rem);
+  }
+
+  [data-bg3d-simplified] [data-bg3d-viewport-control="true"] > [data-bg3d-environment-camera-action] {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+  }
 }
 
 .scene-assistant__tool-links {

@@ -5,6 +5,7 @@ import {
   STUDIO_IMPORT_HANDOFF_QUERY_KEY,
   consumeStudioImportHandoff,
   peekStudioImportHandoff,
+  type StudioImportHandoff,
   type StudioImportHandoffTarget,
 } from "../studio-import-handoff";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
@@ -80,39 +81,62 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
     const currentProps = latestPropsRef.current;
     const token = new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY);
     if (!token || startedTokenRef.current === token) return;
-    const pending = peekStudioImportHandoff(token);
-    if (!pending) {
+    const reportExpiredHandoff = () => {
       startedTokenRef.current = token;
       removeHandoffQuery(token);
       setStatus({
         state: "failed",
         message: editorShellStatusText("studio.editorShellStatus.importHandoff.handoffExpired", "가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다. 파일을 다시 선택해 주세요."),
       });
+    };
+    const pending = peekStudioImportHandoff(token);
+    if (!pending) {
+      reportExpiredHandoff();
       return;
     }
-    const waitForWorkspaceOrOperation = (fileName: string, workspace: boolean) => {
+    const hasCurrentUnstartedToken = () => mountedRef.current && startedTokenRef.current !== token
+      && new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY) === token;
+    let timerId: number;
+    const clearTimer = () => window.clearTimeout(timerId);
+    const scheduleExpiryCheck = (expiresAt: number) => {
+      timerId = window.setTimeout(() => {
+        if (!hasCurrentUnstartedToken()) return;
+        const stillPending = peekStudioImportHandoff(token);
+        if (stillPending) scheduleExpiryCheck(stillPending.expiresAt);
+        else reportExpiredHandoff();
+      }, Math.max(0, expiresAt - Date.now()));
+    };
+    const waitForWorkspaceOrOperation = (handoff: StudioImportHandoff, workspace: boolean) => {
+      const fileName = handoff.file.name;
       setStatus((prev) => (
         prev.state === "waiting" && prev.fileName === fileName && prev.workspace === workspace
           ? prev
           : { state: "waiting", fileName, workspace }
       ));
+      scheduleExpiryCheck(handoff.expiresAt);
     };
     if (!currentProps.workspaceReady || targetBusy(pending.target, currentProps)) {
-      waitForWorkspaceOrOperation(pending.file.name, !currentProps.workspaceReady);
-      return;
+      waitForWorkspaceOrOperation(pending, !currentProps.workspaceReady);
+      return clearTimer;
     }
 
-    const timerId = window.setTimeout(() => {
+    timerId = window.setTimeout(() => {
       const liveProps = latestPropsRef.current;
-      if (new URLSearchParams(window.location.search).get(STUDIO_IMPORT_HANDOFF_QUERY_KEY) !== token) return;
+      if (!hasCurrentUnstartedToken()) return;
       const stillPending = peekStudioImportHandoff(token);
-      if (!stillPending || startedTokenRef.current === token) return;
+      if (!stillPending) {
+        reportExpiredHandoff();
+        return;
+      }
       if (!liveProps.workspaceReady || targetBusy(stillPending.target, liveProps)) {
-        waitForWorkspaceOrOperation(stillPending.file.name, !liveProps.workspaceReady);
+        waitForWorkspaceOrOperation(stillPending, !liveProps.workspaceReady);
         return;
       }
       const handoff = consumeStudioImportHandoff(token);
-      if (!handoff) return;
+      if (!handoff) {
+        reportExpiredHandoff();
+        return;
+      }
       startedTokenRef.current = token;
       setStatus({ state: "idle" });
       const isCurrentToken = () => mountedRef.current && startedTokenRef.current === token
@@ -141,9 +165,7 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       }
     }, 0);
 
-    return () => {
-      window.clearTimeout(timerId);
-    };
+    return clearTimer;
   }, [
     props.handoffToken,
     props.workspaceReady,
@@ -180,13 +202,13 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       <span className="inline-flex flex-wrap items-center gap-1.5">
         <a
           href="/studio/import"
-          className="inline-flex min-h-9 items-center rounded-lg border border-danger/35 bg-card px-2.5 py-1 text-xs font-semibold text-fg hover:bg-raised"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-danger/35 bg-card px-2.5 py-1 text-xs font-semibold text-fg hover:bg-raised"
         >
           파일 다시 선택
         </a>
         <a
           href="/studio"
-          className="inline-flex min-h-9 items-center rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg"
         >
           내 작업 열기
         </a>
