@@ -976,8 +976,8 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
                     {
                       stepOrder: 2,
                       toolName: "studio.export.preflight_check",
-                      reasonKo: "내보내기 전 Rights BOM과 여백을 점검합니다.",
-                      argumentsJson: "{\"platform\":\"vertical-webtoon\",\"requireCleanRightsBom\":true}",
+                      reasonKo: "내보내기 전 최소 폭과 Rights BOM을 점검합니다.",
+                      argumentsJson: "{\"platform\":\"naver-webtoon\",\"requireCleanRightsBom\":true,\"rightsBomClean\":false}",
                     },
                   ],
                 }),

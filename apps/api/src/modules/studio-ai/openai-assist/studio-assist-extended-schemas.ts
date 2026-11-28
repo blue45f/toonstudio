@@ -373,7 +373,7 @@ export const EXTENDED_MODE_JSON_SCHEMAS: Readonly<
               reasonKo: { type: "string", description: "단계 실행 이유 한 문장(최대 320자)" },
               argumentsJson: {
                 type: "string",
-                description: "필수 키 3~5개만 담은 1줄 유효 JSON 문자열(240자 이내 권장, 최대 1600자)",
+                description: "해당 도구가 받는 인자 중 필요한 것만 담은 1줄 JSON 객체 문자열(240자 이내 권장, 최대 1600자)",
               },
             },
           },

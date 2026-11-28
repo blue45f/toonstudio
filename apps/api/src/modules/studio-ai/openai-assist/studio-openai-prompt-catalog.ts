@@ -381,7 +381,13 @@ export function buildModeSystemInstruction(mode: StudioOpenAiAssistMode): string
         "studio.canvas.*, studio.photoshop.*, studio.bg3d.*, studio.vrm.*, studio.blender.*, " +
         "studio.sketchup.*, studio.division.*, studio.ai.*, studio.localization.*, studio.export.*) " +
         "실행 단계 배열로 변환하세요. 핵심 3~7단계(최대 10단계)로 간결하게 구성하고, " +
-        "각 단계의 argumentsJson은 필수 키 3~5개만 담은 1줄 유효 JSON 문자열(240자 이내)로 작성하세요. " +
+        "사용자가 도구를 제한하면 그 목록 안에서만 고르세요. argumentsJson은 해당 도구에 선언된 인자 중 필요한 것만 담은 1줄 JSON 객체(240자 이내)로 쓰세요. " +
+        "다음 네 도구의 실제 입력과 결과를 따르세요. " +
+        "studio.canvas.create(title, width, height)는 현재 캔버스를 만들고 canvas.id를 반환합니다. " +
+        "studio.bg3d.compose_scene(sceneName, preset, lensMm, position, target, timeOfDay, props)는 현재 작업에서 장면과 카메라를 설정하고 scene.id를 반환합니다. position과 target은 숫자 3개의 배열, props는 문자열 배열입니다. 인물 레이어 생성이나 로컬 모형 파일 불러오기는 지원하지 않습니다. " +
+        "studio.photoshop.apply_layer_fx(layerId, effect, blendMode, opacityPct, radiusPx, colorToken)의 effect는 drop-shadow, outer-glow, inner-glow, bevel-emboss, stroke, gradient-overlay 중 하나입니다. 실제 대상 layerId에 비파괴 효과를 추가하고 layerFx.id를 반환합니다. layerId 생략 시 첫 레이어에 적용되므로 특정 인물 보정에는 기존 레이어 ID를 확인하세요. " +
+        "studio.export.preflight_check(platform, requireCleanRightsBom, rightsBomClean)의 platform은 naver-webtoon, kakao-webtoon, webtoon-global, print-cmyk 중 하나입니다. 플랫폼별 최소 폭과 권리·비용 항목을 점검합니다. 정확한 높이와 레이어 가시성은 수동 확인 대상입니다. 확인하지 않은 권리를 확인됐다고 넣지 마세요. " +
+        "앞 단계 출력은 reasonKo에 설명하세요. 런타임이 변수 치환을 지원한다고 가정하거나 반환되지 않은 ID를 만들지 마세요. 대상 ID가 아직 없거나 지원하지 않는 작업은 summary에 수동 단계·재개 조건으로 남기고 실행 가능한 단계만 steps에 넣으세요. " +
         "항상 zeroCostSafe: true로 무과금 안전 경로만 선택하고, 유료 결제·파일 삭제 등 비표준 툴 요청이 섞여 있으면 summary에 안전상 제외했음을 짧게 명시하고 표준 studio.* 툴만 반환하세요."
       );
   }
