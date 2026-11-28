@@ -629,16 +629,16 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("createFullStudioSupergapRuntimeHub가 Wave 68~140 실전 확장까지 79종 전체를 오류 0건으로 진단한다", async () => {
+  it("createFullStudioSupergapRuntimeHub가 Wave 68~146 실전 확장까지 85종 전체를 오류 0건으로 진단한다", async () => {
     const hub = createFullStudioSupergapRuntimeHub({
       loopbackConfig: { fetchImpl: unreachableFetch },
     });
-    expect(hub.getRegisteredSubsystems().length).toBe(79);
+    expect(hub.getRegisteredSubsystems().length).toBe(85);
 
     const report = await hub.runDiagnosticSelfCheck();
     expect(report.allHealthy).toBe(true);
     expect(report.errorCount).toBe(0);
-    expect(report.subsystems.length).toBe(79);
+    expect(report.subsystems.length).toBe(85);
 
     const byId = new Map(report.subsystems.map((item) => [item.id, item]));
     expect(byId.get("wave68ShallowWaterFluid")?.status).toBe("live-connected");
@@ -717,6 +717,12 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(byId.get("wave138MultiplatformSmartSliceRepacker")?.status).toBe("live-connected");
     expect(byId.get("wave139SeriesTimelineCanonLedger")?.status).toBe("live-connected");
     expect(byId.get("wave140TileStreaming8kFrameGuard")?.status).toBe("live-connected");
+    expect(byId.get("wave141SunEphemerisShadowAuditor")?.status).toBe("live-connected");
+    expect(byId.get("wave142OledDualThemeContrastAuditor")?.status).toBe("live-connected");
+    expect(byId.get("wave143MultilingualBalloonTypesetter")?.status).toBe("live-connected");
+    expect(byId.get("wave144RightsBomDerivativeClearance")?.status).toBe("live-connected");
+    expect(byId.get("wave145ActionHitstopSmearArc")?.status).toBe("live-connected");
+    expect(byId.get("wave146FastCdcParityRecoveryVault")?.status).toBe("live-connected");
   }, 20_000);
 
   it("열기 전 드로어가 없고 열면 현재 등록된 전체 진단 항목 수를 표시한다", async () => {
