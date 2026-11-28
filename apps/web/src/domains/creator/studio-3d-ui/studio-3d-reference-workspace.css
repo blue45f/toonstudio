@@ -48,6 +48,10 @@
     --studio-3d-icon-accent: var(--spectrum-pigment-character);
   }
 
+  :root[data-theme="light"] [data-studio-3d-reference="tooncraft"][data-character-shaper="true"] [data-character-hud-status="true"] [data-studio-hud-pill="true"] {
+    background: var(--color-panel);
+  }
+
   :root[data-theme][data-design-theme="contrast"] [data-studio-3d-reference="tooncraft"] {
     --color-accent: var(--ui-palette-accent);
     --color-accent-2: var(--ui-palette-accent-2);
