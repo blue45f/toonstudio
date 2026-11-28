@@ -12,7 +12,7 @@ import {
   StudioInspectorOrderAlignSection,
   StudioInspectorSelectionActions,
 } from "./StudioInspectorOrderAlignSection";
-import { StudioInspectorSceneEditActions } from "./StudioInspectorSceneEditActions";
+import { StudioInspectorSceneEditActions } from "./studio-cuttoon-editor/StudioInspectorSceneEditActions";
 
 import type { ComponentProps } from "react";
 import type { ImageEl } from "./studio-element-model";

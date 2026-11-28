@@ -1,12 +1,12 @@
 import { Boxes, Sparkles } from "lucide-react";
 import { useId } from "react";
 
-import { preloadStudioBackground3D } from "./studio-background-3d-loader";
-import { parseStudio3dTool } from "./studio-background-3d-metadata";
+import { preloadStudioBackground3D } from "../studio-background-3d-loader";
+import { parseStudio3dTool } from "../studio-background-3d-metadata";
 
-import type { StudioBg3dSceneDocument } from "./contracts/studio-bg3d-scene-document";
-import type { El, ImageEl } from "./studio-element-model";
-import type { StudioInspectorInteractionGate } from "./studio-inspector-interaction-policy";
+import type { StudioBg3dSceneDocument } from "../contracts/studio-bg3d-scene-document";
+import type { El, ImageEl } from "../studio-element-model";
+import type { StudioInspectorInteractionGate } from "../studio-inspector-interaction-policy";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";

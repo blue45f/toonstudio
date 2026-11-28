@@ -40,7 +40,7 @@ import { StudioCommandSearchHost } from "./StudioCommandSearchHost";
 import { StudioDetachablePanelSlot } from "./StudioDetachablePanelSlot";
 import { StudioInspectorCanvasControls } from "./StudioInspectorCanvasControls";
 import { StudioInspectorNavigator } from "./StudioInspectorNavigator";
-import { StudioInspectorSceneEditActions } from "./StudioInspectorSceneEditActions";
+import { StudioInspectorSceneEditActions } from "./studio-cuttoon-editor/StudioInspectorSceneEditActions";
 import {
   StudioInspectorDisabledReasons,
   StudioInspectorPageGradeSurface,
