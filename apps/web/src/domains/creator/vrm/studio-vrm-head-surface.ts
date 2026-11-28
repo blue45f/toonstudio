@@ -1,7 +1,8 @@
 import * as THREE from "three";
 
 import { isStudioAuthoredAttachment } from "./studio-vrm-authored-attachment";
-import { getStudioVrmHeadSkinVertices } from "./studio-vrm-head-skin-vertices";
+import { getStudioVrmHeadSurfaceMembership } from "./studio-vrm-head-skin-vertices";
+import { propDefById } from "./studio-vrm-props";
 
 import type { VrmPropFaceSocket } from "./studio-vrm-prop-rig";
 import type { PropAttachBone, Vec3 } from "./studio-vrm-props";
@@ -40,6 +41,77 @@ function quantile(values: number[], fraction: number): number {
   return values[Math.floor((values.length - 1) * fraction)]!;
 }
 
+type FittedHat = "beret" | "beanie";
+
+// atelier_beret.glb의 펠트 밴드와 atelier_beanie.glb의 접힌 니트 아랫단을 모델 원점 기준으로 잰다.
+const HAT_RIMS = {
+  beret: { radius: 0.096, depthRatio: 0.91, bottom: -0.026, maxLiftRatio: 0.105 },
+  beanie: { radius: 0.098, depthRatio: 0.93, bottom: -0.015, maxLiftRatio: 0.12 },
+} as const;
+const MAX_BEANIE_DEPTH_RATIO = 0.04;
+const RIM_SECTORS = 32;
+
+function nativeBeanieDepth(hair: readonly THREE.Vector3[], crown: number, width: number): number {
+  const depths = hair.filter((point) => point.y >= crown * 0.65 && point.y <= crown * 0.78 && Math.abs(point.x) < width * 0.28)
+    .map((point) => point.z);
+  if (depths.length < 12) return 0;
+  const rear = quantile(depths, 0.02);
+  const front = quantile(depths, 0.98);
+  if (rear >= -width * 0.23 || front <= width * 0.23) return 0;
+  return THREE.MathUtils.clamp((rear + front) / 2, -crown * MAX_BEANIE_DEPTH_RATIO, crown * MAX_BEANIE_DEPTH_RATIO);
+}
+
+function nativeHairRimLift(
+  id: FittedHat, hair: readonly THREE.Vector3[], socket: VrmPropFaceSocket, width: number, worldScale: number,
+): number {
+  const def = propDefById(id);
+  const seated = studioVrmHeadwearSurfaceSocket(id, "head", socket);
+  const surfaceAnchor = def?.anchors.find((candidate) => candidate.role === "surface");
+  if (!def || !surfaceAnchor || !seated || !socket.surfaceCrownHeight || !worldScale || hair.length < 8) return 0;
+  const scale = (def.defaultScale ?? 1) * THREE.MathUtils.clamp(
+    width * worldScale / def.fit.designReference, def.fit.minScale, def.fit.maxScale,
+  ) / worldScale;
+  const facingInverse = new THREE.Quaternion(...socket.rotationQuaternion).invert();
+  const origin = new THREE.Vector3(...seated.position).applyQuaternion(facingInverse);
+  const rotation = facingInverse.multiply(new THREE.Quaternion(...seated.rotationQuaternion));
+  const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation).y;
+  const inverse = rotation.invert();
+  const anchor = new THREE.Vector3(...surfaceAnchor.position);
+  const rim = HAT_RIMS[id];
+  const supportHeights: number[] = Array(RIM_SECTORS).fill(Number.NEGATIVE_INFINITY);
+  const point = new THREE.Vector3();
+  for (const vertex of hair) {
+    point.copy(vertex).sub(origin).applyQuaternion(inverse).divideScalar(scale).add(anchor);
+    const height = point.y - rim.bottom;
+    const radius = Math.hypot(point.x, point.z / rim.depthRatio);
+    // 밴드에 닿는 원래 머리 둘레만 쓴다. 멀리 늘어진 옆머리와 정수리 장식은 기준에서 뺀다.
+    if (height > -0.045 && height < 0.050 && radius >= rim.radius - 0.001 && radius <= rim.radius + 0.024) {
+      const angle = Math.atan2(point.z / rim.depthRatio, point.x) + Math.PI;
+      const sector = Math.floor(angle * RIM_SECTORS / (2 * Math.PI)) % RIM_SECTORS;
+      supportHeights[sector] = Math.max(supportHeights[sector], height * scale / localUp);
+    }
+  }
+  // 쿼드가 조밀한 가닥 하나가 안착점의 대부분을 차지하지 않도록 방위마다 접촉점 하나만 반영한다.
+  const supports = supportHeights.filter(Number.isFinite);
+  if (supports.length < 4) return 0;
+  return THREE.MathUtils.clamp(quantile(supports, 0.95), 0, socket.surfaceCrownHeight * rim.maxLiftRatio);
+}
+
+export function measuredHeadSocketFields(socket: VrmPropFaceSocket | undefined): Partial<VrmPropFaceSocket> {
+  const crown = socket?.surfaceCrownHeight;
+  if (!socket?.surfaceMeasured || !Number.isFinite(crown) || crown === undefined || crown <= 0 || crown >= 0.5) return {};
+  const validLift = (id: FittedHat, value: number | undefined) =>
+    value !== undefined && Number.isFinite(value) && value > 0 && value <= crown * HAT_RIMS[id].maxLiftRatio;
+  return {
+    surfaceMeasured: true, surfaceCrownHeight: crown,
+    ...(validLift("beret", socket.beretRimLift) ? { beretRimLift: socket.beretRimLift } : {}),
+    ...(validLift("beanie", socket.beanieRimLift) ? { beanieRimLift: socket.beanieRimLift } : {}),
+    ...(socket.beanieRimDepth !== undefined && Number.isFinite(socket.beanieRimDepth)
+      && Math.abs(socket.beanieRimDepth) <= crown * MAX_BEANIE_DEPTH_RATIO ? { beanieRimDepth: socket.beanieRimDepth } : {}),
+    ...(socket.hairClearanceRequired ? { hairClearanceRequired: true } : {}),
+  };
+}
+
 /** Bounded, pose-aware surface measurement. Bone pivots are not skull dimensions. */
 export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | null {
   const head = vrm.humanoid?.getNormalizedBoneNode("head");
@@ -67,6 +139,7 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
   const stride = Math.max(1, Math.ceil(vertexCount / SAMPLE_BUDGET));
   const points: THREE.Vector3[] = [];
   const skinPoints: THREE.Vector3[] = [];
+  const hairPoints: THREE.Vector3[] = [];
   let visited = 0;
   for (const mesh of meshes) {
     if (visited >= SAMPLE_BUDGET) break;
@@ -77,8 +150,10 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
     const indices = geometry.getAttribute("skinIndex");
     const weights = geometry.getAttribute("skinWeight");
     if (!eligible.some(Boolean)) continue;
-    const skin = getStudioVrmHeadSkinVertices(mesh);
+    const skin = getStudioVrmHeadSurfaceMembership(mesh, "skin");
+    const hair = getStudioVrmHeadSurfaceMembership(mesh, "hair");
     const allSkin = skin.count === position.count;
+    const allHair = hair.count === position.count;
     const toHead = inverseHead.clone().multiply(mesh.matrixWorld);
     for (let index = 0; index < position.count && visited < SAMPLE_BUDGET; index += stride) {
       visited++;
@@ -94,6 +169,7 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
       points.push(point);
       // 모자 여유 높이에는 헤어를 포함하고, 안경이 닿는 콧등 깊이는 얼굴 표면에서만 잰다.
       if (allSkin || skin.membership?.[index]) skinPoints.push(point);
+      if (allHair || hair.membership?.[index]) hairPoints.push(point);
     }
   }
   if (points.length < MIN_SAMPLES) return null;
@@ -122,18 +198,25 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
   if (front < 0.01 || front > 0.25) return null;
   const worldScale = head.getWorldScale(new THREE.Vector3());
   const local = new THREE.Vector3(0, eyeY, front).applyQuaternion(facing);
+  const faceSocket: VrmPropFaceSocket = {
+    position: local.toArray() as Vec3,
+    rotationQuaternion: [facing.x, facing.y, facing.z, facing.w],
+    rotationDeg: [0, vrm.meta?.metaVersion === "0" ? 180 : 0, 0],
+    source: "measured", surfaceMeasured: true, surfaceCrownHeight: top,
+    ...(points.some((point) => point.y > top + 0.015) ? { hairClearanceRequired: true } : {}),
+  };
+  const beretRimLift = nativeHairRimLift("beret", hairPoints, faceSocket, width, Math.abs(worldScale.x));
+  const beanieRimLift = nativeHairRimLift("beanie", hairPoints, faceSocket, width, Math.abs(worldScale.x));
+  const beanieRimDepth = nativeBeanieDepth(hairPoints, top, width);
   return {
     head: width * Math.abs(worldScale.x),
     eyeDistance: eyeDistance * Math.abs(worldScale.x),
     eyeDistanceSource,
     faceSocket: {
-      position: local.toArray() as Vec3,
-      rotationQuaternion: [facing.x, facing.y, facing.z, facing.w],
-      rotationDeg: [0, vrm.meta?.metaVersion === "0" ? 180 : 0, 0],
-      source: "measured",
-      surfaceMeasured: true,
-      surfaceCrownHeight: top,
-      ...(points.some((point) => point.y > top + 0.015) ? { hairClearanceRequired: true } : {}),
+      ...faceSocket,
+      ...(beretRimLift > 0 ? { beretRimLift } : {}),
+      ...(beanieRimLift > 0 ? { beanieRimLift } : {}),
+      ...(beanieRimDepth !== 0 ? { beanieRimDepth } : {}),
     },
   };
 }
@@ -151,15 +234,15 @@ export function studioVrmHeadwearSurfaceSocket(
   switch (id) {
     case "cap": position = [0, crown * 0.437, 0]; break;
     case "beret":
-      // 정수리 중앙 수직 부양(0.84)을 방지하고 두상 곡면(0.74) 우측·후면에 14° 비스듬히 밀착 앉힌다.
-      position = [-Math.min(0.024, face.z * 0.2), crown * 0.74, -Math.min(0.02, face.z * 0.16)];
+      // 카탈로그의 14° 기울기를 유지하고, 머리카락이 밴드에 닿는 경우에만 안착점을 올린다.
+      position = [-Math.min(0.024, face.z * 0.2), crown * 0.74 + (socket.beretRimLift ?? 0), -Math.min(0.02, face.z * 0.16)];
       tiltDeg = [-5, 0, 14];
       break;
     case "glasses":
       // 콧등 표면 기준으로 앞쪽 부양을 줄이고 눈동자 중심보다 콧대 안착점에 정밀 밀착시킨다.
       position = [0, face.y - crown * 0.012, Math.max(0.01, face.z - 0.006)];
       break;
-    case "beanie": position = [0, crown * 0.70, 0]; break;
+    case "beanie": position = [0, crown * 0.70 + (socket.beanieRimLift ?? 0), socket.beanieRimDepth ?? 0]; break;
     case "blender_wizard_hat": position = [0, crown * 0.784, 0]; break;
     case "headphones": position = [0, face.y + 0.012, 0]; break;
     case "earmuffs": position = [0, face.y + 0.008, 0]; break;
