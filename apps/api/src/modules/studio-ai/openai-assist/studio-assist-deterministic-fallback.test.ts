@@ -237,6 +237,37 @@ describe("로컬 창작 보조의 원문 보존", () => {
     expect(result.data.cuts[3].visualAction).toContain("도윤만 빗속으로");
   });
 
+  it("산문에 섞인 문답은 말한 내용만 순서대로 옮기고 화자 이름을 추측하지 않는다", () => {
+    const inputText = "1컷. 소년이 젖은 신발을 내민다. “이거 누구 거예요?” 할머니가 운동화를 집어 든다. 「우리 손자 거야.」";
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts[0].dialogue).toBe("이거 누구 거예요?\n우리 손자 거야.");
+    expect(result.data.cuts[0].visualAction).toBe(inputText.slice("1컷. ".length));
+  });
+
+  it("발화가 들리거나 인물이 직접 대답한 경우 원문에 적힌 음성만 보존한다", () => {
+    const inputText = "1컷. 스피커에서 “문이 열립니다” 한마디가 들린다.\n2컷. 「다녀왔습니다.」라고 대답하면서 장갑을 벗는다.";
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual(["문이 열립니다", "다녀왔습니다."]);
+  });
+
+  it.each([
+    "아이가 안내판을 가리킨다. “빌린 책은 여기에 놓으세요.”",
+    "수빈이 창문에 종이를 붙인다. “오후 세 시에 돌아옵니다.”",
+    "은우가 몰래 마음속으로 되뇐다. “이제는 집에 가고 싶어.”",
+    "그는 말없이 고개를 든다. “기다려 줘요.”",
+    "아이가 운동화를 내민다. “내 거예요.”라고 적힌 꼬리표가 매달렸다.",
+    "불 꺼진 방. “열어 주세요.”",
+  ])("문구·내면·무언·장면 단서가 불충분한 인용은 지문에만 남긴다 (%s)", inputText => {
+    for (const manuscript of ["1컷. " + inputText, inputText]) {
+      const result = buildDeterministicAssistResult("script-to-cuts", { inputText: manuscript });
+      if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+      expect(result.data.cuts.every(cut => cut.dialogue === "")).toBe(true);
+      expect(result.data.cuts.map(cut => cut.visualAction).join(" ")).toBe(inputText);
+    }
+  });
+
   it("줄바꿈이나 마침표가 없는 긴 지문도 마지막 행동까지 여러 컷에 담는다", () => {
     const inputText = "연필로 별을 그리는 손 ".repeat(140) + "마침내 연필을 내려놓는다";
     const result = buildDeterministicAssistResult("script-to-cuts", { inputText });

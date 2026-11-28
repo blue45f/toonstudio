@@ -123,9 +123,30 @@ function connectsSpeakerBalloons(gap: string): boolean {
   return Boolean(target && !stageLabel.test(target) && !/(?:판|표지|팻말|글씨|문구|문서|서류|종이|영수증|편지|책)$/u.test(target));
 }
 
+// 인용 앞의 행동·발화 단서와 인용 자체를 함께 읽는다. 화자의 이름은 추론하지 않는다.
+function isNarratedSpeech(beat: string, quote: RegExpMatchArray): boolean {
+  const before = beat.slice(0, quote.index).trimEnd();
+  const after = beat.slice((quote.index ?? 0) + quote[0].length).trimStart();
+  if (!before && !after) return true;
+  if (/^(?:이?라고|이?라는)\s*(?:적|쓰|써|새겨|인쇄|표시|문구|글씨)/u.test(after)) return false;
+  if (/^(?:이?라고\s*)?(?:묻|물었|말[했한하]|했다|대답|외[쳤친치]|속삭|중얼)/u.test(after)
+    && !/^[^.!?。！？]{0,20}지\s*(?:않|못)/u.test(after)) return true;
+  if (/^(?:하는\s*)?(?:한마디|목소리|대답)(?:가|이)\s*들(?:린다|렸다)/u.test(after)) return true;
+  if (/(?:대사|말한다|말했다|묻는다|물었다|대답한다|소리친다|속삭인다|부탁한다|달라고 한다|소리 내어 읽는다|낭독한다)[.：:]?$/u.test(before)) return true;
+  if (!/^[“"「]/u.test(quote[0]) || !isWholeUtterance(beat, quote)) return false;
+  const action = before.match(/(?:^|[.!?。！？”’"'」])\s*([^.!?。！？“”‘’"'「」]+)[.!?。！？]$/u)?.[1];
+  if (!action || !/[가-힣]+[이가은는]\s/u.test(action)) return false;
+  if (/(?:간판|안내판|게시판|전광판|명판|게시물|안내문|쪽지|메모|글씨|문구|자막|화면|표지|포스터|영수증|편지|서류|공문|스티커|인쇄|적혀|쓰여|써져|새겨|타이핑|생각|마음속|상상|말없이|무언)/u.test(action)
+    || /(?:쓴다|적는다|새긴다|입력한다|표시한다|붙인다|읽는다)$/u.test(action)) return false;
+  const ending = action.match(/([가-힣])다$/u)?.[1];
+  // 현재 동작 서술의 -ㄴ다·-는다에서 '다' 바로 앞 음절의 종성은 ㄴ이다.
+  if (!ending || (ending.charCodeAt(0) - 0xac00) % 28 !== 4) return false;
+  return /(?:요|죠|네|군|구나|지|니|야|래|어|아|와|해|소|오|세|십시오|니다|니까|겠다)[.!?…。！？](?:\s|$)/u.test(quoteBody(quote));
+}
+
 function spokenText(beat: string): string {
   const labeled = beat.match(spokenLine);
-  const turns: Array<{ speaker: string; text: string }> = [];
+  const turns: Array<{ speaker?: string; text: string }> = [];
   let lastEnd = 0;
   let opening = "";
   for (const quote of beat.matchAll(quotedText)) {
@@ -135,6 +156,8 @@ function spokenText(beat: string): string {
       turns.push({ speaker, text: quoteBody(quote) });
     } else if (lastTurn && opening === quote[0][0] && connectsSpeakerBalloons(beat.slice(lastEnd, quote.index)) && isWholeUtterance(beat, quote)) {
       lastTurn.text += "\n" + quoteBody(quote);
+    } else if (isNarratedSpeech(beat, quote)) {
+      turns.push({ text: quoteBody(quote) });
     } else {
       continue;
     }
@@ -144,19 +167,14 @@ function spokenText(beat: string): string {
   // 따옴표 없이 화자가 이어 말하는 대본은 기존 원문 전체를 보존한다.
   const hasPlainSpeaker = /(?:^|[.!?。！？”’"'」)）])\s*[\p{L}][\p{L}\p{N}_ ·]{0,18}[:：]\s*[^\s“‘"「']/u.test(beat);
   if (turns.length && !hasPlainSpeaker) {
-    return turns.map(({ speaker, text }) => turns.length === 1 ? text : `${speaker}: ${text}`).join("\n");
+    return turns.map(({ speaker, text }) => speaker && turns.length > 1 ? `${speaker}: ${text}` : text).join("\n");
   }
   if (labeled && !stageLabel.test(labeled[1].trim())) {
     const body = labeled[2].trim();
     const quote = [...body.matchAll(quotedText)][0];
     return quote?.[0] === body ? quoteBody(quote) : body;
   }
-  return [...beat.matchAll(quotedText)].filter((match) => {
-    const before = beat.slice(0, match.index).trimEnd();
-    const after = beat.slice(match.index + match[0].length).trimStart();
-    return (!before && !after) || /(?:대사|말한다|묻는다|대답한다)[.：:]?$/u.test(before)
-      || /^(?:[이]?라고\s*)?(?:묻|물었|말[했한하]|했다|대답|외[쳤친치]|속삭|중얼)/u.test(after);
-  }).map(quoteBody).join("\n");
+  return turns.map(turn => turn.text).join("\n");
 }
 
 function splitLongAction(scene: string): string[] {
@@ -182,6 +200,7 @@ function splitSceneSentences(line: string): string[] {
   for (const token of line.matchAll(tokens)) {
     if (/^[.!?。！？]/u.test(token[0])) {
       const end = token.index + token[0].length;
+      if (/^[“‘"「']/u.test(line.slice(end))) continue;
       beats.push(line.slice(start, end).trim());
       start = end;
     }
