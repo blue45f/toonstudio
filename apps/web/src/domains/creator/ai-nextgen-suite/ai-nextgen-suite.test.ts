@@ -582,12 +582,20 @@ describe("5. ai-accessible-scene-narrator + 이중 공급자 페일오버 + scor
 
   it("OpenAI 실패(429) 시 Gemini 무료 티어로 즉시 페일오버하며, 유료 Gemini 모델과 은퇴 OpenAI 모델은 호출 전 차단한다", async () => {
     const calls: { url: string; body: Record<string, unknown> }[] = [];
+    const isOpenAiHost = (raw: string): boolean => {
+      try {
+        const host = new URL(raw).hostname;
+        return host === "api.openai.com" || host.endsWith(".api.openai.com");
+      } catch {
+        return false;
+      }
+    };
     const mockFetch = vi.fn<typeof fetch>(async (input, init) => {
       const url = typeof input === "string" ? input : input.toString();
       const parsedBody = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
       calls.push({ url, body: parsedBody });
 
-      if (url.includes("api.openai.com")) {
+      if (isOpenAiHost(url)) {
         return new Response(JSON.stringify({ error: { code: "rate_limit_exceeded" } }), {
           status: 429,
         });

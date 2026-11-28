@@ -514,7 +514,7 @@ describe("Wave 116 — WebGPU WGSL Arc-Length Ribbon Shader & Validator", () => 
   });
 
   it("거부한다: 중괄호 불균형으로 손상된 WGSL을 검증 실패로 반환한다", () => {
-    const broken = buildArcLengthRibbonWgsl("chain-link").wgsl.replace("}", "");
+    const broken = buildArcLengthRibbonWgsl("chain-link").wgsl.replaceAll("}", "");
     const res = validateArcLengthRibbonWgsl(broken);
     expect(res.valid).toBe(false);
     expect(res.errors.some((e) => e.includes("curly braces"))).toBe(true);

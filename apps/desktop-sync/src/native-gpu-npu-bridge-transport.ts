@@ -634,7 +634,9 @@ function readBinaryBody(
     req.once("error", (err) => {
       if (settled) return;
       settled = true;
-      resolveBody({ ok: false, status: 400, error: `요청 스트림 읽기 실패: ${err.message}` });
+      // js/stack-trace-exposure 방지: 내부 오류 메시지·스택을 클라이언트에 노출하지 않고 고정 메시지로 반환한다.
+      void err;
+      resolveBody({ ok: false, status: 400, error: "요청 스트림 읽기 실패" });
     });
   });
 }
@@ -741,6 +743,8 @@ async function handleHttpRequest(
     }
     writeJsonResponse(res, 404, { error: "not-found", message: `지원하지 않는 엔드포인트입니다: ${pathname}` }, originHeader);
   } catch (err) {
-    writeJsonResponse(res, 502, { error: "daemon-bridge-error", message: err instanceof Error ? err.message : String(err) }, originHeader);
+    // js/stack-trace-exposure 방지: err.message/String(err)/err.stack 등 내부 정보를 응답에 싣지 않는다(서버 측 로깅만).
+    void err;
+    writeJsonResponse(res, 502, { error: "daemon-bridge-error", message: "GPU/NPU daemon bridge error" }, originHeader);
   }
 }

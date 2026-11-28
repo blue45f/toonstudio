@@ -118,7 +118,11 @@ function formatKrw(amount: number): string {
 }
 
 function escapeMarkdownCell(text: string): string {
-  return text.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  // Markdown 테이블 셀 이스케이프: 백슬래시 우선 → 파이프 이스케이프 → 줄바꿈(LF/CRLF/단독 CR) 공백화
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/\r\n|\r|\n/g, " ");
 }
 
 /** 프리랜서 3.3%(소득세 3.0% + 지방소득세 0.3%) 참고용 원천징수 추정치를 계산한다. */
