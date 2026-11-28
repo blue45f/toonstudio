@@ -1,5 +1,5 @@
 import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
-import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
@@ -12,14 +12,12 @@ import { installStudioCommandExecutionBindings } from "../studio-command-executi
 import { hasStudioCommandSearchHost, requestStudioCommandSearch, subscribeStudioCommandSearchHostReadiness } from "../studio-help-center-channel";
 import { requestStudioAllTools } from "../studio-toolbar-channel";
 import { openStudioSupergapRuntimeHub } from "../runtime-leaves/studio-supergap-runtime-hub-lazy-bridge";
-import { StudioDocumentLayoutContext } from "../studio-router/studio-document-layout-context";
 import { preloadStudioAssetToolPopoverBody } from "../studio-tool-belt-lazy-ui";
 import { useStudioDrawingCommandPresentation } from "./useStudioDrawingCommandPresentation";
 import { createStudioDrawingClarityCommandBindings } from "./StudioDrawingClarityCommands";
 import { StudioDrawingClaritySaveButton, type StudioDrawingClaritySaveSession } from "./StudioDrawingClaritySaveButton";
 import { StudioDrawingClarityMobileHelp } from "./StudioDrawingClarityMobileHelp";
 import { StudioDrawingClarityMore } from "./StudioDrawingClarityMore";
-import { StudioMobileExpandedToolsDialog } from "./StudioMobileExpandedToolsDialog";
 import { requestStudioDrawingReliability } from "./studio-drawing-assistance-channel";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
@@ -28,78 +26,26 @@ import "./StudioDrawingMobileWorkspace.css";
 export type StudioDrawingClarityMobileSession = StudioDrawingClaritySaveSession & Pick<StudioCuttoonEditorViewSession,
   "title" | "studioMenubarActivePageLabel" | "studioMainMenuGroups" | "setMobileSheet" | "setMenu" | "location" | "activePageIndex"
   | "mobileSheet" | "setHistoryPanelOpen" | "setExportMenuOpen" | "setTeamPanelOpen" | "setTutorialHubOpen" | "appSettings" | "saveSyncStore"
-  | "mobileImmersive" | "mobileQuickActionsButton" | "workspaceControlSide" | "studioAuthUserId">
+  | "mobileImmersive" | "mobileQuickActionsButton" | "workspaceControlSide">
   & {
     readonly studioMobileEditingDockHandlers: Pick<StudioCuttoonEditorViewSession["studioMobileEditingDockHandlers"], "openInspectorRoute">;
     readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "changeMobileImmersiveMode">;
   };
 
-const EDITOR_SELECTOR = '[data-studio-editor="true"]';
-interface ExpandedToolsLaunch {
-  readonly scope: string;
-  readonly owner: HTMLElement;
-  readonly trigger: HTMLElement;
-}
-
 /** 하단 도구·모바일 시트는 그대로 두고 문서와 실제 저장 상태·빠른 검색·공유를 표시한다. */
 export function StudioDrawingClarityMobileBar({
   session: s,
+  onOpenExpandedTools,
   onOpenShare,
   onExportTrigger,
 }: {
   readonly session: StudioDrawingClarityMobileSession;
+  readonly onOpenExpandedTools: (trigger: HTMLElement) => void;
   readonly onOpenShare?: (trigger: HTMLButtonElement) => void;
   readonly onExportTrigger?: (trigger: HTMLElement) => void;
 }) {
   const clarity = useStudioDrawingClarity(), bt = useBilingual("studio.drawingClarity");
   const moreRef = useRef<HTMLElement>(null);
-  const documentLayout = useContext(StudioDocumentLayoutContext);
-  const expandedScope = JSON.stringify(documentLayout
-    ? [s.studioAuthUserId, documentLayout.documentKey, documentLayout.liveRoomParam ?? documentLayout.instantWorkId]
-    : [s.studioAuthUserId, s.location.pathname, s.location.search]);
-  const expandedScopeRef = useRef(expandedScope);
-  expandedScopeRef.current = expandedScope;
-  const [expansion, setExpansion] = useState<{ scope: string; launch: ExpandedToolsLaunch | null }>(() => ({ scope: expandedScope, launch: null }));
-  if (expansion.scope !== expandedScope) setExpansion({ scope: expandedScope, launch: null });
-  const launch = expansion.scope === expandedScope ? expansion.launch : null;
-  const pendingExpansion = useRef<AbortController | null>(null);
-  useLayoutEffect(() => () => pendingExpansion.current?.abort(), [expandedScope]);
-  const openExpandedTools = (trigger: HTMLElement): void => {
-    const owner = trigger.closest<HTMLElement>(EDITOR_SELECTOR);
-    if (expandedScopeRef.current !== expandedScope || !owner?.isConnected || trigger !== moreRef.current) return;
-    s.setMobileSheet(null);
-    pendingExpansion.current?.abort();
-    const pending = new AbortController();
-    pendingExpansion.current = pending;
-    const listener = { signal: pending.signal, capture: true };
-    owner.ownerDocument.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !event.isComposing) pending.abort();
-    }, listener);
-    owner.ownerDocument.addEventListener("pointerdown", (event) => {
-      if (event.target instanceof Node && !trigger.contains(event.target)) pending.abort();
-    }, listener);
-    // More's native dialog closes first. The existing Back owner must observe the empty
-    // layer before the next dialog mounts, including a warm drawer module.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!pending.signal.aborted && expandedScopeRef.current === expandedScope
-        && owner.isConnected && trigger.closest(EDITOR_SELECTOR) === owner) {
-        setExpansion({ scope: expandedScope, launch: { scope: expandedScope, owner, trigger } });
-      }
-      pending.abort();
-    }));
-  };
-  const closeExpandedTools = (request: ExpandedToolsLaunch): void => {
-    if (expandedScopeRef.current !== request.scope) return;
-    setExpansion((current) => current.launch === request ? { ...current, launch: null } : current);
-    requestAnimationFrame(() => {
-      if (expandedScopeRef.current !== request.scope || !request.owner.isConnected) return;
-      const invoker = request.trigger.isConnected ? request.trigger
-        : request.owner.querySelector<HTMLElement>('[data-studio-clarity-more-trigger="true"]');
-      const active = request.owner.ownerDocument.activeElement;
-      if (invoker?.closest(EDITOR_SELECTOR) !== request.owner || (active && active !== request.owner.ownerDocument.body && active !== invoker)) return;
-      invoker.focus({ preventScroll: true });
-    });
-  };
   const route = parseStudioWorkspaceRoute(s.location), guideSurface = route.valid ? route.surface : null;
   const [helpOpen, setHelpOpen] = useState(false);
   const [editBarExpanded, setEditBarExpanded] = useState(false);
@@ -162,7 +108,7 @@ export function StudioDrawingClarityMobileBar({
         ...(brushLibrary && !brushLibrary.disabled ? [{ id: "brush", label: bt("내 브러시 관리", "Manage my brushes"), run: () => { s.setMobileSheet(null); brushLibrary.onSelect(); } }] : []),
         ...(poseCommand && !poseCommand.disabled ? [{ id: "character3d", label: bt("3D 캐릭터·포즈", "3D character and pose"), run: () => { s.setMobileSheet(null); poseCommand.onSelect(); } }] : []),
         { id: "all", label: bt("전체 도구", "All tools"), run: (trigger) => { s.setMobileSheet(null); requestStudioAllTools(trigger); } },
-        { id: "expanded", label: bt("확장 전문 도구", "Expanded tools"), run: openExpandedTools },
+        { id: "expanded", label: bt("확장 전문 도구", "Expanded tools"), run: (trigger) => { if (trigger === moreRef.current) onOpenExpandedTools(trigger); } },
         { id: "search", label: bt("도구·기능 검색", "Search tools and features"), run: openSearch },
         { id: "team", label: bt("함께 작업", "Work together"), run: () => s.setTeamPanelOpen(true) },
         { id: "windows", label: bt("프로젝트·창 도구", "Project and window tools"), run: (trigger) => clarity.reveal("commands", trigger) },
@@ -203,7 +149,6 @@ export function StudioDrawingClarityMobileBar({
         {s.workspaceControlSide === "right" ? quickActions : null}
       </div>
     </div>
-    {launch ? <StudioMobileExpandedToolsDialog projectId={`mobile-expanded-tools:${launch.scope}`} onClose={() => closeExpandedTools(launch)} /> : null}
     {helpOpen ? <StudioDrawingClarityMobileHelp touch={s.appSettings.touch} onClose={closeHelp} onTutorial={() => { setHelpOpen(false); s.setTutorialHubOpen(true); }} /> : null}
   </>;
 }

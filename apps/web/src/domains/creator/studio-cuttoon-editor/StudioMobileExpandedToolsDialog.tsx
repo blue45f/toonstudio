@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { createStudioIntentLazyLoader } from "../studio-intent-lazy-loader";
+import { STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE } from "./studio-mobile-back-stack";
 
 const loader = createStudioIntentLazyLoader(() => import("./StudioExpandedToolsDrawer"));
 type DrawerComponent = typeof import("./StudioExpandedToolsDrawer").StudioExpandedToolsDrawer;
@@ -12,6 +13,7 @@ function closeNativeDialog(dialog: HTMLDialogElement): void {
   if (!dialog.open) return;
   if (typeof dialog.close === "function") dialog.close();
   else dialog.removeAttribute("open");
+  dialog.ownerDocument.dispatchEvent(new Event(STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE));
 }
 
 export function StudioMobileExpandedToolsDialog({ projectId, onClose }: {
@@ -43,6 +45,7 @@ export function StudioMobileExpandedToolsDialog({ projectId, onClose }: {
       dialog.setAttribute("open", "");
       dialog.setAttribute("aria-modal", "false");
     }
+    dialog.ownerDocument.dispatchEvent(new Event(STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE));
     loadingTitleRef.current?.focus({ preventScroll: true });
     return () => closeNativeDialog(dialog);
   }, []);

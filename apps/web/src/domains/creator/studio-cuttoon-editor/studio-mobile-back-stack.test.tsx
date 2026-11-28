@@ -111,6 +111,23 @@ describe("resolveStudioMobileBackLayers", () => {
     }
   });
 
+  it("가로 전환 후에는 다른 데스크톱 모달과 별도로 이전 전문 도구의 뒤로 층만 유지한다", () => {
+    const domRoot = document.createElement("div");
+    domRoot.innerHTML = '<dialog open data-studio-mobile-expanded-tools="true" data-studio-drawing-task="expanded-tools"></dialog><div role="dialog" aria-modal="true"></div>';
+    const modal = domRoot.querySelector("dialog");
+    const close = vi.fn();
+    modal?.addEventListener("cancel", close);
+    const layers = resolveStudioMobileBackLayers({
+      isMobile: false, mobileSheet: null, dismissActiveMobileSheet: vi.fn(),
+      menuOpen: false, dismissMenu: vi.fn(), quickActionsOpen: false, dismissQuickActions: vi.fn(),
+      quickAccessPaletteOpen: false, dismissQuickAccessPalette: vi.fn(),
+      shortcutsOpen: false, dismissShortcuts: vi.fn(), domRoot,
+    });
+    expect(layers.map(({ id }) => id)).toEqual(["modal:drawing-task:expanded-tools"]);
+    layers[0]?.dismiss();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it("데스크톱(isMobile=false)에서는 빈 스택을 반환한다", () => {
     const layers = resolveStudioMobileBackLayers({
       isMobile: false,

@@ -19,14 +19,16 @@ import { closeStudioSupergapRuntimeHub } from "../runtime-leaves/studio-supergap
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioDrawingClarityReceipt } from "./StudioDrawingClarityReceipt";
-import { StudioDrawingClarityMobileBar, type StudioDrawingClarityMobileSession } from "./StudioDrawingClarityMobileBar";
+import { StudioDrawingClarityBar } from "./StudioDrawingClarityBar";
+import type { StudioDrawingClarityMobileSession } from "./StudioDrawingClarityMobileBar";
+import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 vi.mock("../studio-collab/studio-scoped-draft-save", () => ({ useStudioScopedDraftSaveState: () => ({ available: false, pendingConfirmation: false }) }));
 vi.mock("../studio-tool-belt-lazy-ui", () => ({ preloadStudioAssetToolPopoverBody: vi.fn() }));
 vi.mock("../studio-supergap-runtime-hub", () => new Promise(() => {}));
 afterEach(() => { cleanup(); closeStudioSupergapRuntimeHub(); vi.unstubAllGlobals(); });
 
-type MobileFixture = StudioDrawingClaritySession & StudioDrawingClarityMobileSession;
+type MobileFixture = StudioDrawingClaritySession & StudioDrawingClarityMobileSession & Pick<StudioCuttoonEditorViewSession, "studioAuthUserId">;
 function session(): MobileFixture {
   const state = createStudioWorkspaceDefaultState(null);
   return {
@@ -48,7 +50,7 @@ function Surface({ value }: { value: MobileFixture }) {
   const clarity = useStudioDrawingClarity();
   if (!clarity) throw new Error("표시 context 누락");
   return <div data-studio-editor="true" data-studio-drawing-clarity-mobile={clarity.active ? "true" : undefined}>
-    {clarity.active && <StudioDrawingClarityMobileBar session={value} />}
+    {clarity.active && <StudioDrawingClarityBar session={value as unknown as StudioCuttoonEditorViewSession} />}
     <div id="studio-canvas-workspace" tabIndex={-1} />
     {clarity.panel === "commands" && <section id="studio-drawing-clarity-panel-commands" aria-label="프로젝트·창 도구">
       <h2 tabIndex={-1} data-clarity-pane-heading>프로젝트·창 도구</h2><button onClick={clarity.chooseSimple}>원고로 돌아가기</button>
@@ -132,6 +134,39 @@ describe("웹 모바일 기본 상단", () => {
         expect(screen.queryByRole("dialog", { name: /^확장 전문 도구$/u })).toBeNull();
         expect(document.activeElement).toBe(trigger);
       });
+    } finally {
+      native.restore();
+    }
+  });
+
+  it("편집 막대 반응형 전환에도 같은 실행 화면을 유지하고 닫으면 현재 폭의 더보기에 초점을 돌린다", async () => {
+    const native = nativeModal();
+    try {
+      const value = session();
+      const small = (current: MobileFixture) => <StudioDrawingClarityProvider session={current}><Surface value={current} /></StudioDrawingClarityProvider>;
+      const view = render(small(value));
+      const mobileTrigger = more("drawing");
+      fireEvent.click(screen.getByRole("button", { name: /^확장 전문 도구$/u }));
+      const modal = await screen.findByRole("dialog", { name: /^확장 전문 도구$/u });
+      const category = await within(modal).findByTestId("expanded-tools-tab-character-3d");
+      fireEvent.click(category);
+      const cardId = "expanded-tool-card-eco.3d.head-mixer";
+      fireEvent.click(within(modal).getByTestId(cardId));
+      const runner = await within(modal).findByTestId("studio-expanded-tool-runner");
+      const canvas = document.getElementById("studio-canvas-workspace");
+
+      view.rerender(small({ ...value, isMobile: false, mobileImmersive: false }));
+      const desktopTrigger = screen.getByLabelText("더보기 · 작업 설정과 도움말");
+      expect(mobileTrigger.isConnected).toBe(false);
+      expect(within(modal).getByTestId("studio-expanded-tool-runner")).toBe(runner);
+      expect(screen.getByRole("dialog", { name: /^확장 전문 도구$/u })).toBe(modal);
+      expect(document.getElementById("studio-canvas-workspace")).toBe(canvas);
+
+      fireEvent.keyDown(runner, { key: "Escape" });
+      expect(document.activeElement).toBe(within(modal).getByTestId(cardId));
+      fireEvent.keyDown(document.activeElement ?? modal, { key: "Escape" });
+      await waitFor(() => expect(document.activeElement).toBe(desktopTrigger));
+      expect(screen.queryByRole("dialog", { name: /^확장 전문 도구$/u })).toBeNull();
     } finally {
       native.restore();
     }

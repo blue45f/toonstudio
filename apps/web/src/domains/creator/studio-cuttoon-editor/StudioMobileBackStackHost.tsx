@@ -6,6 +6,7 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 import {
   createStudioMobileHistorySyncController,
   resolveStudioMobileBackLayers,
+  STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE,
   type StudioMobileHistorySyncController,
 } from "./studio-mobile-back-stack";
 
@@ -53,7 +54,7 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
   };
 
   useEffect(() => {
-    if (!isMobile || typeof document === "undefined") return;
+    if (typeof document === "undefined") return;
     let queued = false;
     const bump = () => {
       if (queued) return;
@@ -63,14 +64,18 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
         setDomRevision((value) => value + 1);
       });
     };
-    const observer = new MutationObserver(bump);
-    observer.observe(document.body, {
+    document.addEventListener(STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE, bump);
+    const observer = isMobile ? new MutationObserver(bump) : null;
+    observer?.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
       attributeFilter: ["hidden", "aria-hidden", "open", "aria-modal"],
     });
-    return () => observer.disconnect();
+    return () => {
+      observer?.disconnect();
+      document.removeEventListener(STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE, bump);
+    };
   }, [isMobile]);
 
   useLayoutEffect(() => {

@@ -40,6 +40,7 @@ import {
   type StudioExpandedToolCardModel,
   type StudioExpandedToolCategoryId,
 } from "./studio-expanded-tools-catalog";
+import { studioQuickAccessKeyboardClaimed } from "./studio-quick-access-keyboard";
 
 export interface StudioExpandedToolsDrawerProps {
   readonly open: boolean;
@@ -116,7 +117,8 @@ export function StudioExpandedToolsDrawer({
     initialCategory,
   );
   const [query, setQuery] = useState(initialQuery);
-  const activeCategory = query.trim() ? "all" : selectedCategory;
+  const normalizedQuery = query.trim().toLowerCase();
+  const activeCategory = normalizedQuery ? "all" : selectedCategory;
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activeLaunched, setActiveLaunched] = useState<ActiveLaunchedTool | null>(null);
@@ -128,7 +130,7 @@ export function StudioExpandedToolsDrawer({
   const tabListRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const gridScrollTop = useRef(0);
-  const launchRequest = useRef(0);
+  const launchRequest = useRef<symbol | null>(null);
   const lastLaunchedCardIdRef = useRef<string | null>(null);
   const pendingFocusRestoreRef = useRef(false);
   const cardButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -140,7 +142,7 @@ export function StudioExpandedToolsDrawer({
   }, []);
 
   const handleEscape = useEffectEvent((event: globalThis.KeyboardEvent) => {
-    if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+    if (event.key !== "Escape" || studioQuickAccessKeyboardClaimed(event)) return;
     if (activeLaunched) {
       event.preventDefault();
       event.stopPropagation();
@@ -162,7 +164,7 @@ export function StudioExpandedToolsDrawer({
     return () => window.removeEventListener("keydown", handleGlobalKey);
   }, [open]);
 
-  useLayoutEffect(() => () => { launchRequest.current += 1; }, [open]);
+  useLayoutEffect(() => () => { launchRequest.current = null; }, [open]);
   useLayoutEffect(() => {
     if (open && embeddedInModal && mobileSearchOpen) searchInputRef.current?.focus();
   }, [open, embeddedInModal, mobileSearchOpen]);
@@ -177,9 +179,11 @@ export function StudioExpandedToolsDrawer({
     pendingFocusRestoreRef.current = false;
     if (gridRef.current) gridRef.current.scrollTop = gridScrollTop.current;
     const targetId = lastLaunchedCardIdRef.current;
-    if (!targetId) return;
-    cardButtonRefs.current.get(targetId)?.focus({ preventScroll: true });
-  }, [open, activeLaunched, embeddedInModal]);
+    const card = targetId ? cardButtonRefs.current.get(targetId) : undefined;
+    const search = embeddedInModal && !mobileSearchOpen ? null : searchInputRef.current;
+    const target = card ?? search ?? tabListRef.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]');
+    target?.focus({ preventScroll: true });
+  }, [open, activeLaunched, embeddedInModal, mobileSearchOpen]);
 
   useLayoutEffect(() => {
     const rail = tabListRef.current;
@@ -204,8 +208,21 @@ export function StudioExpandedToolsDrawer({
     [],
   );
 
+  const handleFilterChange = useCallback((category: StudioExpandedToolCategoryId | "all", nextQuery: string) => {
+    const normalizedNext = nextQuery.trim().toLowerCase();
+    const nextCategory = normalizedNext ? "all" : category;
+    if (launchRequest.current !== null && (normalizedNext !== normalizedQuery || nextCategory !== activeCategory)) {
+      launchRequest.current = null;
+      setLoadingId(null);
+      setStatusMessage(bt("도구 열기를 취소했습니다. 목록에서 다시 선택할 수 있습니다.", "Opening the tool was canceled. Select a tool from the list to open it."));
+    }
+    setSelectedCategory(category);
+    setQuery(nextQuery);
+  }, [activeCategory, bt, normalizedQuery]);
+
   const handleTabKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+      if (studioQuickAccessKeyboardClaimed(event.nativeEvent)) return;
       let nextIndex = -1;
       if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabOrder.length;
       else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
@@ -215,8 +232,7 @@ export function StudioExpandedToolsDrawer({
 
       event.preventDefault();
       const nextId = tabOrder[nextIndex];
-      setSelectedCategory(nextId);
-      setQuery("");
+      handleFilterChange(nextId, "");
       const rail = tabListRef.current;
       const nextTab = rail?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex];
       if (rail && nextTab) {
@@ -224,12 +240,13 @@ export function StudioExpandedToolsDrawer({
         if (nextId === activeCategory) revealCategoryTab(rail, nextTab);
       }
     },
-    [activeCategory, tabOrder],
+    [activeCategory, handleFilterChange, tabOrder],
   );
 
   const handleLaunchCard = useCallback(
     async (card: StudioExpandedToolCardModel) => {
-      const request = ++launchRequest.current;
+      const request = Symbol();
+      launchRequest.current = request;
       lastLaunchedCardIdRef.current = card.command.id;
       gridScrollTop.current = gridRef.current?.scrollTop ?? 0;
       setLoadingId(card.command.id);
@@ -256,7 +273,10 @@ export function StudioExpandedToolsDrawer({
         const detail = caught instanceof Error ? caught.message : "모듈 로드에 실패했습니다.";
         if (request === launchRequest.current) setStatusMessage(`${card.command.koreanLabel} 불러오기 실패: ${detail}`);
       } finally {
-        if (request === launchRequest.current) setLoadingId(null);
+        if (request === launchRequest.current) {
+          launchRequest.current = null;
+          setLoadingId(null);
+        }
       }
     },
     [onLaunchTool],
@@ -331,7 +351,7 @@ export function StudioExpandedToolsDrawer({
                 aria-controls={`${searchInputId}-region`}
                 aria-expanded={mobileSearchOpen}
                 onClick={() => {
-                  if (mobileSearchOpen) setQuery("");
+                  if (mobileSearchOpen) handleFilterChange(selectedCategory, "");
                   setMobileSearchOpen(!mobileSearchOpen);
                 }}
                 className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 focus-visible:ring-2 focus-visible:ring-accent">
@@ -364,7 +384,7 @@ export function StudioExpandedToolsDrawer({
                 id={searchInputId}
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => handleFilterChange(selectedCategory, event.currentTarget.value)}
                 data-testid="expanded-tools-search-input"
                 placeholder="한국어 도구명 · 단축키 · 익숙한 툴 용어 검색"
                 className="min-h-11 w-full rounded-lg border border-line bg-card py-2 pl-9 pr-3 text-sm text-fg placeholder:text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -387,10 +407,7 @@ export function StudioExpandedToolsDrawer({
               tabIndex={activeCategory === "all" ? 0 : -1}
               data-testid="expanded-tools-tab-all"
               data-active-baseline={activeCategory === "all" ? "inset-lavender-2px" : "none"}
-              onClick={() => {
-                setSelectedCategory("all");
-                setQuery("");
-              }}
+              onClick={() => handleFilterChange("all", "")}
               onKeyDown={(event) => handleTabKeyDown(event, 0)}
               className={cn(
                 "inline-flex min-h-11 shrink-0 items-center gap-1.5 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
@@ -415,10 +432,7 @@ export function StudioExpandedToolsDrawer({
                   data-testid={`expanded-tools-tab-${category.id}`}
                   data-active-baseline={isSelected ? "inset-lavender-2px" : "none"}
                   title={`${category.labelKo} — ${category.descriptionKo}`}
-                  onClick={() => {
-                    setSelectedCategory(category.id);
-                    setQuery("");
-                  }}
+                  onClick={() => handleFilterChange(category.id, "")}
                   onKeyDown={(event) => handleTabKeyDown(event, idx + 1)}
                   className={cn(
                     "inline-flex min-h-11 shrink-0 items-center gap-1.5 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",

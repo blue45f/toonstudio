@@ -1,3 +1,5 @@
+export const STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE = "studio:mobile-expanded-tools-change";
+
 export type StudioMobileSheetKind =
   | "draw"
   | "props"
@@ -90,11 +92,15 @@ function dismissForeignModal(modal: HTMLElement): void {
 export function resolveStudioMobileBackLayers(
   inputs: StudioMobileBackStackInputs,
 ): readonly StudioMobilePanelLayer[] {
-  if (!inputs.isMobile) return [];
+  const root = inputs.domRoot ?? (typeof document !== "undefined" ? document : null);
+  if (!inputs.isMobile) {
+    const expanded = root?.querySelector('dialog[data-studio-mobile-expanded-tools="true"][open]');
+    return expanded && isVisibleElement(expanded)
+      ? [{ id: "modal:drawing-task:expanded-tools", dismiss: () => dismissForeignModal(expanded) }]
+      : [];
+  }
 
   const layers: StudioMobilePanelLayer[] = [];
-  const root =
-    inputs.domRoot ?? (typeof document !== "undefined" ? document : null);
 
   if (root) {
     const colorPopover = root.querySelector(
