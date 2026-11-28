@@ -1,11 +1,13 @@
 import { buildLocalDialogueLayout, buildLocalScriptCuts } from "@toonstudio/contracts/studio-assist-local-script";
-import { LocalizationGlossaryCheckOutputSchema, OpenAiIdeaRemixOutputSchema, ScrollPacingAuditorOutputSchema } from "@toonstudio/contracts/studio-openai-assist-result";
+import { validateAssistModeStructuredOutput } from "@toonstudio/contracts/studio-openai-assist-result";
 import { redactCreatorSensitiveText } from "@toonstudio/contracts/studio-pii-redactor";
 import { buildLocalColorMood } from "@toonstudio/studio-project-model/character-art-style";
 
 import { withCsrfProtection } from "@/shared/lib/csrf";
 import { useApp } from "@/shared/lib/store";
 
+import { summarizeFreeAiEditorialReview } from "./free-ai-editorial-review";
+import { summarizeFreeAiProductionDirections } from "./free-ai-production-directions";
 import {
   MANAGED_FREE_DAILY_REQUEST_LIMIT,
   MANAGED_FREE_DAILY_RESERVED_TOKEN_LIMIT,
@@ -433,45 +435,13 @@ const localReviewHeadlines: Partial<Record<FreeAiZeroBillModeId, string>> = {
 };
 
 function summarizeServerResult(mode: FreeAiZeroBillModeId, data: Record<string, unknown>, isCloudReview: boolean) {
-  if (mode === "idea-remix") {
-    const parsed = OpenAiIdeaRemixOutputSchema.safeParse(data);
-    if (parsed.success) {
-      return {
-        headlineKo: parsed.data.summary,
-        bulletsKo: parsed.data.angles.map(({ lensLabelKo, headline, pitch, firstCutHint }) =>
-          `[${lensLabelKo}] ${headline} — ${pitch} · 첫 컷: ${firstCutHint}`),
-      };
-    }
+  const result = validateAssistModeStructuredOutput(mode, data);
+  if (result) {
+    const review = summarizeFreeAiEditorialReview(result, isCloudReview) ?? summarizeFreeAiProductionDirections(result);
+    if (review) return review;
   }
-  if (mode === "scroll-pacing-auditor") {
-    const parsed = ScrollPacingAuditorOutputSchema.safeParse(data);
-    if (parsed.success) {
-      const { rhythmVerdict, averageGapPx, beatPacing, cliffhangerScore, cliffhangerTip } = parsed.data;
-      return {
-        headlineKo: rhythmVerdict,
-        bulletsKo: [
-          `구간 평균 ${averageGapPx}px`,
-          ...beatPacing.map(({ section, recommendedGapPx, readerRetentionNote }) =>
-            `${section} · ${recommendedGapPx}px — ${readerRetentionNote}`),
-          isCloudReview ? `엔딩 몰입도 ${cliffhangerScore}/100 · ${cliffhangerTip}` : cliffhangerTip,
-        ],
-      };
-    }
-  }
-  if (mode !== "localization-glossary-check") return summarizeStructuredData(mode, data);
-
-  const parsed = LocalizationGlossaryCheckOutputSchema.safeParse(data);
-  if (!parsed.success) return null;
-  const { targetLocales, glossary, culturalNotes } = parsed.data;
-  return {
-    headlineKo: `다국어 번역 용어집 · 대상 언어 ${targetLocales.join(", ")}`,
-    bulletsKo: [
-      ...glossary.map(({ termKo, en, ja, ruleNote }) =>
-        `${termKo} · EN: ${en} · JA: ${ja} — ${ruleNote}`),
-      ...culturalNotes.map(({ severity, topic, adaptationTip }) =>
-        `[${severity === "warn" ? "주의" : "참고"}] ${topic} — ${adaptationTip}`),
-    ],
-  };
+  if (mode === "localization-glossary-check") return null;
+  return summarizeStructuredData(mode, data);
 }
 
 function summarizeStructuredData(
@@ -511,7 +481,8 @@ function summarizeStructuredData(
           if (mode === "script-to-cuts" && key === "cuts" && typeof rec.visualAction === "string") {
             const speech = typeof rec.dialogue === "string" && rec.dialogue.trim() && !rec.visualAction.includes(rec.dialogue)
               ? ` — ${rec.dialogue}` : "";
-            bullets.push(`${rec.cutNumber}컷 · ${rec.visualAction}${speech}`);
+            const direction = [rec.beatKind, rec.shotType, rec.scrollGapHint].filter((hint) => typeof hint === "string" && hint.trim());
+            bullets.push(`${rec.cutNumber}컷 · ${rec.visualAction}${speech}${direction.length ? ` · ${direction.join(" · ")}` : ""}`);
             continue;
           }
           if (mode === "dialogue-polish" && key === "balloons" && typeof rec.line === "string") {
@@ -656,7 +627,8 @@ export function buildLocalZeroCostAssistResult(
     if (input.mode === "script-to-cuts") structuredData = buildLocalScriptCuts(source, title.slice(0, 120));
     else if (input.mode === "dialogue-polish") structuredData = buildLocalDialogueLayout(source);
     else structuredData = buildLocalColorMood(source);
-    ({ bulletsKo, headlineKo } = summarizeStructuredData(input.mode, structuredData));
+    const summary = summarizeServerResult(input.mode, structuredData, false) ?? summarizeStructuredData(input.mode, structuredData);
+    ({ bulletsKo, headlineKo } = summary);
   } else {
     bulletsKo = bulletsByMode[input.mode];
     headlineKo = localReviewHeadlines[input.mode]
