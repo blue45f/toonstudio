@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Suspense, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
@@ -11,6 +11,8 @@ import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigat
 import { StudioDocumentChromeSlot } from "../studio-shell/StudioDocumentChromeSlot";
 import { StudioMenubarStatusSlots } from "../studio-shell/StudioMenubarStatusSlots";
 import { installStudioCommandExecutionBindings } from "../studio-command-execution-registry";
+import { StudioDocumentLayoutContext } from "../studio-router/studio-document-layout-context";
+import { StudioMobileExpandedToolsDialog } from "./StudioMobileExpandedToolsDialog";
 import { useStudioDrawingCommandPresentation } from "./useStudioDrawingCommandPresentation";
 import { createStudioDrawingClarityCommandBindings, studioDrawingCommandDestination } from "./StudioDrawingClarityCommands";
 import { hasStudioCommandSearchHost, openStudioHelpCenter, requestStudioCommandSearch, subscribeStudioCommandSearchHostReadiness } from "../studio-help-center-channel";
@@ -71,9 +73,66 @@ function runStageViewTransition(action: () => void): void {
   }
 }
 
+const EDITOR_SELECTOR = '[data-studio-editor="true"]';
+interface ExpandedToolsLaunch {
+  readonly scope: string;
+  readonly owner: HTMLElement;
+  readonly trigger: HTMLElement;
+}
+
 /** 메뉴와 같은 명령 바인딩과 저장 책임을 쓰는 기본 드로잉 화면이다. */
 export function StudioDrawingClarityBar({ session: s, projectUtilities }: { readonly session: StudioCuttoonEditorViewSession; readonly projectUtilities?: ReactNode }) {
   const clarity = useStudioDrawingClarity();
+  const documentLayout = useContext(StudioDocumentLayoutContext);
+  const expandedScope = JSON.stringify(documentLayout
+    ? [s.studioAuthUserId, documentLayout.documentKey, documentLayout.liveRoomParam ?? documentLayout.instantWorkId]
+    : [s.studioAuthUserId, s.location.pathname, s.location.search]);
+  const expandedScopeRef = useRef(expandedScope);
+  expandedScopeRef.current = expandedScope;
+  const [expansion, setExpansion] = useState<{ scope: string; launch: ExpandedToolsLaunch | null }>(() => ({ scope: expandedScope, launch: null }));
+  if (expansion.scope !== expandedScope) setExpansion({ scope: expandedScope, launch: null });
+  const launch = expansion.scope === expandedScope ? expansion.launch : null;
+  const pendingExpansion = useRef<AbortController | null>(null);
+  useLayoutEffect(() => () => pendingExpansion.current?.abort(), [expandedScope]);
+  const openExpandedTools = (trigger: HTMLElement): void => {
+    const owner = trigger.closest<HTMLElement>(EDITOR_SELECTOR);
+    if (expandedScopeRef.current !== expandedScope || !owner?.isConnected) return;
+    s.setMobileSheet(null);
+    pendingExpansion.current?.abort();
+    const pending = new AbortController();
+    pendingExpansion.current = pending;
+    const listener = { signal: pending.signal, capture: true };
+    owner.ownerDocument.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !event.isComposing) pending.abort();
+    }, listener);
+    owner.ownerDocument.addEventListener("pointerdown", (event) => {
+      if (event.target instanceof Node && !trigger.contains(event.target)) pending.abort();
+    }, listener);
+    // More's native dialog closes first. The existing Back owner must observe the empty
+    // layer before the next dialog mounts, including a warm drawer module.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!pending.signal.aborted && expandedScopeRef.current === expandedScope
+        && owner.isConnected && (!trigger.isConnected || trigger.closest(EDITOR_SELECTOR) === owner)) {
+        setExpansion({ scope: expandedScope, launch: { scope: expandedScope, owner, trigger } });
+      }
+      pending.abort();
+    }));
+  };
+  const closeExpandedTools = (request: ExpandedToolsLaunch): void => {
+    if (expandedScopeRef.current !== request.scope) return;
+    setExpansion((current) => current.launch === request ? { ...current, launch: null } : current);
+    requestAnimationFrame(() => {
+      if (expandedScopeRef.current !== request.scope || !request.owner.isConnected) return;
+      const doc = request.owner.ownerDocument;
+      if (doc.activeElement && doc.activeElement !== doc.body) return;
+      const invoker = request.trigger.isConnected ? request.trigger
+        : request.owner.querySelector<HTMLElement>('[data-studio-clarity-more-trigger="true"][aria-controls="studio-drawing-clarity-mobile-menu"], [data-studio-clarity-more-trigger="true"][aria-controls="studio-drawing-clarity-more-menu"]');
+      if (invoker?.closest(EDITOR_SELECTOR) === request.owner) invoker.focus({ preventScroll: true });
+      if (doc.activeElement === doc.body) {
+        request.owner.querySelector<HTMLElement>('[data-studio-drawing-clarity-header="true"]')?.focus({ preventScroll: true });
+      }
+    });
+  };
   const outputRef = useRef<HTMLElement | null>(null);
   const shareTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -91,8 +150,9 @@ export function StudioDrawingClarityBar({ session: s, projectUtilities }: { read
   };
   return <>
     {s.isMobile
-      ? <StudioDrawingClarityMobileBar session={s} onOpenShare={openShare} onExportTrigger={rememberExportTrigger} />
+      ? <StudioDrawingClarityMobileBar session={s} onOpenExpandedTools={openExpandedTools} onOpenShare={openShare} onExportTrigger={rememberExportTrigger} />
       : <StudioDrawingClarityDesktopBar session={s} onOpenShare={openShare} onExportTrigger={rememberExportTrigger} />}
+    {launch ? <StudioMobileExpandedToolsDialog projectId={`mobile-expanded-tools:${launch.scope}`} onClose={() => closeExpandedTools(launch)} /> : null}
     {clarity?.panel === "commands" ? (
       <Suspense fallback={null}><LazyStudioDrawingProjectTools session={s}>{projectUtilities}</LazyStudioDrawingProjectTools></Suspense>
     ) : s.projectActionsOpen ? <Suspense fallback={null}><div hidden>{projectUtilities}</div></Suspense> : null}

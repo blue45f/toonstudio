@@ -15,6 +15,7 @@ import {
   useEffect,
   useEffectEvent,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +23,7 @@ import {
 } from "react";
 
 import { cn } from "@/shared/lib/utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   STUDIO_EXPANDED_ECOSYSTEM_COMMANDS,
   type StudioExpandedEcosystemCommand,
@@ -38,9 +40,12 @@ import {
   type StudioExpandedToolCardModel,
   type StudioExpandedToolCategoryId,
 } from "./studio-expanded-tools-catalog";
+import { studioQuickAccessKeyboardClaimed } from "./studio-quick-access-keyboard";
 
 export interface StudioExpandedToolsDrawerProps {
   readonly open: boolean;
+  readonly embeddedInModal?: boolean;
+  readonly projectId?: string;
   readonly initialCategory?: StudioExpandedToolCategoryId | "all";
   readonly initialQuery?: string;
   readonly commands?: readonly StudioExpandedEcosystemCommand[];
@@ -80,6 +85,13 @@ function CategoryIcon({ categoryId }: { readonly categoryId: StudioExpandedToolC
   }
 }
 
+function revealCategoryTab(rail: HTMLDivElement, tab: HTMLButtonElement): void {
+  const railBounds = rail.getBoundingClientRect();
+  const tabBounds = tab.getBoundingClientRect();
+  if (tabBounds.left < railBounds.left) rail.scrollLeft += tabBounds.left - railBounds.left;
+  else if (tabBounds.right > railBounds.right) rail.scrollLeft += tabBounds.right - railBounds.right;
+}
+
 /**
  * Calm Chrome 3-Tier 점진 노출 규칙을 준수하는 지연 로드 전용 확장 전문 도구 서랍.
  *
@@ -89,6 +101,8 @@ function CategoryIcon({ categoryId }: { readonly categoryId: StudioExpandedToolC
  */
 export function StudioExpandedToolsDrawer({
   open,
+  embeddedInModal = false,
+  projectId,
   initialCategory = "2d-painting",
   initialQuery = "",
   commands = STUDIO_EXPANDED_ECOSYSTEM_COMMANDS,
@@ -98,16 +112,25 @@ export function StudioExpandedToolsDrawer({
 }: StudioExpandedToolsDrawerProps) {
   const titleId = useId();
   const searchInputId = useId();
+  const bt = useBilingual("StudioExpandedToolsDrawer");
   const [selectedCategory, setSelectedCategory] = useState<StudioExpandedToolCategoryId | "all">(
     initialCategory,
   );
   const [query, setQuery] = useState(initialQuery);
+  const normalizedQuery = query.trim().toLowerCase();
+  const activeCategory = normalizedQuery ? "all" : selectedCategory;
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activeLaunched, setActiveLaunched] = useState<ActiveLaunchedTool | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>(
     "카테고리를 선택하거나 도구명·단축키·기존 툴 별칭으로 검색하세요.",
   );
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridScrollTop = useRef(0);
+  const launchRequest = useRef<symbol | null>(null);
   const lastLaunchedCardIdRef = useRef<string | null>(null);
   const pendingFocusRestoreRef = useRef(false);
   const cardButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -119,7 +142,7 @@ export function StudioExpandedToolsDrawer({
   }, []);
 
   const handleEscape = useEffectEvent((event: globalThis.KeyboardEvent) => {
-    if (event.key !== "Escape" || event.defaultPrevented) return;
+    if (event.key !== "Escape" || studioQuickAccessKeyboardClaimed(event)) return;
     if (activeLaunched) {
       event.preventDefault();
       event.stopPropagation();
@@ -132,6 +155,7 @@ export function StudioExpandedToolsDrawer({
   useEffect(() => {
     if (!open) {
       setActiveLaunched(null);
+      setLoadingId(null);
       pendingFocusRestoreRef.current = false;
       return;
     }
@@ -140,24 +164,43 @@ export function StudioExpandedToolsDrawer({
     return () => window.removeEventListener("keydown", handleGlobalKey);
   }, [open]);
 
-  useEffect(() => {
-    if (!open || activeLaunched !== null || !pendingFocusRestoreRef.current) return;
+  useLayoutEffect(() => () => { launchRequest.current = null; }, [open]);
+  useLayoutEffect(() => {
+    if (open && embeddedInModal && mobileSearchOpen) searchInputRef.current?.focus();
+  }, [open, embeddedInModal, mobileSearchOpen]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    if (activeLaunched !== null) {
+      if (embeddedInModal) drawerRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (!pendingFocusRestoreRef.current) return;
     pendingFocusRestoreRef.current = false;
+    if (gridRef.current) gridRef.current.scrollTop = gridScrollTop.current;
     const targetId = lastLaunchedCardIdRef.current;
-    if (!targetId) return;
-    cardButtonRefs.current.get(targetId)?.focus({ preventScroll: true });
-  }, [open, activeLaunched]);
+    const card = targetId ? cardButtonRefs.current.get(targetId) : undefined;
+    const search = embeddedInModal && !mobileSearchOpen ? null : searchInputRef.current;
+    const target = card ?? search ?? tabListRef.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]');
+    target?.focus({ preventScroll: true });
+  }, [open, activeLaunched, embeddedInModal, mobileSearchOpen]);
+
+  useLayoutEffect(() => {
+    const rail = tabListRef.current;
+    const activeTab = rail?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]');
+    if (rail && activeTab) revealCategoryTab(rail, activeTab);
+  }, [open, activeCategory, activeLaunched]);
 
   const categoryCounts = useMemo(() => countExpandedToolsByCategory(commands), [commands]);
 
   const filteredTools = useMemo(
     () =>
       filterExpandedTools({
-        categoryId: query.trim() ? "all" : selectedCategory,
+        categoryId: activeCategory,
         query,
         commands,
       }),
-    [commands, query, selectedCategory],
+    [commands, query, activeCategory],
   );
 
   const tabOrder: readonly (StudioExpandedToolCategoryId | "all")[] = useMemo(
@@ -165,8 +208,21 @@ export function StudioExpandedToolsDrawer({
     [],
   );
 
+  const handleFilterChange = useCallback((category: StudioExpandedToolCategoryId | "all", nextQuery: string) => {
+    const normalizedNext = nextQuery.trim().toLowerCase();
+    const nextCategory = normalizedNext ? "all" : category;
+    if (launchRequest.current !== null && (normalizedNext !== normalizedQuery || nextCategory !== activeCategory)) {
+      launchRequest.current = null;
+      setLoadingId(null);
+      setStatusMessage(bt("도구 열기를 취소했습니다. 목록에서 다시 선택할 수 있습니다.", "Opening the tool was canceled. Select a tool from the list to open it."));
+    }
+    setSelectedCategory(category);
+    setQuery(nextQuery);
+  }, [activeCategory, bt, normalizedQuery]);
+
   const handleTabKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+      if (studioQuickAccessKeyboardClaimed(event.nativeEvent)) return;
       let nextIndex = -1;
       if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabOrder.length;
       else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
@@ -176,19 +232,28 @@ export function StudioExpandedToolsDrawer({
 
       event.preventDefault();
       const nextId = tabOrder[nextIndex];
-      setSelectedCategory(nextId);
-      setQuery("");
+      handleFilterChange(nextId, "");
+      const rail = tabListRef.current;
+      const nextTab = rail?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex];
+      if (rail && nextTab) {
+        nextTab.focus({ preventScroll: true });
+        if (nextId === activeCategory) revealCategoryTab(rail, nextTab);
+      }
     },
-    [tabOrder],
+    [activeCategory, handleFilterChange, tabOrder],
   );
 
   const handleLaunchCard = useCallback(
     async (card: StudioExpandedToolCardModel) => {
+      const request = Symbol();
+      launchRequest.current = request;
       lastLaunchedCardIdRef.current = card.command.id;
+      gridScrollTop.current = gridRef.current?.scrollTop ?? 0;
       setLoadingId(card.command.id);
       setStatusMessage(`${card.command.koreanLabel} 모듈을 지연 불러오는 중입니다...`);
       try {
         const loaded = await loadEcosystemModule(card.command.panelLoaderId);
+        if (request !== launchRequest.current) return;
         if (
           typeof loaded === "object" &&
           loaded !== null &&
@@ -206,21 +271,27 @@ export function StudioExpandedToolsDrawer({
         onLaunchTool?.(card.command, loaded);
       } catch (caught) {
         const detail = caught instanceof Error ? caught.message : "모듈 로드에 실패했습니다.";
-        setStatusMessage(`${card.command.koreanLabel} 불러오기 실패: ${detail}`);
+        if (request === launchRequest.current) setStatusMessage(`${card.command.koreanLabel} 불러오기 실패: ${detail}`);
       } finally {
-        setLoadingId(null);
+        if (request === launchRequest.current) {
+          launchRequest.current = null;
+          setLoadingId(null);
+        }
       }
     },
     [onLaunchTool],
   );
 
   if (!open) return null;
+  const Container = embeddedInModal ? "div" : "aside";
 
   return (
-    <aside
-      role="dialog"
-      aria-modal="false"
-      aria-labelledby={titleId}
+    <Container
+      ref={drawerRef}
+      role={embeddedInModal ? undefined : "dialog"}
+      aria-modal={embeddedInModal ? undefined : "false"}
+      aria-labelledby={embeddedInModal ? undefined : titleId}
+      tabIndex={embeddedInModal ? -1 : undefined}
       data-testid="studio-expanded-tools-drawer"
       data-studio-expanded-tools-tier="tier-3-lazy"
       data-active-tool-id={activeLaunched?.card.command.id ?? ""}
@@ -248,6 +319,7 @@ export function StudioExpandedToolsDrawer({
               command={activeLaunched.card.command}
               card={activeLaunched.card}
               loadedModule={activeLaunched.loadedModule}
+              projectId={projectId}
               onBack={handleReturnToList}
               onCloseDrawer={onClose}
             />
@@ -262,17 +334,30 @@ export function StudioExpandedToolsDrawer({
                 <h2 id={titleId} className="text-sm font-semibold tracking-tight text-fg">
                   확장 전문 도구
                 </h2>
-                <span className="inline-flex items-center gap-1 rounded border border-line bg-card px-1.5 py-0.5 text-xs font-medium text-fg-2">
+                {!embeddedInModal && <span className="inline-flex items-center gap-1 rounded border border-line bg-card px-1.5 py-0.5 text-xs font-medium text-fg-2">
                   <kbd className="font-mono text-xs">F1</kbd>
                   <span aria-hidden>·</span>
                   <kbd className="font-mono text-xs">⌘K</kbd>
-                </span>
+                </span>}
               </div>
-              <p className="mt-0.5 text-xs text-fg-2">
+              {!embeddedInModal && <p className="mt-0.5 text-xs text-fg-2">
                 필요할 때만 동적으로 불러오는 6대 전문 작업 도구 서랍 ({commands.length}종)
-              </p>
+              </p>}
             </div>
 
+            {embeddedInModal && (
+              <button type="button"
+                aria-label={mobileSearchOpen ? bt("확장 도구 검색 닫기", "Close expanded tool search") : bt("확장 도구 검색", "Search expanded tools")}
+                aria-controls={`${searchInputId}-region`}
+                aria-expanded={mobileSearchOpen}
+                onClick={() => {
+                  if (mobileSearchOpen) handleFilterChange(selectedCategory, "");
+                  setMobileSearchOpen(!mobileSearchOpen);
+                }}
+                className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 focus-visible:ring-2 focus-visible:ring-accent">
+                <Search className="size-4" aria-hidden />
+              </button>
+            )}
             <button
               type="button"
               data-testid="expanded-tools-close"
@@ -285,7 +370,7 @@ export function StudioExpandedToolsDrawer({
           </header>
 
           {/* 검색 입력 (한국어 · 단축키 · 경쟁 툴 별칭 통합 필터) */}
-          <div className="border-b border-line bg-panel/60 px-4 py-2.5">
+          <div id={`${searchInputId}-region`} hidden={embeddedInModal && !mobileSearchOpen} className="border-b border-line bg-panel/60 px-4 py-2.5">
             <label htmlFor={searchInputId} className="sr-only">
               도구명, 단축키, 기존 툴 별칭 검색
             </label>
@@ -299,7 +384,7 @@ export function StudioExpandedToolsDrawer({
                 id={searchInputId}
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => handleFilterChange(selectedCategory, event.currentTarget.value)}
                 data-testid="expanded-tools-search-input"
                 placeholder="한국어 도구명 · 단축키 · 익숙한 툴 용어 검색"
                 className="min-h-11 w-full rounded-lg border border-line bg-card py-2 pl-9 pr-3 text-sm text-fg placeholder:text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -309,6 +394,7 @@ export function StudioExpandedToolsDrawer({
 
           {/* 6대 카테고리 탭 + 전체 보기 (2px 인셋 라벤더 기준선) */}
           <div
+            ref={tabListRef}
             role="tablist"
             aria-label="확장 전문 도구 6대 분류"
             data-testid="expanded-tools-category-tabs"
@@ -317,17 +403,15 @@ export function StudioExpandedToolsDrawer({
             <button
               type="button"
               role="tab"
-              aria-selected={selectedCategory === "all" && !query.trim()}
+              aria-selected={activeCategory === "all"}
+              tabIndex={activeCategory === "all" ? 0 : -1}
               data-testid="expanded-tools-tab-all"
-              data-active-baseline={selectedCategory === "all" && !query.trim() ? "inset-lavender-2px" : "none"}
-              onClick={() => {
-                setSelectedCategory("all");
-                setQuery("");
-              }}
+              data-active-baseline={activeCategory === "all" ? "inset-lavender-2px" : "none"}
+              onClick={() => handleFilterChange("all", "")}
               onKeyDown={(event) => handleTabKeyDown(event, 0)}
               className={cn(
                 "inline-flex min-h-11 shrink-0 items-center gap-1.5 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-                selectedCategory === "all" && !query.trim()
+                activeCategory === "all"
                   ? "bg-card text-fg shadow-[inset_0_-2px_0_0_var(--studio-accent)]"
                   : "text-fg-2 hover:bg-raised/60 hover:text-fg",
               )}
@@ -337,20 +421,18 @@ export function StudioExpandedToolsDrawer({
             </button>
 
             {STUDIO_EXPANDED_TOOL_CATEGORIES.map((category, idx) => {
-              const isSelected = selectedCategory === category.id && !query.trim();
+              const isSelected = activeCategory === category.id;
               return (
                 <button
                   key={category.id}
                   type="button"
                   role="tab"
                   aria-selected={isSelected}
+                  tabIndex={isSelected ? 0 : -1}
                   data-testid={`expanded-tools-tab-${category.id}`}
                   data-active-baseline={isSelected ? "inset-lavender-2px" : "none"}
                   title={`${category.labelKo} — ${category.descriptionKo}`}
-                  onClick={() => {
-                    setSelectedCategory(category.id);
-                    setQuery("");
-                  }}
+                  onClick={() => handleFilterChange(category.id, "")}
                   onKeyDown={(event) => handleTabKeyDown(event, idx + 1)}
                   className={cn(
                     "inline-flex min-h-11 shrink-0 items-center gap-1.5 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
@@ -369,6 +451,7 @@ export function StudioExpandedToolsDrawer({
 
           {/* 도구 카드 목록 */}
           <div
+            ref={gridRef}
             role="region"
             aria-label="확장 도구 검색 결과"
             data-testid="expanded-tools-grid"
@@ -382,7 +465,7 @@ export function StudioExpandedToolsDrawer({
                 검색어와 일치하는 도구가 없습니다. 다른 한국어 이름이나 기존 툴 별칭으로 찾아보세요.
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <div className={cn("grid grid-cols-1 gap-2.5", !embeddedInModal && "sm:grid-cols-2")}>
                 {filteredTools.map((card) => {
                   const isBusy = loadingId === card.command.id;
                   const isPlanned = card.status === "planned";
@@ -468,6 +551,6 @@ export function StudioExpandedToolsDrawer({
           {activeLaunched ? "도구 실행 중" : `표시 ${filteredTools.length}종`}
         </span>
       </footer>
-    </aside>
+    </Container>
   );
 }

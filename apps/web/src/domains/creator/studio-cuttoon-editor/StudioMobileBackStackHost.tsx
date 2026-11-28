@@ -6,6 +6,7 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 import {
   createStudioMobileHistorySyncController,
   resolveStudioMobileBackLayers,
+  STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE,
   type StudioMobileHistorySyncController,
 } from "./studio-mobile-back-stack";
 
@@ -38,6 +39,7 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
   const routedSurface = admittedPoserVrmOpen ? "poser" : admittedCharacterShaperOpen ? "character"
     : admittedBg3dOpen ? "bg3d" : studioRoute.surface;
   const controllerRef = useRef<StudioMobileHistorySyncController | null>(null);
+  const handoffOwner = useRef({});
 
   const ensureController = (): StudioMobileHistorySyncController | null => {
     if (controllerRef.current === null && typeof window !== "undefined") {
@@ -47,13 +49,13 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
         getState: () => window.history.state,
         pushState: (state, url) => window.history.pushState(state, "", url),
         go: (delta) => window.history.go(delta),
-      });
+      }, { handoffScope: window.history, handoffOwner: handoffOwner.current });
     }
     return controllerRef.current;
   };
 
   useEffect(() => {
-    if (!isMobile || typeof document === "undefined") return;
+    if (typeof document === "undefined") return;
     let queued = false;
     const bump = () => {
       if (queued) return;
@@ -63,15 +65,33 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
         setDomRevision((value) => value + 1);
       });
     };
-    const observer = new MutationObserver(bump);
-    observer.observe(document.body, {
+    document.addEventListener(STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE, bump);
+    const observer = isMobile ? new MutationObserver(bump) : null;
+    observer?.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
       attributeFilter: ["hidden", "aria-hidden", "open", "aria-modal"],
     });
-    return () => observer.disconnect();
+    return () => {
+      observer?.disconnect();
+      document.removeEventListener(STUDIO_MOBILE_EXPANDED_TOOLS_CHANGE, bump);
+    };
   }, [isMobile]);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    ensureController();
+    const onPopState = (event: PopStateEvent) => {
+      controllerRef.current?.handlePopState(event);
+    };
+    window.addEventListener("popstate", onPopState, true);
+    return () => {
+      window.removeEventListener("popstate", onPopState, true);
+      controllerRef.current?.dispose();
+      controllerRef.current = null;
+    };
+  }, []);
 
   useLayoutEffect(() => {
     void domRevision;
@@ -108,20 +128,6 @@ export function StudioMobileBackStackHost(s: StudioCuttoonEditorViewSession) {
     shortcutsOpen,
     routedSurface,
   ]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    ensureController();
-    const onPopState = (event: PopStateEvent) => {
-      controllerRef.current?.handlePopState(event);
-    };
-    window.addEventListener("popstate", onPopState, true);
-    return () => {
-      window.removeEventListener("popstate", onPopState, true);
-      controllerRef.current?.dispose();
-      controllerRef.current = null;
-    };
-  }, []);
 
   return null;
 }

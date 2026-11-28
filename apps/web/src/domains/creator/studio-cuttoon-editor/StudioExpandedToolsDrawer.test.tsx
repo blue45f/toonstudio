@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useLayoutEffect, type ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -103,10 +103,55 @@ describe("StudioExpandedToolsDrawer", () => {
         matches.length,
       );
     }
+    expect(screen.getByTestId("expanded-tools-tab-all").getAttribute("aria-selected")).toBe("true");
+    fireEvent.change(searchInput, { target: { value: "" } });
+    expect(charTab.getAttribute("aria-selected")).toBe("true");
 
     // Escape 키로 서랍 닫기
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("분류에서 연속 화살표와 Home·End로 선택·초점을 옮기고 가려진 탭을 표시한다", () => {
+    render(<StudioExpandedToolsDrawer open embeddedInModal initialCategory="bg3d-dcc" />);
+    const rail = screen.getByRole("tablist");
+    const tabs = screen.getAllByRole<HTMLButtonElement>("tab");
+    const all = screen.getByTestId("expanded-tools-tab-all");
+    const bg = screen.getByTestId("expanded-tools-tab-bg3d-dcc");
+    const character = screen.getByTestId("expanded-tools-tab-character-3d");
+    const story = screen.getByTestId("expanded-tools-tab-story-planning");
+    const motion = screen.getByTestId("expanded-tools-tab-motion-production");
+    vi.spyOn(rail, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 300, 48));
+    for (const [tab, left] of [[all, 0], [character, 280], [story, 380], [motion, 480]] as const) {
+      vi.spyOn(tab, "getBoundingClientRect").mockImplementation(() => new DOMRect(left - rail.scrollLeft, 0, 100, 48));
+    }
+
+    function press(key: string): void {
+      fireEvent.keyDown(document.activeElement ?? document.body, { key });
+    }
+    function expectTab(target: HTMLElement, scrollLeft: number): void {
+      expect(document.activeElement).toBe(target);
+      expect(tabs.filter((tab) => tab.getAttribute("aria-selected") === "true")).toEqual([target]);
+      expect(tabs.filter((tab) => tab.tabIndex === 0)).toEqual([target]);
+      expect(rail.scrollLeft).toBe(scrollLeft);
+    }
+
+    bg.focus();
+    press("ArrowRight");
+    expectTab(character, 80);
+    press("ArrowRight");
+    expectTab(story, 180);
+    press("Home");
+    expectTab(all, 0);
+    rail.scrollLeft = 64;
+    press("Home");
+    expectTab(all, 0);
+    press("End");
+    expectTab(motion, 280);
+    press("ArrowRight");
+    expectTab(all, 0);
+    press("ArrowLeft");
+    expectTab(motion, 280);
   });
 
   it("카드 호버 예열 및 클릭 시 동적 로더를 호출하고 상태를 안내한다", async () => {
@@ -136,6 +181,93 @@ describe("StudioExpandedToolsDrawer", () => {
     expect(screen.getByTestId("expanded-tools-status").textContent).toContain(
       targetCmd.koreanLabel,
     );
+  });
+
+  it.each(["search", "category"] as const)("%s 필터를 바꾸면 늦게 끝난 이전 도구 열기를 무시한다", async (filter) => {
+    const head = STUDIO_EXPANDED_ECOSYSTEM_COMMANDS.find((command) => command.id === "eco.3d.head-mixer");
+    if (!head) throw new Error("두상 믹서 커맨드를 찾을 수 없습니다.");
+    const loadedModule = { testToken: "head-mixer" };
+    const pending = Promise.withResolvers<typeof loadedModule>();
+    registerEcosystemLazyLoaderOverride(head.panelLoaderId, () => pending.promise);
+    const onLaunchTool = vi.fn();
+    render(<StudioExpandedToolsDrawer open initialCategory="character-3d" commands={[head]} onLaunchTool={onLaunchTool} />);
+
+    const cardId = `expanded-tool-card-${head.id}`;
+    const card = screen.getByTestId(cardId);
+    fireEvent.click(card);
+    expect(card.getAttribute("aria-busy")).toBe("true");
+
+    const search = screen.getByTestId("expanded-tools-search-input");
+    const nextTab = screen.getByTestId("expanded-tools-tab-story-planning");
+    if (filter === "search") {
+      search.focus();
+      fireEvent.change(search, { target: { value: "일치하지 않는 도구 이름" } });
+    } else {
+      const selectedTab = screen.getByTestId("expanded-tools-tab-character-3d");
+      selectedTab.focus();
+      fireEvent.keyDown(selectedTab, { key: "ArrowRight" });
+    }
+    expect(screen.queryByTestId(cardId)).toBeNull();
+    const status = screen.getByTestId("expanded-tools-status");
+    const filteredStatus = status.textContent;
+
+    await act(async () => {
+      if (filter === "search") pending.resolve(loadedModule);
+      else pending.reject(new Error("오래된 로드 실패"));
+    });
+
+    expect(onLaunchTool).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("studio-expanded-tool-runner")).toBeNull();
+    expect(document.activeElement).toBe(filter === "search" ? search : nextTab);
+    expect(status.textContent).toBe(filteredStatus);
+    expect(status.textContent).toContain("도구 열기를 취소했습니다");
+    expect(status.textContent).not.toContain(head.koreanLabel);
+  });
+
+  it.each(["same-category", "equivalent-query"] as const)("%s 필터와 한글 조합 키는 진행 중인 도구 열기를 유지한다", async (filter) => {
+    const head = STUDIO_EXPANDED_ECOSYSTEM_COMMANDS.find((command) => command.id === "eco.3d.head-mixer");
+    if (!head) throw new Error("두상 믹서 커맨드를 찾을 수 없습니다.");
+    const loadedModule = { testToken: "head-mixer" };
+    const pending = Promise.withResolvers<typeof loadedModule>();
+    registerEcosystemLazyLoaderOverride(head.panelLoaderId, () => pending.promise);
+    const onClose = vi.fn();
+    const onLaunchTool = vi.fn();
+    render(<StudioExpandedToolsDrawer open initialCategory="character-3d"
+      initialQuery={filter === "equivalent-query" ? "Shaper" : ""} commands={[head]} onClose={onClose} onLaunchTool={onLaunchTool} />);
+
+    const card = screen.getByTestId(`expanded-tool-card-${head.id}`);
+    fireEvent.click(card);
+    const search = screen.getByTestId("expanded-tools-search-input");
+    const tab = screen.getByTestId(`expanded-tools-tab-${filter === "equivalent-query" ? "all" : "character-3d"}`);
+    if (filter === "same-category") fireEvent.click(tab);
+    else fireEvent.change(search, { target: { value: "  SHAPER  " } });
+    fireEvent.keyDown(tab, { key: "ArrowRight", isComposing: true });
+    fireEvent.keyDown(search, { key: "Escape", isComposing: true });
+
+    expect(tab.getAttribute("aria-selected")).toBe("true");
+    expect(card.getAttribute("aria-busy")).toBe("true");
+    expect(onClose).not.toHaveBeenCalled();
+    await act(async () => pending.resolve(loadedModule));
+    expect(onLaunchTool).toHaveBeenCalledExactlyOnceWith(head, loadedModule);
+  });
+
+  it.each(["desktop", "mobile", "mobile-search"] as const)("%s 목록에서 실행 카드가 사라지면 남은 탐색 도구로 초점을 복원한다", async (mode) => {
+    const head = STUDIO_EXPANDED_ECOSYSTEM_COMMANDS.find((command) => command.id === "eco.3d.head-mixer");
+    if (!head) throw new Error("두상 믹서 커맨드를 찾을 수 없습니다.");
+    const onClose = vi.fn();
+    const props = { open: true, initialCategory: "character-3d", embeddedInModal: mode !== "desktop", onClose } as const;
+    const { rerender } = render(<StudioExpandedToolsDrawer {...props} commands={[head]} />);
+    if (mode === "mobile-search") fireEvent.click(screen.getByRole("button", { name: /^확장 도구 검색$/u }));
+    fireEvent.click(screen.getByTestId(`expanded-tool-card-${head.id}`));
+    const runner = await screen.findByTestId("studio-expanded-tool-runner");
+
+    rerender(<StudioExpandedToolsDrawer {...props} commands={[]} />);
+    fireEvent.keyDown(runner, { key: "Escape" });
+
+    expect(screen.queryByTestId("studio-expanded-tool-runner")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByTestId(mode === "mobile"
+      ? "expanded-tools-tab-character-3d" : "expanded-tools-search-input"));
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("닫힘 상태(open=false)에서는 DOM을 마운트하지 않는다", () => {

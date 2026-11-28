@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, act } from "@testing-library/react";
+import { render, act, waitFor } from "@testing-library/react";
 import { StrictMode, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -74,6 +74,60 @@ function createFakeHistory(initialPath = "/studio/p/proj-1/d/doc-1") {
 }
 
 describe("resolveStudioMobileBackLayers", () => {
+  it("전문 도구의 실행 화면도 시스템 뒤로 한 번으로 닫고 키보드 Escape를 보내지 않는다", () => {
+    const domRoot = document.createElement("div");
+    const drawer = document.createElement("dialog");
+    drawer.open = true;
+    drawer.dataset.studioDrawingTask = "expanded-tools";
+    const runner = document.createElement("button");
+    drawer.append(runner);
+    domRoot.append(drawer);
+    const returnToList = vi.fn((event: Event) => event.preventDefault());
+    const closeDrawer = vi.fn(() => { drawer.open = false; });
+    drawer.addEventListener("keydown", returnToList);
+    drawer.addEventListener("cancel", closeDrawer);
+    const history = createFakeHistory("/studio/canvas?room=guest-existing");
+    const controller = createStudioMobileHistorySyncController(history.adapter);
+    const unsubscribe = history.subscribe((event) => { controller.handlePopState(event); });
+    const resolve = () => resolveStudioMobileBackLayers({
+      isMobile: true, mobileSheet: null, dismissActiveMobileSheet: vi.fn(),
+      menuOpen: false, dismissMenu: vi.fn(), quickActionsOpen: false, dismissQuickActions: vi.fn(),
+      quickAccessPaletteOpen: false, dismissQuickAccessPalette: vi.fn(), shortcutsOpen: false, dismissShortcuts: vi.fn(), domRoot,
+    });
+    try {
+      const href = history.adapter.getHref();
+      controller.syncLayers(resolve());
+      expect(controller.getPushedDepth()).toBe(1);
+      expect(history.adapter.getState()).toMatchObject({ __studioMobileBackLayer: "modal:drawing-task:expanded-tools" });
+      expect(history.systemBack().immediateStopped).toBe(true);
+      expect(closeDrawer).toHaveBeenCalledOnce();
+      expect(returnToList).not.toHaveBeenCalled();
+      expect(history.adapter.getHref()).toBe(href);
+      controller.syncLayers(resolve());
+      expect(controller.getPushedDepth()).toBe(0);
+    } finally {
+      unsubscribe();
+      controller.dispose();
+    }
+  });
+
+  it("가로 전환 후에는 다른 데스크톱 모달과 별도로 이전 전문 도구의 뒤로 층만 유지한다", () => {
+    const domRoot = document.createElement("div");
+    domRoot.innerHTML = '<dialog open data-studio-mobile-expanded-tools="true" data-studio-drawing-task="expanded-tools"></dialog><div role="dialog" aria-modal="true"></div>';
+    const modal = domRoot.querySelector("dialog");
+    const close = vi.fn();
+    modal?.addEventListener("cancel", close);
+    const layers = resolveStudioMobileBackLayers({
+      isMobile: false, mobileSheet: null, dismissActiveMobileSheet: vi.fn(),
+      menuOpen: false, dismissMenu: vi.fn(), quickActionsOpen: false, dismissQuickActions: vi.fn(),
+      quickAccessPaletteOpen: false, dismissQuickAccessPalette: vi.fn(),
+      shortcutsOpen: false, dismissShortcuts: vi.fn(), domRoot,
+    });
+    expect(layers.map(({ id }) => id)).toEqual(["modal:drawing-task:expanded-tools"]);
+    layers[0]?.dismiss();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it("데스크톱(isMobile=false)에서는 빈 스택을 반환한다", () => {
     const layers = resolveStudioMobileBackLayers({
       isMobile: false,
@@ -283,6 +337,52 @@ describe("createStudioMobileHistorySyncController", () => {
 });
 
 describe("StudioMobileBackStackHost (React StrictMode)", () => {
+  it("다른 계정의 같은 주소에서 이전 도구의 가드를 지우고 실제 이전 페이지로 돌아간다", async () => {
+    const originalHref = window.location.href;
+    const originalState = window.history.state;
+    const previousPath = "/studio-account-back-origin";
+    const currentPath = "/studio/canvas?room=account-back-proof";
+    const closeOldDrawer = vi.fn();
+    const routerPop = vi.fn();
+    const session = {
+      isMobile: true, studioRoute: { surface: "canvas" }, menu: null, mobileSheet: null,
+    } as StudioCuttoonEditorViewSession;
+    const view = (actor: "a" | "b") => <StrictMode>
+      <section key={actor}>
+        {actor === "a" ? (
+          <dialog open data-studio-mobile-expanded-tools="true" data-studio-drawing-task="expanded-tools" onCancel={closeOldDrawer} />
+        ) : null}
+        <StudioMobileBackStackHost {...session} />
+      </section>
+    </StrictMode>;
+
+    window.history.replaceState({ key: "account-back-origin", idx: 0 }, "", previousPath);
+    window.history.pushState({ key: "account-back-studio", idx: 1 }, "", currentPath);
+    const push = vi.spyOn(window.history, "pushState");
+    window.addEventListener("popstate", routerPop);
+    const screen = render(view("a"));
+    try {
+      expect(window.history.state).toMatchObject({ __studioMobileBackLayer: "modal:drawing-task:expanded-tools" });
+      expect(push).toHaveBeenCalledOnce();
+
+      screen.rerender(view("b"));
+      await waitFor(() => expect(window.history.state).toEqual({ key: "account-back-studio", idx: 1 }));
+      expect(window.location.pathname + window.location.search).toBe(currentPath);
+      expect(routerPop).not.toHaveBeenCalled();
+      expect(closeOldDrawer).not.toHaveBeenCalled();
+
+      act(() => window.history.back());
+      await waitFor(() => expect(window.location.pathname).toBe(previousPath));
+      expect(routerPop).toHaveBeenCalledOnce();
+      expect(closeOldDrawer).not.toHaveBeenCalled();
+    } finally {
+      screen.unmount();
+      window.removeEventListener("popstate", routerPop);
+      push.mockRestore();
+      window.history.replaceState(originalState, "", originalHref);
+    }
+  });
+
   it("원고 URL보다 먼저 마운트한 포저와 종료 중인 포저가 가드 항목을 만들지 않는다", () => {
     const push = vi.spyOn(window.history, "pushState");
     const renderHost = (open: boolean) => <>

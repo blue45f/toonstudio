@@ -35,10 +35,12 @@ export type StudioDrawingClarityMobileSession = StudioDrawingClaritySaveSession 
 /** 하단 도구·모바일 시트는 그대로 두고 문서와 실제 저장 상태·빠른 검색·공유를 표시한다. */
 export function StudioDrawingClarityMobileBar({
   session: s,
+  onOpenExpandedTools,
   onOpenShare,
   onExportTrigger,
 }: {
   readonly session: StudioDrawingClarityMobileSession;
+  readonly onOpenExpandedTools: (trigger: HTMLElement) => void;
   readonly onOpenShare?: (trigger: HTMLButtonElement) => void;
   readonly onExportTrigger?: (trigger: HTMLElement) => void;
 }) {
@@ -106,6 +108,7 @@ export function StudioDrawingClarityMobileBar({
         ...(brushLibrary && !brushLibrary.disabled ? [{ id: "brush", label: bt("내 브러시 관리", "Manage my brushes"), run: () => { s.setMobileSheet(null); brushLibrary.onSelect(); } }] : []),
         ...(poseCommand && !poseCommand.disabled ? [{ id: "character3d", label: bt("3D 캐릭터·포즈", "3D character and pose"), run: () => { s.setMobileSheet(null); poseCommand.onSelect(); } }] : []),
         { id: "all", label: bt("전체 도구", "All tools"), run: (trigger) => { s.setMobileSheet(null); requestStudioAllTools(trigger); } },
+        { id: "expanded", label: bt("확장 전문 도구", "Expanded tools"), run: (trigger) => { if (trigger === moreRef.current) onOpenExpandedTools(trigger); } },
         { id: "search", label: bt("도구·기능 검색", "Search tools and features"), run: openSearch },
         { id: "team", label: bt("함께 작업", "Work together"), run: () => s.setTeamPanelOpen(true) },
         { id: "windows", label: bt("프로젝트·창 도구", "Project and window tools"), run: (trigger) => clarity.reveal("commands", trigger) },

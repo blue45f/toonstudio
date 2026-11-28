@@ -9,6 +9,7 @@ import { defaultStudioAppSettings } from "../studio-app-settings";
 import { createStudioWorkspaceDefaultState } from "../studio-workspaces";
 import { registerStudioCommandSearchHost, subscribeStudioCommandSearchRequests } from "../studio-help-center-channel";
 import { subscribeStudioAllTools } from "../studio-toolbar-channel";
+import { StudioDocumentLayoutContext, type StudioDocumentLayoutRuntime } from "../studio-router/studio-document-layout-context";
 import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
 import { MobileFullEditNotice } from "../studio-shell/MobileFullEditNotice";
 import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
@@ -18,19 +19,22 @@ import { closeStudioSupergapRuntimeHub } from "../runtime-leaves/studio-supergap
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioDrawingClarityReceipt } from "./StudioDrawingClarityReceipt";
-import { StudioDrawingClarityMobileBar, type StudioDrawingClarityMobileSession } from "./StudioDrawingClarityMobileBar";
+import { StudioDrawingClarityBar } from "./StudioDrawingClarityBar";
+import type { StudioDrawingClarityMobileSession } from "./StudioDrawingClarityMobileBar";
+import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 vi.mock("../studio-collab/studio-scoped-draft-save", () => ({ useStudioScopedDraftSaveState: () => ({ available: false, pendingConfirmation: false }) }));
 vi.mock("../studio-tool-belt-lazy-ui", () => ({ preloadStudioAssetToolPopoverBody: vi.fn() }));
 vi.mock("../studio-supergap-runtime-hub", () => new Promise(() => {}));
 afterEach(() => { cleanup(); closeStudioSupergapRuntimeHub(); vi.unstubAllGlobals(); });
 
-type MobileFixture = StudioDrawingClaritySession & StudioDrawingClarityMobileSession;
+type MobileFixture = StudioDrawingClaritySession & StudioDrawingClarityMobileSession & Pick<StudioCuttoonEditorViewSession, "studioAuthUserId">;
 function session(): MobileFixture {
   const state = createStudioWorkspaceDefaultState(null);
   return {
     currentWorkspaceOwnerScope: "guest", isMobile: true, mobileImmersive: true, canvasOnlyMode: false,
     workspaceState: state, workMode: "all", uiDensityMode: "simple", appSettings: defaultStudioAppSettings(),
+    studioAuthUserId: null,
     location: { pathname: "/studio/canvas", search: "?uiMode=basic", hash: "", state: null, key: "mobile" },
     studioDrawingClarityBaseline: { ownerScope: "guest", source: "default", state },
     title: "나의 첫 웹툰", activePageIndex: 0, studioMenubarActivePageLabel: "1페이지", studioMainMenuGroups: [],
@@ -46,7 +50,7 @@ function Surface({ value }: { value: MobileFixture }) {
   const clarity = useStudioDrawingClarity();
   if (!clarity) throw new Error("표시 context 누락");
   return <div data-studio-editor="true" data-studio-drawing-clarity-mobile={clarity.active ? "true" : undefined}>
-    {clarity.active && <StudioDrawingClarityMobileBar session={value} />}
+    {clarity.active && <StudioDrawingClarityBar session={value as unknown as StudioCuttoonEditorViewSession} />}
     <div id="studio-canvas-workspace" tabIndex={-1} />
     {clarity.panel === "commands" && <section id="studio-drawing-clarity-panel-commands" aria-label="프로젝트·창 도구">
       <h2 tabIndex={-1} data-clarity-pane-heading>프로젝트·창 도구</h2><button onClick={clarity.chooseSimple}>원고로 돌아가기</button>
@@ -103,6 +107,89 @@ describe("웹 모바일 기본 상단", () => {
     } finally {
       modal.restore();
     }
+  });
+
+  it("더보기의 그리기 도구에서 원고를 떠나지 않고 전문 도구 하나를 열고 호출 위치로 돌아온다", async () => {
+    const value = session();
+    const native = nativeModal();
+    try {
+      show(value);
+      expect(screen.queryByTestId("studio-expanded-tools-drawer")).toBeNull();
+      const trigger = more("drawing");
+      fireEvent.click(screen.getByRole("button", { name: /^확장 전문 도구$/u }));
+      const drawer = await screen.findByTestId("studio-expanded-tools-drawer");
+      const modal = screen.getByRole("dialog", { name: /^확장 전문 도구$/u });
+      expect(modal.contains(drawer)).toBe(true);
+      expect(screen.getAllByRole("dialog")).toHaveLength(1);
+      expect(value.studioMobileEditingDockHandlers.openInspectorRoute).not.toHaveBeenCalled();
+      expect(document.querySelector("[data-studio-all-tools-direct]")).toBeNull();
+      expect(screen.queryByRole("searchbox")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: /^확장 도구 검색$/u }));
+      const search = screen.getByRole("searchbox");
+      expect(document.activeElement).toBe(search);
+      fireEvent.change(search, { target: { value: "Shaper" } });
+      expect(search).toHaveProperty("value", "Shaper");
+      fireEvent.keyDown(modal, { key: "Escape" });
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog", { name: /^확장 전문 도구$/u })).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+      });
+    } finally {
+      native.restore();
+    }
+  });
+
+  it("편집 막대 반응형 전환에도 같은 실행 화면을 유지하고 닫으면 현재 폭의 더보기에 초점을 돌린다", async () => {
+    const native = nativeModal();
+    try {
+      const value = session();
+      const small = (current: MobileFixture) => <StudioDrawingClarityProvider session={current}><Surface value={current} /></StudioDrawingClarityProvider>;
+      const view = render(small(value));
+      const mobileTrigger = more("drawing");
+      fireEvent.click(screen.getByRole("button", { name: /^확장 전문 도구$/u }));
+      const modal = await screen.findByRole("dialog", { name: /^확장 전문 도구$/u });
+      const category = await within(modal).findByTestId("expanded-tools-tab-character-3d");
+      fireEvent.click(category);
+      const cardId = "expanded-tool-card-eco.3d.head-mixer";
+      fireEvent.click(within(modal).getByTestId(cardId));
+      const runner = await within(modal).findByTestId("studio-expanded-tool-runner");
+      const canvas = document.getElementById("studio-canvas-workspace");
+
+      view.rerender(small({ ...value, isMobile: false, mobileImmersive: false }));
+      const desktopTrigger = screen.getByLabelText("더보기 · 작업 설정과 도움말");
+      expect(mobileTrigger.isConnected).toBe(false);
+      expect(within(modal).getByTestId("studio-expanded-tool-runner")).toBe(runner);
+      expect(screen.getByRole("dialog", { name: /^확장 전문 도구$/u })).toBe(modal);
+      expect(document.getElementById("studio-canvas-workspace")).toBe(canvas);
+
+      fireEvent.keyDown(runner, { key: "Escape" });
+      expect(document.activeElement).toBe(within(modal).getByTestId(cardId));
+      fireEvent.keyDown(document.activeElement ?? modal, { key: "Escape" });
+      await waitFor(() => expect(document.activeElement).toBe(desktopTrigger));
+      expect(screen.queryByRole("dialog", { name: /^확장 전문 도구$/u })).toBeNull();
+    } finally {
+      native.restore();
+    }
+  });
+
+  it("다음 프레임 전에 동일 원고·룸의 로그인 소유자가 바뀌면 이전 전문 도구 요청을 열지 않는다", async () => {
+    const value = session();
+    const layout: StudioDocumentLayoutRuntime = {
+      documentKey: "new-draft", projectId: null, documentId: null, draftId: null, documentWorkspace: null, draftSessionEpoch: 0,
+      instantWorkId: "guest-room", liveRoomParam: "guest-room", liveInviteRoleParam: null, remixId: null, workId: null,
+    };
+    const renderOwner = (current: MobileFixture) =>
+      <StudioDocumentLayoutContext.Provider value={layout}>
+        <StudioDrawingClarityProvider session={current}><Surface value={current} /></StudioDrawingClarityProvider>
+      </StudioDocumentLayoutContext.Provider>;
+    const view = render(renderOwner(value));
+    more("drawing");
+    fireEvent.click(screen.getByRole("button", { name: /^확장 전문 도구$/u }));
+    view.rerender(renderOwner({ ...value, studioAuthUserId: "other-owner" }));
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
+    expect(screen.queryByRole("dialog", { name: /^확장 전문 도구$/u })).toBeNull();
   });
 
   it("동일한 원고·페이지 이름은 반복하지 않고 다른 페이지 문맥은 유지한다", () => {
