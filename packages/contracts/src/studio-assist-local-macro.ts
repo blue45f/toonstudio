@@ -68,11 +68,23 @@ function readNewLayer(source: string) {
   const [match] = names;
   const name = match[1] ?? match[2];
   const afterName = source.slice(match.index + match[0].length);
-  const opacityLabel = /^(?:의|는|를)?\s*불투명도(?:는|를|로|\s*시작값은)?\s*[:：]?\s*/u;
-  const label = afterName.match(opacityLabel);
-  if (!label) return { name };
-  const percentage = afterName.slice(label[0].length).match(/^(\d+(?:\.\d+)?)\s*%/u)?.[1];
-  if (percentage !== undefined && Number(percentage) <= 100) return { name, percentage };
+  // 같은 문장의 레이어 설정만 자동값으로 쓴다. 다른 문장의 수치는 수동 지시에 보존한다.
+  const clause = afterName.split(/[.!?。](?=\s|$)|[;\r\n]/u, 1)[0];
+  const otherText = source.slice(0, match.index) + "\n" + afterName.slice(clause.length);
+  const manualOpacity = /불투명도|opacityPct/iu.test(otherText);
+  const setting = clause.trim();
+  const label = setting.match(/^(?:[은는을를의]\s*)?불투명도(?:는|를|로|\s*시작값은)?/u);
+  if (!label) {
+    if (/불투명도|opacityPct|%|\d\s*(?:퍼센트|프로)/iu.test(setting)) return undefined;
+    return { name, manualOpacity };
+  }
+  const value = setting.slice(label[0].length).trim().replace(/^[:：]\s*/u, "");
+  const percentage = value.match(/^(\d+(?:\.\d+)?)\s*%/u);
+  if (!percentage || Number(percentage[1]) > 100) return undefined;
+  const rest = value.slice(percentage[0].length).trim();
+  if (/^(?:입니다|로|(?:로\s*)?(?:추가|생성|설정|지정)(?:한다|합니다|해\s*(?:주세요|줘))?)?$/u.test(rest)) {
+    return { name, percentage: percentage[1], manualOpacity };
+  }
 }
 
 function readLensValues(clauses: readonly string[]) {
@@ -168,7 +180,7 @@ export function buildLocalWorkflowMacro(input: string, projectTitle: string): Ma
       { name: layer.name, ...opacity });
   }
   const fxRequested = /효과\s*레이어|림라이트|외곽광선|그림자 효과|레이어 스타일|효과(?:의|\s*자체의)?\s*(?:불투명도|강도)|layer[_ ]fx|outer-glow|drop-shadow|opacityPct|radiusPx/iu.test(source);
-  if (layersRequested && (!createLayer || fxRequested)) {
+  if (layersRequested && (!createLayer || fxRequested || layer?.manualOpacity)) {
     const settings = clauses.filter((part) => /불투명도|opacityPct|반경|반지름|radiusPx/iu.test(part));
     const values = settings.length ? `원고 설정 ‘${excerpt(settings.join(", "), 100)}’의 대상과 단위를 대조하세요. ` : "";
     const action = fxRequested && canPlan(fx) ? `레이어 불투명도는 편집기에서, 효과 자체는 ${fx}에서 조정하세요.` : "편집기에서 해당 레이어를 선택해 조정하세요.";

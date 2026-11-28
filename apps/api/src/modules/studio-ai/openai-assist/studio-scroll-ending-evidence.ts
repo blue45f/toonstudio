@@ -1,10 +1,14 @@
 // 컷 번호는 줄바꿈뿐 아니라 같은 문단의 ‘2컷에서는’ 같은 표기도 받는다.
 const panelMarker = /(?:^|[\s.!?。！？|])(?:\[[ \t]*)?(?:(?:\d{1,3}[ \t]*컷|컷[ \t]*\d{1,3}|(?:마지막|엔딩)[ \t]*컷)(?:에서(?:는)?|에는|은|는|엔)?|엔딩(?=[ \t]*[:：\]]))(?=[\s.:：)\]-]|$)[ \t]*[.:：)\]-]?[ \t]*/gu;
 const editorialNotes = /(?:(?:^|[\n.!?。！？])[ \t]*(?:요청(?:사항)?|검토 요청|편집 메모|작가 메모|참고)|(?:^|\n)[ \t]*메모)[ \t]*[:：]/u;
+const editorialSection = /(?:^|\n)[ \t]*\[(?:요청(?:사항)?|검토 요청|(?:편집 |작가 )?메모|참고|\/(?:원고|대본|콘티))\][ \t]*/u;
 const episodeMarker = /(?:^|[\s[→])(?:제[ \t]*)?(\d{1,3})[ \t]*화(?:의|에서(?:는)?|에는|는|와|를)?(?=[\s.:：\]→]|$)/gu;
 const manuscriptHeader = /(?:^|\n)[ \t]*(?:\[(?:원고|대본|콘티)\]|(?:원고|대본|콘티)[ \t]*[:：])[ \t]*/u;
 const sentenceSegmenter = new Intl.Segmenter("ko", { granularity: "sentence" });
 const requestEnding = /(?:주세요|주십시오|부탁(?:해요|합니다|드립니다)|분석해\s*줘|점검해\s*줘)[.!?。！？]*$/u;
+const proposedEdit = /(?:추가|삭제|편집|수정|조정|분할|생략|교체|검토|점검)(?:할|해도\s*될|해야\s*할|하면\s*어떨)까(?:요)?[?？]$/u;
+const editorialTopic = /(?:컷\s*(?:간격|구성|분할)|여백|말풍선|엔딩\s*점수|스크롤\s*호흡)/u;
+const feedbackQuestion = /(?:(?:늘릴|넓힐|줄일|좁힐|바꿀|옮길|넣을|뺄|될)까(?:요)?|어떤가요|어때요|적절한가요)[?？]$/u;
 const points = /(?<!\d)\d{1,3}(?:\s*\/\s*100(?:\s*점)?|\s*점)/gu;
 
 function normalizeExcerpt(text: string): string {
@@ -15,13 +19,15 @@ function isTrailingRequest(segment: string): boolean {
   const sentence = segment.trim();
   // 컷·화자 표기나 따옴표가 붙은 대사는 요청형·의문형이어도 원고에 속한다.
   if (sentence.search(panelMarker) === 0 || /^(?:[“「"‘]|[\p{L}]{1,8}\s*[:：])/u.test(sentence)) return false;
-  return requestEnding.test(sentence) || /[?？]$/u.test(sentence);
+  return requestEnding.test(sentence) || proposedEdit.test(sentence) ||
+    (editorialTopic.test(sentence) && feedbackQuestion.test(sentence));
 }
 
 function endingPassage(inputText: string): string {
   const sections = inputText.normalize("NFC").split(manuscriptHeader);
   const source = sections.at(-1) ?? "";
-  const [body, notes] = source.split(editorialNotes, 2);
+  const [beforeSection, section] = source.split(editorialSection, 2);
+  const [body, notes] = beforeSection.split(editorialNotes, 2);
   const sentences = Array.from(sentenceSegmenter.segment(body), part => part.segment);
   while (sentences.length && isTrailingRequest(sentences.at(-1) ?? "")) sentences.pop();
   const manuscript = sentences.join("").trim();
@@ -35,7 +41,7 @@ function endingPassage(inputText: string): string {
   if (lastPanel) return manuscript.slice(lastPanel.index + lastPanel[0].length);
 
   // 산문은 원고/요청 경계가 있거나 장면 서술이 여러 문장일 때 끝 문장을 대조한다.
-  if (sections.length === 1 && notes === undefined && sentences.length < 2) return "";
+  if (sections.length === 1 && notes === undefined && section === undefined && sentences.length < 2) return "";
   return sentences.at(-1)?.trim() ?? "";
 }
 

@@ -62,6 +62,33 @@ describe("원고에 근거한 로컬 제작 계획", () => {
     expect(data.summary).toContain("반경 9px");
   });
 
+  it("레이어 이름 앞뒤 배치와 한국어 조사에 관계없이 실제 MCP 불투명도를 0.2로 설정한다", () => {
+    const calls = ["새 레이어 ‘빛’", "새 ‘빛’ 레이어"].flatMap((layer) =>
+      ["은", "는", "을", "를", "의"].map((particle) => {
+        const data = plan(`${layer}${particle} 불투명도 20%로 추가한다.`);
+        expect(data.steps.map((step) => step.toolName)).toEqual(["studio.canvas.add_layer"]);
+        return { tool: data.steps[0].toolName, arguments: JSON.parse(data.steps[0].argumentsJson) };
+      }),
+    );
+    const batch = dryRunBatch(calls);
+    expect(batch.status).toBe(0);
+    expect(batch.results).toHaveLength(calls.length);
+    for (const entry of batch.results) expect(entry).toMatchObject({ ok: true, result: { layer: { name: "빛", opacity: 0.2 } } });
+  });
+
+  it.each(["불투명도 140%", "불투명도 약 20%", "불투명도 20% 또는 60%", "불투명도 20% 미만일 때", "원고에 표시한 불투명도 20%"])(
+    "새 레이어의 수치를 확정할 수 없으면 기본값으로 생성하지 않는다 (%s)", (setting) => {
+      const data = plan(`새 레이어 ‘빛’을 ${setting}로 추가한다.`);
+      expect(data.steps).toEqual([]);
+      expect(data.summary).toContain(setting);
+    });
+
+  it("다음 문장의 별도 불투명도 값은 자동 레이어 설정에 섞지 않고 수동 지시에 남긴다", () => {
+    const data = plan("새 레이어 ‘빛’을 추가한다. 기존 그림자 레이어의 불투명도 65%는 편집기에서 조정한다.");
+    expect(data.steps.map((step) => JSON.parse(step.argumentsJson))).toEqual([{ name: "빛" }]);
+    expect(data.summary).toContain("기존 그림자 레이어의 불투명도 65%");
+  });
+
   it("기존 캔버스에 새 레이어를 추가할 때 원본 문서와 선을 보존한다", () => {
     const data = plan("기존 캔버스 1200×1800px에 새 레이어 ‘빛’을 추가한다. 허용 도구 studio.canvas.create, studio.canvas.add_layer.");
     expect(data.steps.map((entry) => entry.toolName)).toEqual(["studio.canvas.add_layer"]);
