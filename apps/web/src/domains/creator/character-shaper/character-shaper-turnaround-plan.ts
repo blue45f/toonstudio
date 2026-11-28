@@ -12,9 +12,11 @@ export interface CharacterTurnaroundView {
 export interface CharacterBoundsOptions {
   readonly signal?: AbortSignal;
   readonly assertCurrent?: () => void;
-  readonly onProgress?: (processedVertices: number, totalVertices: number) => void;
+  /** 보이는 그리기 범위의 정점 참조를 기준으로 진행률을 알린다. */
+  readonly onProgress?: (processedReferences: number, totalReferences: number) => void;
 }
 const MAX_VERTICES = 2_000_000;
+const VERTEX_LIMIT_MESSAGE = "설정화 자동 맞춤은 최대 200만 정점까지 지원합니다.";
 const MAX_NODES = 50_000;
 const CHUNK_VERTICES = 8192;
 
@@ -23,16 +25,29 @@ function check(options: CharacterBoundsOptions): void {
   options.assertCurrent?.();
 }
 
-/** Exact CPU skin/morph positions, not stale bind-pose boxes. Never runs in a frame loop. */
+/** 렌더러가 실제로 그리는 재질 그룹과 drawRange의 교집합만 대상으로 삼는다. */
+function visibleRanges(mesh: Mesh, count: number) {
+  const { geometry, material } = mesh;
+  const start = Math.max(0, geometry.drawRange.start);
+  const end = Math.min(count, geometry.drawRange.start + geometry.drawRange.count);
+  if (end <= start) return [];
+  if (!Array.isArray(material)) return material.visible ? [{ start, end }] : [];
+  return geometry.groups
+    .filter((group) => material[group.materialIndex ?? 0]?.visible)
+    .map((group) => ({ start: Math.max(group.start, start), end: Math.min(group.start + group.count, end) }))
+    .filter((range) => range.start < range.end);
+}
+
+/** 현재 포즈·표정에서 그려지는 정점의 월드 경계를 재고 나머지 정점은 제외한다. */
 export async function measureCharacterTurnaroundBounds(
   scene: Object3D, camera: Camera, options: CharacterBoundsOptions = {},
 ): Promise<Box3> {
   check(options);
   scene.updateWorldMatrix(true, true);
   const stack = [scene];
-  const meshes: Mesh[] = [];
+  const meshes: { mesh: Mesh; ranges: ReturnType<typeof visibleRanges> }[] = [];
   let nodes = 0;
-  let totalVertices = 0;
+  let totalReferences = 0;
   while (stack.length > 0) {
     const object = stack.pop()!;
     if (++nodes > MAX_NODES) throw new RangeError("설정화 장면의 객체 수가 안전 범위를 초과했습니다.");
@@ -40,37 +55,54 @@ export async function measureCharacterTurnaroundBounds(
     stack.push(...object.children);
     const mesh = object as Mesh;
     if (!mesh.isMesh || !camera.layers.test(mesh.layers)) continue;
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    if (!materials.some((material) => material.visible)) continue;
+    const positions = mesh.geometry.getAttribute("position");
+    if (!positions) continue;
+    const ranges = visibleRanges(mesh, mesh.geometry.index?.count ?? positions.count);
+    if (!ranges.length) continue;
     if ((mesh as Mesh & { isInstancedMesh?: boolean }).isInstancedMesh) {
       throw new Error("설정화 자동 맞춤은 인스턴스 복제 메시를 아직 지원하지 않습니다.");
     }
-    const positions = mesh.geometry.getAttribute("position");
-    if (!positions) continue;
-    totalVertices += positions.count;
-    if (totalVertices > MAX_VERTICES) throw new RangeError("설정화 자동 맞춤은 최대 200만 정점까지 지원합니다.");
     const skinned = mesh as SkinnedMesh;
     if (skinned.isSkinnedMesh) skinned.skeleton.update();
-    meshes.push(mesh);
+    for (const range of ranges) totalReferences += range.end - range.start;
+    meshes.push({ mesh, ranges });
   }
   check(options);
   const bounds = new Box3();
   const point = new Vector3();
   let processed = 0;
-  for (const mesh of meshes) {
-    const count = mesh.geometry.getAttribute("position").count;
-    for (let index = 0; index < count; index += 1) {
-      mesh.getVertexPosition(index, point).applyMatrix4(mesh.matrixWorld);
-      if (![point.x, point.y, point.z].every(Number.isFinite)) throw new Error("모델에 올바르지 않은 정점 좌표가 있습니다.");
-      bounds.expandByPoint(point);
-      if (++processed % CHUNK_VERTICES === 0) {
-        options.onProgress?.(processed, totalVertices);
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        check(options);
+  let measured = 0;
+  let lastYield = performance.now();
+  for (const { mesh, ranges } of meshes) {
+    const index = mesh.geometry.index;
+    const seen = index || ranges.length > 1 ? new Set<number>() : undefined;
+    for (const { start, end } of ranges) {
+      if (!seen && measured + end - start > MAX_VERTICES) throw new RangeError(VERTEX_LIMIT_MESSAGE);
+      for (let offset = start; offset < end; offset++) {
+        const vertex = index ? index.getX(offset) : offset;
+        if (!seen?.has(vertex)) {
+          if (++measured > MAX_VERTICES) throw new RangeError(VERTEX_LIMIT_MESSAGE);
+          seen?.add(vertex);
+          mesh.getVertexPosition(vertex, point).applyMatrix4(mesh.matrixWorld);
+          if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || !Number.isFinite(point.z)) {
+            throw new Error("모델에 올바르지 않은 정점 좌표가 있습니다.");
+          }
+          bounds.expandByPoint(point);
+        }
+        if (++processed % CHUNK_VERTICES === 0) {
+          options.onProgress?.(processed, totalReferences);
+          check(options);
+          // 인덱스만 빠르게 훑는 동안에는 타이머를 쌓지 않고 프레임 시간에 맞춰 제어권을 돌려준다.
+          if (performance.now() - lastYield >= 12) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 0));
+            check(options);
+            lastYield = performance.now();
+          }
+        }
       }
     }
   }
-  options.onProgress?.(processed, totalVertices);
+  options.onProgress?.(processed, totalReferences);
   check(options);
   if (bounds.isEmpty() || bounds.getSize(point).length() < 1e-6) throw new Error("설정화에 넣을 표시 중인 모델이 없습니다.");
   return bounds;

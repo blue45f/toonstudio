@@ -51,7 +51,7 @@ api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full"
   R.applyStudioVrmCostumeState(costume,{hidden:[],recolor:{}});
   const wardrobeMetrics=R.measureStudioVrmWardrobeMetrics(vrm);
   const idle=R.pickNaturalIdlePose(fixture.poseId);
-  R.applyPoseToVrm(vrm,R.stripFingerBones(idle.bones),idle.yOffset??0,undefined,{skipPalmCorrect:true});
+  R.applyPoseToVrm(vrm,R.retargetStudioVrmPresetTorso(vrm,R.stripFingerBones(idle.bones)),idle.yOffset??0,undefined,{skipPalmCorrect:true});
   const metrics=R.measureVrmPropRigMetrics(vrm);
   let instance=null; let equip=null; let slot=null; let effectiveFit=1;
   if(type==="prop") {
@@ -71,7 +71,7 @@ api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full"
     effectiveFit=R.inspectStudioVrmGarmentFit({[slot]:equip},wardrobeMetrics).slots[slot]?.effectiveFit??equip.fit;
   }
   R.correctVrmHangingHandPalmTwist(vrm);vrm.humanoid.update();vrm.update(0);vrm.scene.updateMatrixWorld(true);
-  active={type,id,model,vrm,instance,equip,slot,metrics,wardrobeMetrics,effectiveFit,angle,crop,token,idlePose:vrm.humanoid.getNormalizedPose()};
+  active={type,id,model,vrm,instance,equip,slot,metrics,wardrobeMetrics,effectiveFit,angle,crop,token,idlePoseId:idle.id,idlePose:vrm.humanoid.getNormalizedPose()};
   selectState(active);
 };
 api.view = (angle,crop=active?.crop??"full")=>{
@@ -190,15 +190,29 @@ function Camera({selection}) {
 }
 
 function Subject({selection}) {
-  const token=selection.token;
-  const status=React.useCallback((uid,id,value)=>{if(generation===token)api.status=value;},[token]);
+  const {token,instance,vrm}=selection;
+  const items=React.useMemo(()=>instance?[instance]:[],[instance]);
+  const statusRevision=React.useRef(0);
+  const status=React.useCallback((uid,id,value)=>{
+    if(generation!==token)return;
+    const revision=++statusRevision.current;
+    if(!instance||value!=="ready"){api.status=value;return;}
+    api.status="loading";
+    // 렌더용 소품이 본을 추종한 뒤에도 팔·손가락의 실제 맞춤은 여러 프레임에 걸쳐 진행될 수 있다.
+    Promise.resolve().then(()=>R.waitForStudioVrmGripSettlement(vrm)).then(()=>{
+      if(generation===token&&statusRevision.current===revision)api.status="ready";
+    }).catch(error=>{
+      if(generation!==token||statusRevision.current!==revision)return;
+      api.errors.push(String(error));api.status="unavailable";
+    });
+  },[token,instance,vrm]);
   const receipt=React.useCallback((slot,value)=>{if(generation===token)api.receipt=value;},[token]);
   React.useEffect(()=>{if(selection.type==="asset"||selection.type==="native")api.status="ready";},[selection]);
   const children=[h("primitive",{key:"model",object:selection.vrm?.scene??selection.object,dispose:null})];
   if(selection.type==="wardrobe")children.push(h(R.StudioVrmWardrobeAttachment,{key:`garment-${token}`,vrm:selection.vrm,slot:selection.slot,equip:selection.equip,metrics:selection.wardrobeMetrics,effectiveFit:selection.effectiveFit,onSurfaceReceipt:receipt,onAttachmentStatus:status}));
   if(selection.type==="prop")children.push(h("group",{key:`prop-${token}`,ref:reviewPropGroup},
     h(R.StudioVrmPropAttachment,{vrm:selection.vrm,instance:selection.instance,metrics:selection.metrics,onAttachmentStatus:status})));
-  if(selection.instance)children.push(h(R.StudioVrmGripContactRefine,{key:`grip-${token}`,vrm:selection.vrm,items:[selection.instance],metrics:selection.metrics}));
+  if(instance)children.push(h(R.StudioVrmGripContactRefine,{key:`grip-${token}`,vrm,items,metrics:selection.metrics,idleGripPoseId:selection.idlePoseId}));
   if(selection.vrm)children.push(h(R.StudioVrmRuntimeCommit,{key:"commit",vrm:selection.vrm,physicsPreview:false,webcamActive:false}));
   children.push(h(Camera,{key:"camera",selection}));
   return h(React.Fragment,null,...children);

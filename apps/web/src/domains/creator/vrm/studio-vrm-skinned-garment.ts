@@ -825,7 +825,6 @@ function appendContinuousSleeve(
   lowerMaterialIndex: number,
   upperBoneName: "leftUpperArm" | "rightUpperArm",
   lowerBoneName: "leftLowerArm" | "rightLowerArm",
-  handBoneName: "leftHand" | "rightHand",
   boneNodes: ReadonlyMap<StudioVrmGarmentSkinBone, THREE.Bone>,
   boneIndices: ReadonlyMap<StudioVrmGarmentSkinBone, number>,
   rootInverse: THREE.Matrix4,
@@ -860,9 +859,11 @@ function appendContinuousSleeve(
   const centers: THREE.Vector3[] = [];
   const ringRadii: number[] = [];
   const ringInfluences: StudioVrmGarmentSkinInfluence[][] = [];
+  // 어깨(0)–팔꿈치(1)–소맷단(2) 중 팔꿈치 양옆에서만 두 뼈를 섞는다.
+  const forearmInfluence = (segmentPosition: number) => smoothstep(0.75, 1.25, segmentPosition);
   for (let step = 0; step <= UPPER_SLEEVE_AXIAL_STEPS; step += 1) {
     const t = step / UPPER_SLEEVE_AXIAL_STEPS;
-    const lowerWeight = smoothstep(0.42, 1, t);
+    const lowerWeight = forearmInfluence(t);
     centers.push(shoulder.clone().lerp(elbow, t));
     ringRadii.push(THREE.MathUtils.lerp(radii[0]!, radii[1]!, t));
     ringInfluences.push([
@@ -882,12 +883,12 @@ function appendContinuousSleeve(
   }
   for (let step = 1; step <= UPPER_SLEEVE_AXIAL_STEPS; step += 1) {
     const t = step / UPPER_SLEEVE_AXIAL_STEPS;
-    const handWeight = boneIndices.has(handBoneName) ? smoothstep(0.62, 1, t) : 0;
+    const lowerWeight = forearmInfluence(1 + t);
     centers.push(elbow.clone().lerp(wrist, t));
     ringRadii.push(THREE.MathUtils.lerp(radii[1]!, radii[2]!, t));
     ringInfluences.push([
-      { bone: lowerBoneName, weight: 1 - handWeight },
-      { bone: handBoneName, weight: handWeight },
+      { bone: upperBoneName, weight: 1 - lowerWeight },
+      { bone: lowerBoneName, weight: lowerWeight },
     ]);
   }
 
@@ -1267,7 +1268,6 @@ export function buildStudioVrmSkinnedGarment(
         upperTemplateParts.leftLower,
         "leftUpperArm",
         "leftLowerArm",
-        "leftHand",
         boneNodes,
         boneIndices,
         rootInverse,
@@ -1281,7 +1281,6 @@ export function buildStudioVrmSkinnedGarment(
         upperTemplateParts.rightLower,
         "rightUpperArm",
         "rightLowerArm",
-        "rightHand",
         boneNodes,
         boneIndices,
         rootInverse,

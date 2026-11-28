@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { createStudioVrmGripSettlement } from "../vrm/studio-vrm-grip-settlement";
 import { acquireCharacterExportSession, characterExportSize } from "./character-shaper-export";
 
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
@@ -35,6 +36,53 @@ describe("character file export", () => {
     expect(() => acquireCharacterExportSession(h, () => h)).toThrow("다른 캡처");
     expect(h.setIsCapturing).not.toHaveBeenCalled();
   });
+  it("PNG·PSD·설정화의 파지 보정이 모두 끝날 때까지 렌더 프레임을 정지하지 않는다", async () => {
+    const h = host();
+    const left = createStudioVrmGripSettlement(h.vrm, vi.fn());
+    const right = createStudioVrmGripSettlement(h.vrm, vi.fn());
+    const session = acquireCharacterExportSession(h, () => h);
+    const settled = session.freezeSettledPose();
+    expect(h.captureOperationRef.current).toBe("export");
+    left.ready(true);
+    await Promise.resolve();
+    expect(h.setIsCapturing).not.toHaveBeenCalled();
+    right.ready(true);
+    await settled;
+    expect(h.setIsCapturing).toHaveBeenCalledWith(true);
+    session.release();
+    left.dispose(); right.dispose();
+    expect(h.captureOperationRef.current).toBeNull();
+  });
+
+  it("준비 중 취소하거나 소품을 교체하면 다음 출력이 사용할 프레임을 정지하지 않는다", async () => {
+    const h = host();
+    for (const cause of ["cancel", "replace"]) {
+      const grip = createStudioVrmGripSettlement(h.vrm, vi.fn());
+      const session = acquireCharacterExportSession(h, () => h);
+      const pending = session.freezeSettledPose();
+      if (cause === "cancel") session.cancel();
+      else grip.dispose();
+      await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+      expect(h.setIsCapturing).not.toHaveBeenCalledWith(true);
+      session.release();
+      grip.dispose();
+      expect(h.captureOperationRef.current).toBeNull();
+    }
+  });
+
+  it("준비 중 다른 모델이 선택되면 이전 출력 요청을 폐기한다", async () => {
+    const h = host();
+    const grip = createStudioVrmGripSettlement(h.vrm, vi.fn());
+    const session = acquireCharacterExportSession(h, () => h);
+    const pending = session.freezeSettledPose();
+    h.vrm = {};
+    grip.ready(true);
+    await expect(pending).rejects.toThrow("캐릭터가 바뀌었습니다");
+    expect(h.setIsCapturing).not.toHaveBeenCalledWith(true);
+    session.release();
+    grip.dispose();
+  });
+
   it("rejects an edited character between PSD passes", () => {
     const h = host(); const session = acquireCharacterExportSession(h, () => h);
     session.assertCurrent();

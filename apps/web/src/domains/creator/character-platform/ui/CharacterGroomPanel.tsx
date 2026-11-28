@@ -27,6 +27,25 @@ import { cn } from "@/shared/lib/utils";
 const BUTTON = cn("min-h-11 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-40", STUDIO_FOCUS_RING);
 const INPUT = cn("min-h-11 w-full rounded-lg border border-line bg-panel px-2 text-sm text-fg disabled:opacity-40", STUDIO_FOCUS_RING);
 
+function GroomPointCoordinate({ axis, value, change }: {
+  readonly axis: string;
+  readonly value: number;
+  readonly change: (next: number) => void;
+}) {
+  const [text, setText] = useState<string | null>(null);
+  return <label className="text-xs text-fg-2"><span>{axis} (m)</span>
+    <input type="number" className={INPUT} min={-2} max={2} step={0.005}
+      value={text ?? Number(value.toFixed(5))} onBlur={() => setText(null)} onChange={(event) => {
+        const input = event.currentTarget;
+        setText(input.value);
+        // 음수 부호와 소수점까지 입력할 수 있게 두고 완성된 수치만 가이드에 반영한다.
+        if (Number.isFinite(input.valueAsNumber) && !input.validity.rangeOverflow && !input.validity.rangeUnderflow) {
+          change(input.valueAsNumber);
+        }
+      }} />
+  </label>;
+}
+
 export function CharacterGroomPanel({ authoring, runtime, previewPrefix, compactPreview }: {
   readonly authoring: CharacterAuthoringAuthorityHookResult;
   readonly runtime: CharacterGroomRuntimeState;
@@ -158,20 +177,20 @@ export function CharacterGroomPanel({ authoring, runtime, previewPrefix, compact
           const next = addCharacterGroomGuide(current, group.groupId, runtime.readGuideHeadFit?.()); setSelectedGuideId(next.groups.find((entry) => entry.groupId === group.groupId)?.guides.at(-1)?.guideId ?? null); setPointIndex(0); return next;
         })}>{t("studio.character.groom.addGuide", "가이드 추가")}</button>
         <button type="button" className={BUTTON} disabled={groupDisabled || !guide || anchored} onClick={() => guide && change((current) => {
-          const next = duplicateCharacterGroomGuide(current, group.groupId, guide.guideId); setSelectedGuideId(next.groups.find((entry) => entry.groupId === group.groupId)?.guides.at(-1)?.guideId ?? null); return next;
+          const next = duplicateCharacterGroomGuide(current, group.groupId, guide.guideId, runtime.readGuideHeadFit?.()); setSelectedGuideId(next.groups.find((entry) => entry.groupId === group.groupId)?.guides.at(-1)?.guideId ?? null); return next;
         })}>{t("studio.character.groom.duplicateGuide", "가이드 복제")}</button>
         <button type="button" className={BUTTON} disabled={groupDisabled || !guide} onClick={() => guide && change((current) => editCharacterGroomGroup(current, group.groupId, (entry) => ({ ...entry, guides: entry.guides.filter((candidate) => candidate.guideId !== guide.guideId) })))}>{t("studio.character.groom.deleteGuide", "가이드 삭제")}</button>
       </div>
       {guide && point ? <fieldset disabled={groupDisabled || anchored} className="space-y-2 rounded-xl border border-line p-2">
         <legend className="px-1 text-xs text-fg-2">{t("studio.character.groom.curve", "선택 가이드 곡선")}</legend>
         <label className="block text-xs text-fg-2"><span>{t("studio.character.groom.controlPoint", "제어점")}</span><select className={INPUT} value={selectedPointIndex} onChange={(event) => setPointIndex(Number(event.currentTarget.value))}>{guide.points.map((entry, index) => <option key={index} value={index}>{index === 0 ? t("studio.character.groom.root", "뿌리") : `${t("studio.character.groom.point", "점")} ${index + 1}`}</option>)}</select></label>
-        <div className="grid grid-cols-3 gap-2">{(["X", "Y", "Z"] as const).map((axis, axisIndex) => <label key={axis} className="text-xs text-fg-2"><span>{axis} (m)</span><input type="number" className={INPUT} min={-2} max={2} step={0.005} value={point.position[axisIndex]} onChange={(event) => {
-          const value = event.currentTarget.valueAsNumber;
+        <div className="grid grid-cols-3 gap-2">{(["X", "Y", "Z"] as const).map((axis, axisIndex) => <GroomPointCoordinate
+          key={`${guide.guideId}-${selectedPointIndex}-${axis}`} axis={axis} value={point.position[axisIndex]} change={(value) => {
           change((current) => editCharacterGroomGroup(current, group.groupId, (entry) => ({ ...entry, guides: entry.guides.map((candidate) => candidate.guideId !== guide.guideId ? candidate : { ...candidate, points: candidate.points.map((control, index) => {
             if (index !== selectedPointIndex) return control;
             const position: [number, number, number] = [...control.position]; position[axisIndex] = value; return { ...control, position };
           }) }) })));
-        }} /></label>)}</div>
+        }} />)}</div>
       </fieldset> : null}
       {shaperDiamondMesh ? <div data-testid="shaper-groom-hybrid-inspector" className="space-y-1.5 rounded-xl border border-line bg-panel/60 p-2 text-xs text-fg-2">
         <div className="flex items-center justify-between font-semibold text-fg">

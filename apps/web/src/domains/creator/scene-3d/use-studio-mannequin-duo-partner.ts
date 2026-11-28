@@ -29,6 +29,7 @@ import {
 } from "./studio-mannequin-model";
 import {
   canonicalizeStudioMannequinPartner,
+  haveSameStudioMannequinBodyParams,
   normalizeStudioMannequinPose,
   type StudioMannequinPersistentPartner,
   type StudioMannequinPersistentState,
@@ -40,8 +41,9 @@ import {
   recordStudioPoseHistory,
   redoStudioPoseHistory,
   undoStudioPoseHistory,
-  type StudioPoseHistory,
 } from "./studio-pose-history";
+import { resolveStudioMannequinLibraryHandState } from "./use-studio-mannequin-hand-pose";
+import type { StudioMannequinHandState } from "./studio-mannequin-ecorche-anatomy";
 import { studioMannequinPosesNearlyEqual } from "./use-studio-mannequin-viewport-gestures";
 
 import type {
@@ -87,13 +89,6 @@ export function createStudioMannequinDuoPartner(
   });
 }
 
-function sameBodyParams(a: StudioMannequinBodyParams, b: StudioMannequinBodyParams): boolean {
-  if (a === b) return true;
-  const left = Object.entries(a);
-  const right = new Map(Object.entries(b));
-  return left.length === right.size && left.every(([key, value]) => right.get(key) === value);
-}
-
 export interface StudioMannequinDuoPartnerOptions {
   readonly sceneRef: { readonly current: StudioMannequinSceneHandle | null };
   /**
@@ -127,6 +122,7 @@ export interface StudioMannequinDuoPartnerController {
   /** 상대를 조작 중이면 포즈를 상대에게 적용하고 true. 아니면 아무것도 하지 않고 false. */
   readonly applyPoseToPartner: (
     resolvePose: (partner: StudioMannequinPersistentPartner) => StudioMannequinPose,
+    handPresetId?: string,
   ) => boolean;
   /** 불러오기·가져오기 — 히스토리 없이 상대를 통째로 바꾼다(null 이면 1인). */
   readonly restorePartner: (
@@ -150,35 +146,37 @@ export function useStudioMannequinDuoPartner(
   const [placement, setPlacement] = useState<StudioMannequinDuoPlacement | null>(null);
   const [activeFigure, setActiveFigureState] = useState<StudioMannequinFigureId>("lead");
   const activeFigureRef = useRef<StudioMannequinFigureId>("lead");
-  const historyRef = useRef<StudioPoseHistory>(createStudioPoseHistory());
-  const [historySnapshot, setHistorySnapshot] = useState<StudioPoseHistory>(historyRef.current);
+  const historyRef = useRef(createStudioPoseHistory<StudioMannequinPersistentPartner>());
+  const [historySnapshot, setHistorySnapshot] = useState(historyRef.current);
   const specCacheRef = useRef<{
     readonly params: StudioMannequinBodyParams;
     readonly spec: StudioMannequinSpec;
+    readonly handPresetId?: string;
+    readonly hands?: StudioMannequinHandState;
   } | null>(null);
-
-  /** 같은 체형이면 같은 스펙 객체를 돌려준다 — 씬은 스펙이 바뀔 때만 상대 메시를 다시 만든다. */
-  const resolveSpec = useCallback((params: StudioMannequinBodyParams): StudioMannequinSpec => {
-    const cached = specCacheRef.current;
-    if (cached && sameBodyParams(cached.params, params)) return cached.spec;
-    const spec = buildStudioMannequinSpec(params);
-    specCacheRef.current = { params, spec };
-    return spec;
-  }, []);
 
   const pushToScene = useCallback(
     (handle: StudioMannequinSceneHandle | null, next: StudioMannequinPersistentPartner | null) => {
-      handle?.setPartner?.(
-        next
-          ? { spec: resolveSpec(next.params), pose: next.pose, offset: next.offset, yawRad: next.yawRad }
-          : null,
-      );
-    },
-    [resolveSpec],
+      if (!handle?.setPartner) return;
+      if (!next) {
+        handle.setPartner(null);
+        return;
+      }
+      let cached = specCacheRef.current;
+      if (!cached || !haveSameStudioMannequinBodyParams(cached.params, next.params) || cached.handPresetId !== next.handPresetId) {
+        const hands = next.handPresetId ? resolveStudioMannequinLibraryHandState(next.handPresetId) : undefined;
+        cached = {
+          params: next.params, handPresetId: next.handPresetId, hands,
+          spec: buildStudioMannequinSpec(next.params, hands?.fingerPose),
+        };
+        specCacheRef.current = cached;
+      }
+      handle.setPartner({ spec: cached.spec, hands: cached.hands, pose: next.pose, offset: next.offset, yawRad: next.yawRad });
+    }, [],
   );
 
   const resetHistory = useCallback(() => {
-    historyRef.current = createStudioPoseHistory();
+    historyRef.current = createStudioPoseHistory<StudioMannequinPersistentPartner>();
     setHistorySnapshot(historyRef.current);
   }, []);
 
@@ -198,18 +196,19 @@ export function useStudioMannequinDuoPartner(
 
   /** 사용자 결정(뷰포트 드래그·프리셋)으로 상대 포즈를 바꾼다 — 접지 후 바뀐 경우에만 1단계 기록. */
   const editPartnerPose = useCallback(
-    (pose: StudioMannequinPose) => {
+    (pose: StudioMannequinPose, handPresetId?: string) => {
       const current = partnerRef.current;
       if (!current) return;
       const nextPose = normalizeStudioMannequinPose(groundPose ? groundPose(pose, current.params).pose : pose);
-      if (studioMannequinPosesNearlyEqual(nextPose, current.pose)) {
+      const nextHandPresetId = handPresetId ?? current.handPresetId;
+      if (studioMannequinPosesNearlyEqual(nextPose, current.pose) && nextHandPresetId === current.handPresetId) {
         // 드래그가 남긴 미세한 차이는 버리고 씬을 정본 포즈로 되돌린다.
         pushToScene(sceneRef.current, current);
         return;
       }
-      historyRef.current = recordStudioPoseHistory(historyRef.current, current.pose);
+      historyRef.current = recordStudioPoseHistory(historyRef.current, current);
       setHistorySnapshot(historyRef.current);
-      commitPartner({ ...current, pose: nextPose }, true);
+      commitPartner({ ...current, pose: nextPose, ...(nextHandPresetId ? { handPresetId: nextHandPresetId } : {}) }, true);
     },
     [commitPartner, groundPose, pushToScene, sceneRef],
   );
@@ -252,10 +251,10 @@ export function useStudioMannequinDuoPartner(
   );
 
   const applyPoseToPartner = useCallback(
-    (resolvePose: (partner: StudioMannequinPersistentPartner) => StudioMannequinPose): boolean => {
+    (resolvePose: (partner: StudioMannequinPersistentPartner) => StudioMannequinPose, handPresetId?: string): boolean => {
       const current = partnerRef.current;
       if (!current || activeFigureRef.current !== "partner") return false;
-      editPartnerPose(resolvePose(current));
+      editPartnerPose(resolvePose(current), handPresetId);
       return true;
     },
     [editPartnerPose],
@@ -279,12 +278,12 @@ export function useStudioMannequinDuoPartner(
       const current = partnerRef.current;
       if (!current) return;
       const step = direction === "undo"
-        ? undoStudioPoseHistory(historyRef.current, current.pose)
-        : redoStudioPoseHistory(historyRef.current, current.pose);
+        ? undoStudioPoseHistory(historyRef.current, current)
+        : redoStudioPoseHistory(historyRef.current, current);
       if (!step) return;
       historyRef.current = step.history;
       setHistorySnapshot(step.history);
-      commitPartner({ ...current, pose: step.pose }, true);
+      commitPartner(step.pose, true);
     },
     [commitPartner],
   );

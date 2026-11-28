@@ -228,7 +228,8 @@ export function CharacterShaperOutputDock({
     void (async () => {
       let releaseHelpers: (() => void) | undefined;
       try {
-        // Let the host commit the capture lock so camera, animation and paint are frozen.
+        await session.freezeSettledPose();
+        // 정지 상태를 화면에 반영한 뒤 카메라·포즈와 의상의 표면을 읽는다.
         await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
         session.assertCurrent();
         // Finish the frozen raw-bone pose and cloth solve before taking the first layer.

@@ -13,10 +13,21 @@ on:
       - apps/web/tools/browser-harnesses/hand-compare-main.ts
       - apps/web/tools/browser-harnesses/props-compare.html
       - apps/web/tools/browser-harnesses/props-compare-main.ts
+      - apps/web/tools/browser-harnesses/vrm-hand-review-camera.ts
+      - apps/web/tools/browser-harnesses/vrm-prop-review-visibility.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-contact-refinement.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-grip-contact-targets.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-grip-contact-targets.test.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-hand-palm-orientation.test.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-grip-body-surface.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-grip-settlement.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-held-prop-contacts.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-idle-grip-body-clearance.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-mug-collision-shape.ts
+      - apps/web/src/domains/creator/vrm/use-studio-vrm-idle-grip-clearance.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-preset-torso.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-book-thigh-clearance.test.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-mug-cloth-clearance.test.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-prop-rig.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-poser-utils.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-portrait-framing.ts
@@ -33,10 +44,21 @@ on:
       - apps/web/tools/browser-harnesses/hand-compare-main.ts
       - apps/web/tools/browser-harnesses/props-compare.html
       - apps/web/tools/browser-harnesses/props-compare-main.ts
+      - apps/web/tools/browser-harnesses/vrm-hand-review-camera.ts
+      - apps/web/tools/browser-harnesses/vrm-prop-review-visibility.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-contact-refinement.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-grip-contact-targets.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-grip-contact-targets.test.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-hand-palm-orientation.test.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-grip-body-surface.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-grip-settlement.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-held-prop-contacts.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-idle-grip-body-clearance.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-mug-collision-shape.ts
+      - apps/web/src/domains/creator/vrm/use-studio-vrm-idle-grip-clearance.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-preset-torso.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-book-thigh-clearance.test.ts
+      - apps/web/src/domains/creator/vrm/studio-vrm-mug-cloth-clearance.test.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-prop-rig.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-poser-utils.ts
       - apps/web/src/domains/creator/vrm/studio-vrm-portrait-framing.ts

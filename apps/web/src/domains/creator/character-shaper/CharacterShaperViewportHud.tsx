@@ -111,6 +111,8 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
   });
   const lightingLabel = characterLightingToneLabel(lightingTone);
 
+  const hostRef = useRef(h);
+  useEffect(() => { hostRef.current = h; });
   const request = useRef(0);
   const insertion = useRef<AbortController | null>(null);
   const [applying, setApplying] = useState(false);
@@ -123,17 +125,25 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
     setLtOpen(false);
     setLtSource({ status: "idle", imageData: null, error: null, label: "" });
   };
-  const openLtDialog = () => {
+  const openLtDialog = async () => {
     setCompactToolsOpen(false);
-    request.current += 1;
+    insertion.current?.abort();
+    const controller = new AbortController();
+    insertion.current = controller;
+    const token = ++request.current;
     setLtApplyError(null);
     setLtOpen(true);
+    setLtSource({ status: "capturing", imageData: null, error: null, label: "3D 뷰 캡처" });
     try {
-      const imageData = captureCharacterShaperLt(h);
+      const imageData = await captureCharacterShaperLt(h, () => hostRef.current, controller.signal);
+      if (request.current !== token) return;
       setLtSource({ status: "ready", imageData, label: "3D 뷰 캡처", error: null });
     } catch (cause) {
+      if (request.current !== token) return;
       setLtSource({ status: "error", imageData: null, label: "3D 뷰 캡처",
         error: cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureFailed", "3D 뷰 캡처에 실패했습니다.") });
+    } finally {
+      if (insertion.current === controller) insertion.current = null;
     }
   };
 

@@ -26,7 +26,7 @@ import {
   type StudioVrmPoseBalanceReport,
 } from "./studio-vrm-pose-balance";
 import { useStudioVrmViewportBudget } from "./useStudioVrmViewportBudget";
-
+import type { StudioVrmIkConstraint } from "./studio-vrm-scene-document";
 import { StudioToolHintTarget } from "../StudioToolHint";
 import {
   enabledStudioVrmIkPolesSceneLocal,
@@ -534,8 +534,8 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       items={vrmPropItems}
                       metrics={effectivePropRigMetrics}
                       rigRevision={proportionRigRevision}
-                      lockedBones={lockedPoseBones}
-                      capturePaused={isCapturing}
+                      lockedBones={lockedPoseBones} capturePaused={isCapturing}
+                      idleGripPoseId={idleAnimation || ikConstraints.some((constraint: StudioVrmIkConstraint) => constraint.enabled) ? undefined : h.activePoseId}
                       disabled={webcamActive || broadcastPreviewActive || persistentIkReconciling || jointHandleInteracting || isViewportHandIkDragging || texturePaintInteractionEnabled}
                     />
                   ) : null}

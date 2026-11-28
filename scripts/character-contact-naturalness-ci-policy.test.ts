@@ -7,10 +7,29 @@ import { parse as parseYaml } from "yaml";
 const workflow = parseYaml(
   readFileSync(join(process.cwd(), ".github/workflows/character-contact-naturalness.yml"), "utf8"),
 ) as {
+  on: { pull_request: { paths: string[] }; push: { paths: string[] } };
   jobs?: Record<string, { steps?: Array<{ uses?: string; run?: string; with?: Record<string, unknown> }> }>;
 };
 
 describe("Character contact naturalness CI bootstrap", () => {
+  it("접촉 검수 카메라와 공용 소품 판정의 개별 변경도 PR과 main에서 검증한다", () => {
+    const paths = workflow.on.pull_request.paths;
+    expect(workflow.on.push.paths).toEqual(paths);
+    const reviewSources = [
+      "apps/web/tools/browser-harnesses/vrm-hand-review-camera.ts",
+      "apps/web/tools/browser-harnesses/vrm-prop-review-visibility.ts",
+      "apps/web/src/domains/creator/vrm/studio-vrm-held-prop-contacts.ts",
+      "apps/web/src/domains/creator/vrm/studio-vrm-idle-grip-body-clearance.ts",
+      "apps/web/src/domains/creator/vrm/studio-vrm-grip-body-surface.ts",
+      "apps/web/src/domains/creator/vrm/studio-vrm-grip-settlement.ts",
+      "apps/web/src/domains/creator/vrm/studio-vrm-mug-collision-shape.ts",
+    ];
+    expect(paths).toEqual(expect.arrayContaining(reviewSources));
+    for (const path of reviewSources) {
+      expect(existsSync(join(process.cwd(), path)), path).toBe(true);
+    }
+  });
+
   it("installs pnpm before setup-node asks for the pnpm cache", () => {
     const steps = workflow.jobs?.["character-hand-visual"]?.steps ?? [];
     const actionSteps = steps.filter((step) => step.uses);

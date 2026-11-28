@@ -1,10 +1,10 @@
 import * as THREE from "three";
-
+import { resolveStudioVrmHeldPropContacts } from "./studio-vrm-held-prop-contacts";
 import {
   resolveStudioVrmHeadwearCrownCompression,
   type StudioVrmHeadwearCrownCompression,
 } from "./studio-vrm-hair-hand-equip-refiner";
-import { measureStudioVrmHeadSurface, studioVrmHeadwearSurfaceSocket } from "./studio-vrm-head-surface";
+import { measuredHeadSocketFields, measureStudioVrmHeadSurface, studioVrmHeadwearSurfaceSocket } from "./studio-vrm-head-surface";
 import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
 import { measuredPropGripSocket } from "./studio-vrm-everyday-grip";
 import { primaryPropAnchor } from "./studio-vrm-prop-anchors";
@@ -66,6 +66,11 @@ export interface VrmPropFaceSocket extends VrmPropHandSocket {
   surfaceMeasured?: boolean;
   /** Crown height in head-bone local metres, unaffected by body root scale. */
   surfaceCrownHeight?: number;
+  /** 원래 헤어에 닿는 모자 밴드의 추가 높이(머리 본 로컬 m). */
+  beretRimLift?: number;
+  beanieRimLift?: number;
+  /** 비니 아랫단에서 실측한 앞머리·뒤통수 깊이의 중앙, 얼굴 방향이 양수다. */
+  beanieRimDepth?: number;
   hairClearanceRequired?: boolean;
 }
 
@@ -315,12 +320,7 @@ export function sanitizeVrmPropRigMetrics(raw: unknown): VrmPropRigMetrics {
     },
     faceSocket: {
       ...sanitizeHandSocket(value.faceSocket, FALLBACK_FACE_SOCKET),
-      ...(value.faceSocket?.surfaceMeasured === true
-        && Number.isFinite(value.faceSocket.surfaceCrownHeight)
-        && value.faceSocket.surfaceCrownHeight! > 0
-        && value.faceSocket.surfaceCrownHeight! < 0.5
-        ? { surfaceMeasured: true, surfaceCrownHeight: value.faceSocket.surfaceCrownHeight,
-          ...(value.faceSocket.hairClearanceRequired ? { hairClearanceRequired: true } : {}) } : {}),
+      ...measuredHeadSocketFields(value.faceSocket),
     },
     boneWorldPositions,
     sources: {
@@ -834,7 +834,7 @@ export function resolvePropAttachment(
   const fit = getPropFitStatus(def, instance, metrics);
   const baseScale = clamp(finite(def.defaultScale) ?? 1, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
   const scale = clamp(baseScale * fit.fitScale * deltaScale, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
-  const measuredGrip = measuredPropGripSocket(def.id, anchor, targetHand, metrics, scale);
+  const measuredGrip = measuredPropGripSocket(def.id, anchor, targetHand, metrics, scale, rig.mode === "auto");
   const activeSocket = measuredGrip ?? handSocket ?? headwearSocket ?? faceSocket;
   const socketBasis = activeSocket
     ? new THREE.Quaternion(...activeSocket.rotationQuaternion).normalize()
@@ -1463,7 +1463,7 @@ export function inspectAutoGripReadiness(
   ));
   if (
     countValidAutoGripContactsForHand(
-      prospectiveItems,
+      resolveStudioVrmHeldPropContacts(prospectiveItems, metrics),
       hand,
       resolveDefinition,
       metrics,
@@ -1491,7 +1491,7 @@ export function createAutoGripFingerOverrides(
     // 소품을 덮어쓰지 않고 해당 손만 fail-closed해 결정성과 관통 방지를 지킨다.
     posesByHand.set(hand, posesByHand.has(hand) ? null : pose);
   };
-  for (const item of items) {
+  for (const item of resolveStudioVrmHeldPropContacts(items, metrics)) {
     if ((item.rig?.autoFingerPose ?? false) !== true) continue;
     const side = handSide(item.bone);
     if (!side) continue;

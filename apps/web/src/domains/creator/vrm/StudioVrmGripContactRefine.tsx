@@ -1,6 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
-import { useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+
 
 import {
   planStudioVrmContactReplay,
@@ -14,9 +15,11 @@ import {
   type StudioVrmGripDigitOrdinal,
 } from "./studio-vrm-grip-contact-targets";
 import { usesDefaultFittedThumbGrip } from "./studio-vrm-microphone-grip";
-import { createFittedThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
+import { createFittedDigitContactPass } from "./studio-vrm-microphone-thumb-contact";
 import { createAutoGripFingerOverrides, resolvePropAttachment, resolveSecondaryPropTarget } from "./studio-vrm-prop-rig";
 import { propDefById } from "./studio-vrm-props";
+import { resolveStudioVrmHeldPropContacts } from "./studio-vrm-held-prop-contacts";
+import { useStudioVrmIdleGripClearance } from "./use-studio-vrm-idle-grip-clearance";
 import {
   createStudioVrmVirtualFingertipProbe,
   sampleStudioVrmVirtualFingertip,
@@ -37,7 +40,7 @@ const DIGITS = [
   { name: "Little", segments: ["Proximal", "Intermediate", "Distal"], ordinal: 3, limits: [80, 100, 65], tipRatio: 0.78 },
 ] as const;
 
-export type StudioVrmGripContactPass = { run(): void; release(): boolean };
+export type StudioVrmGripContactPass = { run(): void; runUntil?(deadline: number): boolean; release(): boolean };
 
 /**
  * Product-authoritative grip passes. The browser visual harness can import this exact factory so
@@ -51,10 +54,10 @@ export function createStudioVrmGripContactPasses(
 ): StudioVrmGripContactPass[] {
   const authority = createAutoGripFingerOverrides(items, propDefById, metrics);
   const passes: StudioVrmGripContactPass[] = [];
-  for (const item of items) {
+  for (const item of resolveStudioVrmHeldPropContacts(items, metrics)) {
     const def = propDefById(item.propId);
-    // Flat, precision-pinch and support poses keep their own authored profiles.
-    if (!item.rig?.autoFingerPose || !def?.grip || !["cylinder", "handle"].includes(def.grip.kind)) continue;
+    const book = item.propId === "book" && usesDefaultFittedThumbGrip(item, metrics);
+    if (!item.rig?.autoFingerPose || !def?.grip || (!book && !["cylinder", "handle"].includes(def.grip.kind))) continue;
     let resolved: ResolvedPropAttachment;
     try { resolved = resolvePropAttachment(def, item, metrics); } catch { continue; }
     if (!resolved.usesSmartRig) continue;
@@ -76,8 +79,15 @@ export function createStudioVrmGripContactPasses(
       const handSize = side === "left" ? metrics.leftHand : metrics.rightHand;
       if (![radius, handSize].every((value) => Number.isFinite(value) && value > 0)) continue;
 
+      if (book) {
+        for (const digit of DIGITS) {
+          const pass = createFittedDigitContactPass(vrm, side, resolved, handSize, locked, digit.name);
+          if (pass) passes.push(pass);
+        }
+        continue;
+      }
       const thumbContact = usesDefaultFittedThumbGrip(item, metrics)
-        ? createFittedThumbContactPass(vrm, side, resolved, handSize, locked) : null;
+        ? createFittedDigitContactPass(vrm, side, resolved, handSize, locked) : null;
       if (thumbContact) passes.push(thumbContact);
 
       hand.updateWorldMatrix(true, true);
@@ -281,7 +291,7 @@ export function createStudioVrmGripContactPasses(
 
 const NO_LOCKS: readonly string[] = [];
 
-export function StudioVrmGripContactRefine({ vrm, items, metrics, rigRevision, lockedBones = NO_LOCKS, disabled = false, capturePaused = false }: {
+export function StudioVrmGripContactRefine({ vrm, items, metrics, rigRevision, lockedBones = NO_LOCKS, disabled = false, capturePaused = false, idleGripPoseId }: {
   vrm: VRM;
   items: readonly PropInstance[];
   metrics: VrmPropRigMetrics;
@@ -289,8 +299,10 @@ export function StudioVrmGripContactRefine({ vrm, items, metrics, rigRevision, l
   lockedBones?: readonly string[];
   disabled?: boolean;
   capturePaused?: boolean;
+  idleGripPoseId?: string;
 }) {
   const invalidate = useThree((state) => state.invalidate);
+  const gripFrame = useStudioVrmIdleGripClearance(vrm, items, metrics, lockedBones, disabled ? undefined : idleGripPoseId, rigRevision, capturePaused);
   const passes = useMemo(() => {
     void rigRevision;
     return disabled ? [] : createStudioVrmGripContactPasses(vrm, items, metrics, lockedBones);
@@ -308,9 +320,50 @@ export function StudioVrmGripContactRefine({ vrm, items, metrics, rigRevision, l
       }
     };
   }, [invalidate, passes, vrm]);
+  const nextFinger = useRef(0);
+  const scheduled = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useLayoutEffect(() => {
+    nextFinger.current = 0;
+    return () => {
+      if (scheduled.current !== null) clearTimeout(scheduled.current);
+      scheduled.current = null;
+    };
+  }, [capturePaused, idleGripPoseId, passes]);
+
+  function advanceFingers() {
+    // 머그와 책의 첫 표면 맞춤은 손가락 단위로 나누고, 완료된 손은 같은 프레임에 소품과 함께 표시한다.
+    const deadline = gripFrame.deadline() ?? Infinity;
+    let index = nextFinger.current;
+    while (index < passes.length) {
+      const pass = passes[index]!;
+      if (deadline !== Infinity && pass.runUntil) {
+        if (!pass.runUntil(deadline)) break;
+      } else pass.run();
+      index++;
+      if (performance.now() >= deadline) break;
+    }
+    const done = index === passes.length;
+    nextFinger.current = done ? 0 : index;
+    return done;
+  }
+
+  function scheduleWork() {
+    if (scheduled.current !== null) return;
+    // 계산 도중에는 화면이 바뀌지 않는다. 포인터 이벤트 사이에서 계속 계산하고 완성된 자세만 그린다.
+    scheduled.current = setTimeout(() => {
+      scheduled.current = null;
+      gripFrame.advanceArms();
+      const done = advanceFingers();
+      gripFrame.finishFrame(done, false);
+      if (gripFrame.hasWork(done)) scheduleWork(); else invalidate();
+    }, 0);
+  }
+
   useFrame(() => {
     if (capturePaused) return;
-    passes.forEach((pass) => pass.run());
+    const done = advanceFingers();
+    gripFrame.finishFrame(done, true);
+    if (gripFrame.hasWork(done)) scheduleWork();
   }, STUDIO_VRM_GRIP_CONTACT_PRIORITY);
   return null;
 }

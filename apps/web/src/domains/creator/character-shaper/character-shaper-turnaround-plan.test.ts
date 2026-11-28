@@ -60,6 +60,45 @@ describe("character turnaround planning", () => {
     expect(bounds.max.y).toBe(3);
     expect(mesh.boundingBox!.min.y).toBe(0);
   });
+
+  it.each([false, true])("공유 버퍼의 미사용 정점과 숨긴 재질은 설정화 구도를 바꾸지 않는다 (인덱스 %s)", async (indexed) => {
+    const shape = new BufferGeometry().setAttribute("position", new Float32BufferAttribute([
+      -40, 30, 30, -41, 30, 30, -42, 30, 30,
+      0, 0, 0, 1, 2, 0, -1, 1, 0,
+      30, 30, 30, 31, 30, 30, 32, 30, 30,
+    ], 3));
+    if (indexed) shape.setIndex([6, 7, 8, 5, 4, 3, 0, 1, 2]);
+    shape.addGroup(0, 3, 0);
+    shape.addGroup(3, 3, 1);
+    shape.addGroup(6, 3, 1);
+    shape.setDrawRange(0, 6);
+    const scene = new Group();
+    scene.add(new Mesh(shape, [new MeshBasicMaterial({ visible: false }), new MeshBasicMaterial()]));
+    const bounds = await measureCharacterTurnaroundBounds(scene, new PerspectiveCamera());
+    expect(bounds.min.toArray()).toEqual([-1, 0, 0]);
+    expect(bounds.max.toArray()).toEqual([1, 2, 0]);
+  });
+
+  it("같은 인덱스를 재사용하는 삼각형은 메시마다 현재 스킨 위치를 한 번만 측정한다", async () => {
+    const shape = geometry();
+    shape.setIndex([0, 1, 2, 2, 1, 0]);
+    const mesh = new Mesh(shape, new MeshBasicMaterial());
+    const measure = vi.spyOn(mesh, "getVertexPosition");
+    await measureCharacterTurnaroundBounds(mesh, new PerspectiveCamera());
+    expect(measure).toHaveBeenCalledTimes(3);
+  });
+  it("공유 버퍼에서는 그리는 정점만 예산에 포함하고 초과하는 연속 메시의 변형 계산은 생략한다", async () => {
+    const shape = new BufferGeometry().setAttribute("position", new Float32BufferAttribute(new Float32Array(2_000_001 * 3), 3));
+    shape.attributes.position!.setXYZ(1, 1, 2, 3);
+    const mesh = new Mesh(shape, new MeshBasicMaterial());
+    const measure = vi.spyOn(mesh, "getVertexPosition");
+    await expect(measureCharacterTurnaroundBounds(mesh, new PerspectiveCamera())).rejects.toThrow("200만 정점");
+    expect(measure).not.toHaveBeenCalled();
+    shape.setIndex([0, 1, 2]);
+    const bounds = await measureCharacterTurnaroundBounds(mesh, new PerspectiveCamera());
+    expect(bounds.max.toArray()).toEqual([1, 2, 3]);
+    expect(measure).toHaveBeenCalledTimes(3);
+  });
   it("yields during vertex inspection and cancels before completing", async () => {
     const scene = new Group();
     const shape = new BufferGeometry().setAttribute("position", new Float32BufferAttribute(new Float32Array(9000 * 3), 3));

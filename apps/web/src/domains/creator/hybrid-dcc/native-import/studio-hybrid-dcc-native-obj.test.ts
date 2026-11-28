@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { hashStudioEditableMesh, serializeStudioEditableMesh } from "../../studio-editable-half-edge-mesh";
+import { exportStudioMeshObj } from "../../export/studio-mesh-export-adapters";
+import { createStudioEditableMeshFromPolygons, hashStudioEditableMesh, serializeStudioEditableMesh } from "../../studio-editable-half-edge-mesh";
 import { deriveStudioMeshUvIslands } from "../../mesh-uv/studio-mesh-uv-authority";
 import { createStudioHybridDccIdentityTransform } from "../studio-hybrid-dcc-object-transform";
 import { validateStudioHybridDccFanPolygon } from "../studio-hybrid-dcc-polygon-validation";
@@ -32,6 +33,71 @@ function loops(value: StudioNativeImportDecoded): readonly (readonly number[])[]
 }
 
 describe("OBJ를 실제 native 편집 자산으로 복원", () => {
+  it("OBJ로 보관한 책의 양쪽 사각면과 제본선의 코너 UV, 면별 셰이딩, 정밀 좌표를 다시 연다", () => {
+    const source = decoded([
+      "v -1 0 0", "v 0 -0.3 0", "v 1 0.35 0",
+      "v -1 0 1.3", "v 0 -0.3 1.3", "v 1 0.35 1.3",
+      "vt 0.05 0.05", "vt 0.48 0.05", "vt 0.48 0.95", "vt 0.05 0.95",
+      "vt 0.56 0.10", "vt 0.97 0.10", "vt 0.97 0.90", "vt 0.56 0.90",
+      "s 1", "f 4/4 5/3 2/2 1/1", "s off", "f 5/8 6/7 3/6 2/5",
+    ].join("\n"));
+    const mesh = source.assets[0]!.mesh;
+    const saved = exportStudioMeshObj(mesh);
+    expect(saved.vertexCount).toBe(6);
+    expect(saved.triangleCount).toBe(4);
+    const restored = decoded(saved.text).assets[0]!.mesh;
+    expect(restored.faces.map((face) => face.smooth)).toEqual([true, false]);
+    expect(deriveStudioMeshUvIslands(restored)).toHaveLength(2);
+    expect(serializeStudioEditableMesh(restored)).toEqual(serializeStudioEditableMesh(mesh));
+  });
+
+  it("UV 없는 사각면도 정점 순서와 면을 유지해 OBJ로 저장한다", () => {
+    const source = decoded(`${quad}f 1 2 4 3\n`);
+    const saved = exportStudioMeshObj(source.assets[0]!.mesh);
+    expect(saved.text).not.toMatch(/^vt /mu);
+    expect(loops(decoded(saved.text))).toEqual([[0, 1, 3, 2]]);
+  });
+
+  it("원본 UV 코너가 누락되거나 순서가 바뀌면 다른 코너를 대신 기록하지 않는다", () => {
+    const mesh = decoded(`${triangle}vt 0 0\nvt 1 0\nvt 0 1\nf 1/1 2/2 3/3\n`).assets[0]!.mesh;
+    const layer = mesh.uvLayer;
+    if (!layer) throw new Error("시험용 삼각형에 UV가 없습니다.");
+    expect(() => exportStudioMeshObj({ ...mesh, uvLayer: { ...layer, corners: layer.corners.slice(1) } }))
+      .toThrow(/UV 코너 수/u);
+    expect(() => exportStudioMeshObj({ ...mesh, uvLayer: { ...layer, corners: [...layer.corners].reverse() } }))
+      .toThrow(/UV 코너가 올바르지/u);
+  });
+
+  it("읽을 수 있는 5각면은 유지하고 비평면으로 접힌 면은 같은 UV와 smooth를 가진 렌더 삼각형으로 다시 연다", () => {
+    const planar = decoded([
+      "v 0 0 0", "v 2 0 0", "v 2 2 0", "v 1 2.5 0", "v 0 2 0",
+      "vt 0 0", "vt 1 0", "vt 1 1", "vt 0.5 1.5", "vt 0 1",
+      "s 1", "f 1/1 2/2 3/3 4/4 5/5",
+    ].join("\n")).assets[0]!.mesh;
+    expect(loops(decoded(exportStudioMeshObj(planar).text))).toEqual([[0, 1, 2, 3, 4]]);
+    const bent = { ...planar, vertices: planar.vertices.map((vertex) => vertex.id === 3
+      ? { ...vertex, position: { x: 0.8, y: 0.5, z: 0.4 } } : vertex) };
+    const reopened = decoded(exportStudioMeshObj(bent).text);
+    expect(loops(reopened)).toEqual([[0, 1, 2], [0, 2, 3], [0, 3, 4]]);
+    expect(reopened.assets[0]!.mesh.faces.map((face) => face.smooth)).toEqual([true, true, true]);
+    expect(reopened.assets[0]!.mesh.uvLayer?.corners.map(({ u, v }) => [u, v])).toEqual([
+      [0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0.5, 1.5], [0, 0], [0.5, 1.5], [0, 1],
+    ]);
+  });
+
+  it("한 면의 가져오기 코너 한도를 넘는 원판을 다시 열 수 있는 삼각형으로 보관한다", () => {
+    const count = STUDIO_NATIVE_OBJ_LIMITS.maxSourceFaceCorners + 1;
+    const vertices = Array.from({ length: count }, (_, index) => {
+      const angle = 2 * Math.PI * index / count;
+      return { x: 100 * Math.cos(angle), y: 100 * Math.sin(angle), z: 0 };
+    });
+    const face = vertices.map((_, index) => index);
+    const mesh = createStudioEditableMeshFromPolygons(vertices, [face]);
+    const reopened = decoded(exportStudioMeshObj(mesh).text).assets[0]!.mesh;
+    expect(reopened.vertices).toHaveLength(count);
+    expect(reopened.faces).toHaveLength(count - 2);
+  });
+
   it("v/f의 원본 polygon 순서·정점 색인·identity transform을 유지한다", () => {
     const value = decoded(`${quad}o 배경 벽\nf 1 2 4 3\n`);
     expect(value.format).toBe("obj"); expect(value.assets).toHaveLength(1);
@@ -71,6 +137,10 @@ describe("OBJ를 실제 native 편집 자산으로 복원", () => {
     const value = decoded(`${quad}vt 0 0\nvt 1 0\nvt 0 1\nf 1/1 2/2 3/3\nf 2 4 3\n`);
     expect(value.assets).toHaveLength(2); expect(value.assets[0]!.mesh.uvLayer).toBeDefined(); expect(value.assets[1]!.mesh.uvLayer).toBeUndefined();
     expect(value.assets.map(({ name }) => name)).toEqual(["OBJ · UV", "OBJ · UV 없음"]);
+    for (const { mesh } of value.assets) {
+      const reopened = decoded(exportStudioMeshObj(mesh).text).assets[0]!.mesh;
+      expect(serializeStudioEditableMesh(reopened)).toEqual(serializeStudioEditableMesh(mesh));
+    }
     expect(value.assets.reduce((count, { mesh }) => count + mesh.faces.length, 0)).toBe(2);
     expect(value.issues.some(({ code }) => code === "obj-mixed-uv-parts")).toBe(true);
   });

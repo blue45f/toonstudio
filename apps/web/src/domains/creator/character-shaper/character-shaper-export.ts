@@ -1,3 +1,5 @@
+import { pendingStudioVrmGripSettlement } from "../vrm/studio-vrm-grip-settlement";
+
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 
 const exportOwners = new WeakMap<object, symbol>();
@@ -17,6 +19,7 @@ export function characterExportSize(width: number, height: number, edge: Charact
 
 export interface CharacterExportSession {
   readonly signal: AbortSignal;
+  freezeSettledPose(): Promise<void>;
   assertCurrent(): void;
   cancel(): void;
   release(): void;
@@ -49,7 +52,6 @@ export function acquireCharacterExportSession(
   let released = false;
   if (host.texturePaintMutationBlockedRef) host.texturePaintMutationBlockedRef.current = true;
   if (host.wardrobeMutationBlockedRef) host.wardrobeMutationBlockedRef.current = true;
-  host.setIsCapturing(true);
 
   const release = () => {
     if (released) return;
@@ -63,23 +65,30 @@ export function acquireCharacterExportSession(
     host.releaseVrmCaptureOperation("export");
     host.setIsCapturing(false);
   };
+  const assertCurrent = () => {
+    if (controller.signal.aborted) throw new DOMException("내보내기를 취소했습니다.", "AbortError");
+    const current = readHost();
+    if (current.vrm !== model || (current.vrmRef && current.vrmRef.current !== model) || current.activeModelId !== modelId
+      || current.captureRef?.current?.gl !== capture.gl
+      || current.captureRef?.current?.scene !== capture.scene
+      || current.captureRef?.current?.camera !== capture.camera
+      || exportOwners.get(operationRef) !== owner
+      || current.captureOperationRef !== operationRef
+      || operationRef.current !== "export"
+      || current.captureVisualAuthorityRef?.current?.identity !== visualIdentity
+      || current.texturePaintRuntimeRef?.current !== paintRuntime
+      || paintRuntime?.getContentRevision() !== paintRevision) {
+      throw new Error("내보내는 동안 캐릭터가 바뀌었습니다. 현재 상태로 다시 내보내 주세요.");
+    }
+  };
   return {
     signal: controller.signal,
-    assertCurrent() {
-      if (controller.signal.aborted) throw new DOMException("내보내기를 취소했습니다.", "AbortError");
-      const current = readHost();
-      if (current.vrm !== model || current.activeModelId !== modelId
-        || current.captureRef?.current?.gl !== capture.gl
-        || current.captureRef?.current?.scene !== capture.scene
-        || current.captureRef?.current?.camera !== capture.camera
-        || exportOwners.get(operationRef) !== owner
-        || current.captureOperationRef !== operationRef
-        || operationRef.current !== "export"
-        || current.captureVisualAuthorityRef?.current?.identity !== visualIdentity
-        || current.texturePaintRuntimeRef?.current !== paintRuntime
-        || paintRuntime?.getContentRevision() !== paintRevision) {
-        throw new Error("내보내는 동안 캐릭터가 바뀌었습니다. 현재 상태로 다시 내보내 주세요.");
-      }
+    assertCurrent,
+    async freezeSettledPose() {
+      const pending = pendingStudioVrmGripSettlement(model, controller.signal);
+      if (pending) await pending;
+      assertCurrent();
+      host.setIsCapturing(true);
     },
     // The caller releases only after every temporary scene mutation is restored.
     cancel() { controller.abort(); },

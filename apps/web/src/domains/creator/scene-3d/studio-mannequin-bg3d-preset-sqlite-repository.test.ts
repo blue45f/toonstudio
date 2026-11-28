@@ -236,6 +236,11 @@ describe("mannequin and BG3D LT shared SQLite repositories", () => {
     });
     await expect(reopened.load()).resolves.toEqual(saved);
 
+    const partner = saved.partner;
+    if (!partner) throw new Error("저장할 상대 인형이 없습니다.");
+    await repository.save({ ...saved, partner: { ...partner, handPresetId: "hand-peace" } });
+    expect((await reopened.load())?.partner?.handPresetId).toBe("hand-peace");
+
     const solo = await repository.save(mannequinState());
     const soloRaw = await database.kvGet(
       STUDIO_MANNEQUIN_STATE_SQLITE_NAMESPACE,
@@ -256,6 +261,7 @@ describe("mannequin and BG3D LT shared SQLite repositories", () => {
       { ...base, partner: { ...partner, offset: [99, 0, 0.42] } },
       { ...base, partner: { ...partner, params: { ...partner.params, heightCm: 999 } } },
       { ...base, partner: { ...partner, futureField: true } },
+      { ...base, partner: { ...partner, handPresetId: "run" } },
       { ...base, partner: "partner" },
     ] as unknown as StudioMannequinPersistentState[];
     for (const state of rejected) {

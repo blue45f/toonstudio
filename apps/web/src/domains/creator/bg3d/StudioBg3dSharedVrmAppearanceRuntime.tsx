@@ -1,5 +1,5 @@
 import { useThree } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { parseAvatarForgeState } from "../vrm/studio-vrm-avatar-forge";
 import { createStudioVrmAvatarForgeFaceController } from "../vrm/studio-vrm-avatar-forge-face-controller";
@@ -25,6 +25,7 @@ import {
   type WardrobeState,
 } from "../vrm/studio-vrm-wardrobe";
 import { StudioVrmAvatarForge } from "../vrm/StudioVrmAvatarForge";
+import { resolveStudioVrmHeldPropContacts } from "../vrm/studio-vrm-held-prop-contacts";
 import {
   StudioVrmPropAttachment,
   StudioVrmRuntimeCommit,
@@ -533,12 +534,14 @@ export function StudioBg3dSharedVrmAppearanceRuntime({
   const fitReport = preparedForIdentity
     ? inspectStudioVrmGarmentFit(wardrobeState, preparedForIdentity.wardrobeMetrics)
     : null;
-  const effectivePropRigMetrics = preparedForIdentity
-    ? scaleVrmPropRigMetrics(
-        preparedForIdentity.propRigMetrics,
-        source.scene.appearance.bodyScale,
-      )
-    : null;
+  const basePropMetrics = preparedForIdentity?.propRigMetrics;
+  const bodyScale = source.scene.appearance.bodyScale;
+  const effectivePropRigMetrics = useMemo(() => basePropMetrics
+    ? scaleVrmPropRigMetrics(basePropMetrics, bodyScale)
+    : null, [basePropMetrics, bodyScale]);
+  const heldProps = useMemo(() => effectivePropRigMetrics && projection.handProps.status === "supported"
+    ? resolveStudioVrmHeldPropContacts(projection.handProps.props.map(prop => prop.instance), effectivePropRigMetrics)
+    : [], [effectivePropRigMetrics, projection.handProps]);
 
   function handleAttachmentsReady(): boolean {
     if (
@@ -642,11 +645,11 @@ export function StudioBg3dSharedVrmAppearanceRuntime({
         && fullySupported
         && !attachmentsQuarantined
         && projection.handProps.status === "supported"
-        ? projection.handProps.props.map((prop) => (
+        ? heldProps.map((instance) => (
             <StudioVrmPropAttachment
-              key={`${preparedForIdentity.preparedIdentityKey}:${prop.uid}`}
+              key={`${preparedForIdentity.preparedIdentityKey}:${instance.uid}`}
               vrm={vrm}
-              instance={prop.instance}
+              instance={instance}
               metrics={effectivePropRigMetrics}
               rigRevision={preparedForIdentity.rigRevision}
               onAttachmentStatus={handlePropAttachmentStatus}

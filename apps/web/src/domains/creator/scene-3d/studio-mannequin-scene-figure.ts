@@ -17,6 +17,7 @@ import {
   resolveStudioMannequinSurfaceMode,
   shouldSkipLegacyCoreBodyPrimitive,
   type StudioMannequinFingerSplayMap,
+  type StudioMannequinHandState,
   type StudioMannequinSurfaceMode,
 } from "./studio-mannequin-ecorche-anatomy";
 import {
@@ -32,7 +33,7 @@ import {
   type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import { buildStudioMannequinPalmLoft } from "./studio-mannequin-hand-geometry";
-import { normalizeStudioMannequinPose, type StudioMannequinPose } from "./studio-mannequin-poses";
+import { haveSameStudioMannequinBodyParams, normalizeStudioMannequinPose, type StudioMannequinPose } from "./studio-mannequin-poses";
 import {
   buildStudioMannequinLoftGeometry,
   buildStudioMannequinSkinnedTorsoGeometry,
@@ -83,6 +84,8 @@ export interface StudioMannequinSceneFigure {
   readonly effectorHandles: () => readonly THREE.Mesh[];
   rebuild(spec: StudioMannequinSpec, pose: StudioMannequinPose): void;
   setFingerSpec(spec: StudioMannequinSpec): void;
+  /** 상대의 체형이 같으면 관절 그래프와 카메라를 유지하고 손 메시만 바꾼다. */
+  applyPartnerPose(spec: StudioMannequinSpec, pose: StudioMannequinPose, hands?: StudioMannequinHandState): void;
   /** 관절 그래프까지 다시 만들었을 때 true를 돌려준다. */
   setEcorcheState(next: Partial<StudioMannequinFigureEcorcheState>, pose: StudioMannequinPose): boolean;
   getEcorcheState(): StudioMannequinFigureEcorcheState;
@@ -640,6 +643,21 @@ export function createStudioMannequinSceneFigure(input: {
       ecorcheState = { ...ecorcheState, fingerPose: nextSpec.fingerPose };
       syncDigits();
       applySelectionTint();
+    },
+    applyPartnerPose(nextSpec, pose, hands) {
+      if (spec !== nextSpec) {
+        ecorcheState = {
+          ...ecorcheState, fingerPose: nextSpec.fingerPose,
+          leftSplayDeg: hands?.leftSplayDeg, rightSplayDeg: hands?.rightSplayDeg,
+        };
+        if (!haveSameStudioMannequinBodyParams(spec.params, nextSpec.params)) {
+          rebuild(nextSpec, pose);
+          return;
+        }
+        spec = nextSpec;
+        syncDigits();
+      }
+      applyPose(pose);
     },
     setEcorcheState(next, pose) {
       const previous = ecorcheState;

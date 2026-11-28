@@ -8,6 +8,7 @@ import { Box3, Vector3, type Object3D } from "three";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { attachStudioGeneric3dWorkflowMetadata, parseStudioGeneric3dWorkflowMetadata } from "../studio-generic-3d-workflow-metadata";
 
+import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
@@ -52,13 +53,37 @@ export function resolveStudioBg3dMetricPlacementScale(
 ): [number, number, number] {
   const policy = readStudioBg3dModelMetricPolicy(attachment);
   const scale = resolveStudioBg3dMetricInstanceScale(policy, cached);
-  if (!policy || !cached) return scale;
+  if (policy && cached) checkedMetricBounds(cached, scale[0]);
+  return scale;
+}
+
+function checkedMetricBounds(cached: MetricModelCache, scale: number): Box3 {
   const bounds = new Box3().setFromObject(cached.root, true);
   if (bounds.isEmpty() || [...bounds.min.toArray(), ...bounds.max.toArray()]
-    .some((value) => !Number.isFinite(value) || Math.abs(value * scale[0]) > 10_000)) {
+    .some((value) => !Number.isFinite(value) || Math.abs(value * scale) > 10_000)) {
     throw new StudioBg3dModelMetricPolicyError();
   }
-  return scale;
+  return bounds;
+}
+
+export type StudioBg3dCatalogMount = "floor" | { readonly ceilingHeightMetres: number };
+
+/** 원고용 가구의 미터 축척과 실제 접점을 인스턴스에 기록한다. 공유 모델의 정점·캐시는 수정하지 않는다. */
+export function placeStudioBg3dCatalogFurniture(
+  instance: BgCustomModelInstance, cached: MetricModelCache, mount: StudioBg3dCatalogMount,
+): BgCustomModelInstance {
+  const scale = resolveStudioBg3dMetricInstanceScale("authored-metres", cached);
+  const bounds = checkedMetricBounds(cached, scale[0]);
+  const center = bounds.getCenter(new Vector3());
+  return {
+    ...instance,
+    scale,
+    position: [
+      instance.position[0] - center.x * scale[0],
+      mount === "floor" ? -bounds.min.y * scale[1] : mount.ceilingHeightMetres - bounds.max.y * scale[1],
+      instance.position[2] - center.z * scale[2],
+    ],
+  };
 }
 
 interface PlacementAsset {

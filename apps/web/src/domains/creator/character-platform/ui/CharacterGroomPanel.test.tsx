@@ -65,6 +65,27 @@ function ribbon(authority: CharacterAuthoringAuthority) {
 }
 
 describe("CharacterGroomPanel", () => {
+  it("가닥 끝의 음수 입력 중 미완성 값은 미리보기를 보존하고 표시 반올림은 원본을 바꾸지 않는다", () => {
+    const authority = fixture();
+    click("그룹 추가"); click("헤어 미리보기");
+    fireEvent.change(screen.getByRole("combobox", { name: "제어점" }), { target: { value: "3" } });
+    const x = screen.getByRole<HTMLInputElement>("spinbutton", { name: "X (m)" });
+    fireEvent.change(x, { target: { value: "0.0187654321" } });
+    fireEvent.blur(x);
+    expect(x.value).toBe("0.01877");
+    fireEvent.change(x, { target: { value: "" } });
+    expect(x.value).toBe("");
+    const before = authority.getSnapshot().previewDocument?.groom.groups[0].guides[0];
+    expect(before?.points[3].position[0]).toBe(0.0187654321);
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.change(x, { target: { value: "-0.035" } });
+    fireEvent.blur(x);
+    click("헤어 적용");
+    const after = authority.getSnapshot().document.groom.groups[0].guides[0];
+    expect(after.points.slice(0, 3)).toEqual(before?.points.slice(0, 3));
+    expect(after.points[3].position[0]).toBe(-0.035);
+  });
+
   it("작은 화면에서 미리보기를 편집하면 초안을 이어가고 적용·취소는 원본과 이력을 구분한다", () => {
     const authority = fixture({ compact: true });
     click("그룹 추가"); click("가이드 추가"); click("헤어 미리보기");

@@ -23,6 +23,7 @@ import {
   getErrorMessage,
   roundThumbnailCaptureSize,
 } from "./studio-vrm-poser-helpers";
+import { pendingStudioVrmGripSettlement } from "./studio-vrm-grip-settlement";
 import {
   DEFAULT_VRM_PROP_RIG_METRICS,
 } from "./studio-vrm-prop-rig";
@@ -609,70 +610,82 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
     const thumbnailFaceControllerSnapshot = avatarForgeFaceController.getSnapshot();
     const thumbnailVisualAuthority = captureVisualAuthorityRef.current;
     if (!thumbnailVisualAuthority) return;
-    if (!acquireVrmCaptureOperation("thumbnail")) return;
-    const releaseCaptureHelpers = acquireVrmCaptureHelperLease();
-    let finished = false;
+    const controller = new AbortController();
+    let firstFrame: number | null = null;
     let secondFrame: number | null = null;
-    setIsThumbnailCapturing(true);
+    let releaseHelpers: (() => void) | undefined;
     const finish = () => {
-      if (finished) return;
-      finished = true;
-      releaseCaptureHelpers();
+      if (!releaseHelpers) return;
+      releaseHelpers();
+      releaseHelpers = undefined;
       releaseVrmCaptureOperation("thumbnail");
       setIsThumbnailCapturing(false);
     };
-    const firstFrame = requestAnimationFrame(() => {
-      secondFrame = requestAnimationFrame(() => {
-        try {
-          if (
-            requestId !== thumbnailRequestRef.current
-            || proportionRigReceiptRef.current !== thumbnailProportionRigReceipt
-            || avatarForgeAuthorityIdentityRef.current !== thumbnailAvatarForgeIdentity
-            || avatarForgeFaceController.getSnapshot() !== thumbnailFaceControllerSnapshot
-            || captureVisualAuthorityRef.current?.identity !== thumbnailVisualAuthority.identity
-          ) return;
+    const capture = () => {
+      try {
+        if (
+          requestId !== thumbnailRequestRef.current
+          || proportionRigReceiptRef.current !== thumbnailProportionRigReceipt
+          || avatarForgeAuthorityIdentityRef.current !== thumbnailAvatarForgeIdentity
+          || avatarForgeFaceController.getSnapshot() !== thumbnailFaceControllerSnapshot
+          || captureVisualAuthorityRef.current?.identity !== thumbnailVisualAuthority.identity
+        ) return;
 
-          const currentCapture = captureRef.current;
-          if (!currentCapture.gl || !currentCapture.scene || !currentCapture.camera) return;
+        const currentCapture = captureRef.current;
+        if (!currentCapture.gl || !currentCapture.scene || !currentCapture.camera) return;
 
-          const { width, height } = roundThumbnailCaptureSize(currentCapture.gl.domElement);
-          const rgba = captureStudioVrmRgba(
-            currentCapture.gl,
-            currentCapture.scene,
-            currentCapture.camera,
-            { width, height },
-          );
-          const thumbnail = createCharacterThumbnail(rgba, width, height);
-          if (!thumbnail) return;
+        const { width, height } = roundThumbnailCaptureSize(currentCapture.gl.domElement);
+        const rgba = captureStudioVrmRgba(
+          currentCapture.gl,
+          currentCapture.scene,
+          currentCapture.camera,
+          { width, height },
+        );
+        const thumbnail = createCharacterThumbnail(rgba, width, height);
+        if (!thumbnail) return;
 
-          setLibraryEntries((entries: VrmLibraryEntry[]) => entries.map((entry: VrmLibraryEntry) => (entry.id === activeLibraryEntry.id ? { ...entry, thumbnail } : entry)));
-          if (activeLibraryEntry.source === "memory") {
-            const memoryModel = memoryVrmModelsRef.current.get(activeLibraryEntry.id);
-            if (memoryModel) {
-              memoryVrmModelsRef.current.set(activeLibraryEntry.id, {
-                ...memoryModel,
-                thumbnail,
-                updatedAt: Date.now(),
-              });
-            }
-            return;
+        setLibraryEntries((entries: VrmLibraryEntry[]) => entries.map((entry: VrmLibraryEntry) => (entry.id === activeLibraryEntry.id ? { ...entry, thumbnail } : entry)));
+        if (activeLibraryEntry.source === "memory") {
+          const memoryModel = memoryVrmModelsRef.current.get(activeLibraryEntry.id);
+          if (memoryModel) {
+            memoryVrmModelsRef.current.set(activeLibraryEntry.id, {
+              ...memoryModel,
+              thumbnail,
+              updatedAt: Date.now(),
+            });
           }
-          saveVrmThumbnail(activeLibraryEntry.id, thumbnail).catch((caughtError: unknown) => {
-            setLibraryError(getErrorMessage(caughtError, "썸네일을 저장하지 못했습니다."));
-          });
-        } catch (caughtError) {
-          setLibraryError(getErrorMessage(caughtError, "썸네일을 만들지 못했습니다."));
-        } finally {
-          finish();
+          return;
+        }
+        saveVrmThumbnail(activeLibraryEntry.id, thumbnail).catch((caughtError: unknown) => {
+          setLibraryError(getErrorMessage(caughtError, "썸네일을 저장하지 못했습니다."));
+        });
+      } catch (caughtError) {
+        setLibraryError(getErrorMessage(caughtError, "썸네일을 만들지 못했습니다."));
+      } finally {
+        finish();
+      }
+    };
+    const scheduleCapture = () => {
+      // 자동 미리보기는 손이 준비된 뒤에만 캡처 권한을 얻어 사용자의 원고 출력을 막지 않는다.
+      if (controller.signal.aborted || requestId !== thumbnailRequestRef.current || !acquireVrmCaptureOperation("thumbnail")) return;
+      releaseHelpers = acquireVrmCaptureHelperLease();
+      setIsThumbnailCapturing(true);
+      firstFrame = requestAnimationFrame(() => { secondFrame = requestAnimationFrame(capture); });
+    };
+    const pendingGrip = pendingStudioVrmGripSettlement(vrm, controller.signal);
+    if (pendingGrip) {
+      void pendingGrip.then(scheduleCapture, (error: unknown) => {
+        if (!controller.signal.aborted && !(error instanceof Error && error.name === "AbortError")) {
+          setLibraryError(getErrorMessage(error, "썸네일을 만들지 못했습니다."));
         }
       });
-    });
-
+    } else {
+      scheduleCapture();
+    }
     return () => {
-      cancelAnimationFrame(firstFrame);
-      if (secondFrame !== null) {
-        cancelAnimationFrame(secondFrame);
-      }
+      controller.abort();
+      if (firstFrame !== null) cancelAnimationFrame(firstFrame);
+      if (secondFrame !== null) cancelAnimationFrame(secondFrame);
       finish();
     };
   }, [

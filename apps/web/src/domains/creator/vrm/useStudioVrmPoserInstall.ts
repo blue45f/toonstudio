@@ -5,6 +5,7 @@
 import {
   pickNaturalIdlePose,
 } from "../studio-pose-presets";
+import { retargetStudioVrmPresetTorso } from "./studio-vrm-preset-torso";
 
 import {
   disposeStudioVrmAsset as disposeVrm,
@@ -358,7 +359,7 @@ export function useStudioVrmPoserInstall(h: StudioVrmPoserHost): void {
       } else {
         // 스폰 기본 포즈: T-포즈 대신 캐릭터 id로 결정되는 자연 아이들 포즈를 적용한다.
         const spawnPose = pickNaturalIdlePose(nextModelId);
-        const strippedSpawn = stripFingerBones(spawnPose.bones);
+        const strippedSpawn = retargetStudioVrmPresetTorso(nextVrm, stripFingerBones(spawnPose.bones));
         const spawnFingers = extractStudioVrmFingerRotations(spawnPose.bones);
         setActivePoseId(spawnPose.id);
         setCustomBones(strippedSpawn);

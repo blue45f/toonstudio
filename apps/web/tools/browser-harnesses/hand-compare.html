@@ -13,6 +13,8 @@
       .panel { position: relative; background: #0e0c0a; border: 1px solid #3a342c; border-radius: 12px; overflow: hidden; min-height: 280px; }
       .panel canvas { width: 100% !important; height: 100% !important; display: block; }
       .label { position: absolute; left: 10px; top: 8px; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 6px; z-index: 2; font-size: 12px; }
+      .note:not([open]) { right: auto; }
+      .note summary { cursor: pointer; }
       .note { position: absolute; left: 10px; bottom: 8px; right: 10px; background: rgba(0,0,0,.55); padding: 6px 8px; border-radius: 6px; z-index: 2; font-size: 11px; white-space: pre-wrap; }
     </style>
   </head>
@@ -31,19 +33,19 @@
     <div id="grid">
       <div class="panel" id="full">
         <div class="label">전신 · 자연 아이들</div>
-        <div class="note" id="full-note">캐릭터 선택…</div>
+        <details class="note"><summary>측정값</summary><div id="full-note">캐릭터 선택…</div></details>
       </div>
       <div class="panel" id="hands">
         <div class="label">손 클로즈업 · 카메라 정면</div>
-        <div class="note" id="hands-note">캐릭터 선택…</div>
+        <details class="note"><summary>측정값</summary><div id="hands-note">캐릭터 선택…</div></details>
       </div>
       <div class="panel" id="left">
-        <div class="label">왼손 확대</div>
-        <div class="note" id="left-note">…</div>
+        <div class="label">왼손 바깥·아래</div>
+        <details class="note"><summary>측정값</summary><div id="left-note">…</div></details>
       </div>
       <div class="panel" id="right">
-        <div class="label">오른손 확대</div>
-        <div class="note" id="right-note">…</div>
+        <div class="label">오른손 바깥·아래</div>
+        <details class="note"><summary>측정값</summary><div id="right-note">…</div></details>
       </div>
     </div>
     <script type="module" src="./hand-compare-main.ts"></script>

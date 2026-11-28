@@ -48,6 +48,8 @@ const server = spawn(
   ],
   {
     cwd: WEB_ROOT,
+    // 캐릭터를 바꿔 촬영하는 도중 다른 편집 작업이나 지연 의존성 탐색으로 검수 페이지가 새로 고쳐지지 않게 한다.
+    env: { ...process.env, TOONSTUDIO_VITE_DISABLE_WATCH: "1", TOONSPECTRUM_VITE_DISABLE_OPTIMIZE_DEPS: "1" },
     stdio: ["ignore", "pipe", "pipe"],
   },
 );
@@ -102,6 +104,7 @@ try {
 
   browser = await chromium.launch({
     headless: true,
+    ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {}),
     args: [
       "--no-sandbox",
       "--disable-dev-shm-usage",
@@ -141,6 +144,7 @@ try {
 
   await page.goto(`${origin}/tools/browser-harnesses/props-compare.html`, { waitUntil: "load", timeout: 120_000 });
   const propReceipts: unknown[] = [];
+  receipt.props = propReceipts;
   for (const id of CHARACTER_IDS) {
     const name = await clickCharacter(page, id);
     await page.waitForFunction(
@@ -160,9 +164,17 @@ try {
     await page.locator("#right-item").screenshot({ path: resolve(OUTPUT, `props-${id}-right-mug.png`), animations: "disabled" });
     await page.locator("#left-item").screenshot({ path: resolve(OUTPUT, `props-${id}-left-book.png`), animations: "disabled" });
     await page.locator("#close").screenshot({ path: resolve(OUTPUT, `props-${id}-contact-close.png`), animations: "disabled" });
-    propReceipts.push({ id, name, note, metrics });
+    const visibility = await page.evaluate(() => (window as Window & {
+      __measurePropsCompareVisibility?: () => Record<string, { visiblePixels: number; isolatedPixels: number }>;
+    }).__measurePropsCompareVisibility?.());
+    propReceipts.push({ id, name, note, metrics, visibility });
+    for (const cut of ["rightMug", "leftBook", "closeMug"]) {
+      const pixels = visibility?.[cut];
+      if (!pixels?.isolatedPixels || pixels.visiblePixels < pixels.isolatedPixels / 2) {
+        throw new Error(`${name} ${cut}: 소품 윤곽의 절반이 보이지 않습니다. 해당 확대 이미지와 receipt.json의 가시 픽셀 수를 확인하세요.`);
+      }
+    }
   }
-  receipt.props = propReceipts;
 } finally {
   await browser?.close().catch(() => undefined);
   await stopChildProcess(server).catch(() => undefined);
