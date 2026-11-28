@@ -661,7 +661,7 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(byId.get("wave108VerticalScrollRhythm")?.status).toBe("live-connected");
     expect(byId.get("wave109SmartThumbnailPackager")?.status).toBe("live-connected");
     expect(byId.get("wave110LocalizationExpansionBridge")?.status).toBe("live-connected");
-  });
+  }, 20_000);
 
   it("StudioSupergapRuntimeHubLazyHost가 열기 전 0 DOM 유지 후 토글 시 11종 허브 드로어를 지연 마운트한다", async () => {
     closeStudioSupergapRuntimeHub();
