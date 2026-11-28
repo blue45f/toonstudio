@@ -69,7 +69,7 @@ export function createWave153To158ExtensionSubsystems(): readonly SupergapExtens
           panels: [
             {
               panelId: "cut-1",
-              panelIndex: 0,
+              panelIndex: 1,
               shotScale: "wide-establishing" as const,
               settingKo: "비 내리는 서울 도심 옥상",
               settingEn: "Rainy Seoul rooftop",
@@ -106,7 +106,7 @@ export function createWave153To158ExtensionSubsystems(): readonly SupergapExtens
             },
             {
               panelId: "cut-2",
-              panelIndex: 1,
+              panelIndex: 2,
               shotScale: "closeup" as const,
               settingKo: "비 내리는 서울 도심 옥상",
               settingEn: "Rainy Seoul rooftop",
@@ -263,12 +263,12 @@ export function createWave153To158ExtensionSubsystems(): readonly SupergapExtens
         const ok =
           plan.reframe.afterAudit.jointCropViolations.length === 0 &&
           plan.reframe.afterAudit.passed &&
-          plan.dof.nearLimitM > 0;
+          plan.dof.nearFocusLimitM > 0;
         return {
           status: ok ? "live-connected" : "browser-fallback",
-          summaryKo: `85mm 압축 ${round2(plan.compression.compressionRatio)}x · 관절 절단 ${plan.reframe.beforeAudit.jointCropViolations.length}건→0건 · 구도 ${plan.reframe.afterAudit.framingScore}점`,
+          summaryKo: `85mm 압축 ${round2(plan.compression.backgroundCompressionRatio)}x · 관절 절단 ${plan.reframe.beforeAudit.jointCropViolations.length}건→0건 · 구도 ${plan.reframe.afterAudit.framingScore}점`,
           metrics: {
-            compressionRatio: round2(plan.compression.compressionRatio),
+            compressionRatio: round2(plan.compression.backgroundCompressionRatio),
             jointCropsBefore: plan.reframe.beforeAudit.jointCropViolations.length,
             jointCropsAfter: plan.reframe.afterAudit.jointCropViolations.length,
             framingScoreAfter: plan.reframe.afterAudit.framingScore,
@@ -294,10 +294,10 @@ export function createWave153To158ExtensionSubsystems(): readonly SupergapExtens
           res.compaction.stateHashEquivalent;
         return {
           status: ok ? "live-connected" : "browser-fallback",
-          summaryKo: `커밋 트랜잭션 ${res.replay.committedTransactionIds.length}건 무손실 복구 · 체크포인트 동치 압축 · 미동기화 원고 보호`,
+          summaryKo: `커밋 트랜잭션 ${res.replay.committedTxCount}건 무손실 복구 · 체크포인트 동치 압축 · 미동기화 원고 보호`,
           metrics: {
             overallHealthy: res.overallHealthy,
-            committedTxs: res.replay.committedTransactionIds.length,
+            committedTxs: res.replay.committedTxCount,
             stateHashEquivalent: res.compaction?.stateHashEquivalent ?? false,
             targetHeadroomMet: res.quotaPlan.targetHeadroomMet,
           },
