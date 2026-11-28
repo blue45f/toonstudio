@@ -629,16 +629,16 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("createFullStudioSupergapRuntimeHub가 Wave 68~128 실전 확장까지 67종 전체를 오류 0건으로 진단한다", async () => {
+  it("createFullStudioSupergapRuntimeHub가 Wave 68~134 실전 확장까지 73종 전체를 오류 0건으로 진단한다", async () => {
     const hub = createFullStudioSupergapRuntimeHub({
       loopbackConfig: { fetchImpl: unreachableFetch },
     });
-    expect(hub.getRegisteredSubsystems().length).toBe(67);
+    expect(hub.getRegisteredSubsystems().length).toBe(73);
 
     const report = await hub.runDiagnosticSelfCheck();
     expect(report.allHealthy).toBe(true);
     expect(report.errorCount).toBe(0);
-    expect(report.subsystems.length).toBe(67);
+    expect(report.subsystems.length).toBe(73);
 
     const byId = new Map(report.subsystems.map((item) => [item.id, item]));
     expect(byId.get("wave68ShallowWaterFluid")?.status).toBe("live-connected");
@@ -705,6 +705,12 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(byId.get("wave126ScrollSyncBgmCrossfade")?.status).toBe("live-connected");
     expect(byId.get("wave127BookImpositionCreep")?.status).toBe("live-connected");
     expect(byId.get("wave128DialogueProsodyVoiceCast")?.status).toBe("live-connected");
+    expect(byId.get("wave129RedlinePinRevisionConsensus")?.status).toBe("live-connected");
+    expect(byId.get("wave130SketchOverdrawCenterline")?.status).toBe("live-connected");
+    expect(byId.get("wave131PanelBreakoutGutterCompositor")?.status).toBe("live-connected");
+    expect(byId.get("wave132AntiScrapeForensicWatermark")?.status).toBe("live-connected");
+    expect(byId.get("wave133AtmosphericDepthWeather")?.status).toBe("live-connected");
+    expect(byId.get("wave134EpisodeDeadlineCpmBalancer")?.status).toBe("live-connected");
   }, 20_000);
 
   it("열기 전 드로어가 없고 열면 현재 등록된 전체 진단 항목 수를 표시한다", async () => {
