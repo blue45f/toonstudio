@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { studioVirtualCampusManifest } from "../studio-virtual-space-campus-world";
+import { studioVirtualToonHqManifest } from "../office2d/hq/toon-hq-manifest";
 import { SpaceMinimap } from "./SpaceMinimap";
 import { spaceMinimapPeerTarget } from "./space-minimap-labels";
 
@@ -36,6 +37,39 @@ describe("SpaceMinimap quick travel", () => {
       currentRoomId={null} variant="full" onMoveTo={vi.fn()} />);
     expect(container.querySelectorAll(".space-minimap__zone-actions")).toHaveLength(10);
     expect(container.querySelector(".space-minimap__zone-jump")).toBeNull();
+  });
+
+  it("목적지 목록에서 영문 좌석명을 찾아 그 좌석 앞으로 걷고, 방 바로 가기는 별도 동작으로 실행한다", () => {
+    const manifest = studioVirtualToonHqManifest(false);
+    const onMoveTo = vi.fn(), onJumpTo = vi.fn();
+    render(<SpaceMinimap manifest={manifest} self={{ x: 336, y: 1470 }} people={[]} currentRoomId="hq-lobby"
+      variant="full" onMoveTo={onMoveTo} onJumpTo={onJumpTo} />);
+    fireEvent.click(screen.getByRole("button", { name: "목적지 목록" }));
+    const input = screen.getByRole("searchbox", { name: "방·좌석·도구 검색" });
+    fireEvent.change(input, { target: { value: " Ｒｅｖｉｅｗ seat 2 " } });
+    expect(screen.getByRole("status").textContent).toBe("공간 1곳");
+    expect(onMoveTo).not.toHaveBeenCalled();
+    expect(onJumpTo).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "PD 리뷰 좌석 2로 걸어가기" }));
+    expect(onMoveTo).toHaveBeenCalledExactlyOnceWith({ x: 1660, y: 1002 });
+    fireEvent.click(screen.getByRole("button", { name: "PD 리뷰룸으로 바로 가기" }));
+    expect(onJumpTo).toHaveBeenCalledExactlyOnceWith(manifest.spawns.find(spawn => spawn.id === "hq-review-room")?.point);
+    fireEvent.change(input, { target: { value: "없는자리" } });
+    expect(screen.getByRole("status").textContent).toContain("일치하는 목적지가 없어요");
+    fireEvent.click(screen.getByRole("button", { name: "공간 지도" }));
+    expect(screen.queryByRole("searchbox")).toBeNull();
+  });
+
+  it("개별 스폰이 없는 방에서는 월드 입구 대신 그 방의 상호작용 지점으로 이동한다", () => {
+    const cafe = campus.rooms.find(room => room.labelKo.includes("카페"));
+    if (!cafe) throw new Error("캠퍼스 카페가 필요합니다");
+    const point = { x: cafe.x + 24, y: cafe.y + 24 };
+    const manifest = { ...campus, spawns: campus.spawns.filter(spawn => spawn.id !== cafe.id),
+      interactions: [{ id: "cafe-tool", zoneId: cafe.id, point, radius: 24, labelKo: "도구", labelEn: "Tool", action: "assets" as const }] };
+    const onMoveTo = vi.fn();
+    render(<SpaceMinimap manifest={manifest} self={{ x: 50, y: 50 }} people={[]} currentRoomId={null} variant="full" onMoveTo={onMoveTo} />);
+    fireEvent.click(screen.getByRole("button", { name: /카페로 걸어가기/u }));
+    expect(onMoveTo).toHaveBeenCalledExactlyOnceWith(point);
   });
 
   it("게이트 칩은 바로 가기 콜백이 없으면 게이트까지 걷는다", () => {

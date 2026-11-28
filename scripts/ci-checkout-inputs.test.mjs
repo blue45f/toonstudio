@@ -260,7 +260,7 @@ test("편집 하네스는 전체 타입 검사에서 import하는 MCP 환경 JSO
   }
 });
 
-test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 원본을 최초 체크아웃한다", async () => {
+test("세션 목표 PR은 related 검사가 읽는 VRM·배경·가상 스튜디오 캐릭터 원본과 미리보기를 최초 체크아웃한다", async () => {
   const workflow = await fs.readFile(path.join(root, ".github/workflows/toonstudio-session-goals.yml"), "utf8");
   const job = parse(workflow).jobs["focused-validation"];
   const checkout = job.steps.find((step) => step.uses?.startsWith("actions/checkout@"));
@@ -305,8 +305,18 @@ test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 �
   const insertPreviews = catalog.insertAssets.filter((url) =>
     url.startsWith("/assets/3d/environments/hero-v2/") || url.startsWith("/assets/studio/scene-template-previews/"));
   const prOnly = [...catalog.hero, ...backgrounds, ...catalog.heroScenes, ...insertPreviews];
-  const retained = [...new Set([...catalog.models, ...catalog.thumbnails, ...backgrounds, ...catalog.heroScenes, ...catalog.insertAssets])]
-    .map((url) => `apps/web/public${url}`);
+  const officeBase = "apps/web/public/assets/virtual-studio";
+  const officeFiles = execFileSync("git", ["ls-files", "--", `${officeBase}/office-cast-v2/`, `${officeBase}/toon-office-v1/characters/`],
+    { cwd: root, encoding: "utf8", env: fixtureGitEnvironment(root) }).trim().split("\n");
+  for (const file of ["office-cast-v2/artist-walk.png", "office-cast-v2/editor-work.webp",
+    "toon-office-v1/characters/artist.webp", "toon-office-v1/characters/work/junseo.webp", "toon-office-v1/characters/preview/nia.webp"]) {
+    assert(officeFiles.includes(`${officeBase}/${file}`), `캐릭터 자산 검증 입력 누락: ${file}`);
+  }
+  const retained = [
+    ...[...new Set([...catalog.models, ...catalog.thumbnails, ...backgrounds, ...catalog.heroScenes, ...catalog.insertAssets])]
+      .map((url) => `apps/web/public${url}`),
+    ...officeFiles,
+  ];
   assertTrackedDocumentInputs(retained.map((file) => `/${file}`), { cwd: root });
   const omitted = [
     "apps/web/public/vrm/unrelated.vrm",
@@ -317,6 +327,7 @@ test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 �
     "apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/mobile.glb",
     "apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/contact_sheet.png",
     "apps/web/public/assets/unrelated/large.glb",
+    `${officeBase}/toon-office-v1/objects/desk-artist.webp`,
     "artifacts/large.bin",
   ];
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "session-goals-checkout-"));
@@ -345,6 +356,7 @@ test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 �
         }
         assert.deepEqual(missing, [], "PR related 검사가 읽는 정본을 최초 checkout에 포함해야 합니다.");
       } else {
+        for (const file of officeFiles) await assert.rejects(fs.access(path.join(directory, file)), { code: "ENOENT" });
         for (const url of prOnly) {
           await assert.rejects(fs.access(path.join(directory, `apps/web/public${url}`)), { code: "ENOENT" });
         }

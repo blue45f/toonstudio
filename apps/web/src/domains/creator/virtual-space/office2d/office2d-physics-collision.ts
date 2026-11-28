@@ -144,6 +144,8 @@ export class Office2dBody {
   y: number;
   previousX: number;
   previousY: number;
+  previousAngle = 0;
+  previousSpin = 0;
   vx = 0;
   vy = 0;
   /** 강체 회전 각도(rad). 토크에 의해 변화하며 렌더러가 소품 회전에 반영한다. */
@@ -372,11 +374,15 @@ export class Office2dSpatialHash {
   }
 
   query(minX: number, minY: number, maxX: number, maxY: number, visit: (body: Office2dBody) => void): void {
-    const seen = new Set<Office2dBody>();
     const x0 = Math.floor(minX / this.cellSize);
     const y0 = Math.floor(minY / this.cellSize);
     const x1 = Math.floor(maxX / this.cellSize);
     const y1 = Math.floor(maxY / this.cellSize);
+    if (x0 === x1 && y0 === y1) {
+      this.cells.get(cellKey(x0, y0))?.forEach(visit);
+      return;
+    }
+    const seen = new Set<Office2dBody>();
     for (let cy = y0; cy <= y1; cy += 1) {
       for (let cx = x0; cx <= x1; cx += 1) {
         const bucket = this.cells.get(cellKey(cx, cy));

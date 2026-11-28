@@ -36,6 +36,9 @@ describe("모바일 위치 칩의 공간 전환 입구", () => {
       : "3D 전환 · 현재 2D 캠퍼스에서 3D 스튜디오 공간으로 전환" });
     expect(toggle.getAttribute("aria-pressed")).toBe(String(engineMode === "3d"));
     expect(toggle.getAttribute("type")).toBe("button");
+    // 전환 직후 포인터가 그대로 있어도 전역 도움말이 아래 업무 도구 클릭을 가로채지 않는다.
+    expect(toggle.getAttribute("data-app-tooltip-exclude")).toBe("true");
+    expect(toggle.getAttribute("title")).toContain("전환");
     expect(screen.getByText(zoneLabel)).toBeTruthy();
     toggle.focus();
     expect(document.activeElement).toBe(toggle);

@@ -27,7 +27,15 @@ test("390px 원고는 44px 도구와 안전 여백을 지키며 도크 위에 �
       bottommost: Math.max(...controls.map(rect => rect.bottom)),
     };
   });
-  for (const label of ["검색", "공유·초대", "되돌리기 · 실행취소", "펜", "지우개"]) {
+  const edit = editor.getByRole("button", { name: "편집", exact: true });
+  await expect(edit).toHaveAttribute("aria-expanded", "false");
+  await edit.click();
+  for (const label of ["검색", "공유·초대", "되돌리기 · 실행취소"]) {
+    await expect(editor.getByRole("button", { name: label, exact: true }).filter({ visible: true }).first()).toBeVisible();
+  }
+  await edit.click();
+  await expect(edit).toHaveAttribute("aria-expanded", "false");
+  for (const label of ["펜", "지우개"]) {
     await expect(editor.getByRole("button", { name: label, exact: true }).filter({ visible: true }).first()).toBeVisible();
   }
   const normal = await read();

@@ -268,10 +268,10 @@ describe("LPC 크레딧", () => {
 describe("LPC 스킨 연결", () => {
   const seoha = studioCharacterSkinByKey(studioLpcSkinKey("player-seoha"));
 
-  it("플레이어 프리셋은 기존 인덱스·자동 배정을 바꾸지 않고 선택 목록 끝에 붙는다", () => {
+  it("플레이어 프리셋은 기존 인덱스 11~22와 자동 배정을 유지한다", () => {
     const keys = STUDIO_CHARACTER_SKINS.map((skin) => skin.key);
     expect(keys.slice(0, 5)).toEqual(["pink", "silver", "dark", "purple", "imagegen25"]);
-    expect(keys.slice(-STUDIO_LPC_PLAYER_SKINS.length)).toEqual(STUDIO_LPC_PLAYER_SKINS.map((skin) => skin.key));
+    expect(keys.slice(11, 11 + STUDIO_LPC_PLAYER_SKINS.length)).toEqual(STUDIO_LPC_PLAYER_SKINS.map((skin) => skin.key));
     expect(STUDIO_LPC_PLAYER_SKINS.every((skin) => skin.selectionOnly && skin.pixelArt === "lpc" && skin.sharedMotionSheets)).toBe(true);
     expect(seoha.key).toBe("lpc-player-seoha");
     for (const style of STUDIO_VIRTUAL_ART_STYLE_KEYS) expect(studioCharacterSkinForArtStyle(seoha, style)).toBe(seoha);

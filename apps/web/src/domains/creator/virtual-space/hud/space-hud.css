@@ -54,6 +54,14 @@ body:has(.space-hud) [data-site-ost="mounted"] { display: none !important; }
 .space-hud *,
 .space-hud *::before,
 .space-hud *::after { box-sizing: border-box; }
+@media (forced-colors: none) {
+  :root:not([data-design-theme="contrast"]) .space-hud[data-studio-live-shell="true"] {
+    --color-accent: var(--spectrum-pigment-collab);
+    --color-accent-2: color-mix(in oklch, var(--spectrum-pigment-collab) 88%, var(--color-fg));
+    --color-accent-soft: var(--spectrum-pigment-collab-soft);
+    --color-on-accent: var(--spectrum-pigment-collab-on);
+  }
+}
 .space-hud :is(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
@@ -634,7 +642,7 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   vector-effect: non-scaling-stroke;
 }
 .space-minimap--full { display: grid; gap: 10px; width: min(760px, calc(100vw - 48px)); }
-.space-minimap--full .space-minimap__stage { max-height: min(62dvh, 520px); box-shadow: 0 14px 34px rgba(3, 6, 18, .45); border-radius: 12px; isolation: isolate; }
+.space-minimap--full .space-minimap__stage { width: min(100%, calc(min(62dvh, 520px) * var(--map-ratio))); justify-self: center; box-shadow: 0 14px 34px rgba(3, 6, 18, .45); border-radius: 12px; isolation: isolate; }
 /* 스타라이트 프레임: 지도 둘레 5px 띠에만 별빛 그라데이션을 깔아 좌표 정렬에 영향을 주지 않는다. */
 .space-minimap--full .space-minimap__stage::before {
   content: "";

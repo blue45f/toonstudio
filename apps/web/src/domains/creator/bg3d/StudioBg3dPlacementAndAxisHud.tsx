@@ -1,8 +1,12 @@
 import { AlertTriangle, Crosshair, Magnet, MoveDown, RotateCcw, RotateCw, X } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { useId, type Dispatch, type SetStateAction } from "react";
 
+import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
+import type { Bg3dModelLibraryEntry } from "./bg3d-model-library";
 import { studioBg3dClassNames as cx } from "./studio-bg3d-editor-ui";
 import type { StudioBg3dGlbUnitAxisReport } from "./studio-bg3d-glb-unit-axis-diagnostics";
+import type { StudioBg3dPlacementPreviewAsset } from "./StudioBg3dSceneNodes";
 import {
   normalizeStudioBg3dSnapSettings,
   STUDIO_BG3D_ROTATE_STEP_OPTIONS_DEG,
@@ -14,7 +18,8 @@ import {
 } from "./studio-bg3d-object-ops";
 
 export interface StudioBg3dPlacementPreviewBarProps {
-  readonly assetName: string;
+  readonly asset: Pick<StudioBg3dPlacementPreviewAsset, "modelId" | "name">;
+  readonly modelLibrary?: readonly Pick<Bg3dModelLibraryEntry, "id" | "name" | "source">[];
   readonly targetKind: "ground" | "surface";
   readonly glbDiagnostics?: StudioBg3dGlbUnitAxisReport;
   readonly viewportButtonClassName: string;
@@ -41,7 +46,8 @@ const SNAP_AXIS_OPTIONS: readonly { readonly id: StudioBg3dSnapAxis; readonly la
 ];
 
 export function StudioBg3dPlacementPreviewBar({
-  assetName,
+  asset,
+  modelLibrary,
   targetKind,
   glbDiagnostics,
   viewportButtonClassName,
@@ -49,26 +55,37 @@ export function StudioBg3dPlacementPreviewBar({
   onRotateClockwise,
   onCancel,
 }: StudioBg3dPlacementPreviewBarProps) {
+  const id = useId();
+  const bt = useBilingual("StudioBg3dPlacementPreviewBar");
+  const assetName = modelLibrary?.find((entry) => entry.source === "sample" && entry.id === asset.modelId)?.name ?? asset.name;
+  const placementTitle = formatI18nTemplate(bt("{assetName} 배치", "Place {assetName}"), { assetName });
   return (
     <div
       data-bg3d-viewport-control="true"
       data-testid="bg3d-placement-preview-bar"
-      role="status"
-      aria-live="polite"
+      role="group"
+      aria-labelledby={`${id}-asset`}
+      aria-describedby={`${id}-instructions`}
       className="absolute inset-x-2 bottom-2 z-20 mx-auto flex max-w-xl flex-col gap-1.5 rounded-xl border border-accent/45 bg-panel/95 p-2 shadow-lg backdrop-blur sm:bottom-2.5 sm:px-3"
     >
       <div className="flex items-center gap-2">
         <Crosshair className="hidden shrink-0 text-accent sm:block" size={17} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold text-fg">{assetName} 배치</p>
-          <p className="truncate text-[0.66rem] font-medium text-fg-3">
-            {targetKind === "surface" ? "표면" : "바닥"} · 클릭 확정 · Shift 축 고정 · [ ] 15° 회전
+        <div role="status" className="min-w-0 flex-1">
+          <p id={`${id}-asset`} className="truncate text-xs font-bold text-fg">{placementTitle}</p>
+          <p id={`${id}-instructions`} className="truncate text-[0.66rem] font-medium text-fg-3 pointer-coarse:whitespace-normal pointer-coarse:break-keep">
+            {targetKind === "surface" ? bt("표면", "Surface") : bt("바닥", "Floor")}{" · "}
+            <span className="pointer-coarse:hidden">
+              {bt("클릭 확정 · Shift 축 고정 · [ ] 15° 회전", "Click to place · Hold Shift to lock the axis · [ ] to rotate 15°")}
+            </span>
+            <span className="hidden pointer-coarse:inline">
+              {bt("장면을 탭해 배치 · 버튼으로 15° 회전", "Tap the scene to place · Use the buttons to rotate 15°")}
+            </span>
           </p>
         </div>
         <button
           type="button"
-          aria-label="3D 배치 왼쪽으로 15도 회전"
-          title="왼쪽 15° ([)"
+          aria-label={bt("3D 배치 왼쪽으로 15도 회전", "Rotate 3D placement left by 15 degrees")}
+          title={bt("왼쪽 15° ([)", "Rotate left 15° ([)")}
           className={viewportButtonClassName}
           onClick={onRotateCounterClockwise}
         >
@@ -76,8 +93,8 @@ export function StudioBg3dPlacementPreviewBar({
         </button>
         <button
           type="button"
-          aria-label="3D 배치 오른쪽으로 15도 회전"
-          title="오른쪽 15° (])"
+          aria-label={bt("3D 배치 오른쪽으로 15도 회전", "Rotate 3D placement right by 15 degrees")}
+          title={bt("오른쪽 15° (])", "Rotate right 15° (])")}
           className={viewportButtonClassName}
           onClick={onRotateClockwise}
         >
@@ -85,8 +102,8 @@ export function StudioBg3dPlacementPreviewBar({
         </button>
         <button
           type="button"
-          aria-label="3D 모델 배치 취소"
-          title="배치 취소 (Esc)"
+          aria-label={bt("3D 모델 배치 취소", "Cancel 3D model placement")}
+          title={bt("배치 취소 (Esc)", "Cancel placement (Esc)")}
           className={cx(viewportButtonClassName, "text-bad hover:text-bad")}
           onClick={onCancel}
         >

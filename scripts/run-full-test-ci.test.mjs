@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { describe, expect, it, vi } from "vitest";
 import { POSTGRES_INTEGRATION_SUITES, createVitestArguments } from "./run-postgres-integration-tests.mjs";
@@ -47,13 +48,17 @@ describe("complete CI root and performance execution", () => {
         collect("original", []), collect("database", serial.slice(3)),
         collect("remaining", fullTestRemainderArguments().slice(2)),
       ]);
+      for (const name of ["edge-api-lane-router.test.mjs", "edge-image-negotiator.test.mjs"]) {
+        const nodeTest = fileURLToPath(new URL(`../deploy/cloudflare-static/${name}`, import.meta.url));
+        expect(original).not.toContain(nodeTest);
+      }
       expect(database).toHaveLength(POSTGRES_INTEGRATION_SUITES.length);
       expect(remaining.filter((file) => database.includes(file))).toEqual([]);
       expect([...database, ...remaining].sort()).toEqual(original);
     } finally { await rm(temporary, { recursive: true, force: true }); }
   });
 
-  it("completes workspace, database and edge checks before root and performance", async () => {
+  it("워크스페이스 링크, DB, 엣지 Node 테스트, 나머지 루트 Vitest, 성능 검사를 한 번씩 실행한다", async () => {
     const events = [];
     const runDatabase = vi.fn(async (input) => { events.push(["database", input]); });
     const runChild = vi.fn(async (command, args, env) => { events.push(["child", command, args, env]); });
@@ -81,7 +86,7 @@ describe("complete CI root and performance execution", () => {
     ["test:cloudflare-static-edge", 2, 1],
     ["vitest", 3, 1],
     ["test:perf", 4, 1],
-  ])("propagates the %s failure without running later phases", async (phase, childCalls, databaseCalls) => {
+  ])("%s 실패를 전달하고 다음 단계를 시작하지 않는다", async (phase, childCalls, databaseCalls) => {
     const failed = new Error(`${phase} failed`);
     const entry = phase === "vitest" ? createVitestArguments()[0] : phase;
     const runDatabase = vi.fn(async () => { if (phase === "database") throw failed; });

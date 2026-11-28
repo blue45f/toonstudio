@@ -5,11 +5,13 @@
  * 나눈 나머지로 골라 식자 담당을 골라도 사무실에서는 PD 모습으로 보였다. 직함으로 직군을 맞추고, 직함이 없는 캐릭터("하늘" 등)는
  * 스킨 키 해시로 고정 배정해 같은 캐릭터를 고른 사람은 언제나 같은 모습으로 보이게 한다.
  */
+import { isStudioCrewKey } from "../studio-virtual-space-crew-characters";
 import { studioCharacterSkinForAvatarIndex } from "../studio-virtual-space-character-skins";
 import { OFFICE2D_CHARACTERS, office2dCharacterForRoleText, office2dHashIndex, type Office2dCharacterKey } from "./office2d-sprite-catalog";
 
 export function office2dCharacterForAvatarSkin(avatarIndex: number, identity: string): Office2dCharacterKey {
   const skin = studioCharacterSkinForAvatarIndex(avatarIndex, identity);
+  if (isStudioCrewKey(skin.key)) return skin.key;
   return office2dCharacterForRoleText(`${skin.labelKo} ${skin.labelEn}`)
     ?? OFFICE2D_CHARACTERS[office2dHashIndex(skin.key, OFFICE2D_CHARACTERS.length)]
     ?? "artist";

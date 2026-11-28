@@ -180,6 +180,7 @@ html:has([data-service-degraded-banner="degraded"]) [data-studio-drawing-clarity
 .studio-drawing-clarity-entry-mobile:empty{display:none}
 .studio-drawing-clarity-entry-mobile>.studio-drawing-clarity-button{width:100%}
 [data-studio-editor=true][data-studio-mobile-immersive=true][data-studio-drawing-clarity-mobile=true] [data-studio-app-menubar=true][data-studio-drawing-clarity-header=true]{position:relative;inset:auto;width:100%;max-width:none;margin:0;border-radius:0}
+html:has([data-studio-editor=true][data-studio-mobile-immersive=true][data-studio-drawing-clarity-mobile=true]){scrollbar-gutter:auto}
 html:not([data-studio-canvas-only=true]) [data-studio-editor=true][data-studio-mobile-immersive=true][data-studio-drawing-clarity-mobile=true] #studio-workspace{padding-top:0}
 [data-studio-editor=true][data-studio-drawing-clarity-mobile=true] [data-studio-global-status-rail]:not(:empty){padding-top:0}
 

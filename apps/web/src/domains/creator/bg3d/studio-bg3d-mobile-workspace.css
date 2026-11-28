@@ -54,6 +54,7 @@
   }
   [data-studio-bg3d-workspace] .scene-assistant {
     --assistant-mobile-panel-height: min(48%, 24rem);
+    --assistant-mobile-peek-viewport-reserve: 6.5rem;
   }
   [data-studio-bg3d-workspace] .scene-assistant__panel {
     height: var(--assistant-mobile-panel-height);
@@ -100,6 +101,46 @@
   [data-studio-bg3d-workspace][data-studio-3d-keyboard-open="true"] .scene-assistant__panel {
     height: calc(100% - 48px);
     max-height: calc(100% - 48px);
+  }
+
+  /* 검토 버튼은 캔버스 위에 도구 시트가 겹치는 배치에서만 필요하다. */
+  @media not all and (pointer: coarse) and (orientation: landscape) and (max-height: 500px) and (min-width: 600px) {
+    [data-studio-bg3d-workspace] .scene-assistant__crop-preview-action {
+      display: inline-flex;
+      justify-self: start;
+      min-height: 44px;
+      align-items: center;
+      border: 1px solid var(--color-line-strong);
+      border-radius: 0.5rem;
+      background: var(--color-panel);
+      padding-inline: 0.75rem;
+      color: var(--color-fg);
+      font-size: 0.75rem;
+      font-weight: 650;
+    }
+
+    .scene-assistant[data-step="finish"] .scene-assistant__viewport-status {
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      pointer-events: none;
+    }
+
+    [data-studio-bg3d-workspace]:not([data-studio-3d-keyboard-open="true"])
+      .scene-assistant[data-step="finish"][data-sheet-state="peek"][data-assistant-readiness="ready"]:not(:has([data-testid="studio-bg3d-engine-probing"], [data-testid="studio-bg3d-engine-unavailable"]))
+      .scene-assistant__panel {
+      height: var(--assistant-mobile-peek-viewport-reserve);
+      min-height: var(--assistant-mobile-peek-viewport-reserve);
+    }
+
+    /* 바깥 대화상자가 이미 기기 안전 영역을 확보한다. 접힌 두 조작 행은 그 안쪽에 둔다. */
+    [data-studio-bg3d-workspace]:not([data-studio-3d-keyboard-open="true"])
+      .scene-assistant[data-step="finish"][data-sheet-state="peek"][data-assistant-readiness="ready"]:not(:has([data-testid="studio-bg3d-engine-probing"], [data-testid="studio-bg3d-engine-unavailable"]))
+      .scene-assistant__footer {
+      align-items: center;
+      padding-block: 0;
+    }
   }
 }
 

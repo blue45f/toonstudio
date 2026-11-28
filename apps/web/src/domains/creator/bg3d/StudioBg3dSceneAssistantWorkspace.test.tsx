@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n-core";
 
 import { allocateStudioBg3dTemplateInstanceNodeIds } from "./studio-bg3d-template-instance";
 import { studioBg3dAssistantLocationId } from "./studio-bg3d-assistant-location";
@@ -54,6 +56,7 @@ function createHost(
     setTransformMode: vi.fn(),
     setLineArtPreview: vi.fn(),
     updateLtToneSettings: vi.fn(),
+    updateLtExportAspectRatio: vi.fn(),
     groundSelectedEntity: vi.fn(),
     focusSelectedEntity: vi.fn(),
     duplicateSelected: vi.fn(),
@@ -86,6 +89,24 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(guide?.open).toBe(false);
     expect(screen.getByTestId("studio-bg3d-scene-assistant").dataset.step).toBe("choose");
     expect(host.addSceneTemplate).not.toHaveBeenCalled();
+  });
+
+  it("배치 중에는 기존 배치 도구가 안내를 맡고 배치가 끝나면 도우미 상태가 돌아온다", () => {
+    const idleHost = createHost();
+    const placementHost = createHost({ placementSession: { phase: "preview" } });
+    const onOpenProfessional = vi.fn();
+    const { rerender } = render(<StudioBg3dSceneAssistantWorkspace h={idleHost} onOpenProfessional={onOpenProfessional} />);
+    const statusText = "시작점 선택에서 장면을 골라 주세요";
+    const status = screen.getByText(statusText);
+    expect(status.getAttribute("aria-live")).toBe("polite");
+
+    rerender(<StudioBg3dSceneAssistantWorkspace h={placementHost} onOpenProfessional={onOpenProfessional} />);
+    expect(status.classList.contains("sr-only")).toBe(true);
+    expect(status.textContent).toBe("");
+
+    rerender(<StudioBg3dSceneAssistantWorkspace h={idleHost} onOpenProfessional={onOpenProfessional} />);
+    expect(screen.getByText(statusText)).toBe(status);
+    expect(status.classList.contains("scene-assistant__viewport-status")).toBe(true);
   });
 
   it("opens with purpose-led choices and no professional DCC terminology", () => {
@@ -256,11 +277,40 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     await waitFor(() => expect(screen.getByTestId("studio-bg3d-scene-assistant").getAttribute("data-step")).toBe("arrange"));
   });
 
-  it("maps a visible creator style to renderer settings and applies the result to the current cut", () => {
-    const host = createHost({ primitives: [{ id: "scene" }] });
+  it("configures the renderer style and aspect before applying exactly once", async () => {
+    const writeAspectRatio = vi.fn((ltExportAspectRatio: number | null) => {
+      Object.assign(host, { ltExportAspectRatio });
+    });
+    const host = createHost({
+      primitives: [{ id: "scene" }],
+      ltExportAspectRatio: null,
+      updateLtExportAspectRatio: writeAspectRatio,
+    });
     render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
 
+    expect(screen.queryByRole("combobox", { name: "삽입 비율" })).toBeNull();
     fireEvent.click(within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" }));
+    const aspect = screen.getByRole("combobox", { name: "삽입 비율" });
+    expect(aspect).toHaveProperty("value", "viewport");
+    expect(within(aspect).getAllByRole("option").map((option) => option.textContent))
+      .toEqual(["화면 맞춤", "16:9", "4:3", "1:1", "9:16"]);
+    expect(screen.getByText(/화면 크기에 따라 삽입 비율이 달라집니다/)).toBeTruthy();
+    expect(screen.queryByText("현재 컷 비율에 맞춰 출력")).toBeNull();
+
+    fireEvent.change(aspect, { target: { value: "9-16" } });
+    expect(await screen.findByText(/점선 테두리 안쪽을 삽입합니다/)).toBeTruthy();
+    expect(aspect).toHaveProperty("value", "9-16");
+    expect(writeAspectRatio).toHaveBeenLastCalledWith(9 / 16);
+    expect(screen.getByTestId("studio-bg3d-scene-assistant").dataset.sheetState).toBe("half");
+    fireEvent.change(aspect, { target: { value: "viewport" } });
+    expect(writeAspectRatio).toHaveBeenLastCalledWith(null);
+    expect(await screen.findByText(/화면 크기에 따라 삽입 비율이 달라집니다/)).toBeTruthy();
+    expect(aspect).toHaveProperty("value", "viewport");
+    fireEvent.change(aspect, { target: { value: "16-9" } });
+    await waitFor(() => expect(aspect).toHaveProperty("value", "16-9"));
+    expect(host.ltExportAspectRatio).toBe(16 / 9);
+    expect(host.handleInsert).not.toHaveBeenCalled();
+
     fireEvent.click(screen.getByRole("button", { name: /톤 배경/ }));
     fireEvent.click(screen.getByRole("button", { name: "현재 컷에 적용" }));
 
@@ -271,11 +321,82 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(host.handleInsert).toHaveBeenCalledOnce();
   });
 
+  it.each(["half", "full"] as const)("views the crop and restores %s insert settings, focus, and scroll", (sheet) => {
+    const host = createHost({ primitives: [{ id: "scene" }], ltExportAspectRatio: 16 / 9 });
+    const { container } = render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    const assistant = screen.getByTestId("studio-bg3d-scene-assistant");
+    fireEvent.click(within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" }));
+    if (sheet === "full") fireEvent.click(screen.getByRole("button", { name: "도구 패널 펼치기" }));
+    expect(assistant.dataset.sheetState).toBe(sheet);
+
+    const scrollArea = container.querySelector(".scene-assistant__panel-scroll");
+    if (!(scrollArea instanceof HTMLElement)) throw new Error("Expected the assistant settings scroll area");
+    const tone = screen.getByRole("button", { name: /톤 배경/ });
+    fireEvent.click(tone);
+    scrollArea.scrollTop = 160;
+    const preview = screen.getByRole("button", { name: "컷 범위 보기" });
+    preview.focus();
+    fireEvent.click(preview);
+
+    const restore = screen.getByRole("button", { name: "삽입 설정 열기" });
+    expect(assistant.dataset.sheetState).toBe("peek");
+    expect(restore.textContent).toBe("삽입 설정 열기");
+    expect(document.activeElement).toBe(restore);
+    scrollArea.scrollTop = 0;
+    fireEvent.click(restore);
+
+    const aspect = screen.getByRole("combobox", { name: "삽입 비율" });
+    expect(assistant.dataset.sheetState).toBe(sheet);
+    expect(document.activeElement).toBe(aspect);
+    expect(scrollArea.scrollTop).toBe(160);
+    expect(aspect).toHaveProperty("value", "16-9");
+    expect(tone.getAttribute("aria-pressed")).toBe("true");
+    expect(host.updateLtExportAspectRatio).not.toHaveBeenCalled();
+    expect(host.handleInsert).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [1.2, "custom", "1.20:1"],
+    [4 / 5, "4-5", "4:5"],
+  ] as const)("shows stored aspect %s without rewriting the reopened scene", (ltExportAspectRatio, id, label) => {
+    const host = createHost({ primitives: [{ id: "scene" }], operation: "update", ltExportAspectRatio });
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    fireEvent.click(within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" }));
+
+    const aspect = screen.getByRole("combobox", { name: "삽입 비율" });
+    expect(aspect).toHaveProperty("value", id);
+    expect(within(aspect).getByRole("option", { name: label })).toHaveProperty("selected", true);
+    expect(host.updateLtExportAspectRatio).not.toHaveBeenCalled();
+    expect(host.handleInsert).not.toHaveBeenCalled();
+  });
+
+  it("localizes the aspect field and its hint when the app language changes", () => {
+    const host = createHost({ primitives: [{ id: "scene" }] });
+    const { lang, setLang } = useI18n.getState();
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    fireEvent.click(within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" }));
+
+    try {
+      act(() => setLang("en"));
+      const aspect = screen.getByRole("combobox", { name: "Insert aspect ratio" });
+      expect(within(aspect).getByRole("option", { name: "Fit to view" })).toHaveProperty("selected", true);
+      expect(screen.getByText("Uses the full 3D view, so the insert ratio follows the view size.")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "View crop" }));
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Open insert settings" }));
+    } finally {
+      act(() => setLang(lang));
+    }
+  });
+
   it("가져온 6패스의 수신 문서 제한을 적용 버튼 앞에 표시하고 캡처를 시작하지 않는다", () => {
     const host = createHost({ primitives: [{ id: "scene" }], sixPassLtInsertUnavailableReason: "이 원고는 6패스 분리 출력을 지원하지 않습니다." });
     render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
     fireEvent.click(within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" }));
     expect(screen.getByRole("alert").textContent).toContain("6패스 분리 출력을 지원하지 않습니다");
+    const aspect = screen.getByRole("combobox", { name: "삽입 비율" });
+    expect(aspect).toHaveProperty("disabled", true);
+    fireEvent.change(aspect, { target: { value: "16-9" } });
+    expect(host.updateLtExportAspectRatio).not.toHaveBeenCalled();
     const apply = screen.getByRole("button", { name: "현재 컷에 적용" });
     expect(apply).toHaveProperty("disabled", true);
     fireEvent.click(apply);

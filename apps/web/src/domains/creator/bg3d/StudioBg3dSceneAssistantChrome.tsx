@@ -5,6 +5,7 @@ import {
   ChevronUp,
   ImagePlus,
 } from "lucide-react";
+import type { Ref } from "react";
 import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
 import { StudioToolArtwork, type StudioArtworkTool } from "../studio-tool-art/StudioToolArtwork";
 
@@ -64,19 +65,26 @@ const GOALS: readonly {
 export function SheetHandle({
   state,
   onChange,
+  buttonRef,
+  onOpenInsertSettings,
 }: {
   readonly state: StudioBg3dAssistantSheetState;
   readonly onChange: (state: StudioBg3dAssistantSheetState) => void;
+  readonly buttonRef: Ref<HTMLButtonElement>;
+  readonly onOpenInsertSettings: (() => void) | undefined;
 }) {
+  const bt = useBilingual("StudioBg3dSceneAssistantChrome");
   const next = state === "peek" ? "half" : state === "half" ? "full" : "peek";
+  const insertSettingsLabel = onOpenInsertSettings ? bt("삽입 설정 열기", "Open insert settings") : null;
   return (
     <button
+      ref={buttonRef}
       type="button"
       className="scene-assistant__sheet-handle"
-      aria-label={state === "full" ? "도구 패널 접기" : "도구 패널 펼치기"}
-      onClick={() => onChange(next)}
+      aria-label={insertSettingsLabel ?? (state === "full" ? "도구 패널 접기" : "도구 패널 펼치기")}
+      onClick={onOpenInsertSettings ?? (() => onChange(next))}
     >
-      <span aria-hidden />
+      {insertSettingsLabel ? <strong className="scene-assistant__crop-preview-return-label">{insertSettingsLabel}</strong> : <span aria-hidden />}
       {state === "full" ? <ChevronDown size={16} aria-hidden /> : <ChevronUp size={16} aria-hidden />}
     </button>
   );

@@ -2,7 +2,7 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { office2dCharacterForAvatarSkin } from "../office2d/office2d-avatar-role";
-import { office2dGeneratedAtlas } from "../office2d/office2d-generated-atlases";
+import { office2dPreviewUrl } from "../office2d/office2d-sprite-catalog";
 import { SpaceAvatar } from "./SpaceAvatar";
 import { STUDIO_VIRTUAL_ART_STYLES } from "../studio-virtual-space-art-style";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "../studio-virtual-space-character-skins";
@@ -31,13 +31,10 @@ describe("SpaceAvatar 작화 일치", () => {
     for (const [avatarIndex] of STUDIO_CHARACTER_SKINS.entries()) {
       const identity = "world-self";
       const character = office2dCharacterForAvatarSkin(avatarIndex, identity);
-      const atlas = office2dGeneratedAtlas(character, "walk");
-      if (!atlas) throw new Error("직군 atlas가 필요합니다.");
       const view = render(<SpaceAvatar identity={identity} avatarIndex={avatarIndex} stageKind="office2d" />);
       expect(view.container.querySelector("svg")?.getAttribute("data-office-character")).toBe(character);
-      expect(displayedUrl(view.container)).toBe(atlas.url);
-      const frame = atlas.frames[0]?.source;
-      expect(view.container.querySelector("svg")?.getAttribute("viewBox")).toBe(`${frame?.x} ${frame?.y} ${frame?.width} ${frame?.height}`);
+      expect(displayedUrl(view.container)).toBe(office2dPreviewUrl(character));
+      expect(view.container.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 96 144");
       view.unmount();
     }
   });

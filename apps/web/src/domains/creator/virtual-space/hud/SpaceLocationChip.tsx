@@ -106,6 +106,7 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
       <button
         type="button"
         className="space-location__engine-toggle"
+        data-app-tooltip-exclude="true"
         data-engine-mode={engineMode}
         onClick={onToggleEngineMode}
         aria-pressed={engineMode === "3d"}

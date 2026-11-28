@@ -28,10 +28,10 @@ export interface ThemePreset {
   motif: ThemeMotif;
 }
 
-// 기본 테마는 브랜드 정본(DESIGN.md)인 스타라이트다. 사용자가 직접 고른 테마는 저장값으로 계속 보존한다.
-export const DEFAULT_APPEARANCE: AppearancePreferences = { preference: "starlight", studioPreference: "inherit" };
-/** 밝은 화면에서 어두운 화면으로 빠르게 전환할 때 돌아갈 브랜드 기본 어두운 테마. */
-export const BRAND_DARK_THEME: DesignTheme = "starlight";
+// 첫 방문은 페이퍼에서 시작하고 Studio는 사이트 선택을 상속한다. 저장된 선택은 보존한다.
+export const DEFAULT_APPEARANCE: AppearancePreferences = { preference: "light", studioPreference: "inherit" };
+/** 빠른 밝기 전환에서 사용하는 어두운 잉크 테마. */
+export const BRAND_DARK_THEME: DesignTheme = "dark";
 export const THEME_STORAGE_KEY = "toonstudio-theme";
 export const THEME_PRESETS = [
   { id: "aurora", ko: "오로라", en: "Aurora", descriptionKo: "민트·라일락·핑크가 흐르는 밝은 창작 테마", descriptionEn: "A bright creative palette flowing through mint, lilac and pink", mode: "light", chrome: "#f4f2ff", group: "signature", motif: "ribbon" },

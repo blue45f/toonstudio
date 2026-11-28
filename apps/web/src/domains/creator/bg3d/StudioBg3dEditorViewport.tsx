@@ -519,7 +519,8 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
 
                 {placementSession.phase === "preview" && placementPreviewAsset ? (
                   <StudioBg3dPlacementPreviewBar
-                    assetName={placementPreviewAsset.name}
+                    asset={placementPreviewAsset}
+                    modelLibrary={modelLibrary}
                     targetKind={placementSession.placement.targetKind}
                     glbDiagnostics={placementPreviewAsset.glbDiagnostics}
                     viewportButtonClassName={VIEWPORT_BTN}
@@ -528,7 +529,6 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     onCancel={() => cancelCustomModelPlacement("3D 모델 배치를 취소했습니다.")}
                   />
                 ) : null}
-
                 <div
                   data-bg3d-viewport-control="true"
                   inert={placementActive || undefined}

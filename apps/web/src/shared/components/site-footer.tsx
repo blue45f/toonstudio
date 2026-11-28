@@ -41,6 +41,9 @@ export function SiteFooter() {
   const locale = siteNavigationLocale(language);
   const t = useT();
   const pathname = canonicalSitePath(usePathname());
+  const mobileBottomPadding = pathname === "/"
+    ? "pb-[env(safe-area-inset-bottom)]"
+    : "pb-[calc(3.75rem+env(safe-area-inset-bottom))]";
   const current = (href: string) => pathname === href ? "page" : undefined;
   const year = new Date().getFullYear();
   const { make, research, help, allMenu: sitemap } = SITE_NAVIGATION_ITEMS;
@@ -51,7 +54,7 @@ export function SiteFooter() {
   const navigationGroups = resolveNavigationGroupsFor();
 
   return (
-    <footer data-site-chrome="footer" className="site-footer pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
+    <footer data-site-chrome="footer" className={`site-footer ${mobileBottomPadding} md:pb-0`}>
       <div className="site-footer__inner">
         <div className="site-footer__story-band">
           <Link href="/" className="site-footer__brand min-h-11" aria-label={bi("ToonStudio 홈", "ToonStudio home")}>

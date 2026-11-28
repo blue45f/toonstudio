@@ -44,7 +44,7 @@ import { office2dBaseZoom } from "./office2d-camera";
 import { bindOffice2dDeskShortcut } from "./bind-office2d-desk-shortcut";
 import { createOffice2dDecorAssetLoader, type Office2dDecorAssetLoader } from "./office2d-decor-assets";
 import { Office2dResolutionGovernor } from "./office2d-quality";
-import { office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
+import { office2dFloorAssetUrls, office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
 import { Office2dRuntime, type Office2dRuntimeCallbacks, type Office2dStageProps } from "./office2d-runtime";
 import {
   playOffice2dSpatialCue,
@@ -93,7 +93,6 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const runtimeRef = useRef<Office2dRuntime | null>(null);
   const storeRef = useRef<Office2dSpriteStore<HTMLImageElement> | null>(null);
-  const refreshFloorRef = useRef<(() => void) | null>(null);
   const avatarProfileSourceRef = useRef<ReturnType<typeof createOffice2dAvatarProfileSource> | null>(null);
   const decorAssetsRef = useRef<Office2dDecorAssetLoader | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -230,7 +229,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
         return surfaceContext ? { canvas: surface, context: surfaceContext } : null;
       },
       image(url): Office2dDrawable | null {
-        return store.get(url);
+        return store.getForDisplay(url);
       },
     };
     const callbacks = (): Office2dRuntimeCallbacks => {
@@ -479,10 +478,10 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       ...scene.objects.flatMap((object) => (object.imageUrl ? [object.imageUrl] : [])),
       ...(scene.backgroundUrl ? [scene.backgroundUrl] : []),
     ];
-    // 작업 자세 시트(착석 작업·제스처)와 고해상도 룸 배경 원화는 첫 화면 이후 이어 받으며, 도착 시 바닥 캐시를 다시 굽는다.
+    // 작업 자세와 벽화는 첫 화면 뒤에 이어 받는다. 렌더러가 다음 프레임에 저장소에서 읽는다.
     const deferredUrls = [
       ...actorAssets.deferred,
-      ...office2dBackdropAssetUrls(),
+      ...office2dBackdropAssetUrls(scene.kind),
     ];
     let last = performance.now();
     let running = false;
@@ -530,8 +529,10 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("blur", handleWindowBlur);
-    const refreshFloor = () => { if (!disposed) runtime.renderer.invalidateFloor(); };
-    refreshFloorRef.current = refreshFloor;
+    const floorAssets = office2dFloorAssetUrls(scene);
+    const refreshFloor = (url: string) => {
+      if (!disposed && ready && floorAssets.has(url)) runtime.renderer.invalidateFloor();
+    };
     const decorAssets = createOffice2dDecorAssetLoader(store, ASSET_TIMEOUT_MS, refreshFloor);
     decorAssetsRef.current = decorAssets;
     const bootDeadlineId = window.setTimeout(() => {
@@ -556,7 +557,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       ready = true;
       emitStatus("ready");
       startLoop();
-      void store.loadAll(deferredUrls, ASSET_TIMEOUT_MS * 2, refreshFloor);
+      void store.loadAll(deferredUrls, ASSET_TIMEOUT_MS * 2);
     }).catch((error: unknown) => {
       window.clearTimeout(bootDeadlineId);
       if (disposed) return;
@@ -578,7 +579,6 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       decorAssets.dispose();
       if (decorAssetsRef.current === decorAssets) decorAssetsRef.current = null;
       if (storeRef.current === store) storeRef.current = null;
-      if (refreshFloorRef.current === refreshFloor) refreshFloorRef.current = null;
       if (avatarProfileSourceRef.current === avatarProfileSource) avatarProfileSourceRef.current = null;
       avatarProfileSource.dispose();
       runtimeRef.current = null;
@@ -617,10 +617,9 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
     const store = storeRef.current;
     if (!store) return;
     const plan = office2dActorAssetPlan(office2dCharacterForAvatarSkin(props.snapshot.self.avatarIndex, selfIdentity));
-    const notify = () => refreshFloorRef.current?.();
-    void store.loadAll(plan.critical, ASSET_TIMEOUT_MS, notify).then(() => {
+    void store.loadAll(plan.critical, ASSET_TIMEOUT_MS).then(() => {
       if (storeRef.current === store) {
-        void store.loadAll(plan.deferred, ASSET_TIMEOUT_MS * 2, notify);
+        void store.loadAll(plan.deferred, ASSET_TIMEOUT_MS * 2);
       }
     });
   }, [props.snapshot.self.avatarIndex, selfIdentity]);
