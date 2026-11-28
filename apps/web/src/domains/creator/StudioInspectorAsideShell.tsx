@@ -40,6 +40,7 @@ import { StudioCommandSearchHost } from "./StudioCommandSearchHost";
 import { StudioDetachablePanelSlot } from "./StudioDetachablePanelSlot";
 import { StudioInspectorCanvasControls } from "./StudioInspectorCanvasControls";
 import { StudioInspectorNavigator } from "./StudioInspectorNavigator";
+import { StudioInspectorSceneEditActions } from "./StudioInspectorSceneEditActions";
 import {
   StudioInspectorDisabledReasons,
   StudioInspectorPageGradeSurface,
@@ -356,6 +357,21 @@ export function StudioInspectorAsideShell({
             }}
           />
           </div>
+          <StudioInspectorSceneEditActions
+            active={
+              inspectorLayout.primary === "properties"
+              && inspectorContentMode === "selection"
+              && marqueeIds.length <= 1
+            }
+            selected={selected}
+            gate={inspectorInteractionPolicy.selection}
+            selectedBg3dEditSource={model.selectedBg3dEditSource}
+            onEditVrmElement={model.onEditVrmElement}
+            setBg3dInitialScene={model.setBg3dInitialScene}
+            setBg3dInitialDataUrl={model.setBg3dInitialDataUrl}
+            setBg3dInitialElementId={model.setBg3dInitialElementId}
+            setBg3dOpen={model.setBg3dOpen}
+          />
           <StudioInspectorDisabledReasons reasons={rightPanelDisabledReasons} />
           {inspectorLayout.primary === "properties" ? <StudioEditTargetSummary model={model} /> : null}
           <StudioPinnedColorPanelSlot />

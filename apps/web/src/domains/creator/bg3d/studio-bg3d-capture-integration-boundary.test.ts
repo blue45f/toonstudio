@@ -52,6 +52,14 @@ describe("Studio 3D asynchronous capture integration boundary", () => {
     expect(source.slice(publication)).not.toContain(guard);
   });
 
+  it("3D 소재 저장은 PNG 원본과 정본 장면을 별도 인자로 전달한다", () => {
+    const start = background3dSource.indexOf("async function handleSaveToLibrary()");
+    const end = background3dSource.indexOf("async function handleUseAsAiMethodReference()", start);
+    const save = background3dSource.slice(start, end);
+    expect(save).toMatch(/await saveAsset\(\{\s*name: "내 3D 장면",\s*dataUrl,\s*bg3dScene: adapted\.document,/u);
+    expect(save).not.toContain("encodeURIComponent(adapted.serialized)");
+  });
+
   it("keeps adapter registration stable when capture UI state rerenders", () => {
     const start = background3dSource.indexOf("function CaptureBridge(");
     const end = background3dSource.indexOf("type StudioBg3dImmersiveStageSuccess", start);

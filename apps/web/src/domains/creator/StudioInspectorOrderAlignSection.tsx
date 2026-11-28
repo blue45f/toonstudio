@@ -7,18 +7,12 @@ import {
   AlignVerticalJustifyCenter,
   ArrowDownToLine,
   ArrowUpToLine,
-  Boxes,
   Copy,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 
-import { preloadStudioBackground3D } from "./studio-background-3d-loader";
-import { parseStudio3dTool } from "./studio-background-3d-metadata";
 import { StudioInspectorSection } from "./StudioInspectorSection";
 
-import type { StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
-import type { El, ImageEl } from "./studio-element-model";
 import type { ReactNode } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -36,7 +30,6 @@ export type StudioInspectorAlignMode =
 
 interface StudioInspectorSelectionActionsProps {
   selectionCount: number;
-  leadingActions?: ReactNode;
   reorder: (dir: "front" | "back" | "forward" | "backward") => void;
   alignSelected: (mode: StudioInspectorAlignMode) => void;
   duplicateSelected: () => void;
@@ -91,7 +84,6 @@ function ActionButton({
  */
 export function StudioInspectorSelectionActions({
   selectionCount,
-  leadingActions,
   reorder,
   alignSelected,
   duplicateSelected,
@@ -110,12 +102,6 @@ export function StudioInspectorSelectionActions({
             <span className="shrink-0 rounded-full bg-accent/15 px-1.5 py-px font-bold tabular-nums text-accent">
               {selectionCount}개
             </span>
-          </div>
-        ) : null}
-
-        {leadingActions ? (
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="선택 요소 전용 작업">
-            {leadingActions}
           </div>
         ) : null}
 
@@ -248,93 +234,8 @@ export function StudioInspectorSelectionActions({
   );
 }
 
-interface StudioInspectorOrderAlignSectionProps {
-  selected: El;
-  selectedBg3dEditSource: { readonly scene?: StudioBg3dSceneDocument; readonly legacyDataUrl?: string } | null;
-  patchEl: (id: string, patch: Partial<El>) => void;
-  reorder: (dir: "front" | "back" | "forward" | "backward") => void;
-  alignSelected: (mode: StudioInspectorAlignMode) => void;
-  duplicateSelected: () => void;
-  removeSelected: () => void;
-  onEditVrmElement: (element: ImageEl) => void;
-  setBg3dInitialScene: (scene: StudioBg3dSceneDocument | undefined) => void;
-  setBg3dInitialDataUrl: (url: string | undefined) => void;
-  setBg3dInitialElementId: (id: string | undefined) => void;
-  setBg3dOpen: (open: boolean) => void;
-}
-
-export function StudioInspectorOrderAlignSection({
-  selected,
-  selectedBg3dEditSource,
-  reorder,
-  alignSelected,
-  duplicateSelected,
-  removeSelected,
-  onEditVrmElement,
-  setBg3dInitialScene,
-  setBg3dInitialDataUrl,
-  setBg3dInitialElementId,
-  setBg3dOpen,
-}: StudioInspectorOrderAlignSectionProps) {
-  const canEditVrm =
-    selected.type === "image"
-    && Boolean(selected.vrmScene || parseStudio3dTool(selected.src) === "vrm-poser");
-  const elementActions =
-    selected.type === "image" && (canEditVrm || selectedBg3dEditSource) ? (
-    <>
-      {canEditVrm ? (
-        <button
-          type="button"
-          onClick={() => onEditVrmElement(selected)}
-          aria-label="3D 캐릭터 재편집"
-          data-inspector-control-id="selection.edit-vrm"
-          data-inspector-priority="advanced"
-          className={buttonClass({
-            size: "sm",
-            variant: "solid",
-            className: "min-h-9 gap-1 font-semibold pointer-coarse:min-h-11",
-          })}
-          title="3D 캐릭터 재편집"
-        >
-          <Sparkles size={14} aria-hidden /> 3D 재편집
-        </button>
-      ) : null}
-      {selectedBg3dEditSource ? (
-        <button
-          type="button"
-          onClick={() => {
-            setBg3dInitialScene(selectedBg3dEditSource.scene);
-            setBg3dInitialDataUrl(selectedBg3dEditSource.legacyDataUrl);
-            setBg3dInitialElementId(selected.id);
-            setBg3dOpen(true);
-          }}
-          onPointerEnter={preloadStudioBackground3D}
-          onPointerDown={preloadStudioBackground3D}
-          onFocus={preloadStudioBackground3D}
-          aria-label="3D 배경 재편집"
-          data-inspector-control-id="selection.edit-bg3d"
-          data-inspector-priority="advanced"
-          className={buttonClass({
-            size: "sm",
-            variant: "solid",
-            className: "min-h-9 gap-1 font-semibold pointer-coarse:min-h-11",
-          })}
-          title="3D 배경 재편집"
-        >
-          <Boxes size={14} aria-hidden /> 배경 재편집
-        </button>
-      ) : null}
-    </>
-  ) : null;
-
-  return (
-    <StudioInspectorSelectionActions
-      selectionCount={1}
-      leadingActions={elementActions}
-      reorder={reorder}
-      alignSelected={alignSelected}
-      duplicateSelected={duplicateSelected}
-      removeSelected={removeSelected}
-    />
-  );
+export function StudioInspectorOrderAlignSection(
+  actions: Omit<StudioInspectorSelectionActionsProps, "selectionCount">,
+) {
+  return <StudioInspectorSelectionActions selectionCount={1} {...actions} />;
 }

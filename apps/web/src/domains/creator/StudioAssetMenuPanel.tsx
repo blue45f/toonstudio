@@ -35,6 +35,7 @@ import {
   favoriteOnly as filterFavoriteOnly,
   isStudioAssetFavorite,
 } from "./studio-asset-favorites";
+import { StudioLocalAssetInsertButton } from "./asset-menu/StudioLocalAssetInsertButton";
 import { writeStudioAssetDragPayload } from "./studio-insert-drag-writer";
 import {
   evaluateStudioMarketplacePublishRights,
@@ -299,7 +300,7 @@ export function StudioAssetMenuPanel({
   renamingAssetName,
   setRenamingAssetName,
   handleRenameAsset,
-  onUseLocalAsset, onSavedLocalAsset,
+  onUseLocalAsset, onUseLocalBg3dAsset, onSavedLocalAsset,
   onShareAsset,
   onDeleteAsset,
   publishingId,
@@ -635,6 +636,7 @@ export function StudioAssetMenuPanel({
           setRenamingAssetName={setRenamingAssetName}
           handleRenameAsset={handleRenameAsset}
           onUseLocalAsset={onUseLocalAsset}
+          onUseLocalBg3dAsset={onUseLocalBg3dAsset}
           onShareAsset={onShareAsset}
           onDeleteAsset={onDeleteAsset}
           publishingId={publishingId}
@@ -674,6 +676,7 @@ function LocalAssetGrid({
   setRenamingAssetName,
   handleRenameAsset,
   onUseLocalAsset,
+  onUseLocalBg3dAsset,
   onShareAsset,
   onDeleteAsset,
   publishingId,
@@ -690,6 +693,7 @@ function LocalAssetGrid({
   | "setRenamingAssetName"
   | "handleRenameAsset"
   | "onUseLocalAsset"
+  | "onUseLocalBg3dAsset"
   | "onShareAsset"
   | "onDeleteAsset"
   | "publishingId"
@@ -773,52 +777,7 @@ function LocalAssetGrid({
               favoriteState={favoriteState}
               onToggleFavorite={onToggleFavorite}
             />
-            <button
-              type="button"
-              onClick={() => onUseLocalAsset(asset)}
-              className={cx(
-                "relative flex h-20 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg",
-                CONTROL_FOCUS_CLASS
-              )}
-              style={{
-                // Warm checkerboard (Canva/Photopea asset preview) — not cold neutral-800.
-                backgroundColor: "oklch(0.22 0.01 66)",
-                backgroundImage:
-                  "linear-gradient(45deg, oklch(0.26 0.01 66) 25%, transparent 25%), linear-gradient(-45deg, oklch(0.26 0.01 66) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, oklch(0.26 0.01 66) 75%), linear-gradient(-45deg, transparent 75%, oklch(0.26 0.01 66) 75%)",
-                backgroundSize: "10px 10px",
-                backgroundPosition: "0 0, 0 5px, 5px -5px, -5px 0",
-              }}
-              title={`${asset.name} · ${localizeText(
-                t,
-                "선택한 컷 또는 현재 보이는 위치에 추가",
-                "studio.assetMenu.addToCurrentView"
-              )}`}
-              aria-label={`${asset.name} ${localizeText(
-                t,
-                "선택한 컷 또는 현재 보이는 위치에 추가",
-                "studio.assetMenu.addToCurrentView"
-              )}`}
-            >
-              <img
-                src={asset.dataUrl}
-                alt=""
-                className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-150 group-hover:scale-105"
-              />
-              {asset.kind === "ai" && (
-                <span className="pointer-events-none absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-md bg-accent px-1 py-px text-[0.5rem] font-bold uppercase leading-none tracking-wide text-on-accent shadow">
-                  <Sparkles size={7} aria-hidden /> AI
-                </span>
-              )}
-              {asset.kind === "bg3d" && (
-                <span className="pointer-events-none absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-md border border-line/70 bg-panel/90 px-1 py-px text-[0.5rem] font-bold leading-none tracking-wide text-fg-2 shadow backdrop-blur-sm">
-                  <BadgeCheck size={8} className="text-good" aria-hidden />
-                  {localizeText(t, "권리 인증", "studio.assetMenu.rightsBadge")}
-                </span>
-              )}
-              <span className="pointer-events-none absolute bottom-1 right-1 inline-flex items-center gap-0.5 rounded-md border border-line/40 bg-panel/90 px-1.5 py-0.5 text-[0.55rem] font-semibold text-fg shadow-sm backdrop-blur-sm">
-                <Plus size={10} aria-hidden /> {localizeText(t, "추가", "studio.assetMenu.cardAction.add")}
-              </span>
-            </button>
+            <StudioLocalAssetInsertButton asset={asset} onUse={onUseLocalAsset} onUseBg3d={onUseLocalBg3dAsset} />
 
             {isRenaming ? (
               <RenameAssetInline

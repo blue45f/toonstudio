@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { studioBundleCreditFixture } from "../catalog/studio-bundle-source-credit.test-fixture";
 import { studioBundleAssetRights } from "../catalog/studio-bundle-source-credit";
+import { createDefaultStudioBg3dSceneDocument } from "../contracts/studio-bg3d-scene-document";
+import { STUDIO_ASSET_LIBRARY_BG3D_SCENE_NAMESPACE } from "./studio-asset-library-bg3d-sidecar";
 
 import {
   createStudioAssetLibrarySqliteOpfsRepository,
@@ -72,6 +74,12 @@ function saveInput(index: number, overrides: Record<string, unknown> = {}) {
     kind: index % 2 === 0 ? "ai" : undefined,
     ...overrides,
   };
+}
+
+const scenePng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/rcsAAAAASUVORK5CYII=";
+
+function sceneInput() {
+  return { ...saveInput(19), kind: "bg3d", dataUrl: scenePng, bg3dScene: createDefaultStudioBg3dSceneDocument() };
 }
 
 interface Fixture {
@@ -293,6 +301,8 @@ describe("Studio asset SQLite manifest + OPFS CAS authority", () => {
     const firstDatabase = await openMemoryDatabase(filename, false);
     const first = await fixture({ database: firstDatabase, fs });
     const saved = await first.repository.save(saveInput(2));
+    const original = sceneInput();
+    const sceneAsset = await first.repository.save(original);
     await firstDatabase.close();
 
     const reopenedDatabase = await openMemoryDatabase(filename);
@@ -303,7 +313,71 @@ describe("Studio asset SQLite manifest + OPFS CAS authority", () => {
       store: reopenedStore,
       createId: () => "unused-id",
     });
-    await expect(reopened.repository.list()).resolves.toEqual([saved]);
+    await expect(reopened.repository.list()).resolves.toEqual([sceneAsset, saved]);
+    expect(sceneAsset.dataUrl).toBe(scenePng);
+    expect(sceneAsset).not.toHaveProperty("bg3dScene");
+    expect(await reopenedDatabase.kvGet(STUDIO_ASSET_LIBRARY_SQLITE_NAMESPACE, STUDIO_ASSET_LIBRARY_SQLITE_MANIFEST_KEY))
+      .not.toContain('"scene"');
+    await expect(reopened.repository.readBg3dScene(sceneAsset)).resolves.toEqual(original.bg3dScene);
+    await expect(reopened.repository.readBg3dScene({ ...sceneAsset, contentHash: saved.contentHash })).resolves.toBeNull();
+    await reopened.repository.rename(sceneAsset.id, "다시 쓰는 장면");
+    await expect(reopened.repository.readBg3dScene(sceneAsset)).resolves.toEqual(original.bg3dScene);
+    await expect(reopened.repository.deleteIfIdentityMatches(sceneAsset.id, saved.contentHash)).resolves.toBe(false);
+    await expect(reopened.repository.deleteIfIdentityMatches(sceneAsset.id, sceneAsset.contentHash)).resolves.toBe(true);
+    expect(await reopenedDatabase.kvGet(STUDIO_ASSET_LIBRARY_BG3D_SCENE_NAMESPACE, sceneAsset.id)).toBeNull();
+    await expect(reopened.repository.readBg3dScene(sceneAsset)).resolves.toBeNull();
+  });
+
+  it("편집 원본을 검증하기 전에는 PNG나 소재 원장을 게시하지 않는다", async () => {
+    const { database, repository, store } = await fixture();
+    const input = sceneInput();
+    await expect(repository.save({ ...input, kind: "ai" })).rejects.toMatchObject({ code: "invalid" });
+    await expect(repository.save({ ...input, dataUrl: dataUrl("not a PNG") })).rejects.toMatchObject({ code: "invalid" });
+    await expect(repository.save({ ...input, bg3dScene: { ...input.bg3dScene, camera: { ...input.bg3dScene.camera, fovDegrees: 999 } } }))
+      .rejects.toMatchObject({ code: "invalid" });
+    expect(await database.kvGet(STUDIO_ASSET_LIBRARY_SQLITE_NAMESPACE, STUDIO_ASSET_LIBRARY_SQLITE_MANIFEST_KEY)).toBeNull();
+    expect(await store.ownerRefs(STUDIO_ASSET_LIBRARY_CAS_OWNER)).toEqual([]);
+  });
+
+  it("원본을 먼저 확인하고 두 저장 응답이 유실되어도 정확한 소재를 복원한다", async () => {
+    const database = await openMemoryDatabase();
+    const published: string[] = [];
+    const unstable = proxyDatabase(database, {
+      kvSet: async (namespace, key, value) => {
+        published.push(namespace);
+        await database.kvSet(namespace, key, value);
+        throw new StudioLocalDatabaseCommitOutcomeUnknownError("kvSet", new Error("response lost after write"));
+      },
+    });
+    const { repository } = await fixture({ database: unstable });
+    const input = sceneInput();
+    const saved = await repository.save(input);
+    expect(published).toEqual([STUDIO_ASSET_LIBRARY_BG3D_SCENE_NAMESPACE, STUDIO_ASSET_LIBRARY_SQLITE_NAMESPACE]);
+    await expect(repository.readBg3dScene(saved)).resolves.toEqual(input.bg3dScene);
+    await expect(repository.listReadOnly()).resolves.toEqual([saved]);
+  });
+
+  it.each(["old", "ambiguous"] as const)("%s 원장 실패 뒤 확인된 미게시 원본만 정리한다", async (state) => {
+    const database = await openMemoryDatabase();
+    const stable = await fixture({ database, createId: () => "old-asset" });
+    await stable.repository.save(saveInput(25));
+    const unstable = proxyDatabase(database, {
+      kvSet: async (namespace, key, value) => {
+        if (namespace !== STUDIO_ASSET_LIBRARY_SQLITE_NAMESPACE) return database.kvSet(namespace, key, value);
+        if (state === "ambiguous") {
+          const candidate = parseStudioAssetManifest(value);
+          await database.kvSet(namespace, key, serializeStudioAssetManifest(candidate.entries.map((entry) =>
+            entry.id === "old-asset" ? { ...entry, name: "third manifest" } : entry,
+          )));
+        }
+        throw new StudioLocalDatabaseCommitOutcomeUnknownError("kvSet", new Error("manifest reply unknown"));
+      },
+    });
+    const { repository } = await fixture({ database: unstable, store: stable.store, createId: () => "candidate-scene" });
+    await expect(repository.save(sceneInput())).rejects.toMatchObject({ code: "unavailable" });
+    const sidecar = await database.kvGet(STUDIO_ASSET_LIBRARY_BG3D_SCENE_NAMESPACE, "candidate-scene");
+    if (state === "old") expect(sidecar).toBeNull();
+    else expect(sidecar).toContain('"scene":');
   });
 
   it("rejects a same-length CAS hash tamper instead of returning partial content", async () => {

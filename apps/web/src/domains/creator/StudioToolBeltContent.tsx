@@ -139,6 +139,7 @@ export type FxPickerSection =
   | "overlay";
 
 export interface StudioToolBeltContentHandlers {
+  insertSavedBg3dMaterial?: import("./studio-cuttoon-editor/studio-saved-bg3d-insertion").InsertSavedBg3dMaterial;
   onSavedLocalAsset?: (asset: StudioAsset) => void;
   /**
    * 선택/그리기 전환의 단일 정본. 진행 중인 획 취소 → 픽셀 도구 disarm(스포이드 포함) →

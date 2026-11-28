@@ -109,6 +109,56 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(status.classList.contains("scene-assistant__viewport-status")).toBe(true);
   });
 
+  it("미확정 배치에서는 작화 단계 진입과 출력을 막고 배치 화면으로 돌아갈 수 있다", () => {
+    const committed = [{ id: "existing-scene" }];
+    const ready = createHost({ primitives: committed });
+    const placing = createHost({ primitives: committed, placementSession: { phase: "preview" } });
+    const onOpenProfessional = vi.fn();
+    const { rerender } = render(<StudioBg3dSceneAssistantWorkspace h={placing} onOpenProfessional={onOpenProfessional} />);
+    const assistant = screen.getByTestId("studio-bg3d-scene-assistant");
+    const finish = () => within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" });
+    fireEvent.click(screen.getByRole("button", { name: "다음: 구도 잡기" }));
+    expect(assistant.dataset.step).toBe("frame");
+    expect(finish()).toHaveProperty("disabled", true);
+    fireEvent.click(finish());
+    expect(assistant.dataset.step).toBe("frame");
+    expect(screen.getByRole("button", { name: "배치를 먼저 확정하거나 취소하세요" })).toHaveProperty("disabled", true);
+
+    rerender(<StudioBg3dSceneAssistantWorkspace h={ready} onOpenProfessional={onOpenProfessional} />);
+    fireEvent.click(finish());
+    expect(assistant.dataset.step).toBe("finish");
+    rerender(<StudioBg3dSceneAssistantWorkspace h={placing} onOpenProfessional={onOpenProfessional} />);
+    const save = screen.getByRole("button", { name: /장면을 소재로도 저장/ });
+    const applyDisabled = screen.getByRole("button", { name: "배치를 먼저 확정하거나 취소하세요" });
+    expect(save).toHaveProperty("disabled", true);
+    expect(applyDisabled).toHaveProperty("disabled", true);
+    fireEvent.click(save);
+    fireEvent.click(applyDisabled);
+    expect(placing.handleSaveToLibrary).not.toHaveBeenCalled();
+    expect(placing.handleInsert).not.toHaveBeenCalled();
+    const handle = screen.getByRole("button", { name: "배치 화면 보기" });
+    handle.focus();
+    fireEvent.click(handle);
+    expect(assistant.dataset.sheetState).toBe("peek");
+    expect(screen.queryByRole("button", { name: "삽입 설정 열기" })).toBeNull();
+    expect(screen.getByRole("button", { name: "배치 확정 또는 취소 필요" })).toBe(handle);
+    expect(handle.getAttribute("aria-disabled")).toBe("true");
+    expect(document.activeElement).toBe(handle);
+    fireEvent.click(handle);
+    expect(assistant.dataset.sheetState).toBe("peek");
+
+    rerender(<StudioBg3dSceneAssistantWorkspace h={ready} onOpenProfessional={onOpenProfessional} />);
+    expect(screen.getByRole("button", { name: "삽입 설정 열기" })).toBe(handle);
+    expect(document.activeElement).toBe(handle);
+    expect(handle.hasAttribute("aria-disabled")).toBe(false);
+    fireEvent.click(handle);
+    expect(save).toHaveProperty("disabled", false);
+    fireEvent.click(save);
+    fireEvent.click(screen.getByRole("button", { name: "현재 컷에 적용" }));
+    expect(ready.handleSaveToLibrary).toHaveBeenCalledOnce();
+    expect(ready.handleInsert).toHaveBeenCalledOnce();
+  });
+
   it("opens with purpose-led choices and no professional DCC terminology", () => {
     render(<StudioBg3dSceneAssistantWorkspace h={createHost()} onOpenProfessional={vi.fn()} />);
 

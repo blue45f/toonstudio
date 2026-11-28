@@ -57,6 +57,7 @@ export function StudioAssetLegacyPanel({
   } = toolBelt;
   const {
     addRenderedImage,
+    insertSavedBg3dMaterial,
     handleRenameAsset,
     loadMoreSharedAssets,
     loadSharedAssets,
@@ -102,6 +103,8 @@ export function StudioAssetLegacyPanel({
         renamingAssetName={renamingAssetName}
         setRenamingAssetName={setRenamingAssetName}
         handleRenameAsset={handleRenameAsset}
+        onUseLocalBg3dAsset={insertSavedBg3dMaterial
+          ? (asset) => insertSavedBg3dMaterial(asset, { closeMenu: true }) : undefined}
         onUseLocalAsset={(asset: StudioAsset) => completeStudioAssetInsertion(
           () => insertStudioAssetWithBundleCredit(asset, addRenderedImage),
           () => setMenu(null),

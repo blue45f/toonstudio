@@ -523,6 +523,7 @@ export function StudioBg3dSceneAssistantWorkspace({
   const busy = activeTaskBusy || readinessPhase === "error" || preparingModel !== null;
   const insertDisabled = !hasScene
     || busy
+    || placementActive
     || Boolean(h.insertBlocked)
     || Boolean(h.immersiveSceneActive)
     || Boolean(h.sharedStageUpdateBlockedReason) || Boolean(h.sixPassLtInsertUnavailableReason);
@@ -578,6 +579,7 @@ export function StudioBg3dSceneAssistantWorkspace({
     .filter((entry) => classifyAssistantAsset(entry, h.genericModelClassifications) === goal);
 
   const changeStep = (next: StudioBg3dAssistantStep) => {
+    if (next === "finish" && placementActive) return;
     if (studioBg3dAssistantStepIndex(next) > 0 && !hasScene) {
       setStep("choose");
       setSheetState("full");
@@ -712,10 +714,11 @@ export function StudioBg3dSceneAssistantWorkspace({
         hasScene={hasScene}
         onOutputStyle={selectOutputStyle}
         aspectRatio={h.ltExportAspectRatio ?? null}
-        aspectRatioDisabled={insertDisabled || placementActive}
+        aspectRatioDisabled={insertDisabled}
         aspectSelectRef={aspectSelectRef}
         onAspectRatio={h.updateLtExportAspectRatio ? selectAspectRatio : undefined}
         onViewCrop={placementActive || sheetState === "peek" ? undefined : viewCrop}
+        saveDisabled={placementActive}
         onSaveToLibrary={h.handleSaveToLibrary}
       />
     );
@@ -733,8 +736,11 @@ export function StudioBg3dSceneAssistantWorkspace({
     onOpenProfessional();
   };
 
-  const primaryDisabled = busy || !hasScene || (step === "finish" && insertDisabled);
-  const primaryLabel = step === "finish" && h.operation === "update"
+  const placementBlocksAdvance = placementActive && (step === "frame" || step === "finish");
+  const primaryDisabled = busy || !hasScene || placementBlocksAdvance || (step === "finish" && insertDisabled);
+  const primaryLabel = placementBlocksAdvance
+    ? bt("배치를 먼저 확정하거나 취소하세요", "Confirm or cancel the placement first")
+    : step === "finish" && h.operation === "update"
     ? "현재 컷에 다시 적용"
     : stepActionLabel(step);
 
@@ -767,7 +773,7 @@ export function StudioBg3dSceneAssistantWorkspace({
       </div>
 
       <aside className="scene-assistant__panel" aria-label="장면 도우미">
-        <SheetHandle state={sheetState} onChange={setSheetState} buttonRef={sheetHandleRef}
+        <SheetHandle state={sheetState} onChange={setSheetState} buttonRef={sheetHandleRef} placementActive={placementActive}
           onOpenInsertSettings={step === "finish" && sheetState === "peek" ? openInsertSettings : undefined} />
         <div className="scene-assistant__panel-head">
           <div className="scene-assistant__panel-title">
@@ -779,7 +785,7 @@ export function StudioBg3dSceneAssistantWorkspace({
           </button>
         </div>
 
-        <AssistantStepper step={step} onStepChange={changeStep} />
+        <AssistantStepper step={step} onStepChange={changeStep} finishDisabled={placementActive} />
         <div className="scene-assistant__panel-scroll" ref={panelScrollRef}>
           <StudioBg3dAssistantHostReadinessBanner host={h} hasDraftScene={hasScene} />
           <StudioScene3dBg3dCutPanel host={h} preferredExpanded={false} />

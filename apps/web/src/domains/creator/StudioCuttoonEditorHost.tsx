@@ -147,6 +147,7 @@ import {
 import { isStudioCanvasInteractionBlocked } from "./canvas/studio-canvas-cursor";
 import { studioCreationLinkParams } from "./creator-studio-links";
 import type { StudioAppSettings } from "./studio-app-settings";
+import { bindStudioSavedBg3dInsertion } from "./studio-cuttoon-editor/studio-saved-bg3d-insertion";
 import { createStudioAssetLibraryMutations } from "./studio-cuttoon-editor/studio-asset-library-mutations";
 import {
   discardStudioRetainedStrokeRedo, prepareStudioPendingStrokeCommitPage,
@@ -3194,6 +3195,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [menuSession, setMenuSession] = useState<StudioMenuSessionState>(
     EMPTY_STUDIO_MENU_SESSION
   );
+  const menuSessionRef = useRef(menuSession);
+  menuSessionRef.current = menuSession;
   const menu = menuSession.toolMenu;
   const exportMenuOpen = menuSession.appMenu === "export";
   const projectActionsOpen = menuSession.appMenu === "project";
@@ -13710,6 +13713,18 @@ const puppetWarpArmed =
     shared: expectsSharedDocument, joined: joinedStudioLiveJam, draftStatus: draftCollaboration?.status };
   const cutScopeRef = useRef(cutScope); cutScopeRef.current = cutScope;
   const ownsSoleLocalDraft = () => canStoreStudioLocalVrmCut({ ...cutScopeRef.current, peerCount: studioLiveRoomRef.current?.getPeers().length ?? 0 });
+  const savedBg3dInsertIntent = useRef(0);
+  const insertSavedBg3dMaterial = bindStudioSavedBg3dInsertion({
+    intent: savedBg3dInsertIntent, elements, captureMutationTicket: captureStudioMutationTicket,
+    canApplyMutation: canApplyStudioMutation, readAssets: () => assetsRef.current,
+    readScope: () => ({ menu: menuSessionRef.current, pageId: currentPageIdRef.current, master: masterEditModeRef.current,
+      reviewLocked: activeSurfaceReviewLockedRef.current, elements: activeElementsRef.current,
+      revision: pagesHistoryRef.current[pagesHiRef.current], selectedId: selectedIdRef.current,
+      marqueeIds: marqueeIdsRef.current, groupId: activeGroupIdRef.current, ownsLocalDraft: ownsSoleLocalDraft() }),
+    addImage: addRenderedImage, closeMenu: (target) => setMenuSession((current) =>
+      current === target ? reduceStudioMenuSession(current, { type: "tool-menu.close" }) : current),
+    reportReadFailure: () => setError(t("studio.hostStatus.materialFileReadFailed", "소재 파일을 읽지 못했습니다.")),
+  });
   const applyBg3dRenderedImage = bindStudioBg3dRenderedImage({
     setError, activeElementsRef, readCurrentPage: () => (pagesHistoryRef.current[pagesHiRef.current] ?? pages).find(page => page.id === activePage.id),
     setStatusNotice,
@@ -20853,6 +20868,7 @@ function clearSelectionForEdit() {
     addFrame,
     addFxOverlay,
     addRenderedImage,
+    insertSavedBg3dMaterial,
     addSceneTemplate,
     addSfxPreset,
     addSpeedLines,

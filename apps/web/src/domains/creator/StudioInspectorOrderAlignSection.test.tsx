@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./contracts/studio-bg3d-scene-document";
 import { createDefaultStudioVrmSceneDocument } from "./contracts/studio-vrm-scene-document";
 import { reopenStudioVrmCut } from "./studio-cuttoon-editor/studio-reopen-vrm-cut";
 import { auditStudioInspectorDensity } from "./studio-inspector-dom-density";
@@ -11,11 +12,16 @@ import {
   StudioInspectorOrderAlignSection,
   StudioInspectorSelectionActions,
 } from "./StudioInspectorOrderAlignSection";
+import { StudioInspectorSceneEditActions } from "./StudioInspectorSceneEditActions";
 
+import type { ComponentProps } from "react";
 import type { ImageEl } from "./studio-element-model";
+
+import { useI18n } from "@/shared/lib/i18n";
 
 beforeEach(() => {
   globalThis.localStorage?.clear();
+  useI18n.setState({ lang: "ko" });
   resetStudioInspectorSectionStateCache();
 });
 afterEach(cleanup);
@@ -32,26 +38,40 @@ const dummyEl: ImageEl = {
   opacity: 1,
 };
 
-function renderOrderAlignSection(selected = dummyEl, onEditVrmElement: (element: ImageEl) => void = vi.fn()) {
+function renderOrderAlignSection() {
   const alignSelected = vi.fn();
   const view = render(
     <StudioInspectorOrderAlignSection
-      selected={selected}
-      selectedBg3dEditSource={null}
-      patchEl={vi.fn()}
       reorder={vi.fn()}
       alignSelected={alignSelected}
       duplicateSelected={vi.fn()}
       removeSelected={vi.fn()}
-      onEditVrmElement={onEditVrmElement}
-      setBg3dInitialScene={vi.fn()}
-      setBg3dInitialDataUrl={vi.fn()}
-      setBg3dInitialElementId={vi.fn()}
-      setBg3dOpen={vi.fn()}
     />,
   );
   fireEvent.click(screen.getByRole("button", { name: /^정렬·순서/u }));
   return { ...view, alignSelected };
+}
+
+function renderSceneActions(overrides: Partial<ComponentProps<typeof StudioInspectorSceneEditActions>> = {}) {
+  const actions = {
+    onEditVrmElement: vi.fn(),
+    setBg3dInitialScene: vi.fn(),
+    setBg3dInitialDataUrl: vi.fn(),
+    setBg3dInitialElementId: vi.fn(),
+    setBg3dOpen: vi.fn(),
+  };
+  const view = render(
+    <>
+      <StudioInspectorSceneEditActions active selected={dummyEl} gate={{ disabled: false }} selectedBg3dEditSource={null} {...actions} {...overrides} />
+      <StudioInspectorOrderAlignSection
+        reorder={vi.fn()}
+        alignSelected={vi.fn()}
+        duplicateSelected={vi.fn()}
+        removeSelected={vi.fn()}
+      />
+    </>,
+  );
+  return { ...view, ...actions };
 }
 
 function renderActions(selectionCount: number) {
@@ -72,7 +92,7 @@ function renderActions(selectionCount: number) {
   return { ...view, alignSelected, duplicateSelected, removeSelected, reorder };
 }
 
-describe("StudioInspectorOrderAlignSection", () => {
+describe("StudioInspectorSceneEditActions", () => {
   it.each(["linked", "unlinked", "legacy"] as const)("3D 재편집에서 %s 컷의 편집기와 갱신 대상 ID를 유지한다", (kind) => {
     const characterDocumentId = "character:00000000-0000-4000-8000-000000000001";
     const scene = createDefaultStudioVrmSceneDocument();
@@ -83,7 +103,8 @@ describe("StudioInspectorOrderAlignSection", () => {
       setPoserInitialDataUrl: vi.fn(), setPoserInitialElementId: vi.fn(),
       setPoserVrmOpen: vi.fn(), setCharacterShaperOpen: vi.fn(),
     };
-    renderOrderAlignSection(selected, (element) => reopenStudioVrmCut(element, controls));
+    renderSceneActions({ selected, onEditVrmElement: (element) => reopenStudioVrmCut(element, controls) });
+    expect(screen.getByRole("button", { name: /^정렬·순서/u }).getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(screen.getByRole("button", { name: "3D 캐릭터 재편집" }));
     expect(controls.setPoserInitialDataUrl).toHaveBeenCalledWith(selected.src);
     expect(controls.setPoserInitialElementId).toHaveBeenCalledWith(selected.id);
@@ -91,6 +112,53 @@ describe("StudioInspectorOrderAlignSection", () => {
     expect(kind === "linked" ? shaper : poser).toHaveBeenCalledWith(true);
     expect(kind === "linked" ? poser : shaper).not.toHaveBeenCalled();
   });
+
+  it.each(["scene", "legacy"] as const)("정렬을 펼치지 않고 %s 배경 원본과 선택한 레이어 ID를 연다", (kind) => {
+    const selected = { ...dummyEl, id: "selected-background-layer" };
+    const source = kind === "scene" ? { scene: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } : { legacyDataUrl: selected.src };
+    const controls = renderSceneActions({ selected, selectedBg3dEditSource: source });
+    const order = screen.getByRole("button", { name: /^정렬·순서/u });
+    expect(order.getAttribute("aria-expanded")).toBe("false");
+    const edit = screen.getByRole("button", { name: "3D 배경 재편집" });
+    expect(edit.getAttribute("data-studio-bg3d-launcher")).toBe("true");
+    expect(edit.classList.contains("min-h-11")).toBe(true);
+    fireEvent.click(edit);
+    expect(controls.setBg3dInitialScene).toHaveBeenCalledExactlyOnceWith("scene" in source ? source.scene : undefined);
+    expect(controls.setBg3dInitialDataUrl).toHaveBeenCalledExactlyOnceWith("legacyDataUrl" in source ? source.legacyDataUrl : undefined);
+    expect(controls.setBg3dInitialElementId).toHaveBeenCalledExactlyOnceWith(selected.id);
+    expect(controls.setBg3dOpen).toHaveBeenCalledExactlyOnceWith(true);
+    fireEvent.click(order);
+    expect(screen.getAllByRole("button", { name: "3D 배경 재편집" })).toHaveLength(1);
+  });
+
+  it("applies the existing selection lock to the visible action", () => {
+    const reason = "검토 잠금을 해제한 뒤 변경할 수 있어요.";
+    const controls = renderSceneActions({
+      gate: { disabled: true, reason },
+      selectedBg3dEditSource: { scene: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT },
+    });
+    const edit = screen.getByRole("button", { name: "3D 배경 재편집" });
+    expect(edit.matches(":disabled")).toBe(true);
+    expect(edit.hasAttribute("data-studio-bg3d-launcher")).toBe(false);
+    expect(screen.getByRole("group", { name: "3D 원본 편집", description: reason })).toBeTruthy();
+    expect(screen.getByText(reason)).toBeTruthy();
+    edit.click();
+    expect(controls.setBg3dOpen).not.toHaveBeenCalled();
+  });
+
+  it("omits the action outside the active, single-selection properties route", () => {
+    renderSceneActions({ active: false, selectedBg3dEditSource: { scene: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } });
+    expect(screen.queryByRole("group", { name: "3D 원본 편집" })).toBeNull();
+  });
+
+  it("leaves plain images without a scene action", () => {
+    renderSceneActions();
+    expect(screen.queryByRole("group", { name: "3D 원본 편집" })).toBeNull();
+  });
+
+});
+
+describe("StudioInspectorOrderAlignSection", () => {
   it("keeps single-selection alignment live and explains why distribution is unavailable", () => {
     const { alignSelected } = renderOrderAlignSection();
 
