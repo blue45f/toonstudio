@@ -1,4 +1,4 @@
-/** 없으면 기존 2m 자동 맞춤 배치를 유지한다. 명시된 새 SKP만 원본 미터 치수를 보존한다. */
+/** 없으면 기존 2m 자동 맞춤 배치를 유지한다. 정책이 명시된 자산은 원본 미터 치수를 보존한다. */
 export type StudioBg3dModelMetricPolicy = "authored-metres";
 export type StudioBg3dMetricInstanceScale = [number, number, number];
 
@@ -19,7 +19,7 @@ interface NormalizedModelCache {
   readonly root: { readonly scale: { readonly x: number; readonly y: number; readonly z: number } };
 }
 
-/** 공유 캐시는 계속 2m로 맞춘다. 문서에 저장하는 역배율만으로 새 SKP의 원본 치수를 되돌린다. */
+/** 공유 캐시는 계속 2m로 맞춘다. 문서에 저장하는 역배율만으로 원본 치수를 되돌린다. */
 export function resolveStudioBg3dMetricInstanceScale(
   policy: StudioBg3dModelMetricPolicy | undefined,
   cached: NormalizedModelCache | null | undefined,

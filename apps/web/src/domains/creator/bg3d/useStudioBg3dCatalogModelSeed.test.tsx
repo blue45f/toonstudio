@@ -44,10 +44,22 @@ describe("요소 패널 가구 배치", () => {
     await waitFor(() => expect(options.consume).toHaveBeenCalledTimes(1));
     expect(fetcher).toHaveBeenCalledWith(item.assetUrl, { signal: expect.any(AbortSignal) });
     expect(options.importModelFiles).toHaveBeenCalledTimes(1);
-    const [files, rights] = options.importModelFiles.mock.calls[0];
+    const [files, rights, , mount] = options.importModelFiles.mock.calls[0];
+    expect(mount).toBe("floor");
     expect(files[0].name).toBe(`${item.label}.glb`);
     expect(rights.licenseName).toBe("CC0-1.0");
     expect(options.setError).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["ph_chandelier_03", { ceilingHeightMetres: 2.4 }],
+    ["kn_furniture_bed_bunk", undefined],
+  ] as const)("%s는 카탈로그에 등록된 설치 방식을 사용한다", async (sourceId, mount) => {
+    const options = controls();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array([1]))));
+    renderHook(() => useStudioBg3dCatalogModelSeed({ ...options, sourceId }));
+    await waitFor(() => expect(options.consume).toHaveBeenCalledTimes(1));
+    expect(options.importModelFiles.mock.calls[0]?.[3]).toEqual(mount);
   });
 
   it("공식 배경은 원본 저장소 ID로 한 번 배치해 다른 기기에서도 같은 해시로 다시 연다", async () => {

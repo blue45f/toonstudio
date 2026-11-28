@@ -64,6 +64,8 @@ export interface StudioObjectInsertItem {
   readonly assetLicense?: "CC0-1.0";
   readonly bundledEnvironmentId?: string;
   readonly blockout?: boolean;
+  /** 천장에 거는 소재의 기본 설치 높이(m). */
+  readonly ceilingHeightMetres?: number;
   /** Optional rendered preview/thumbnail PNG URL for catalog cards. */
   readonly thumbnailUrl?: string;
 }
@@ -105,7 +107,7 @@ const POLYHAVEN_SCENE_PROP_INDEX = Object.freeze([
   { id: "coffee_table_round_01", slug: "polyhaven-coffee-table-round-01", file: "coffee_table_round_01.glb", label: "원형 커피 테이블 · Poly Haven", keywords: ["table", "커피", "테이블", "거실", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 원형 커피 테이블 GLB." },
   { id: "rockingchair_01", slug: "polyhaven-rockingchair-01", file: "Rockingchair_01.glb", label: "원목 흔들의자 · Poly Haven", keywords: ["rocking", "chair", "흔들의자", "의자", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 원목 흔들의자 GLB." },
   { id: "gothicbed_01", slug: "polyhaven-gothicbed-01", file: "GothicBed_01.glb", label: "고딕 장식 침대 · Poly Haven", keywords: ["bed", "gothic", "침대", "고딕", "침실", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 고딕 침대 GLB." },
-  { id: "chandelier_03", slug: "polyhaven-chandelier-03", file: "Chandelier_03.glb", label: "실내 장식 샹들리에 · Poly Haven", keywords: ["chandelier", "샹들리에", "조명", "천장등", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 실내 샹들리에 GLB." },
+  { id: "chandelier_03", ceilingHeightMetres: 2.4, slug: "polyhaven-chandelier-03", file: "Chandelier_03.glb", label: "실내 장식 샹들리에 · Poly Haven", keywords: ["chandelier", "샹들리에", "조명", "천장등", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 실내 샹들리에 GLB." },
   { id: "chinese_sofa", slug: "polyhaven-chinese-sofa", file: "chinese_sofa.glb", label: "중국풍 목제 소파 · Poly Haven", keywords: ["sofa", "소파", "동양", "응접실", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 중국풍 목제 소파 GLB." },
   { id: "vintage_grandfather_clock_01", slug: "polyhaven-vintage-grandfather-clock-01", file: "vintage_grandfather_clock_01-alpha-restored-v1.glb", label: "빈티지 대형 괘종시계 · Poly Haven", keywords: ["clock", "괘종시계", "시계", "빈티지", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 빈티지 괘종시계 GLB." },
   { id: "vintage_cabinet_01", slug: "polyhaven-vintage-cabinet-01", file: "vintage_cabinet_01.glb", label: "클래식 장식 수납장 · Poly Haven", keywords: ["cabinet", "수납장", "장식장", "서재", "polyhaven", "pbr"], hint: "Poly Haven CC0 2K PBR 클래식 수납장 GLB." },
@@ -363,6 +365,7 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
         id: `obj-furniture-ph_${item.id}`,
         kind: "bg3d-scene-prop" as const,
         sourceId: `ph_${item.id}`,
+        ...("ceilingHeightMetres" in item ? { ceilingHeightMetres: item.ceilingHeightMetres } : {}),
         label: item.label,
         family: "scene-furniture" as const,
         familyLabel: SCENE_FAMILY_LABEL["scene-furniture"],

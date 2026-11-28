@@ -295,6 +295,40 @@ describe("importModelFiles with a SketchUp file", () => {
     expect(placed[1]?.componentRef).toEqual({ id: `skp-${"f".repeat(16)}`, name: "방" });
   });
 
+  it("추천 가구의 좌표에만 원본 미터 치수와 바닥 접점을 기록한다", async () => {
+    const h = harness();
+    runtime.plan.mockReturnValue(planOf({ format: "glb", primaryPath: "chair.glb" }));
+    const root = new Group();
+    const mesh = new Mesh(new BoxGeometry(0.4, 1, 0.6));
+    mesh.position.set(0.25, 0.6, -0.2);
+    root.add(mesh);
+    root.scale.setScalar(2);
+    runtime.admit.mockResolvedValue({ root, normalizationScale: 2 });
+    expect(await h.actions().importModelFiles([file("chair.glb")], RIGHTS, undefined, "floor")).toBe(true);
+    const model = h.context.replaceCanonicalDocumentState.mock.calls[0]?.[0]?.customModels[0];
+    expect(model.scale).toEqual([0.5, 0.5, 0.5]);
+    expect(model.position[0]).toBeCloseTo(-0.25);
+    expect(model.position[1]).toBeCloseTo(-0.1);
+    expect(model.position[2]).toBeCloseTo(0.2);
+    expect(h.context.attachmentByStorageModelIdRef.current.get("model-1")?.metricPolicy).toBe("authored-metres");
+    expect(root.scale.toArray()).toEqual([2, 2, 2]);
+
+    expect(await h.actions().importModelFiles([file("chair.glb")], RIGHTS)).toBe(true);
+    const upload = h.context.replaceCanonicalDocumentState.mock.calls[1]?.[0]?.customModels[0];
+    expect(upload).toMatchObject({ position: [0, 0, 0], scale: [1, 1, 1] });
+  });
+
+  it("기존 연결 정책을 유지하며 새 천장등의 상단만 설치 높이에 맞춘다", async () => {
+    const h = harness();
+    h.context.attachmentByStorageModelIdRef.current.set("model-1", { id: "attachment-model-1", hash: "h" });
+    runtime.plan.mockReturnValue(planOf({ format: "glb", primaryPath: "light.glb" }));
+    expect(await h.actions().importModelFiles([file("light.glb")], RIGHTS, undefined, { ceilingHeightMetres: 2.4 })).toBe(true);
+    const mounted = h.context.replaceCanonicalDocumentState.mock.calls[0]?.[0]?.customModels[0];
+    expect(mounted.scale).toEqual([10, 10, 10]);
+    expect(mounted.position[1] + 6).toBeCloseTo(2.4);
+    expect(h.context.attachmentByStorageModelIdRef.current.get("model-1")).not.toHaveProperty("metricPolicy");
+  });
+
   it("does not load or involve the SketchUp wiring for other formats", async () => {
     const h = harness();
     runtime.plan.mockReturnValue(planOf({ format: "glb", primaryPath: "prop.glb" }));

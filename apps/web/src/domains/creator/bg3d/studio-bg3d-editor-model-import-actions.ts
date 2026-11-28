@@ -57,7 +57,7 @@ import {
   deriveStudioBg3dSessionGlbValidationPolicy as deriveStudioBg3dGlbValidationPolicy,
 } from "./studio-bg3d-session-glb-policy";
 import { linkStudioBg3dSkpPlacement } from "./studio-bg3d-skp-sidecar";
-import { resolveStudioBg3dMetricPlacementScale, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
+import { placeStudioBg3dCatalogFurniture, resolveStudioBg3dMetricPlacementScale, studioBg3dModelMetricPolicyMessage, type StudioBg3dCatalogMount } from "./studio-bg3d-model-metric-placement";
 import { StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
 import { beginCurrentStudioBg3dSkpImportRun } from "./studio-bg3d-skp-import-run-loader";
 import { deleteStudioBg3dModelCacheVariants, deleteStudioBg3dOwnedModelCacheEntry, isStudioBg3dOwnedModelCacheEntry, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
@@ -157,6 +157,7 @@ export interface StudioBg3dModelImportActions {
     files: readonly File[],
     rights: NonNullable<Bg3dModelImportItem["rights"]>,
     signal?: AbortSignal,
+    catalogMount?: StudioBg3dCatalogMount,
   ) => Promise<boolean>;
   readonly handleUploadModelFiles: (
     event: ChangeEvent<HTMLInputElement>,
@@ -228,6 +229,7 @@ export function createStudioBg3dModelImportActions(
     files: readonly File[],
     rights: NonNullable<Bg3dModelImportItem["rights"]>,
     signal?: AbortSignal,
+    catalogMount?: StudioBg3dCatalogMount,
   ): Promise<boolean> {
     if (files.length === 0 || signal?.aborted || isMaterialBackendCurrent?.() === false) return false;
     if (placementSessionRef.current.phase === "preview") cancelCustomModelPlacement();
@@ -428,7 +430,8 @@ export function createStudioBg3dModelImportActions(
                 classification: genericModelClassifications.get(record.id) ?? null,
               },
             );
-            const attachment: StudioBg3dModelAttachment = sourceFormat === "skp"
+            const mount = sourceFormat === "glb" ? catalogMount : undefined;
+            const attachment: StudioBg3dModelAttachment = sourceFormat === "skp" || (mount && !existing)
               ? { ...workflowAttachment, metricPolicy: "authored-metres" } : workflowAttachment;
             const cached = await admitAndCacheModel({
               record,
@@ -447,8 +450,10 @@ export function createStudioBg3dModelImportActions(
             // 취소를 무시한 decoder가 늦게 끝나도 소유 캐시 정리 전에 장면으로 전달하지 않는다.
             lease.throwIfRevoked();
             assertImportCurrent();
+            const instance = createBgCustomModelInstance(record.id, liveModels.length + index,
+              resolveStudioBg3dMetricPlacementScale(sourceFormat === "skp" ? attachment : {}, cached));
             const placedRaw = linkStudioBg3dSkpPlacement(
-              createBgCustomModelInstance(record.id, liveModels.length + index, resolveStudioBg3dMetricPlacementScale(sourceFormat === "skp" ? attachment : {}, cached)),
+              mount ? placeStudioBg3dCatalogFurniture(instance, cached, mount) : instance,
               plannedSkpSourcePaths[index] == null ? null : { contentHash: record.contentHash, name: record.name },
             );
             stagedPlacements.push(nameNewStudioBg3dCustomModel(placedRaw, record.name, {

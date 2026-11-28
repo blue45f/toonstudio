@@ -42,9 +42,12 @@ export function useStudioBg3dCatalogModelSeed({ sourceId, ready, sessionKey, imp
         const blob = await response.blob();
         if (signal.aborted) return;
         const file = new File([blob], `${item.label}.glb`, { type: "model/gltf-binary" });
+        const placement = item.family === "scene-furniture" && !item.blockout
+          ? (item.ceilingHeightMetres === undefined ? "floor" : { ceilingHeightMetres: item.ceilingHeightMetres })
+          : undefined;
         const placed = await place([file], {
           status: "licensed", licenseName: item.assetLicense, commercialUse: true, attributionRequired: false,
-        }, signal);
+        }, signal, placement);
         if (!placed && !signal.aborted) report((previous) => previous ?? `${item.label} 모델을 배치하지 못했습니다.`);
       } catch (error) {
         if (!signal.aborted) report(error instanceof Error ? error.message : "배경 모델을 불러오지 못했습니다.");
