@@ -18,6 +18,7 @@ import {
   type StudioMannequinHandContactTargetId,
 } from "./studio-mannequin-gesture-dynamics";
 import {
+  buildStudioMannequinSpec,
   clampStudioMannequinBodyParams,
   clampStudioMannequinJointRotation,
   type StudioMannequinBodyParams,
@@ -550,8 +551,9 @@ export function resolveUndoRedoSemanticStep(input: {
       : redoStudioPoseHistory(input.history, input.currentPose, input.currentMeta);
   if (!step) return null;
   const meta = step.meta ?? {};
-  const pose = hasActiveStudioMannequinSemanticContacts(meta)
-    ? retargetStudioMannequinSemanticPose(input.spec, step.pose, meta, input.locks)
-    : step.pose;
+  if (!hasActiveStudioMannequinSemanticContacts(meta)) return { history: step.history, pose: step.pose, meta };
+  // 손끝도 지면 접촉점이므로 현재 체형·호흡에 복원할 손의 굽힘을 반영한다.
+  const spec = meta.hands ? buildStudioMannequinSpec(input.spec.params, meta.hands.fingerPose) : input.spec;
+  const pose = retargetStudioMannequinSemanticPose(spec, step.pose, meta, input.locks);
   return { history: step.history, pose, meta };
 }
