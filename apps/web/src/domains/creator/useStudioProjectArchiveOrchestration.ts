@@ -25,7 +25,7 @@ export interface StudioProjectArchiveOrchestration {
   readonly handleExportProjectArchive: () => Promise<void>;
   readonly handleImportProject: (
     event: ChangeEvent<HTMLInputElement>
-  ) => Promise<void>;
+  ) => Promise<void | "scope-changed">;
   readonly handleImportProjectArchive: (
     event: ChangeEvent<HTMLInputElement>
   ) => Promise<void>;
@@ -57,9 +57,9 @@ export function createStudioProjectArchiveIntentController(
     const { createStudioProjectArchiveOrchestration } = await loadRuntime();
     return createStudioProjectArchiveOrchestration(input);
   };
-  const runExclusive = async (
-    operation: (isCurrent: () => boolean) => Promise<void>,
-  ): Promise<void> => {
+  const runExclusive = async <Result>(
+    operation: (isCurrent: () => boolean) => Promise<Result>,
+  ): Promise<Result | undefined> => {
     const state = operationStateRef.current;
     if (state.busy || input.projectArchiveBusy) {
       input.setError("다른 프로젝트 센터이 끝난 뒤 다시 시도해 주세요.");
@@ -71,7 +71,7 @@ export function createStudioProjectArchiveIntentController(
     const isCurrent = () =>
       state.busy && state.epoch === operationEpoch;
     try {
-      await operation(isCurrent);
+      return await operation(isCurrent);
     } finally {
       if (state.epoch === operationEpoch) {
         state.busy = false;
@@ -126,13 +126,13 @@ export function createStudioProjectArchiveIntentController(
       if (!file) return;
       const mutationTicket = input.captureStudioMutationTicket();
       try {
-        await runExclusive(async (isCurrent) => {
+        return await runExclusive(async (isCurrent) => {
           input.setProjectArchiveBusy(true);
           input.setProjectArchiveStatus(null);
           try {
             const orchestration = await load();
-            if (!isCurrent()) return;
-            await orchestration.handleImportProject(file, mutationTicket);
+            if (!isCurrent()) return "scope-changed" as const;
+            return await orchestration.handleImportProject(file, mutationTicket);
           } finally {
             input.setProjectArchiveBusy(false);
           }

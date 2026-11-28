@@ -150,9 +150,10 @@ describe("database integration runner CI policy", () => {
   it("keeps `pnpm test` equal to the root suite plus the quiet perf-budget pass", () => {
     const packageManifest = readJson("package.json");
 
-    // CI shards `test:root` and runs `test:perf` on its own runner; `pnpm test` must stay the
-    // exact union so a local run and CI prove the same thing.
-    expect(packageManifest.scripts?.["test:root"]).toBe("node scripts/verify-workspace-package-links.mjs && vitest run");
+    // 루트 테스트는 워크스페이스 링크와 Cloudflare 엣지를 확인한 뒤 Vitest를 실행한다.
+    expect(packageManifest.scripts?.["test:root"]).toBe(
+      "node scripts/verify-workspace-package-links.mjs && pnpm run test:cloudflare-static-edge && vitest run",
+    );
     expect(packageManifest.scripts?.test).toBe("pnpm run test:root && pnpm run test:perf");
     expect(packageManifest.scripts?.["test:perf"]).toBe(
       "vitest run --config vitest.perf.config.ts",

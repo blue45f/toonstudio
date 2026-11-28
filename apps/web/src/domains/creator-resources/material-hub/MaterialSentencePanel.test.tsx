@@ -680,4 +680,38 @@ describe("AI로 다듬기(선택, 명시적 클릭에서만)", () => {
     expect(screen.queryByRole("alert")).toBeNull();
     expect(request).not.toHaveBeenCalled();
   });
+
+  it("문장을 바꾸면 이전 요청을 취소하고 최신 응답과 그 원문만 유지한다", async () => {
+    const first = Promise.withResolvers<string | null>();
+    const second = Promise.withResolvers<string | null>();
+    const refineSentence = vi.fn<NonNullable<MaterialSentencePanelProps["refineSentence"]>>()
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    renderPanel({ refineSentence });
+
+    type("비 내리는 도시");
+    fireEvent.click(screen.getByRole("button", { name: "AI로 다듬기" }));
+    type("햇살이 드는 숲");
+    expect(refineSentence.mock.calls[0]?.[1].aborted).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "AI로 다듬기" }));
+    await act(async () => { second.resolve("햇빛이 비치는 숲길"); });
+    await act(async () => { first.resolve("비 오는 골목 야경"); });
+
+    expect(sentenceInput().value).toBe("햇빛이 비치는 숲길");
+    fireEvent.click(screen.getByRole("button", { name: "원래 문장으로 되돌리기" }));
+    expect(sentenceInput().value).toBe("햇살이 드는 숲");
+    expect(refineSentence).toHaveBeenCalledTimes(2);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("다듬은 뒤 다른 예시를 선택하면 이전 원문으로 되돌리는 버튼을 지운다", async () => {
+    renderPanel({ refineSentence: async () => "비 오는 골목 야경" });
+    type("비 내리는 도시");
+    fireEvent.click(screen.getByRole("button", { name: "AI로 다듬기" }));
+    await screen.findByRole("button", { name: "원래 문장으로 되돌리기" });
+    fireEvent.click(screen.getByRole("button", { name: "조선시대 한복 입은 인물 포즈" }));
+    expect(sentenceInput().value).toBe("조선시대 한복 입은 인물 포즈");
+    expect(screen.queryByRole("button", { name: "원래 문장으로 되돌리기" })).toBeNull();
+    expect(request).not.toHaveBeenCalled();
+  });
 });

@@ -250,12 +250,14 @@ function inspectPluginFile(filePath) {
 export function runToonStudioCli(argv, options = {}) {
   const [command = "help", ...rest] = argv;
   const stateFile = parseFlagValue(rest, "--state-file") ?? process.env.TOONSTUDIO_MCP_STATE_FILE;
-  const apiUrl = parseFlagValue(rest, "--api-url") ?? process.env.TOONSTUDIO_API_URL;
   const env = options.env ?? process.env;
-  const engine = createToonStudioMcpEngine({ stateFile, apiUrl, env });
+  const explicitApiUrl = parseFlagValue(rest, "--api-url");
+  const apiUrl = explicitApiUrl ?? env.TOONSTUDIO_API_URL;
+  const runtime = { stateFile, apiUrl, env, remoteAiEnabled: Boolean(explicitApiUrl), dryRun: rest.includes("--dry-run") };
+  const engine = createToonStudioMcpEngine(runtime);
 
   if (command === "mcp") {
-    startStdioMcpServer({ stateFile, apiUrl, env });
+    startStdioMcpServer(runtime);
     return { exitCode: 0, output: "" };
   }
 
@@ -502,8 +504,8 @@ export function runToonStudioCli(argv, options = {}) {
 
     const results = [];
     let failedCount = 0;
-    for (let idx = 0; idx < steps.length; idx += 1) {
-      const step = steps[idx] ?? {};
+    const runStep = (step, idx) => {
+      step ??= {};
       const toolName = step.tool || step.name;
       const toolArgs = step.arguments || step.args || {};
       const res = engine.handleJsonRpcRequest({
@@ -512,16 +514,20 @@ export function runToonStudioCli(argv, options = {}) {
         method: "tools/call",
         params: { name: toolName, arguments: toolArgs },
       });
-      if (res.error) {
-        failedCount += 1;
-        results.push({ step: idx + 1, tool: toolName, ok: false, error: res.error });
-      } else {
-        const structured = res.result.structuredContent;
-        if (structured && structured.ok === false) failedCount += 1;
-        results.push({ step: idx + 1, tool: toolName, ok: structured?.ok !== false, result: structured });
-      }
-    }
-    return {
+      const record = (value) => {
+        const structured = value.result?.structuredContent;
+        const ok = !value.error && structured?.ok !== false;
+        if (!ok) failedCount += 1;
+        results.push({ step: idx + 1, tool: toolName, ok, ...(value.error ? { error: value.error } : { result: structured }) });
+      };
+      return res instanceof Promise ? res.then(record) : record(res);
+    };
+    // 선행 원격 작업이 끝난 뒤 다음 단계가 그 기록을 읽도록 순서를 유지한다.
+    let pending;
+    steps.forEach((step, idx) => {
+      pending = pending ? pending.then(() => runStep(step, idx)) : runStep(step, idx);
+    });
+    const finish = () => ({
       exitCode: failedCount === 0 ? 0 : 1,
       output: JSON.stringify(
         {
@@ -534,7 +540,8 @@ export function runToonStudioCli(argv, options = {}) {
         null,
         2,
       ),
-    };
+    });
+    return pending ? pending.then(finish) : finish();
   }
 
   if (command === "call") {
@@ -564,10 +571,11 @@ export function runToonStudioCli(argv, options = {}) {
       method: "tools/call",
       params: { name: toolName, arguments: args },
     });
-    if (res.error) {
-      return { exitCode: 1, output: JSON.stringify(res.error, null, 2) };
-    }
-    return { exitCode: 0, output: JSON.stringify(res.result.structuredContent, null, 2) };
+    const format = (value) => ({
+      exitCode: value.error || value.result?.structuredContent?.ok === false ? 1 : 0,
+      output: JSON.stringify(value.error ?? value.result.structuredContent, null, 2),
+    });
+    return res instanceof Promise ? res.then(format) : format(res);
   }
 
   if (command === "draw-demo") {
@@ -620,7 +628,7 @@ export function runToonStudioCli(argv, options = {}) {
       "  completion zsh|bash                                               쉘 자동완성 스크립트 출력",
       "  verify-plugin <manifest.json> [--strict]                          플러그인/스킬 매니페스트 샌드박스 보안 검증",
       "  batch (--json '<steps>' | --file <path>) [--state-file <p>]       여러 MCP 툴 체인 일괄 실행",
-      "  call <tool> [--state-file <p>] [--api-url <u>] [--json '<json>']  지정된 툰스튜디오 툴 실행",
+      "  call <tool> [--state-file <p>] [--api-url <u>] [--dry-run] [--json '<json>']  지정된 툰스튜디오 툴 실행",
       "  draw-demo                                                         CLI 드로잉·말풍선·VFX SVG 생성 데모",
       "  mcp [--state-file <p>] [--api-url <u>]                            JSON-RPC 2.0 MCP stdio 서버 실행",
     ].join("\n"),
@@ -628,7 +636,7 @@ export function runToonStudioCli(argv, options = {}) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const result = runToonStudioCli(process.argv.slice(2));
+  const result = await runToonStudioCli(process.argv.slice(2));
   if (result.output) process.stdout.write(`${result.output}\n`);
   if (result.exitCode !== 0) process.exit(result.exitCode);
 }

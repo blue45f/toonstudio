@@ -21,6 +21,11 @@
       "import": "./src/admin-cloud-workboard.ts",
       "default": "./src/admin-cloud-workboard.ts"
     },
+    "./studio-openrouter-free": {
+      "types": "./src/studio-openrouter-free.ts",
+      "import": "./src/studio-openrouter-free.ts",
+      "default": "./src/studio-openrouter-free.ts"
+    },
     "./ai-operations": {
       "types": "./src/ai-operations.ts",
       "import": "./src/ai-operations.ts",
@@ -231,6 +236,11 @@
       "types": "./src/studio-approved-dialogue-review.ts",
       "import": "./src/studio-approved-dialogue-review.ts",
       "default": "./src/studio-approved-dialogue-review.ts"
+    },
+    "./studio-assist-local-script": {
+      "types": "./src/studio-assist-local-script.ts",
+      "import": "./src/studio-assist-local-script.ts",
+      "default": "./src/studio-assist-local-script.ts"
     },
     "./studio-openai-assist-result": {
       "types": "./src/studio-openai-assist-result.ts",

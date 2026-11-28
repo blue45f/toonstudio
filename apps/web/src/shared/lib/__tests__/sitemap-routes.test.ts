@@ -68,12 +68,11 @@ describe("sitemap output shape", () => {
 describe("home creator funnel", () => {
   // "/"는 marketing/UnifiedHomePage → creator-resources/CreatorHomePage →
   // marketing/CreatorHomeExperience 체인으로 렌더링되고, 첫 화면의 이동 링크는 HomeVividHero 가 그린다.
-  // (domains/catalog/HomePage.tsx는 라우트에 연결되지 않은 데드 파일이라 삭제됨)
   const home = readFileSync(join(process.cwd(), "apps/web/src/domains/marketing/HomeVividHero.tsx"), "utf8");
 
-  it("links the landing page to the creator studio and the creation entry", () => {
-    // 내 프로젝트는 스튜디오 목록으로, 작품 시작하기는 시작 정문(/create)으로 간다.
-    expect(home).toContain('href="/studio"');
-    expect(home).toContain('href="/create"');
+  it("offers exactly the creation and discovery links in the home hero", () => {
+    // 내 작업은 전체 메뉴에서 연다. 첫 화면은 작품 시작과 둘러보기를 각각 한 번 제공한다.
+    const homeDestinations = [...home.matchAll(/\bhref="([^"]+)"/gu)].map((match) => match[1]);
+    expect(homeDestinations).toEqual(["/create", "/discover"]);
   });
 });

@@ -185,7 +185,10 @@ export function userAiConnectionsForCapability(
 ): UserAiResolvedConnection[] {
   const routing = userAiRoutingSettings(configuration);
   const assigned = assignedRoute(configuration, capability);
-  if (routing.mode === "manual") return assigned ? [assigned] : [];
+  if (routing.mode === "manual") {
+    if (assigned?.costPolicy === "openrouter-free" && freeAiConnectionPolicyIssue(assigned, capability)) return [];
+    return assigned ? [assigned] : [];
+  }
   return validRoutes(configuration, capability).sort((left, right) => {
     if (routing.mode === "automatic") {
       const quality = connectionQualityRank(left) - connectionQualityRank(right);

@@ -6,7 +6,7 @@
  * 비컴포넌트 생산자용 생산 시점 해석 헬퍼 `aiSharedStatusText(key, fallback)`
  * (creator의 panelStatusText 선례)로 호출한다. 키가 사전에 없으면
  * koFallback을 그대로 돌려준다.
- * 대상 표면: AiCapabilityStatusBoard·AiRecoveryNotice·UnifiedAiAdvancedSettings.
+ * 기능 상태판·복구 안내·OpenRouter 빠른 키 등록·연결 마법사·고급 설정에서 사용한다.
  */
 import {
   FALLBACK_CHAIN,
@@ -31,6 +31,12 @@ registerI18nLocaleEntries("ko", {
   "shared.aiStatus.recovery.retry": "다시 시도",
   "shared.aiStatus.settings.processFailed": "설정을 처리하지 못했습니다.",
   "shared.aiStatus.settings.legacyEmpty": "가져올 기존 Studio 클라우드 키 설정이 없습니다.",
+  "shared.aiStatus.settings.openRouterTransfer": "프롬프트와 선택한 작업물이 OpenRouter로 전송됩니다.",
+  "shared.aiStatus.settings.openRouterFreeConfirmation": "OpenRouter 계정에서 이 키의 추가 과금이 차단되고 조직이 강제하는 유료 플러그인이 모두 꺼져 있는지 확인했어요.",
+  "shared.aiStatus.settings.openRouterFreeSetupRequired": "고급 설정에서 이 키의 무료 계정 조건을 확인해 주세요.",
+  "shared.aiStatus.settings.openRouterFreeCheckRequired": "OpenRouter에서 이 키의 추가 과금 차단과 유료 플러그인 설정을 확인해 주세요.",
+  "shared.aiStatus.settings.openRouterPaidConnection": "사용자 결제 BYOK로 저장된 OpenRouter 키예요. 고급 설정에서 이 연결의 비용 정책을 선택해 주세요.",
+  "shared.aiStatus.settings.openRouterFreeModelRequired": "OpenRouter 무료 모델을 선택해 주세요.",
 });
 
 registerI18nLocaleEntries("en", {
@@ -49,6 +55,12 @@ registerI18nLocaleEntries("en", {
   "shared.aiStatus.recovery.retry": "Try again",
   "shared.aiStatus.settings.processFailed": "Could not process the settings.",
   "shared.aiStatus.settings.legacyEmpty": "No existing Studio cloud key settings to import.",
+  "shared.aiStatus.settings.openRouterTransfer": "Your prompt and selected work will be sent to OpenRouter.",
+  "shared.aiStatus.settings.openRouterFreeConfirmation": "I verified in OpenRouter that additional charges are blocked for this key and that my organization enforces no paid plugins.",
+  "shared.aiStatus.settings.openRouterFreeSetupRequired": "Confirm the free account settings for this key in advanced settings.",
+  "shared.aiStatus.settings.openRouterFreeCheckRequired": "Check that additional charges and paid plugins are blocked for this key in OpenRouter.",
+  "shared.aiStatus.settings.openRouterPaidConnection": "This OpenRouter key has a user-funded BYOK connection. Choose its billing policy in advanced settings.",
+  "shared.aiStatus.settings.openRouterFreeModelRequired": "Choose a free OpenRouter model.",
 });
 
 /**

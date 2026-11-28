@@ -168,6 +168,17 @@ function AdminNavigation({
                 <AdminRouteIcon icon="plans" className="shrink-0" />
                 <span className={cn("truncate", collapsed && "sr-only")}>{t("admin.finalSubmission.title")}</span>
               </a>}
+              {group.id === "growth" && <a
+                href="/admin/growth/business-plan/?view=evidence-coordination"
+                onClick={onNavigate}
+                data-admin-evidence-coordination-entry="true"
+                aria-label={collapsed ? t("admin.evidenceCoordination.title") : undefined}
+                title={collapsed ? t("admin.evidenceCoordination.title") : undefined}
+                className={cn("flex min-h-11 items-center gap-3 rounded-xl border border-transparent px-3 text-sm font-medium text-fg-2 hover:border-line hover:bg-raised/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent", collapsed && "justify-center px-0")}
+              >
+                <AdminRouteIcon icon="plans" className="shrink-0" />
+                <span className={cn("truncate", collapsed && "sr-only")}>{t("admin.evidenceCoordination.title")}</span>
+              </a>}
             </div>
           </section>
         );

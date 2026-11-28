@@ -15,6 +15,7 @@ import {
 import { TechWebRtcAndRareApiShowcase } from "./TechWebRtcAndRareApiShowcase";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { fitSvgPillWidth, wrapSvgText } from "@/shared/lib/svg-text-wrap";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
@@ -50,42 +51,160 @@ function SlideFlowArchitectureSvg(props: {
 }) {
   const { title, nodes, locale } = props;
   const count = Math.max(1, nodes.length);
-  const gap = 28;
+  const gap = 26;
   const padX = 16;
-  const totalWidth = 840;
+  const totalWidth = 920;
   const boxWidth = Math.floor((totalWidth - padX * 2 - gap * (count - 1)) / count);
-  const boxHeight = 108;
-  const boxY = 44;
+  const titleLines = wrapSvgText(title, {
+    maxWidth: totalWidth - 44,
+    fontSize: 12,
+    maxLines: 2,
+    bold: true,
+  });
+  const boxY = titleLines.length > 1 ? 56 : 42;
+  const boxHeight = 132;
+  const totalHeight = boxY + boxHeight + 18;
 
   return (
     <svg
       data-testid="tech-deck-diagram-svg"
       role="img"
       aria-label={title}
-      viewBox={`0 0 ${totalWidth} 172`}
-      className="h-auto w-full rounded-2xl border border-line bg-canvas p-2 text-fg"
+      viewBox={`0 0 ${totalWidth} ${totalHeight}`}
+      className="block h-auto w-full max-w-full rounded-2xl border border-line bg-canvas p-2 text-fg"
     >
       <title>{title}</title>
-      <rect x={4} y={4} width={totalWidth - 8} height={164} rx={14} fill="var(--color-panel)" stroke="var(--color-line)" strokeWidth={1} />
-      <text x={20} y={27} fill="var(--color-fg-2)" fontSize={12} fontWeight={700}>{title}</text>
+      <rect
+        x={4}
+        y={4}
+        width={totalWidth - 8}
+        height={totalHeight - 8}
+        rx={14}
+        fill="var(--color-panel)"
+        stroke="var(--color-line)"
+        strokeWidth={1}
+      />
+      <text
+        x={20}
+        y={titleLines.length > 1 ? 20 : 24}
+        dominantBaseline="middle"
+        fill="var(--color-fg-2)"
+        fontSize={12}
+        fontWeight={700}
+      >
+        {titleLines.map((line, lineIdx) => (
+          <tspan key={`deck-title-${lineIdx}`} x={20} dy={lineIdx === 0 ? 0 : 16}>
+            {line}
+          </tspan>
+        ))}
+      </text>
       {nodes.map((node, index) => {
         const x = padX + index * (boxWidth + gap);
         const accent = toneCssVar(node.tone);
         const arrowX1 = x + boxWidth + 4;
         const arrowX2 = x + boxWidth + gap - 4;
         const arrowY = boxY + boxHeight / 2;
+        const stagePillW = fitSvgPillWidth(node.stage, 10, 10, 56, boxWidth - 24, true);
+        const labelLines = wrapSvgText(pick(node.label, locale), {
+          maxWidth: boxWidth - 24,
+          fontSize: 12.5,
+          maxLines: 2,
+          bold: true,
+        });
+        const metricLines = wrapSvgText(pick(node.metric, locale), {
+          maxWidth: boxWidth - 24,
+          fontSize: 11,
+          maxLines: 2,
+          bold: false,
+        });
+        const labelStartY = boxY + 50;
+        const metricStartY = labelLines.length > 1 ? boxY + 86 : boxY + 78;
+
         return (
           <g key={`${node.stage}-${index}`}>
-            <rect x={x} y={boxY} width={boxWidth} height={boxHeight} rx={12} fill="var(--color-card)" stroke={accent} strokeWidth={1.75} />
-            <rect x={x + 12} y={boxY + 12} width={Math.min(boxWidth - 24, 96)} height={20} rx={10} fill="var(--color-raised)" stroke={accent} strokeWidth={1} />
-            <text x={x + 20} y={boxY + 26} fill={accent} fontSize={10} fontWeight={700}>{node.stage}</text>
-            <text x={x + 12} y={boxY + 56} fill="var(--color-fg)" fontSize={12.5} fontWeight={700}>{pick(node.label, locale)}</text>
-            <text x={x + 12} y={boxY + 80} fill="var(--color-fg-2)" fontSize={11}>{pick(node.metric, locale)}</text>
-            <line x1={x + 12} y1={boxY + 95} x2={x + boxWidth - 12} y2={boxY + 95} stroke={accent} strokeOpacity={0.35} strokeWidth={2} />
+            <rect
+              x={x}
+              y={boxY}
+              width={boxWidth}
+              height={boxHeight}
+              rx={12}
+              fill="var(--color-card)"
+              stroke={accent}
+              strokeWidth={1.75}
+            />
+            <rect
+              x={x + 12}
+              y={boxY + 12}
+              width={stagePillW}
+              height={20}
+              rx={10}
+              fill="var(--color-raised)"
+              stroke={accent}
+              strokeWidth={1}
+            />
+            <text
+              x={x + 12 + stagePillW / 2}
+              y={boxY + 22}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill={accent}
+              fontSize={10}
+              fontWeight={700}
+            >
+              {node.stage}
+            </text>
+            <text
+              x={x + 12}
+              y={labelStartY}
+              dominantBaseline="middle"
+              fill="var(--color-fg)"
+              fontSize={12.5}
+              fontWeight={700}
+            >
+              {labelLines.map((line, lineIdx) => (
+                <tspan key={`${node.stage}-lbl-${lineIdx}`} x={x + 12} dy={lineIdx === 0 ? 0 : 16}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+            <text
+              x={x + 12}
+              y={metricStartY}
+              dominantBaseline="middle"
+              fill="var(--color-fg-2)"
+              fontSize={11}
+            >
+              {metricLines.map((line, lineIdx) => (
+                <tspan key={`${node.stage}-met-${lineIdx}`} x={x + 12} dy={lineIdx === 0 ? 0 : 15}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+            <line
+              x1={x + 12}
+              y1={boxY + boxHeight - 12}
+              x2={x + boxWidth - 12}
+              y2={boxY + boxHeight - 12}
+              stroke={accent}
+              strokeOpacity={0.35}
+              strokeWidth={2}
+            />
             {index < count - 1 ? (
               <g>
-                <line x1={arrowX1} y1={arrowY} x2={arrowX2 - 5} y2={arrowY} stroke="currentColor" strokeOpacity={0.55} strokeWidth={2} />
-                <polygon points={`${arrowX2},${arrowY} ${arrowX2 - 8},${arrowY - 5} ${arrowX2 - 8},${arrowY + 5}`} fill="currentColor" fillOpacity={0.7} />
+                <line
+                  x1={arrowX1}
+                  y1={arrowY}
+                  x2={arrowX2 - 5}
+                  y2={arrowY}
+                  stroke="currentColor"
+                  strokeOpacity={0.55}
+                  strokeWidth={2}
+                />
+                <polygon
+                  points={`${arrowX2},${arrowY} ${arrowX2 - 8},${arrowY - 5} ${arrowX2 - 8},${arrowY + 5}`}
+                  fill="currentColor"
+                  fillOpacity={0.7}
+                />
               </g>
             ) : null}
           </g>

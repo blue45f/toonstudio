@@ -124,10 +124,10 @@ export function SiteHeader({
   const menuReturnFocusRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const shouldRenderMobileNavigation = menuRequested || menuOpen || isMobileNavigationViewport;
-  const hideBottomTabs = isImmersiveMobileRoute(pathname);
   const navigationContext = siteNavigationContextForPath(pathname);
   const isPublicPage = isPublicCreativeRoute(pathname);
   const isHomePage = canonicalSitePath(pathname) === "/";
+  const hideBottomTabs = isHomePage || isImmersiveMobileRoute(pathname);
   const headerRef = useRef<HTMLElement>(null);
   useSiteHeaderHeight(headerRef);
   const create = SITE_NAVIGATION_ITEMS.make;

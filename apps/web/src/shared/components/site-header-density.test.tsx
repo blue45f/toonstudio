@@ -219,6 +219,40 @@ describe("단일 창작 헤더", () => {
     expect(container.querySelector(".site-header__appearance")).toBeNull();
   });
 
+  it.each([
+    ["/", false],
+    ["/?from=gallery#works", false],
+    ["/discover", true],
+    ["/home", true],
+    ["/studio", true],
+    ["/library?tab=diary", true],
+  ] as const)("%s의 공개 홈 하단 바로가기 제한을 해당 화면에만 적용한다", async (pathname, showQuickAccess) => {
+    const media = window.matchMedia("(max-width: 1179px)");
+    vi.mocked(window.matchMedia).mockImplementation((query) => ({
+      ...media,
+      media: query,
+      matches: query === "(max-width: 1179px)",
+    }));
+    const { container } = render(<HeaderWithAppearance pathname={pathname} />);
+
+    await waitFor(() => expect(container.querySelector("[data-site-mobile-utilities]")).not.toBeNull());
+    if (showQuickAccess) {
+      expect(screen.getByRole("navigation", { name: "빠른 이동" })).toBeTruthy();
+      return;
+    }
+
+    expect(screen.queryByRole("navigation", { name: "빠른 이동" })).toBeNull();
+    const header = screen.getByRole("banner");
+    fireEvent.click(within(header).getByRole("button", { name: /^검색/u }));
+    expect(useUi.getState().commandPaletteOpen).toBe(true);
+    const menu = within(header).getByRole("button", { name: /^전체 메뉴/u });
+    fireEvent.click(menu);
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(menu));
+    expect(screen.queryByRole("navigation", { name: "빠른 이동" })).toBeNull();
+  });
+
   it("공개 하위 페이지는 주 메뉴 한 줄만 두고 화면 전환 버튼으로 머리글을 붐비게 하지 않는다", () => {
     const { container } = render(<HeaderWithAppearance pathname="/market/resource/brush" />);
     const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });

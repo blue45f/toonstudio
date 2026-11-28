@@ -90,7 +90,7 @@ describe("Studio JSON VRM surface-paint availability boundary", () => {
       "await auditStudioVrmTexturePaintJsonImport(loaded.project)",
     );
     const postAuditMutationGate = jsonImportSource.indexOf(
-      "if (!canApplyStudioMutation(mutationTicket)) return;",
+      'if (!canApplyStudioMutation(mutationTicket)) return "scope-changed";',
       audit,
     );
     const apply = jsonImportSource.indexOf(

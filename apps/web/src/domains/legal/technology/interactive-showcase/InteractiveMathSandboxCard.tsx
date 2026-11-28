@@ -425,31 +425,31 @@ export function InteractiveMathSandboxCard({ className }: InteractiveMathSandbox
             </div>
           </dl>
 
-          {/* 펜촉 vs 보정 전/후 획 거리 시각화 SVG */}
-          <figure className="m-0 rounded-2xl border border-line bg-panel p-3.5">
+          {/* 펜촉 vs 보정 전/후 획 거리 시각화 SVG + 반응형 범례 */}
+          <figure className="m-0 space-y-2.5 rounded-2xl border border-line bg-panel p-3.5">
             <svg
               role="img"
               aria-label={showcaseBi(
                 `${refreshHz}Hz 주사율과 ${kalmanMetrics.lookaheadMs}ms 선행 예측 시 펜촉 유격 비교 도식`,
                 `Stylus nib gap diagram at ${refreshHz}Hz with ${kalmanMetrics.lookaheadMs}ms lookahead`,
               )}
-              viewBox="0 0 360 112"
-              className="block h-auto w-full"
+              viewBox="0 0 360 88"
+              className="block h-auto w-full max-w-full"
             >
               <line
-                x1="36"
-                y1="64"
+                x1="28"
+                y1="56"
                 x2={kalmanMetrics.rawTrailEnd.x}
-                y2={kalmanMetrics.rawTrailEnd.y}
+                y2={kalmanMetrics.rawTrailEnd.y - 8}
                 stroke="var(--color-fg-3)"
                 strokeWidth="4"
                 strokeLinecap="round"
               />
               <line
                 x1={kalmanMetrics.rawTrailEnd.x}
-                y1={kalmanMetrics.rawTrailEnd.y}
+                y1={kalmanMetrics.rawTrailEnd.y - 8}
                 x2={kalmanMetrics.kalmanTrailEnd.x}
-                y2={kalmanMetrics.kalmanTrailEnd.y}
+                y2={kalmanMetrics.kalmanTrailEnd.y - 8}
                 stroke="var(--color-good)"
                 strokeWidth="4.5"
                 strokeDasharray="6 4"
@@ -457,39 +457,48 @@ export function InteractiveMathSandboxCard({ className }: InteractiveMathSandbox
               />
               <circle
                 cx={kalmanMetrics.rawTrailEnd.x}
-                cy={kalmanMetrics.rawTrailEnd.y}
+                cy={kalmanMetrics.rawTrailEnd.y - 8}
                 r="5.5"
                 fill="var(--color-fg-3)"
               />
               <circle
                 cx={kalmanMetrics.kalmanTrailEnd.x}
-                cy={kalmanMetrics.kalmanTrailEnd.y}
+                cy={kalmanMetrics.kalmanTrailEnd.y - 8}
                 r="6.5"
                 fill="var(--color-good)"
               />
               <circle
                 cx={kalmanMetrics.nibPoint.x}
-                cy={kalmanMetrics.nibPoint.y}
+                cy={kalmanMetrics.nibPoint.y - 8}
                 r="7.5"
                 fill="var(--color-accent)"
               />
               <text
-                x={kalmanMetrics.nibPoint.x}
-                y="24"
+                x={Math.min(348, kalmanMetrics.nibPoint.x)}
+                y="20"
                 textAnchor="end"
+                dominantBaseline="middle"
                 fill="var(--color-fg)"
                 fontSize="11"
                 fontWeight="800"
               >
                 {showcaseBi("실제 펜촉 위치", "Physical Stylus Nib")}
               </text>
-              <text x="36" y="98" fill="var(--color-fg-2)" fontSize="10.5" fontWeight="700">
-                {showcaseBi(
-                  "회색 실선: 무보정 먹선 · 초록 점선: 칼만 선행 예측 구간 · 주홍 점: 실제 펜촉",
-                  "Gray: uncompensated ink · Green dashed: Kalman predicted lead · Accent dot: physical nib",
-                )}
-              </text>
             </svg>
+            <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line/60 pt-2.5 text-[11px] font-bold break-keep text-fg-2">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-1 w-4 rounded-full bg-fg-3" aria-hidden="true" />
+                {showcaseBi("회색 실선: 무보정 먹선", "Gray line: uncompensated ink")}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-1 w-4 rounded-full border-b-2 border-dashed border-good" aria-hidden="true" />
+                {showcaseBi("초록 점선: 칼만 선행 예측 구간", "Green dashed: Kalman predicted lead")}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block size-2.5 rounded-full bg-accent" aria-hidden="true" />
+                {showcaseBi("주홍 점: 실제 펜촉", "Accent dot: physical nib")}
+              </span>
+            </figcaption>
           </figure>
         </div>
       ) : null}
@@ -541,11 +550,11 @@ export function InteractiveMathSandboxCard({ className }: InteractiveMathSandbox
                 className="grid gap-2.5 rounded-2xl border border-line bg-panel/80 p-4"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-black break-keep text-fg">
                       {pickShowcaseText(row.title)}
                     </p>
-                    <code className="font-mono text-[0.68rem] text-fg-3">{row.kernelSource}</code>
+                    <code className="break-all font-mono text-[0.68rem] text-fg-3">{row.kernelSource}</code>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-accent/40 bg-accent-soft px-2.5 py-0.5 font-display text-xs font-black tabular-nums text-accent">
@@ -561,8 +570,8 @@ export function InteractiveMathSandboxCard({ className }: InteractiveMathSandbox
                 </div>
 
                 <div className="grid gap-1.5 text-xs tabular-nums">
-                  <div className="grid grid-cols-[7.5rem_1fr_4.8rem] items-center gap-2.5">
-                    <span className="font-bold text-fg-3">Pure JS (f64)</span>
+                  <div className="grid grid-cols-[6.25rem_minmax(0,1fr)_4.5rem] items-center gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)_4.8rem] sm:gap-2.5">
+                    <span className="truncate font-bold text-fg-3">Pure JS (f64)</span>
                     <div className="h-3 overflow-hidden rounded-full bg-raised">
                       <div style={{ width: "100%" }} className="tech-showcase-bar-fill h-full bg-fg-3/70" />
                     </div>
@@ -571,11 +580,11 @@ export function InteractiveMathSandboxCard({ className }: InteractiveMathSandbox
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-[7.5rem_1fr_4.8rem] items-center gap-2.5">
-                    <span className="font-black text-accent">WASM64 SIMD</span>
+                  <div className="grid grid-cols-[6.25rem_minmax(0,1fr)_4.5rem] items-center gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)_4.8rem] sm:gap-2.5">
+                    <span className="truncate font-black text-accent">WASM64 SIMD</span>
                     <div className="h-3 overflow-hidden rounded-full bg-raised">
                       <div
-                        style={{ width: `${row.wasmBarPercent}%` }}
+                        style={{ width: `${Math.max(2, Math.min(100, row.wasmBarPercent))}%` }}
                         className="tech-showcase-bar-fill h-full bg-accent"
                       />
                     </div>
@@ -584,11 +593,11 @@ export function InteractiveMathSandboxCard({ className }: InteractiveMathSandbox
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-[7.5rem_1fr_4.8rem] items-center gap-2.5">
-                    <span className="font-bold text-good">Native ARM64</span>
+                  <div className="grid grid-cols-[6.25rem_minmax(0,1fr)_4.5rem] items-center gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)_4.8rem] sm:gap-2.5">
+                    <span className="truncate font-bold text-good">Native ARM64</span>
                     <div className="h-3 overflow-hidden rounded-full bg-raised">
                       <div
-                        style={{ width: `${row.nativeBarPercent}%` }}
+                        style={{ width: `${Math.max(2, Math.min(100, row.nativeBarPercent))}%` }}
                         className="tech-showcase-bar-fill h-full bg-good"
                       />
                     </div>

@@ -12658,7 +12658,7 @@ const puppetWarpArmed =
       activatePrimaryCanvasTool("draw", "pen", false, initialToolDecision.requestedPrimaryTool ? "launch" : "command");
       if (!isMobile && uiDensityMode !== "focus") openInspectorRoute({ primary: "properties" }, null);
     },
-    uiBooleanPreferencesReady, workHydrated,
+    uiBooleanPreferencesReady, workHydrated: workHydrated || workHydrationFailed || initialToolDecision.requestedPrimaryTool !== null,
   });
 
   // 내 로컬 에셋을 커뮤니티에 공유(로그인 필요)
@@ -21715,7 +21715,7 @@ function clearSelectionForEdit() {
       cancelStudioPointCommentComposer={cancelStudioPointCommentComposer}
       canvasFlipH={canvasFlipH}
       canvasGuides={canvasGuides}
-      canvasH={canvasH} canvasStartGuideReady={projectBackupUnavailableReason === null}
+      canvasH={canvasH} canvasStartGuideReady={projectBackupUnavailableReason === null} importWorkspaceReady={studioAuthReady}
       canvasInteractionBlocked={canvasInteractionBlocked}
       canvasOnlyMode={canvasOnlyMode}
       canvasRotation={canvasRotation}

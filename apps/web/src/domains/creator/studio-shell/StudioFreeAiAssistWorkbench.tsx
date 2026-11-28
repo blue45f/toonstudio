@@ -188,7 +188,7 @@ export function StudioFreeAiAssistWorkbench({
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex min-h-9 items-center rounded-full border border-success/35 bg-success-soft/20 px-3 text-xs font-extrabold text-success">
-            보장 비용 {quota.guaranteedZeroCostLabel} ({quota.guaranteedZeroCostKrwLabel})
+            창작자 이용료 {quota.guaranteedZeroCostKrwLabel}
           </span>
           <button
             type="button"
@@ -212,7 +212,7 @@ export function StudioFreeAiAssistWorkbench({
 
       <div className="mt-3 rounded-xl border border-line bg-card p-3">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="font-bold text-fg">실시간 무료 할당량 안전 게이지 (90% 자동 차단)</span>
+          <span className="font-bold text-fg">서버 일일 할당량 (안전 한도 {Math.round(quota.safetyCutoffRatio * 100)}%)</span>
           <span className="font-semibold text-fg-2">
             사용률 {gauge.utilizationPct}% · 활성 클라우드 {gauge.activeCloudCount}/{gauge.configuredCloudCount}
           </span>
@@ -227,7 +227,7 @@ export function StudioFreeAiAssistWorkbench({
         >
           <div
             className={cn("h-full rounded-full transition-[width] duration-200", gaugeBarClass)}
-            style={{ width: `${Math.max(4, gauge.utilizationPct)}%` }}
+            style={{ width: `${gauge.utilizationPct}%` }}
           />
         </div>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -250,7 +250,9 @@ export function StudioFreeAiAssistWorkbench({
                 {provider.tier === "local-fallback"
                   ? "항상 준비"
                   : provider.blocked
-                    ? "차단(UTC 자정 해제)"
+                    ? provider.blockReason === "free_billing_unconfirmed"
+                      ? "무료 계정 확인 필요"
+                      : provider.blockedUntilUtc ? "UTC 자정까지 차단" : "모델 설정 확인 필요"
                     : provider.configured
                       ? `잔여 ${provider.remainingSafeRequests}회`
                       : "미설정"}
@@ -399,7 +401,7 @@ export function StudioFreeAiAssistWorkbench({
               <span className="rounded-full bg-accent-soft px-2.5 py-0.5 font-bold text-accent">
                 {result.providerId} · {result.model}
               </span>
-              <span className="font-semibold text-success">과금 $0.00 (₩0)</span>
+              <span className="font-semibold text-success">창작자 이용료 ₩0</span>
             </div>
             <button
               type="button"

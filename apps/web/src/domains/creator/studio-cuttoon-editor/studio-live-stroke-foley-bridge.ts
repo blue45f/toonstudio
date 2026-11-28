@@ -207,6 +207,7 @@ export class StudioLiveStrokeFoleyController {
   private prewarmedContext: AudioContext | null = null;
   private disposed = false;
   private strokeActive = false;
+  private strokeId = 0;
   private lastX = 0;
   private lastY = 0;
   private lastTriggerMs = -Infinity;
@@ -256,6 +257,8 @@ export class StudioLiveStrokeFoleyController {
 
   onStrokeStart(input: StudioLiveStrokeSampleInput): StudioFoleyTriggerResult | null {
     if (this.disposed) return null;
+    const strokeId = ++this.strokeId;
+    this.engine?.endStroke();
     const resolution = resolveStudioFoleySoundForBrush(input.brushId, input.drawMode, input.paperTexture);
     this.activeSoundId = resolution.soundId;
     this.activePaperTexture = resolution.paperTexture;
@@ -268,8 +271,8 @@ export class StudioLiveStrokeFoleyController {
     this.accumulatedDistPx = 0;
     dispatchLiveNibVfxSample({ x: this.lastX, y: this.lastY, phase: "down", pressure: clamp01(input.pressure, 0.5), tiltX: finiteOr(input.tiltX, 0), tiltY: finiteOr(input.tiltY, 0), brushId: input.brushId ?? undefined, drawMode: input.drawMode ?? undefined, timestampMs: now });
     if (this.muted || this.preset === "silent-focus") return null;
-
     const contactParams = {
+      phase: "contact" as const,
       speed01: 0.16,
       pressure01: clamp01(applyStudioPressureCurve(clamp01(input.pressure, 0.48)) * 0.72 + 0.14, 0.42),
       tilt01: computeTilt01(input.tiltX, input.tiltY),
@@ -277,7 +280,7 @@ export class StudioLiveStrokeFoleyController {
     };
     this.prewarmContextFromGesture();
     const ready = this.ensureEngineSyncOrLoad((loaded) => {
-      if (this.disposed || this.muted || this.preset === "silent-focus") return;
+      if (!this.strokeActive || this.strokeId !== strokeId || this.disposed || this.muted) return;
       void loaded.unlock();
       loaded.triggerSound(resolution.soundId, contactParams);
     });
@@ -291,6 +294,7 @@ export class StudioLiveStrokeFoleyController {
     const x = finiteOr(input.x, this.lastX);
     const y = finiteOr(input.y, this.lastY);
     const now = finiteOr(input.timestampMs, this.nowMs());
+    const sampleDtMs = Math.max(1, now - (this.latestClockMs ?? now));
     this.latestClockMs = now;
     if (!this.strokeActive) {
       this.strokeActive = true;
@@ -300,13 +304,12 @@ export class StudioLiveStrokeFoleyController {
       this.accumulatedDistPx = 0;
       return null;
     }
-
     const stepDistPx = Math.hypot(x - this.lastX, y - this.lastY);
     this.accumulatedDistPx += stepDistPx;
     this.lastX = x;
     this.lastY = y;
     const dtMs = now - this.lastTriggerMs;
-    dispatchLiveNibVfxSample({ x, y, phase: "move", pressure: clamp01(input.pressure, 0.52), tiltX: finiteOr(input.tiltX, 0), tiltY: finiteOr(input.tiltY, 0), speedPxPerMs: dtMs > 0 ? stepDistPx / Math.max(1, dtMs) : 0, brushId: input.brushId ?? undefined, drawMode: input.drawMode ?? undefined, timestampMs: now });
+    dispatchLiveNibVfxSample({ x, y, phase: "move", pressure: clamp01(input.pressure, 0.52), tiltX: finiteOr(input.tiltX, 0), tiltY: finiteOr(input.tiltY, 0), speedPxPerMs: stepDistPx / sampleDtMs, brushId: input.brushId ?? undefined, drawMode: input.drawMode ?? undefined, timestampMs: now });
     if (this.muted || this.preset === "silent-focus") return null;
     if (dtMs < this.minMoveIntervalMs || this.accumulatedDistPx < this.minMoveDistancePx) return null;
 
@@ -317,15 +320,15 @@ export class StudioLiveStrokeFoleyController {
     const pressure01 = clamp01(Math.max(0.18, applyStudioPressureCurve(clamp01(input.pressure, 0.52))), 0.5);
     this.lastTriggerMs = now;
     this.accumulatedDistPx = 0;
-
     const engine = this.ensureEngineSyncOrLoad();
     if (!engine) return null;
     return engine.triggerSound(resolution.soundId, {
-      speed01, pressure01, tilt01: computeTilt01(input.tiltX, input.tiltY), paperTexture: resolution.paperTexture,
+      phase: "drag", speed01, pressure01, tilt01: computeTilt01(input.tiltX, input.tiltY), paperTexture: resolution.paperTexture,
     });
   }
 
   onStrokeEnd(): void {
+    this.engine?.endStroke();
     if (this.strokeActive) dispatchLiveNibVfxSample({ x: this.lastX, y: this.lastY, phase: "up", timestampMs: this.latestClockMs ?? this.nowMs() });
     this.strokeActive = false;
     this.accumulatedDistPx = 0;

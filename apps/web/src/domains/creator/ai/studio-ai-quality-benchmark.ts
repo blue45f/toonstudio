@@ -151,18 +151,13 @@ export function evaluateStudioAiQualityRun(
     DEFAULT_STUDIO_AI_QUALITY_THRESHOLDS
 ): StudioAiQualityEvaluation {
   const cases = run.cases;
-  const caseScores: Record<string, number> = {};
-  for (const qualityCase of cases) {
-    caseScores[qualityCase.id] = scoreStudioAiQualityCase(qualityCase);
-  }
-
-  const completed = cases.filter((qualityCase) => qualityCase.completed);
+  const scoredCases = cases.map((item) => ({ item, score: scoreStudioAiQualityCase(item) }));
+  const caseScores = Object.fromEntries(scoredCases.map(({ item, score }) => [item.id, score]));
+  const completed = cases.filter((item) => item.completed);
+  const completedScores = scoredCases.filter(({ item }) => item.completed).map(({ score }) => score);
   const completionRate = cases.length === 0 ? 0 : completed.length / cases.length;
-  const overallScore = round(mean(completed.map((item) => caseScores[item.id] ?? 0)));
-  const worstCaseScore =
-    completed.length === 0
-      ? 0
-      : round(Math.min(...completed.map((item) => caseScores[item.id] ?? 0)));
+  const overallScore = round(mean(completedScores));
+  const worstCaseScore = completedScores.length === 0 ? 0 : Math.min(...completedScores);
   const p95LatencyMs = percentile95(
     completed.flatMap((item) =>
       typeof item.latencyMs === "number" ? [item.latencyMs] : []
@@ -185,6 +180,9 @@ export function evaluateStudioAiQualityRun(
     findings.push({ id, severity: "blocker", message });
 
   if (cases.length === 0) blocker("no-cases", "평가 케이스가 없습니다.");
+  if (Object.keys(caseScores).length !== cases.length) {
+    blocker("duplicate-case", "같은 ID의 평가 케이스가 여러 개 있습니다. 케이스별 결과를 구별할 수 없습니다.");
+  }
   if (overallScore < thresholds.minimumOverall) {
     blocker(
       "overall",

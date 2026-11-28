@@ -592,7 +592,8 @@ export function evaluateStudioBrushCataloguePaintPerfRow(
     readonly sampleCount?: number;
     readonly budgetMs?: number;
     readonly packById?: ReadonlyMap<string, StudioBrushPackSelection>;
-    /** Explicit persisted replay revision; omission exercises the current authored default. */
+    /** 저장된 리비전을 재생할 때 원래의 재질 커널도 지정할 수 있다. */
+    readonly dryMediaKernelProgram?: NormalizedStudioBrushDynamicsSettings["dryMediaKernelProgram"];
     readonly depositPipeline?: Extract<StudioDynamicBrushDepositPipeline,
       "causal-deposit-v3-segmented" | "causal-deposit-v4-taper-spacing">;
   },
@@ -609,12 +610,10 @@ export function evaluateStudioBrushCataloguePaintPerfRow(
     ? normalizeStudioBrushDynamicsSettings({
       ...authoredDynamics,
       depositPipeline: options.depositPipeline,
+      dryMediaKernelProgram: options.dryMediaKernelProgram ?? authoredDynamics.dryMediaKernelProgram,
     })
     : authoredDynamics;
-  const identity = resolveStudioDynamicBrushMaterialIdentity(
-    pack?.runtimeBrushId ?? catalogId,
-    catalogId,
-  );
+  const identity = resolveStudioDynamicBrushMaterialIdentity(pack?.runtimeBrushId ?? catalogId, catalogId);
   if (
     dynamics
     && identity?.dryMediaPresetId

@@ -105,6 +105,7 @@ import type { StudioPaperMediumV1 } from "../brush/studio-paper-media-profile-v1
 import type { DrawEl } from "../studio-element-model";
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
 import type { StudioPaperSubstrateModel } from "../brush/studio-paper-substrate-model";
+import { drawCanvasRectWithStudioTactileRelief } from "../brush/studio-tactile-physical-relief-runtime";
 import {
   cancelStudioLiveOverlayFrame,
   clearStudioLiveOverlayCanvas,
@@ -2251,22 +2252,21 @@ export class StudioLiveDynamicBrushOverlayRenderer {
       : markRect;
     this.contactPlaceholderRect = null;
     try {
+      const reliefPresented = drawCanvasRectWithStudioTactileRelief(context, source, rect, {
+        brushIdOrFamily: this.active?.style.brushId,
+        opacity,
+        worldOriginX: surface.left / Math.max(1e-4, surface.documentScale),
+        worldOriginY: surface.top / Math.max(1e-4, surface.documentScale),
+        worldScale: this.dpr * surface.documentScale,
+        clearDestinationRect: true,
+      });
+      if (reliefPresented) return true;
       context.save();
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(rect.x, rect.y, rect.width, rect.height);
       context.globalCompositeOperation = "source-over";
       context.globalAlpha = clamp01(opacity);
-      context.drawImage(
-        source,
-        rect.x,
-        rect.y,
-        rect.width,
-        rect.height,
-        rect.x,
-        rect.y,
-        rect.width,
-        rect.height,
-      );
+      context.drawImage(source, rect.x, rect.y, rect.width, rect.height, rect.x, rect.y, rect.width, rect.height);
       context.restore();
       return true;
     } catch {
@@ -2307,34 +2307,23 @@ export class StudioLiveDynamicBrushOverlayRenderer {
     // pointer-up. A degenerate/absent union keeps the fail-safe legacy full-surface copy.
     const union = this.settleFlattenUnionRect;
     const crop = union
-      ? {
-          x: union.x,
-          y: union.y,
-          width: Math.min(union.width, canvas.width - union.x),
-          height: Math.min(union.height, canvas.height - union.y),
-        }
+      ? { x: union.x, y: union.y, width: Math.min(union.width, canvas.width - union.x), height: Math.min(union.height, canvas.height - union.y) }
       : null;
     try {
+      const targetRect = crop ?? { x: 0, y: 0, width: canvas.width, height: canvas.height };
+      const surface = this.surface;
+      if (surface && targetRect.width > 0 && targetRect.height > 0 && drawCanvasRectWithStudioTactileRelief(context, canvas, targetRect, {
+        brushIdOrFamily: this.active?.style.brushId, opacity,
+        worldOriginX: surface.left / Math.max(1e-4, surface.documentScale),
+        worldOriginY: surface.top / Math.max(1e-4, surface.documentScale),
+        worldScale: this.dpr * surface.documentScale,
+      })) return true;
       context.save();
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.globalCompositeOperation = "source-over";
       context.globalAlpha = clamp01(opacity);
-      if (!crop) {
-        context.drawImage(canvas, 0, 0);
-      } else if (crop.width > 0 && crop.height > 0) {
-        context.drawImage(
-          canvas,
-          crop.x,
-          crop.y,
-          crop.width,
-          crop.height,
-          crop.x,
-          crop.y,
-          crop.width,
-          crop.height,
-        );
-      }
-      // A union fully clipped away by a surface change has no retained active pixel to settle.
+      if (!crop) context.drawImage(canvas, 0, 0);
+      else if (crop.width > 0 && crop.height > 0) context.drawImage(canvas, crop.x, crop.y, crop.width, crop.height, crop.x, crop.y, crop.width, crop.height);
       context.restore();
       return true;
     } catch {

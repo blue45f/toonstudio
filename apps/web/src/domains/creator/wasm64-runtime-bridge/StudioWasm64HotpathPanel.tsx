@@ -28,6 +28,7 @@ export interface StudioWasm64HotpathPanelProps {
   readonly className?: string;
   readonly wasmUrl?: string;
   readonly wasmBytes?: Uint8Array | ArrayBuffer;
+  readonly preferMemory64?: boolean;
   readonly preloadedRuntime?: StudioWasm64HotpathRuntime;
   readonly initialRouting?: Partial<Wasm64HotpathRoutingConfig>;
   readonly benchmarkDimension?: number;
@@ -110,12 +111,23 @@ function formatCpuTierLabel(tier: Wasm64CpuTier, isEn: boolean): string {
   }
 }
 
+function formatAddressWidthBadge(meta: StudioWasm64HotpathMetadata, isEn: boolean): string {
+  if (meta.memory64Active && meta.addressBits === 64) {
+    return "WASM64 (memory64 · i64)";
+  }
+  if (meta.backendMode === "rust-wasm") {
+    return isEn ? "WASM32 Fallback (i32)" : "WASM32 폴백 (i32)";
+  }
+  return isEn ? "JS Fallback (32-bit)" : "JS 폴백 (32비트)";
+}
+
 /** Rust `.wasm` 런타임 핫패스 상태 · 실측 속도 배율 · 라우팅 토글 패널. */
 export function StudioWasm64HotpathPanel({
   locale,
   className,
   wasmUrl,
   wasmBytes,
+  preferMemory64,
   preloadedRuntime,
   initialRouting,
   benchmarkDimension = 512,
@@ -176,6 +188,7 @@ export function StudioWasm64HotpathPanel({
     void loadStudioWasm64HotpathRuntime({
       wasmUrl,
       wasmBytes,
+      preferMemory64,
       initialRouting,
     })
       .then((loaded) => {
@@ -206,7 +219,7 @@ export function StudioWasm64HotpathPanel({
         ownedRuntimeRef.current = null;
       }
     };
-  }, [autoRunBenchmark, benchDim, initialRouting, preloadedRuntime, reloadNonce, runBenchmarkNow, wasmBytes, wasmUrl]);
+  }, [autoRunBenchmark, benchDim, initialRouting, preferMemory64, preloadedRuntime, reloadNonce, runBenchmarkNow, wasmBytes, wasmUrl]);
 
   const handleToggleRoute = useCallback(
     (key: Wasm64HotpathRouteKey) => {
@@ -283,8 +296,8 @@ export function StudioWasm64HotpathPanel({
           <Zap className="h-3.5 w-3.5" aria-hidden="true" />
           {loading
             ? pick("Wasm 로드 중…", "Loading Wasm…")
-            : isWasmLoaded
-              ? `${pick("Rust Wasm 활성", "Rust Wasm Active")} · ${formatCpuTierLabel(metadata.cpuTier, isEn)}`
+            : isWasmLoaded && metadata
+              ? `${pick("Rust Wasm 활성", "Rust Wasm Active")} · ${formatAddressWidthBadge(metadata, isEn)} · ${formatCpuTierLabel(metadata.cpuTier, isEn)}`
               : pick("JS 동등 폴백", "JS Parity Fallback")}
         </span>
       </header>
@@ -331,9 +344,12 @@ export function StudioWasm64HotpathPanel({
 
         <div className="rounded-lg border border-line bg-raised p-3">
           <div className="text-xs text-muted">{pick("선형 메모리 아레나", "Linear Memory Arena")}</div>
-          <div className="mt-1 text-sm font-semibold tabular-nums text-fg">
+          <div
+            data-testid="wasm64-hotpath-address-mode"
+            className="mt-1 text-sm font-semibold tabular-nums text-fg"
+          >
             {metadata && metadata.linearMemoryBytes > 0
-              ? formatBytes(metadata.linearMemoryBytes)
+              ? `${formatBytes(metadata.linearMemoryBytes)} · ${formatAddressWidthBadge(metadata, isEn)}`
               : pick("미할당", "Unallocated")}
           </div>
         </div>

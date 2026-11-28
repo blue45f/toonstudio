@@ -1,3 +1,5 @@
+import { isOpenRouterFreeModel, OPENROUTER_FREE_REQUEST_OPTIONS } from "@toonstudio/contracts/studio-openrouter-free";
+
 import type { StudioAiProviderPreference } from "./studio-ai.dto";
 import { STUDIO_AI_PREMIUM_MESSAGES_URL } from "./studio-ai-messages-translate";
 import { resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
@@ -189,9 +191,8 @@ function boundedText(value: unknown, fallback: string, maxLength: number): strin
     : fallback;
 }
 
-function isOpenRouterFreeModel(model: string): boolean {
-  const normalized = model.trim().toLowerCase();
-  return normalized === "openrouter/free" || normalized.endsWith(":free");
+export function studioAiFreeProviderRequestOptions(provider: StudioAiProviderConfig) {
+  return provider.id === "openrouter" && provider.freePool ? OPENROUTER_FREE_REQUEST_OPTIONS : {};
 }
 
 const DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/google/gemma-4-26b-a4b-it";

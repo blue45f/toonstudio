@@ -1,3 +1,7 @@
+import type { AiRecoveryCode } from "@/shared/ai/ai-recovery-code";
+import { extractJsonCandidates } from "@/shared/ai/assist/assist-json";
+import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
+
 import { ensureStudioSaveProfile, type StudioSaveProfileStorage } from "../save-first/studio-save-profile";
 import { resolveStudioModeCreationPlan } from "../studio-mode-creation-plan";
 import {
@@ -18,7 +22,6 @@ import {
   updateStudioProjectFeatureSuite,
   type StudioProjectFeatureSuiteStorage,
 } from "../studio-project-feature-suite-store";
-import { completeMyStoryText } from "../my-story/my-story-ai-client";
 import type { MyStoryTextCompleter } from "../my-story/my-story-ai";
 import { studioProjectSectionHref } from "../studio-project-views";
 import {
@@ -53,22 +56,95 @@ function pickText(locale: AiBlueprintLocale, ko: string, en: string): string {
   return locale === "ko" ? ko : en;
 }
 
+const polishRecoveryMessages: Record<AiRecoveryCode, readonly [string, string]> = {
+  login_required: ["클라우드 윤문을 사용하려면 로그인해 주세요.", "Sign in to use cloud polishing."],
+  free_exhausted: ["현재 이용 가능한 무료 AI 한도를 모두 사용했어요.", "The available free AI quota has been used."],
+  not_configured: ["AI 설정에서 텍스트 AI 연결을 확인해 주세요.", "Check your text AI connection in AI settings."],
+  invalid_input: ["콘티 입력을 확인한 뒤 다시 시도해 주세요.", "Check your storyboard input and try again."],
+  network_error: ["네트워크 연결을 확인한 뒤 다시 시도해 주세요.", "Check your network connection and try again."],
+  http_error: ["클라우드 윤문 요청을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.", "Cloud polishing could not finish. Try again later."],
+  parse_error: ["클라우드 응답에서 반영할 수정 내용을 찾지 못했어요.", "The cloud response contained no usable edits."],
+};
+
+function keepBlueprint(blueprint: AiQuickBlueprint, code: AiRecoveryCode, locale: AiBlueprintLocale): PolishBlueprintOutcome {
+  const [ko, en] = polishRecoveryMessages[code];
+  return {
+    blueprint,
+    upgraded: false,
+    statusMessage: pickText(locale, `${ko} 현재 스마트 콘티를 유지했어요.`, `${en} Your current blueprint was kept.`),
+  };
+}
+
+function isPolishObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function polishedText(value: unknown, original: string, limit: number, dialogue = false): string {
+  if (typeof value !== "string") return original;
+  const trimmed = value.trim();
+  const clean = dialogue ? trimmed.replace(/^[“"']+|[”"']+$/gu, "").trim() : trimmed;
+  return Array.from(clean).slice(0, limit).join("") || original;
+}
+
+function applyPolish(blueprint: AiQuickBlueprint, value: unknown): AiQuickBlueprint | null {
+  if (!isPolishObject(value)) return null;
+  const title = polishedText(value.title, blueprint.title, 80);
+  const logline = polishedText(value.logline, blueprint.logline, 240);
+  const candidates: unknown[] = Array.isArray(value.cuts) ? value.cuts : [];
+  // 이전 형식의 응답은 위치로 대응한다. ID가 하나라도 있으면 다른 컷의 수정이 섞이지 않게 ID만 사용한다.
+  const hasIds = candidates.some((entry) => isPolishObject(entry) && "id" in entry);
+  const cuts = blueprint.cuts.map((cut, index) => {
+    const candidate = hasIds
+      ? candidates.find((entry) => isPolishObject(entry) && entry.id === cut.id)
+      : candidates[index];
+    if (!isPolishObject(candidate)) return cut;
+    const scene = polishedText(candidate.scene, cut.scene, 240);
+    const dialogue = polishedText(candidate.dialogue, cut.dialogue, 160, true);
+    const narration = polishedText(candidate.narration, cut.narration, 160);
+    if (scene === cut.scene && dialogue === cut.dialogue && narration === cut.narration) return cut;
+    return { ...cut, scene, dialogue, narration };
+  });
+  if (title === blueprint.title && logline === blueprint.logline && cuts.every((cut, i) => cut === blueprint.cuts[i])) {
+    return null;
+  }
+  return {
+    ...blueprint,
+    source: "cloud-ai",
+    title,
+    logline,
+    cuts,
+    storyWorksheet: { ...blueprint.storyWorksheet, title },
+  };
+}
+
 export async function polishBlueprintWithCloudAi(
   blueprint: AiQuickBlueprint,
   signal?: AbortSignal,
-  completer: MyStoryTextCompleter = completeMyStoryText,
+  completer?: MyStoryTextCompleter,
+  interfaceLocale: AiBlueprintLocale = blueprint.locale,
 ): Promise<PolishBlueprintOutcome> {
-  const ko = blueprint.locale === "ko";
-  const system = ko
-    ? "당신은 웹툰 콘티·대사 전문 에디터입니다. JSON만 출력하세요: {\"title\":string,\"logline\":string,\"cuts\":[{\"scene\":string,\"dialogue\":string,\"narration\":string}]}. 마크다운 코드블록 없이 순수 JSON 객체만 반환하세요."
-    : "You are a professional webtoon storyboard and dialogue editor. Output ONLY raw JSON: {\"title\":string,\"logline\":string,\"cuts\":[{\"scene\":string,\"dialogue\":string,\"narration\":string}]} without markdown fences.";
+  const system = [
+    pickText(
+      blueprint.locale,
+      "웹툰 콘티 편집자로서 한국어로 윤문하세요. 원안의 사건·인물·컷 순서와 말투를 유지하세요. 장면에는 눈에 보이는 행동을 쓰고, 대사는 말풍선 하나에 들어갈 만큼 짧게 쓰며, 나레이션은 대사를 반복하지 마세요.",
+      "Polish this webtoon storyboard in English. Preserve the events, characters, panel order and voices. Describe visible action in each scene, keep dialogue short enough for one balloon, and avoid repeating dialogue in narration.",
+    ),
+    pickText(
+      blueprint.locale,
+      "입력의 컷 ID를 그대로 반환하세요. 제목 80자, 로그라인과 장면 240자, 대사와 나레이션 160자 이내로 JSON 객체 하나만 출력하세요.",
+      "Copy each input panel ID into the response. Return only one JSON object. Limit the title to 80 characters, logline and scenes to 240, and dialogue and narration to 160.",
+    ),
+    '{"title":"…","logline":"…","cuts":[{"id":"cut-1","scene":"…","dialogue":"…","narration":"…"}]}',
+  ].join("\n");
 
   const user = JSON.stringify({
     idea: blueprint.idea,
     tone: blueprint.toneId,
     cutCount: blueprint.cuts.length,
     currentTitle: blueprint.title,
+    logline: blueprint.logline,
     cuts: blueprint.cuts.map((cut) => ({
+      id: cut.id,
       beat: cut.beatLabel,
       scene: cut.scene,
       dialogue: cut.dialogue,
@@ -77,114 +153,32 @@ export async function polishBlueprintWithCloudAi(
   });
 
   try {
-    const response = await completer(
+    const complete = completer ?? (await import("../my-story/my-story-ai-client")).completeMyStoryText;
+    signal?.throwIfAborted();
+    const response = await complete(
       {
         system,
         user,
-        operationId: `ai-quick-blueprint-${blueprint.formatId}-${Date.now()}`,
+        operationId: `ai-quick-blueprint-${createSecureRandomUuid()}`,
       },
       signal,
     );
-    if (!response.ok) {
-      const authHint =
-        response.code === "login_required"
-          ? pickText(
-              blueprint.locale,
-              "로그인하면 클라우드 AI 문장 윤문도 무료로 함께 쓸 수 있어요. 지금 설계된 스마트 콘티로도 바로 스튜디오를 열 수 있습니다!",
-              "Sign in anytime for free Cloud AI line polishing. Your smart blueprint is already ready to open in Studio!",
-            )
-          : pickText(
-              blueprint.locale,
-              "네트워크 연결 없이도 바로 쓸 수 있도록 스마트 콘티를 준비해 두었어요. 아래 컷을 수정하거나 바로 스튜디오에서 열어보세요.",
-              "Your smart blueprint is ready offline—edit any panel below or open it straight in Studio.",
-            );
-      return {
-        blueprint,
-        upgraded: false,
-        statusMessage: authHint,
-      };
+    if (!response.ok) return keepBlueprint(blueprint, response.code, interfaceLocale);
+    for (const candidate of extractJsonCandidates(response.data.content).candidates) {
+      if (!candidate.topLevel) continue;
+      const polished = applyPolish(blueprint, candidate.value);
+      if (polished) {
+        return {
+          blueprint: polished,
+          upgraded: true,
+          statusMessage: pickText(interfaceLocale, "클라우드 AI가 제안한 수정을 콘티에 반영했어요.", "Applied the cloud AI edits to your storyboard."),
+        };
+      }
     }
-
-    const raw = response.data.content;
-    const jsonMatch = raw.match(/\{[\s\S]*\}/u);
-    if (!jsonMatch) {
-      return {
-        blueprint,
-        upgraded: false,
-        statusMessage: pickText(
-          blueprint.locale,
-          "클라우드 응답 형식이 고르지 않아 즉시 설계된 스마트 콘티를 그대로 유지했어요.",
-          "Kept your smart instant blueprint intact because the cloud response format varied.",
-        ),
-      };
-    }
-    const parsed = JSON.parse(jsonMatch[0]) as {
-      title?: unknown;
-      logline?: unknown;
-      cuts?: readonly { scene?: unknown; dialogue?: unknown; narration?: unknown }[];
-    };
-    const nextTitle =
-      typeof parsed.title === "string" && parsed.title.trim().length > 0
-        ? parsed.title.trim().slice(0, 80)
-        : blueprint.title;
-    const nextLogline =
-      typeof parsed.logline === "string" && parsed.logline.trim().length > 0
-        ? parsed.logline.trim().slice(0, 240)
-        : blueprint.logline;
-    const aiCuts = Array.isArray(parsed.cuts) ? parsed.cuts : [];
-
-    const mergedCuts = blueprint.cuts.map((cut, index) => {
-      const candidate = aiCuts[index];
-      if (!candidate || typeof candidate !== "object") return cut;
-      return {
-        ...cut,
-        scene:
-          typeof candidate.scene === "string" && candidate.scene.trim().length > 0
-            ? candidate.scene.trim().slice(0, 240)
-            : cut.scene,
-        dialogue:
-          typeof candidate.dialogue === "string" && candidate.dialogue.trim().length > 0
-            ? candidate.dialogue.trim().replace(/^[“"']+|[”"']+$/gu, "").slice(0, 160)
-            : cut.dialogue,
-        narration:
-          typeof candidate.narration === "string" && candidate.narration.trim().length > 0
-            ? candidate.narration.trim().slice(0, 160)
-            : cut.narration,
-      };
-    });
-
-    return {
-      blueprint: {
-        ...blueprint,
-        source: "cloud-ai",
-        title: nextTitle,
-        logline: nextLogline,
-        cuts: mergedCuts,
-        storyWorksheet: {
-          ...blueprint.storyWorksheet,
-          title: nextTitle,
-        },
-      },
-      upgraded: true,
-      statusMessage: pickText(
-        blueprint.locale,
-        "클라우드 AI가 컷별 대사와 연출 문장을 한층 자연스럽게 다듬었어요!",
-        "Cloud AI polished your panel scenes and dialogue!",
-      ),
-    };
+    return keepBlueprint(blueprint, "parse_error", interfaceLocale);
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw error;
-    }
-    return {
-      blueprint,
-      upgraded: false,
-      statusMessage: pickText(
-        blueprint.locale,
-        "네트워크 연결 없이도 바로 쓸 수 있도록 스마트 콘티를 준비해 두었어요. 아래 컷을 수정하거나 바로 스튜디오에서 열어보세요.",
-        "Your smart blueprint is ready offline—edit any panel below or open it straight in Studio.",
-      ),
-    };
+    if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) throw error;
+    return keepBlueprint(blueprint, "network_error", interfaceLocale);
   }
 }
 

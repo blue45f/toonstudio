@@ -90,4 +90,17 @@ describe("StudioBg3dActionFooter mobile UX & WebGL recovery", () => {
     fireEvent.click(insertButton);
     expect(onInsert).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    { hasFilledOutput: false, toneOutputType: "color", label: "선화만 추가" },
+    { hasFilledOutput: true, toneOutputType: "color", label: "컬러 배경 추가" },
+    { hasFilledOutput: true, toneOutputType: "monochrome", label: "톤 배경 추가" },
+  ])("현재 출력 형식을 한 개의 동일한 버튼 이름으로 표시한다: $label", ({ hasFilledOutput, toneOutputType, label }) => {
+    const onInsert = vi.fn();
+    renderFooter({ hasFilledOutput, toneOutputType, mutationKind: "background-only", onInsert });
+    const action = screen.getByRole("button", { name: label });
+    expect(action.textContent).toBe(label);
+    fireEvent.click(action);
+    expect(onInsert).toHaveBeenCalledTimes(1);
+  });
 });

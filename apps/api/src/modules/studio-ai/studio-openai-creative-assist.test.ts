@@ -474,6 +474,7 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
 
   it.each([
     ["not-json", "OPENAI_INVALID_JSON", 502],
+    ["null", "OPENAI_INVALID_JSON", 502],
     [JSON.stringify({ choices: [{ message: { refusal: "정책상 거절" } }] }), "OPENAI_SAFETY_REFUSAL", 422],
     [JSON.stringify({ choices: [{ finish_reason: "length", message: { content: "{" } }] }), "OPENAI_OUTPUT_TRUNCATED", 502],
     [JSON.stringify({ choices: [] }), "OPENAI_EMPTY_RESPONSE", 502],
@@ -640,6 +641,7 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
 
     const quotaStatus = freeController.freeQuotaStatus();
     expect(quotaStatus.guaranteedZeroCostUsd).toBe(0);
+    expect(quotaStatus.providerBilledUsd).toBeNull();
     expect(quotaStatus.guaranteedZeroCostLabel).toBe("$0.00");
     expect(quotaStatus.paidBillingBlocked).toBe(true);
     expect(quotaStatus.summary.localFallbackReady).toBe(true);
@@ -648,24 +650,77 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(modesPayload.totalModes).toBe(14);
     expect(modesPayload.costUsdGuaranteed).toBe("$0.00");
 
-    const guestHarness = createRequestResponseHarness();
-    const guestResult = await freeController.creativeAssist(
-      undefined,
-      {
-        mode: "mcp-workflow-macro",
-        inputText: "비 오는 서울 옥상 1화 원고를 만들고 림라이트 FX와 프리플라이트를 돌려 줘",
+    const outbound = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("외부 호출 차단"));
+    for (const { id: mode } of modesPayload.modes) {
+      const body = StudioOpenAiCreativeAssistRequestSchema.parse({
+        mode,
         projectTitle: "옥상 우산",
-      },
-      guestHarness.request,
-      guestHarness.response,
-    );
-    expect(guestResult.provider).toBe("local-zero-cost-fallback");
-    expect(guestResult.costGuaranteedZeroUsd).toBe(0);
-    expect(guestResult.result.mode).toBe("mcp-workflow-macro");
-    if (guestResult.result.mode === "mcp-workflow-macro") {
-      expect(guestResult.result.data.zeroCostSafe).toBe(true);
-      expect(guestResult.result.data.steps.length).toBeGreaterThanOrEqual(2);
+        genreOrTone: "잔잔한 일상",
+        inputText: "담당자 writer@example.test\n1컷. 서리가 옥상 문을 연다.\n2컷. 민서: 우산은 여기 두고 갈게.",
+      });
+      const { request, response } = createRequestResponseHarness();
+      const guestResult = await freeController.creativeAssist(undefined, body, request, response);
+      const { result } = guestResult;
+      expect(guestResult.provider).toBe("local-zero-cost-fallback");
+      expect(guestResult.costGuaranteedZeroUsd).toBe(0);
+      expect(guestResult.usage.totalTokens).toBe(0);
+      expect(guestResult.privacy.piiRedactedCount).toBe(1);
+      expect(JSON.stringify(result)).not.toContain("writer@example.test");
+      expect(result.mode).toBe(mode);
+      expect(validateAssistModeStructuredOutput(mode, result.data)).toEqual(result);
+      if (result.mode === "export-preflight-coach") {
+        expect(result.data.readinessSummary).toContain("체크리스트");
+        expect(result.data.checks.every((check) => check.severity === "tip")).toBe(true);
+      }
+      if (result.mode === "mcp-workflow-macro") {
+        expect(result.data.zeroCostSafe).toBe(true);
+        expect(result.data.steps.length).toBeGreaterThanOrEqual(2);
+      }
     }
+    expect(outbound).not.toHaveBeenCalled();
+  });
+
+  it("출력 검증에서 실패해도 공유 모델에서 보고한 토큰만 해당 할당량에 반영한다", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const response = () => Response.json({
+      choices: [{ finish_reason: "length", message: { content: "{" } }],
+      usage: { total_tokens: 100 },
+    });
+    for (const model of ["gpt-4o-mini", "gpt-5.5"]) {
+      await expect(service.assist("user:usage", { mode: "dialogue-polish", inputText: "대사를 정리해 주세요." },
+        { env: { OPENAI_API_KEY: "test-openai", OPENAI_MODEL: model }, fetchImpl: async () => response() },
+      )).rejects.toThrow();
+    }
+    expect(service.freeQuotaStatus({}).providers[0]).toMatchObject({ usedRequests: 1, usedTokens: 100 });
+  });
+
+  it("마스킹으로 최대 길이 제목과 장르가 늘어나도 14개 로컬 모드 모두 결과를 반환한다", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    for (const { id: mode } of service.listModes().modes) {
+      const input = StudioOpenAiCreativeAssistRequestSchema.parse({
+        mode, inputText: "서리가 옥상 문을 연다.", projectTitle: "@abc ".repeat(24), genreOrTone: "@abc ".repeat(16),
+      });
+      const result = await service.assistWithZeroBillCascade(null, input, { env: {} });
+      expect(result.result.mode).toBe(mode);
+      expect(result.privacy.piiRedactedCount).toBe(40);
+    }
+  });
+
+  it("로컬 코치도 원고·제목·분위기의 마스킹 결과를 사용한다", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const contacts = ["source@example.com", "title@example.com", "tone@example.com"];
+    const fetchMock = vi.fn<typeof fetch>();
+    const result = await service.assistWithZeroBillCascade(null, {
+      mode: "idea-remix",
+      inputText: `주인공이 ${contacts[0]}에 편지를 보낸다.`,
+      projectTitle: contacts[1],
+      genreOrTone: contacts[2],
+    }, { env: {}, fetchImpl: fetchMock });
+    expect(result.provider).toBe("local-zero-cost-fallback");
+    expect(result.privacy.piiRedactedCount).toBe(3);
+    expect(result.result.mode).toBe("idea-remix");
+    for (const contact of contacts) expect(JSON.stringify(result.result)).not.toContain(contact);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("registers optional NestJS DI metadata for StudioFreeAiZeroBillRouter without parameter decorator syntax", () => {

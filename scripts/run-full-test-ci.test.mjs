@@ -53,16 +53,20 @@ describe("complete CI root and performance execution", () => {
     } finally { await rm(temporary, { recursive: true, force: true }); }
   });
 
-  it("completes database proof before root and keeps the existing performance entrypoint", async () => {
+  it("completes workspace, database and edge checks before root and performance", async () => {
     const events = [];
     const runDatabase = vi.fn(async (input) => { events.push(["database", input]); });
     const runChild = vi.fn(async (command, args, env) => { events.push(["child", command, args, env]); });
     await runFullTestCi({ environment, runDatabase, runChild });
-    expect(events[0]).toEqual(["database", { arguments_: [], environment }]);
-    expect(events[1].slice(0, 3)).toEqual(["child", process.execPath, fullTestRemainderArguments()]);
-    expect(events[2].slice(0, 3)).toEqual(["child", "pnpm", ["run", "test:perf"]]);
-    expect(events).toHaveLength(3);
-    for (const event of events.slice(1)) expect(event[3]).toMatchObject({
+    const [workspaceLinks, database, ...afterDatabase] = events;
+    expect(workspaceLinks).toEqual(["child", process.execPath, ["scripts/verify-workspace-package-links.mjs"], environment]);
+    expect(database).toEqual(["database", { arguments_: [], environment }]);
+    expect(afterDatabase.map((event) => event.slice(0, 3))).toEqual([
+      ["child", "pnpm", ["run", "test:cloudflare-static-edge"]],
+      ["child", process.execPath, fullTestRemainderArguments()],
+      ["child", "pnpm", ["run", "test:perf"]],
+    ]);
+    for (const event of afterDatabase) expect(event[3]).toMatchObject({
       CI: "1", NODE_ENV: "test", DATABASE_URL: environment.TEST_DATABASE_URL,
       TEST_DATABASE_URL: environment.TEST_DATABASE_URL,
       STUDIO_LIVE_POSTGRES_INTEGRATION_URL: environment.TEST_DATABASE_URL,
@@ -71,12 +75,22 @@ describe("complete CI root and performance execution", () => {
     });
   });
 
-  it.each(["database", "root", "perf"])("propagates the %s failure without running later phases", async (phase) => {
+  it.each([
+    ["scripts/verify-workspace-package-links.mjs", 1, 0],
+    ["database", 1, 1],
+    ["test:cloudflare-static-edge", 2, 1],
+    ["vitest", 3, 1],
+    ["test:perf", 4, 1],
+  ])("propagates the %s failure without running later phases", async (phase, childCalls, databaseCalls) => {
     const failed = new Error(`${phase} failed`);
+    const entry = phase === "vitest" ? createVitestArguments()[0] : phase;
     const runDatabase = vi.fn(async () => { if (phase === "database") throw failed; });
-    const runChild = vi.fn(async (command) => { if (command === (phase === "root" ? process.execPath : "pnpm")) throw failed; });
+    const runChild = vi.fn(async (command, args) => {
+      if ((command === "pnpm" ? args[1] : args[0]) === entry) throw failed;
+    });
     await expect(runFullTestCi({ environment, runDatabase, runChild })).rejects.toBe(failed);
-    expect(runChild).toHaveBeenCalledTimes(phase === "database" ? 0 : phase === "root" ? 1 : 2);
+    expect(runChild).toHaveBeenCalledTimes(childCalls);
+    expect(runDatabase).toHaveBeenCalledTimes(databaseCalls);
   });
 
   it("refuses missing database prerequisites before any phase", async () => {

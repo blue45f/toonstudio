@@ -146,3 +146,44 @@ export async function measureMixedViewport(canvas) {
   const percentile = (fraction) => sorted[Math.ceil(sorted.length * fraction) - 1];
   return { unit: 'ms', metric: 'wall-clock intervals between actual main-camera scene.onAfterRender callbacks during a scripted 0.30 radian orbit', warmup, sampleCount, deltasMs, p50: percentile(0.50), p95: percentile(0.95), counts, view, buffer, dpr: devicePixelRatio, cameraStart: position.toArray(), target: target.toArray(), gpu: { vendor: gl.getParameter(info?.UNMASKED_VENDOR_WEBGL ?? gl.VENDOR), renderer: gl.getParameter(info?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER), version: gl.getParameter(gl.VERSION) } };
 }
+
+/** 실제 휠 이벤트부터 확대 방향이 반영된 주 카메라의 렌더 제출까지 관찰한다. */
+export async function createMixedWheelProbe(canvas) {
+  const view = await mixedView(canvas);
+  const viewport = canvas.closest('[data-testid="studio-bg3d-viewport"]');
+  if (!view || !viewport) throw new Error('확대 입력을 측정할 캐릭터·배경 뷰포트를 찾지 못했습니다.');
+  const { scene, camera } = view;
+
+  return (deltaY) => {
+    let before;
+    const previous = scene.onAfterRender;
+    const capture = (event) => {
+      if (before || !event.isTrusted || event.deltaY !== deltaY || event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL) return;
+      if (!event.composedPath().includes(viewport) || event.target?.closest?.('[data-bg3d-viewport-control],button')) return;
+      before = { time: event.timeStamp, x: event.clientX, y: event.clientY, position: camera.position.clone(),
+        forward: camera.getWorldDirection(camera.position.clone()), zoom: camera.zoom };
+    };
+    const result = new Promise((resolve) => {
+      const finish = (value) => {
+        clearTimeout(timer);
+        window.removeEventListener('wheel', capture, true);
+        scene.onAfterRender = previous;
+        resolve(value);
+      };
+      const timer = setTimeout(() => finish({ error: before ? '휠 입력 후 같은 방향의 카메라 렌더 없음' : '뷰포트에서 휠 이벤트 미수신' }), 15000);
+      window.addEventListener('wheel', capture, { capture: true, passive: true });
+      scene.onAfterRender = function(renderer, renderedScene, renderedCamera, ...rest) {
+        const submittedAt = performance.now();
+        previous.call(this, renderer, renderedScene, renderedCamera, ...rest);
+        if (!before || renderedScene !== scene || renderedCamera !== camera) return;
+        const inward = camera.isOrthographicCamera ? camera.zoom - before.zoom :
+          camera.position.clone().sub(before.position).dot(before.forward);
+        if (!(-Math.sign(deltaY) * inward > 0.00001)) return;
+        finish({ deltaY, elapsedMs: submittedAt - before.time, point: [before.x, before.y],
+          cameraBefore: [...before.position.toArray(), before.zoom], cameraAfter: [...camera.position.toArray(), camera.zoom],
+          buffer: [canvas.width, canvas.height] });
+      };
+    });
+    return { result };
+  };
+}

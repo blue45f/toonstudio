@@ -1,9 +1,13 @@
-import "../discover-hub-layout.css";
+import "./discover-home-preview.css";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
+import { lazy, Suspense, useState } from "react";
 
 import { useApiResource } from "@/platform/use-api-resource";
+import { CoverImage } from "@/shared/components/cover-image";
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import type { Title } from "@/shared/lib/types";
 import Link from "@/shared/navigation/router-link";
 
 import {
@@ -13,75 +17,111 @@ import {
   pickDiscoverSpotlight,
   type DiscoverHomeSnapshot,
 } from "../discover-home";
-import { DiscoverSpotlight } from "../DiscoverSpotlight";
-import { DiscoverWeekdayRail } from "../DiscoverWeekdayRail";
 
-/**
- * 홈(/)의 발견 미리보기 — 탐색 허브와 같은 카탈로그 스냅샷으로 스포트라이트 1장과
- * 요일 연재 레일 1줄만 보여 주는 절제된 미리보기다. 레일 네 줄 전체는 /discover가 소유한다.
- *
- * 미리보기 구간에는 명시적인 출구를 함께 표기한다:
- * - 구간 제목("읽을 이야기 미리보기") 옆의 "전체 보기"는 미리보기 전체의 출구로,
- *   스포트라이트·레일 전체를 소유한 탐색 허브(/discover)로 이어진다.
- * - 요일 레일은 자기 제목 옆에 "전체 보기"를 따로 두고, 도착지는 레일의 실제 전체
- *   목록인 연재 캘린더(shelf.href)를 그대로 쓴다.
- * 스냅샷을 불러오지 못했거나 보여 줄 작품이 없으면 구간 자체를 만들지 않는다:
- * 홈은 제작 동선이 본분이라 발견 실패를 오류 블록으로 드러내지 않고, 비어 있는
- * 구간에 출구만 남겨 거짓 도착지를 가리키는 일도 없다. 불러오는 동안에는 제목과
- * 출구를 먼저 같은 자리에 두고 아래에 스켈레톤을 채워 레이아웃이 흔들리지 않게 한다.
- */
+const LazyDiscoverWeekdayRail = lazy(() => import("../DiscoverWeekdayRail").then(
+  ({ DiscoverWeekdayRail }) => ({ default: DiscoverWeekdayRail }),
+));
+
+const cardLimit = 3;
+const coverSizes = "(max-width: 744px) calc(50vw - 24px), min(calc(33vw - 25px), 27rem)";
+
+function HomeStoryCard({ title }: { readonly title: Title }) {
+  const glyph = title.title.replace(/[^가-힣A-Za-z0-9]/gu, "").charAt(0) || "T";
+  const restricted = title.ageRating === "19";
+  const fallback = <span className="discover-home-cover-fallback">{restricted ? "19+" : glyph}</span>;
+  return (
+    <li>
+      <Link
+        href={`/title/${encodeURIComponent(title.slug)}`}
+        data-route-return-focus={`catalog-title:${title.id}`}
+        className="discover-home-story"
+      >
+        <span className="discover-home-cover" aria-hidden={!restricted}>
+          {title.coverImage && !restricted ? (
+            <CoverImage
+              src={title.coverImage}
+              alt=""
+              sizes={coverSizes}
+              srcSet={coverStandardSrcSet(title.coverImage)}
+              fallback={fallback}
+              className="discover-home-cover-image"
+            />
+          ) : fallback}
+        </span>
+        <span className="discover-home-story-copy">
+          <strong>{title.title}</strong>
+          {title.author ? <small>{title.author}</small> : null}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+/** 홈에서 탐색·작품으로 한 번에 들어가고 요일 연재는 필요한 때 펼칩니다. */
 export function DiscoverHomePreview() {
   const bt = useBilingual("DiscoverHomePreview");
+  const [weekdayOpen, setWeekdayOpen] = useState(false);
   const home = useApiResource<DiscoverHomeSnapshot>(
     DISCOVER_HOME_SNAPSHOT_URL,
     bt("추천 작품을 불러오지 못했습니다.", "Couldn't load story picks."),
   );
-
   const snapshot = home.data;
-  if (!home.loading) {
-    if (!snapshot) return null;
-    const hasSpotlight = pickDiscoverSpotlight(snapshot) != null;
-    const hasWeekdayRail = buildDiscoverShelves(snapshot).some((shelf) => shelf.id === "weekday");
-    if (!hasSpotlight && !hasWeekdayRail) return null;
+  const spotlight = snapshot ? pickDiscoverSpotlight(snapshot) : null;
+  const weekday = snapshot ? buildDiscoverShelves(snapshot).find((shelf) => shelf.id === "weekday") : undefined;
+  const titles: Title[] = [];
+  for (const title of [...(spotlight ? [spotlight.lead, ...spotlight.more] : []), ...(weekday?.titles ?? [])]) {
+    if (titles.length >= cardLimit) break;
+    if (!title.slug?.trim() || titles.some((item) => item.id === title.id || item.slug === title.slug)) continue;
+    titles.push(title);
   }
+  if (!home.loading && titles.length === 0) return null;
 
   const previewTitle = bt("읽을 이야기 미리보기", "Stories to read");
   const viewAllLabel = bt("전체 보기", "View all");
+  const loadingLabel = bt("추천 작품을 불러오는 중", "Loading story picks");
 
   return (
-    <section aria-labelledby="discover-home-preview-title" className="discover-home-preview flex flex-col gap-8">
-      {/* 제목 묶음은 페이지 배너가 아니라 구간 머리글이므로 <header>를 쓰지 않는다 —
-          배너 랜드마크는 사이트 크롬만의 몫이라는 홈 계약(대시보드 테스트)을 지킨다. */}
-      <div data-section-heading="" className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-        <div className="min-w-0">
-          <h2
-            id="discover-home-preview-title"
-            data-section-title=""
-            data-ink="line"
-            className="text-pretty text-xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-2xl"
-          >
-            {previewTitle}
-          </h2>
-          <p data-section-description="" className="mt-4 text-sm leading-relaxed text-fg-2 [word-break:keep-all]">
-            {bt(
-              "오늘의 추천과 요일 연재를 미리 보여 드려요. 전체 작품은 탐색 허브에서 이어 볼 수 있어요.",
-              "A featured pick and weekday serials up front — the full catalogue continues in Discover.",
-            )}
-          </p>
-        </div>
+    <section aria-labelledby="discover-home-preview-title" className="discover-home-preview">
+      <div className="discover-home-heading" data-section-heading="">
+        <h2 id="discover-home-preview-title" data-section-title="">
+          {previewTitle}
+        </h2>
         <Link
           href={DISCOVER_HUB_HREF}
           data-section-action=""
-          className="ink-arrow inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+          className="discover-home-more ink-arrow"
           aria-label={`${previewTitle} ${viewAllLabel}`}
         >
-          <span className="sr-only">{previewTitle} </span>
           {viewAllLabel}
-          <ArrowRight size={14} strokeWidth={1.5} aria-hidden="true" />
+          <ArrowRight size={15} strokeWidth={1.6} aria-hidden="true" />
         </Link>
       </div>
-      <DiscoverSpotlight snapshot={snapshot} loading={home.loading} />
-      <DiscoverWeekdayRail snapshot={snapshot} loading={home.loading} actionLabel={viewAllLabel} />
+      {titles.length ? (
+        <ul className="discover-home-stories" data-count={titles.length}>
+          {titles.map((title) => <HomeStoryCard key={title.id} title={title} />)}
+        </ul>
+      ) : (
+        <div className="discover-home-stories" role="status" aria-busy="true" aria-label={loadingLabel}>
+          {[0, 1, 2].map((index) => (
+            <span key={index} className="discover-home-story-loading skeleton" aria-hidden="true" />
+          ))}
+        </div>
+      )}
+      {weekday && snapshot ? (
+        <details className="discover-home-weekday" onToggle={(event) => {
+          if (event.target === event.currentTarget) setWeekdayOpen(event.currentTarget.open);
+        }}>
+          <summary>
+            {bt("요일 연재 보기", "Show weekday series")}
+            <ChevronDown size={15} aria-hidden="true" />
+          </summary>
+          {weekdayOpen ? (
+            <Suspense fallback={<p role="status">{loadingLabel}</p>}>
+              <LazyDiscoverWeekdayRail snapshot={snapshot} loading={false} actionLabel={viewAllLabel} />
+            </Suspense>
+          ) : null}
+        </details>
+      ) : null}
     </section>
   );
 }

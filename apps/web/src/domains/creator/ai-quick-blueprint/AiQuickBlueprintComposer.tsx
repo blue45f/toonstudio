@@ -7,7 +7,7 @@ import {
   Users,
   Wand2,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type SetStateAction } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
@@ -77,31 +77,21 @@ export function AiQuickBlueprintComposer({
   const [errorNotice, setErrorNotice] = useState<string>("");
   const abortRef = useRef<AbortController | null>(null);
   const draftRevision = useRef(0);
-  const updateLocalBlueprint = useCallback((update: SetStateAction<AiQuickBlueprint | null>) => {
+  function updateLocalBlueprint(update: SetStateAction<AiQuickBlueprint | null>) {
     draftRevision.current += 1;
     setBlueprint(update);
-  }, []);
+  }
 
+  // 화면 언어를 바꿔도 작성 중인 원고와 원고의 언어는 보존한다.
   useEffect(() => {
-    return () => {
-      abortRef.current?.abort();
-    };
-  }, []);
-
-  // 언어가 전환되면 이미 열려 있는 블루프린트도 새 로케일로 재구성해 한/영 혼종을 막는다.
-  useEffect(() => {
-    updateLocalBlueprint((prev) => {
-      if (!prev || prev.locale === locale) return prev;
-      return buildAiQuickBlueprint({
-        idea: prev.idea,
-        formatId: prev.formatId,
-        toneId: prev.toneId,
-        locale,
-      });
-    });
+    setPolishing(false);
     setStatusNotice("");
     setErrorNotice("");
-  }, [locale, updateLocalBlueprint]);
+    return () => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
+  }, [locale]);
 
   function generateInstant(
     nextIdea: string,
@@ -170,7 +160,7 @@ export function AiQuickBlueprintComposer({
     setPolishing(true);
     setErrorNotice("");
     try {
-      const outcome = await polishBlueprintWithCloudAi(blueprint, controller.signal);
+      const outcome = await polishBlueprintWithCloudAi(blueprint, controller.signal, undefined, locale);
       if (controller.signal.aborted || draftChanged()) return;
       setBlueprint((current) => current === blueprint ? outcome.blueprint : current);
       setStatusNotice(outcome.statusMessage);

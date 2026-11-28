@@ -256,6 +256,34 @@ function linearRgbToOklab(rgb: Triple): Triple {
   ];
 }
 
+function srgbBytesToOklab([r, g, b]: Triple): Triple {
+  return linearRgbToOklab([srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255)]);
+}
+
+/** 원고에 적힌 CSS HEX를 색·불투명도 기준으로 중복 제거하고 최초 표기와 순서를 보존한다. */
+export function collectManuscriptHexColors(text: string): { hex: string; oklch: string }[] {
+  const colors: { hex: string; oklch: string }[] = [];
+  const seen = new Set<string>();
+  for (const [hex] of text.matchAll(/#(?:[a-f\d]{8}|[a-f\d]{6}|[a-f\d]{4}|[a-f\d]{3})(?![a-z\d_])/giu)) {
+    const digits = hex.slice(1).toLowerCase();
+    const expanded = digits.length <= 4 ? Array.from(digits, (digit) => digit + digit).join("") : digits;
+    const rgba = expanded.padEnd(8, "f");
+    if (seen.has(rgba)) continue;
+    seen.add(rgba);
+
+    const rgb = parseHexStrict(`#${rgba.slice(0, 6)}`, "원고 지정색");
+    const [lightness, a, b] = srgbBytesToOklab(rgb);
+    const gray = rgb[0] === rgb[1] && rgb[1] === rgb[2];
+    const chroma = gray ? 0 : Math.hypot(a, b);
+    const hue = gray ? 0 : (Math.atan2(b, a) * 180 / Math.PI + 360) % 360;
+    const alphaByte = Number.parseInt(rgba.slice(6), 16);
+    const alpha = alphaByte === 255 ? "" : ` / ${Number((alphaByte / 255).toFixed(6))}`;
+    const coords = [lightness, chroma, hue].map((n) => Number(n.toFixed(6))).join(" ");
+    colors.push({ hex, oklch: `oklch(${coords}${alpha})` });
+  }
+  return colors;
+}
+
 function oklabToLinearRgb(lab: Triple): Triple {
   const [L, a, b] = lab;
   const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
@@ -288,11 +316,7 @@ export function deriveChannelHex(
 ): string {
   const rgb = parseHexStrict(parentHex, "(부모)");
   if (dL === 0 && chroma === 1 && dHueDeg === 0) return parentHex;
-  const lab = linearRgbToOklab([
-    srgbToLinear(rgb[0] / 255),
-    srgbToLinear(rgb[1] / 255),
-    srgbToLinear(rgb[2] / 255),
-  ]);
+  const lab = srgbBytesToOklab(rgb);
   const rad = (dHueDeg * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
