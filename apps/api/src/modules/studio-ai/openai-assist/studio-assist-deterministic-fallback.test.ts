@@ -124,4 +124,18 @@ describe("로컬 창작 보조의 원문 보존", () => {
     expect(result.data.cuts[1].visualAction).toMatch(/같이 나간다\.$/u);
     expect(result.data.cuts[0].visualAction).not.toMatch(/주세요/u);
   });
+
+  it("권리와 대상 레이어가 확인되지 않은 로컬 매크로는 출고와 효과 적용을 보류한다", () => {
+    const result = buildDeterministicAssistResult("mcp-workflow-macro", { inputText: "인물 림라이트를 적용하고 내보내기" });
+    if (result.mode !== "mcp-workflow-macro") throw new Error("매크로 모드 필요");
+    const preflight = result.data.steps.find((step) => step.toolName === "studio.export.preflight_check");
+    expect(JSON.parse(preflight?.argumentsJson ?? "null")).toEqual({
+      platform: "naver-webtoon",
+      requireCleanRightsBom: true,
+      rightsBomClean: false,
+    });
+    expect(result.data.steps.some((step) => step.toolName === "studio.photoshop.apply_layer_fx")).toBe(false);
+    expect(result.data.summary).toContain("대상 레이어 ID");
+    expect(validateAssistModeStructuredOutput(result.mode, result.data)).not.toBeNull();
+  });
 });

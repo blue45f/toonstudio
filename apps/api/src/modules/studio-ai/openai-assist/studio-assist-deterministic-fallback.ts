@@ -294,7 +294,7 @@ export function buildDeterministicAssistResult(
         mode,
         data: {
           macroTitle: `${title} 무과금 풀스튜디오 MCP 자동화 매크로`,
-          summary: `"${snippet}" 작업을 ToonStudio MCP 32종 툴 체인으로 안전하게 자동 실행합니다(유료 과금 ₩0).`,
+          summary: `"${snippet}" 작업의 로컬 제작 예시입니다. 외곽광선 효과는 실제 대상 레이어 ID를 확인한 뒤 적용하고, 말풍선 여백은 원고에서 직접 확인하세요.`,
           zeroCostSafe: true,
           steps: [
             {
@@ -311,15 +311,9 @@ export function buildDeterministicAssistResult(
             },
             {
               stepOrder: 3,
-              toolName: "studio.photoshop.apply_layer_fx",
-              reasonKo: "비파괴 림라이트·외곽광선 효과 레이어를 적용합니다.",
-              argumentsJson: JSON.stringify({ effect: "outer-glow", blendMode: "screen", opacityPct: 38 }),
-            },
-            {
-              stepOrder: 4,
               toolName: "studio.export.preflight_check",
-              reasonKo: "내보내기 전 해상도·말풍선 여백·Rights BOM을 최종 검증합니다.",
-              argumentsJson: JSON.stringify({ platform: "naver-webtoon", requireCleanRightsBom: true }),
+              reasonKo: "플랫폼 최소 폭을 검사하고 권리 검토가 확인될 때까지 출고를 차단합니다.",
+              argumentsJson: JSON.stringify({ platform: "naver-webtoon", requireCleanRightsBom: true, rightsBomClean: false }),
             },
           ],
         },

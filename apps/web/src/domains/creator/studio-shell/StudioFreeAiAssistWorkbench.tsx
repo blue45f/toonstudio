@@ -24,9 +24,20 @@ import {
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+import { StudioExportImageFacts } from "./StudioExportImageFacts";
+
+const WORKBENCH_INPUT_MAX_LENGTH = 6_000;
+
 const LazyStudioDesignStoryAi4SuitesPanel = lazy(
   () => import("../ai-creative-suites/StudioDesignStoryAi4SuitesPanel"),
 );
+
+interface ModeWorkspace {
+  readonly draft?: string;
+  readonly running?: boolean;
+  readonly result?: FreeAiZeroBillAssistResponse;
+  readonly statusMessage?: string | null;
+}
 
 type CategoryFilter = "전체" | FreeAiModeCategoryKo;
 
@@ -55,34 +66,45 @@ export function StudioFreeAiAssistWorkbench({
   const [loadingQuota, setLoadingQuota] = useState(false);
   const [category, setCategory] = useState<CategoryFilter>("전체");
   const [selectedMode, setSelectedMode] = useState<FreeAiZeroBillModeId>(initialMode);
-  const [inputText, setInputText] = useState<string>(
-    () =>
-      FREE_AI_14_ASSIST_MODES.find((item) => item.id === initialMode)?.samplePromptKo ??
-      FREE_AI_14_ASSIST_MODES[0].samplePromptKo,
-  );
-  const [running, setRunning] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [result, setResult] = useState<FreeAiZeroBillAssistResponse | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [workspaces, setWorkspaces] = useState<Partial<Record<FreeAiZeroBillModeId, ModeWorkspace>>>({});
+  const [copiedResult, setCopiedResult] = useState<FreeAiZeroBillAssistResponse | null>(null);
   const [designStorySuitesOpen, setDesignStorySuitesOpen] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const jobsRef = useRef(new Map<FreeAiZeroBillModeId, AbortController>());
+  const quotaRequest = useRef<AbortController | null>(null);
+  const copyRequest = useRef<symbol | null>(null);
 
   const refreshQuota = useCallback(async () => {
+    quotaRequest.current?.abort();
+    const controller = new AbortController();
+    quotaRequest.current = controller;
     setLoadingQuota(true);
     try {
-      const next = await fetchFreeAiQuotaStatus({ fetchImpl });
-      setQuota(next);
+      const next = await fetchFreeAiQuotaStatus({ fetchImpl, signal: controller.signal });
+      if (!controller.signal.aborted) setQuota(next);
     } finally {
-      setLoadingQuota(false);
+      if (!controller.signal.aborted) setLoadingQuota(false);
     }
   }, [fetchImpl]);
 
   useEffect(() => {
     void refreshQuota();
-    return () => {
-      abortRef.current?.abort();
-    };
+    return () => quotaRequest.current?.abort();
   }, [refreshQuota]);
+
+  useEffect(() => {
+    const jobs = jobsRef.current;
+    return () => {
+      for (const job of jobs.values()) job.abort();
+      jobs.clear();
+      copyRequest.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!copiedResult) return;
+    const timeout = window.setTimeout(() => setCopiedResult(null), 1_800);
+    return () => window.clearTimeout(timeout);
+  }, [copiedResult]);
 
   const gauge = useMemo(() => computeZeroBillSafetyGauge(quota), [quota]);
   const visibleModes = useMemo(
@@ -99,62 +121,67 @@ export function StudioFreeAiAssistWorkbench({
     [selectedMode],
   );
 
-  const handleSelectMode = (modeId: FreeAiZeroBillModeId) => {
-    setSelectedMode(modeId);
-    const spec = FREE_AI_14_ASSIST_MODES.find((item) => item.id === modeId);
-    if (spec) {
-      setInputText(spec.samplePromptKo);
-    }
+  const workspace = workspaces[selectedMode];
+  const inputText = workspace?.draft ?? currentSpec.samplePromptKo;
+  const running = workspace?.running ?? false;
+  const result = workspace?.result;
+  const statusMessage = workspace?.statusMessage;
+  const copied = result === copiedResult;
+
+  const updateMode = (mode: FreeAiZeroBillModeId, changes: Partial<ModeWorkspace>) => {
+    setWorkspaces((previous) => ({ ...previous, [mode]: { ...previous[mode], ...changes } }));
   };
 
   const handleRun = async () => {
-    if (running) return;
-    abortRef.current?.abort();
+    const mode = selectedMode;
+    const jobs = jobsRef.current;
+    if (jobs.has(mode)) return;
     const controller = new AbortController();
-    abortRef.current = controller;
-    setRunning(true);
-    setStatusMessage(null);
-    setCopied(false);
+    jobs.set(mode, controller);
+    updateMode(mode, { running: true, statusMessage: null });
     try {
       const response = await runFreeAiZeroBillAssist(
-        {
-          mode: selectedMode,
-          inputText,
-          projectTitle,
-        },
+        { mode, inputText, projectTitle },
         { fetchImpl, signal: controller.signal },
       );
-      if (abortRef.current === controller && !controller.signal.aborted) {
-        abortRef.current = null;
-        setResult(response);
+      if (jobs.get(mode) === controller) {
+        updateMode(mode, { result: response });
         void refreshQuota();
       }
-    } finally {
-      if (abortRef.current === controller) {
-        abortRef.current = null;
+    } catch {
+      if (jobs.get(mode) === controller) {
+        updateMode(mode, { statusMessage: "AI 분석을 마치지 못했어요. 다시 시도해 주세요." });
       }
-      if (!controller.signal.aborted) {
-        setRunning(false);
+    } finally {
+      if (jobs.get(mode) === controller) {
+        jobs.delete(mode);
+        updateMode(mode, { running: false });
       }
     }
   };
 
   const handleCancel = () => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setRunning(false);
-    setStatusMessage("무과금 AI 분석 요청을 취소했어요. 입력한 내용은 그대로 남아 있습니다.");
+    const jobs = jobsRef.current;
+    const job = jobs.get(selectedMode);
+    if (!job) return;
+    jobs.delete(selectedMode);
+    job.abort();
+    updateMode(selectedMode, {
+      running: false,
+      statusMessage: "무과금 AI 분석 요청을 취소했어요. 입력한 내용은 그대로 남아 있습니다.",
+    });
   };
 
   const handleCopyResult = async () => {
     if (!result) return;
+    const request = Symbol();
+    copyRequest.current = request;
     const text = [result.headlineKo, ...result.bulletsKo.map((line) => `- ${line}`)].join("\n");
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1_800);
+      if (copyRequest.current === request) setCopiedResult(result);
     } catch {
-      setCopied(false);
+      if (copyRequest.current === request) setCopiedResult(null);
     }
   };
 
@@ -298,7 +325,7 @@ export function StudioFreeAiAssistWorkbench({
               key={mode.id}
               type="button"
               aria-pressed={active}
-              onClick={() => handleSelectMode(mode.id)}
+              onClick={() => setSelectedMode(mode.id)}
               className={cn(
                 "flex min-h-16 flex-col items-start rounded-xl border p-3 text-left transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
@@ -308,7 +335,15 @@ export function StudioFreeAiAssistWorkbench({
               )}
             >
               <div className="flex w-full items-center justify-between gap-2">
-                <strong className="text-xs font-extrabold text-fg">{mode.labelKo}</strong>
+                <strong className="inline-flex items-center gap-1.5 text-xs font-extrabold text-fg">
+                  {mode.labelKo}
+                  {workspaces[mode.id]?.running ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                      <span className="sr-only">분석 중</span>
+                    </>
+                  ) : null}
+                </strong>
                 <span className="rounded bg-panel px-1.5 py-0.5 text-[0.62rem] font-semibold text-fg-3">
                   {mode.benchmarkLabel}
                 </span>
@@ -331,7 +366,7 @@ export function StudioFreeAiAssistWorkbench({
           </label>
           <button
             type="button"
-            onClick={() => setInputText(currentSpec.samplePromptKo)}
+            onClick={() => updateMode(selectedMode, { draft: currentSpec.samplePromptKo })}
             className="min-h-9 rounded-lg px-2 text-xs font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             초보자 예시 채우기
@@ -340,12 +375,19 @@ export function StudioFreeAiAssistWorkbench({
         <textarea
           id="studio-free-ai-workbench-input"
           value={inputText}
-          onChange={(event) => setInputText(event.target.value)}
+          onChange={(event) => updateMode(selectedMode, { draft: event.target.value })}
           rows={3}
-          maxLength={6_000}
+          maxLength={WORKBENCH_INPUT_MAX_LENGTH}
           className="w-full resize-y rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm leading-6 text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent focus:ring-2 focus:ring-accent/25"
           placeholder={currentSpec.samplePromptKo}
         />
+        {selectedMode === "export-preflight-coach" && (
+          <StudioExportImageFacts
+            draft={inputText}
+            maxLength={WORKBENCH_INPUT_MAX_LENGTH}
+            onChange={(draft) => updateMode("export-preflight-coach", { draft })}
+          />
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-[0.7rem] text-fg-3">
             유료 모델 호출 원천 차단 · 무료 소진 시 로컬 무과금 코치(₩0) 자동 전환

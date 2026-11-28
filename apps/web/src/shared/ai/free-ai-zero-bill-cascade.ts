@@ -1,10 +1,13 @@
 import { buildLocalDialogueLayout, buildLocalScriptCuts } from "@toonstudio/contracts/studio-assist-local-script";
+import { validateAssistModeStructuredOutput } from "@toonstudio/contracts/studio-openai-assist-result";
 import { redactCreatorSensitiveText } from "@toonstudio/contracts/studio-pii-redactor";
 import { buildLocalColorMood } from "@toonstudio/studio-project-model/character-art-style";
 
 import { withCsrfProtection } from "@/shared/lib/csrf";
 import { useApp } from "@/shared/lib/store";
 
+import { summarizeFreeAiEditorialReview } from "./free-ai-editorial-review";
+import { summarizeFreeAiProductionDirections } from "./free-ai-production-directions";
 import {
   MANAGED_FREE_DAILY_REQUEST_LIMIT,
   MANAGED_FREE_DAILY_RESERVED_TOKEN_LIMIT,
@@ -431,6 +434,16 @@ const localReviewHeadlines: Partial<Record<FreeAiZeroBillModeId, string>> = {
   "scroll-pacing-auditor": "스크롤 호흡 예시 · 모바일 미리보기에서 컷 사이 여백과 엔딩 호흡을 확인하세요.",
 };
 
+function summarizeServerResult(mode: FreeAiZeroBillModeId, data: Record<string, unknown>, isCloudReview: boolean) {
+  const result = validateAssistModeStructuredOutput(mode, data);
+  if (result) {
+    const review = summarizeFreeAiEditorialReview(result, isCloudReview) ?? summarizeFreeAiProductionDirections(result);
+    if (review) return review;
+  }
+  if (mode === "localization-glossary-check") return null;
+  return summarizeStructuredData(mode, data);
+}
+
 function summarizeStructuredData(
   mode: FreeAiZeroBillModeId,
   data: Record<string, unknown>,
@@ -457,6 +470,7 @@ function summarizeStructuredData(
   };
   const sourceLimit = sourceLimits[mode];
   const bullets: string[] = [];
+  const firstToneByDialogue = new Map<string, string>();
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
       for (const entry of value.slice(0, sourceLimit ?? 4)) {
@@ -467,14 +481,22 @@ function summarizeStructuredData(
           if (mode === "script-to-cuts" && key === "cuts" && typeof rec.visualAction === "string") {
             const speech = typeof rec.dialogue === "string" && rec.dialogue.trim() && !rec.visualAction.includes(rec.dialogue)
               ? ` — ${rec.dialogue}` : "";
-            bullets.push(`${rec.cutNumber}컷 · ${rec.visualAction}${speech}`);
+            const direction = [rec.beatKind, rec.shotType, rec.scrollGapHint].filter((hint) => typeof hint === "string" && hint.trim());
+            bullets.push(`${rec.cutNumber}컷 · ${rec.visualAction}${speech}${direction.length ? ` · ${direction.join(" · ")}` : ""}`);
             continue;
           }
           if (mode === "dialogue-polish" && key === "balloons" && typeof rec.line === "string") {
             const lines = [rec.line, rec.subBubble].filter((line): line is string => typeof line === "string" && Boolean(line));
             const label = typeof rec.toneLabel === "string" ? `[${rec.toneLabel}] ` : "";
             const reason = typeof rec.reason === "string" && rec.reason.trim() ? ` — ${rec.reason}` : "";
-            bullets.push(`${label}${lines.join(" ")}${reason}`);
+            const spoken = lines.join(" ");
+            const comparable = spoken.normalize("NFC").trim().replace(/\s+/gu, " ");
+            const firstTone = firstToneByDialogue.get(comparable);
+            if (comparable && firstTone === undefined) {
+              firstToneByDialogue.set(comparable, typeof rec.toneLabel === "string" && rec.toneLabel.trim() ? rec.toneLabel : "앞선");
+            }
+            const repeated = firstTone ? ` · ${firstTone} 안과 대사 문구 동일` : "";
+            bullets.push(`${label}${spoken}${reason}${repeated}`);
             continue;
           }
           if (mode === "color-mood-director" && key === "palette" && typeof rec.oklch === "string") {
@@ -605,7 +627,8 @@ export function buildLocalZeroCostAssistResult(
     if (input.mode === "script-to-cuts") structuredData = buildLocalScriptCuts(source, title.slice(0, 120));
     else if (input.mode === "dialogue-polish") structuredData = buildLocalDialogueLayout(source);
     else structuredData = buildLocalColorMood(source);
-    ({ bulletsKo, headlineKo } = summarizeStructuredData(input.mode, structuredData));
+    const summary = summarizeServerResult(input.mode, structuredData, false) ?? summarizeStructuredData(input.mode, structuredData);
+    ({ bulletsKo, headlineKo } = summary);
   } else {
     bulletsKo = bulletsByMode[input.mode];
     headlineKo = localReviewHeadlines[input.mode]
@@ -710,14 +733,15 @@ export async function runFreeAiZeroBillAssist(
     };
 
     const data = payload.result?.data;
-    if (!data || typeof data !== "object") {
+    const isCloudReview = payload.providerTier === "cloud-free" && payload.provider !== "local-zero-cost-fallback";
+    const summary = data && typeof data === "object" ? summarizeServerResult(input.mode, data, isCloudReview) : null;
+    if (!data || !summary) {
       return buildLocalZeroCostAssistResult(
         input,
         "응답 형식을 확인할 수 없어 로컬 무과금 코치(₩0)로 안전하게 전환했어요.",
       );
     }
 
-    const summary = summarizeStructuredData(input.mode, data);
     return {
       ok: true,
       providerId: payload.provider ?? "local-zero-cost-fallback",

@@ -3,7 +3,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildModeSystemInstruction, MODE_JSON_SCHEMAS } from "../apps/api/src/modules/studio-ai/openai-assist/studio-openai-prompt-catalog";
-import { OpenAiDialoguePolishOutputSchema } from "../apps/api/src/modules/studio-ai/studio-openai-creative-assist.dto";
+import { OpenAiDialoguePolishOutputSchema, OpenAiIdeaRemixOutputSchema } from "../apps/api/src/modules/studio-ai/studio-openai-creative-assist.dto";
 
 import { buildCreditEvaluationPlan, CALL_INTERVAL_MS, CreditExecutionEvidenceSchema, fingerprintApiKey, readCreditUsage, runCreditEvaluation, type CreditEvaluationOptions, type CreditEvaluationReport } from "./studio-openai-credit-evaluation-core";
 import { CREDIT_EVALUATION_FIXTURES, evaluateCreditOutput } from "./studio-openai-credit-evaluation-fixtures";
@@ -40,7 +40,13 @@ function structuredOutput(schemaName: string): object {
   };
   if (schemaName === "toonstudio_idea_remix") return {
     summary: "가상 발상의 형식을 확인합니다.",
-    angles: ["contrarian", "personal-hook", "detail-evidence", "four-cut-playbook", "missed-angle"].map((lens) => ({ lens, lensLabelKo: "발상", headline: "반납함의 책", pitch: "사서가 책을 살펴본다.", firstCutHint: "반납함에 손을 넣는 사서의 손을 그린다." })),
+    angles: [
+      { lens: "contrarian", lensLabelKo: "뒤집기", headline: "비어 있는 날", pitch: "사서는 아무 책도 없는 반납함 앞에서 내일이 휴관일임을 깨닫는다.", firstCutHint: "사서가 빈 반납함 바닥을 들여다본다." },
+      { lens: "personal-hook", lensLabelKo: "공감", headline: "내가 빌린 책", pitch: "사서는 내일 돌아올 줄 알았던 책이 자기 가방에 아직 들어 있음을 발견한다.", firstCutHint: "사서가 같은 표지 두 권을 책상에 늘어놓는다." },
+      { lens: "detail-evidence", lensLabelKo: "단서", headline: "날짜 도장", pitch: "사서는 책마다 찍힌 내일 자 도장을 모아 반납 순서를 재구성한다.", firstCutHint: "책날개에 어긋나게 찍힌 도장 두 개를 보여 준다." },
+      { lens: "four-cut-playbook", lensLabelKo: "네 컷", headline: "젖은 책", pitch: "사서는 반납함에서 꺼낸 젖은 책을 말리고 내일의 일기 예보를 펼친다.", firstCutHint: "반납함 틈으로 물 한 방울이 떨어진다." },
+      { lens: "missed-angle", lensLabelKo: "다른 시선", headline: "간식 영수증", pitch: "사서는 대출 기록 대신 책갈피로 끼워진 내일의 영수증을 모은다.", firstCutHint: "책장 사이에서 구겨진 영수증이 삐져나온다." },
+    ],
   };
   return {
     readinessSummary: "제공된 문구만 점검했습니다.", episodeBlurbSuggestion: "우산을 건넨 뒤 남겨진 마음.",
@@ -130,6 +136,30 @@ describe("대사 대안 계약", () => {
 });
 
 describe("OpenAI 크레딧 검증 오프라인 계획", () => {
+  it("렌즈·제목·첫 컷이 달라도 같은 발상 본문을 돌려쓰면 탈락한다", () => {
+    const data = OpenAiIdeaRemixOutputSchema.parse(structuredOutput("toonstudio_idea_remix"));
+    const firstPitch = data.angles[0].pitch;
+    const angles = data.angles.map((angle, index) => ({
+      ...angle,
+      pitch: index === 1 ? firstPitch.normalize("NFD").replaceAll(" ", "\n  ") : angle.pitch,
+    }));
+    expect(evaluateCreditOutput({ mode: "idea-remix", data: { ...data, angles } })).toContainEqual({
+      name: "distinct-idea-pitches", passed: false,
+    });
+  });
+
+  it("서로 다른 발상은 첫 컷 구도를 공유할 수 있고 빈 첫 컷 제안은 탈락한다", () => {
+    const data = OpenAiIdeaRemixOutputSchema.parse(structuredOutput("toonstudio_idea_remix"));
+    const angles = data.angles.map((angle) => ({ ...angle, firstCutHint: "반납함에 손을 넣는 사서." }));
+    expect(evaluateCreditOutput({ mode: "idea-remix", data: { ...data, angles } }).every((check) => check.passed)).toBe(true);
+    for (const incomplete of [" \n ", "…!"]) {
+      angles[2].firstCutHint = incomplete;
+      expect(evaluateCreditOutput({ mode: "idea-remix", data: { ...data, angles } })).toContainEqual({
+        name: "first-cut-per-idea", passed: false,
+      });
+    }
+  });
+
   it("기본 실행은 키 없이 20개 계획만 만들며 외부 transport와 전역 fetch를 호출하지 않는다", async () => {
     const transport = vi.fn<typeof fetch>();
     const report = await runCreditEvaluation({ transport });
@@ -307,6 +337,23 @@ describe("OpenAI 실행 승인·시도·예약 경계", () => {
     expect(report.results[0]?.errorCode).toBe("output-contract-failed");
     expect(report.estimatedUsd).toBeGreaterThan(0);
     expect(report.humanEvaluation.status).toBe("not-performed");
+  });
+
+  it("다섯 렌즈가 한 줄거리를 반복하면 해당 합성 사례에서 멈추고 다음 모델로 넘기지 않는다", async () => {
+    const repeated = OpenAiIdeaRemixOutputSchema.parse(structuredOutput("toonstudio_idea_remix"));
+    for (const angle of repeated.angles) angle.pitch = "사서가 반납함의 책을 살펴본다.";
+    const transport = vi.fn<typeof fetch>(async (_url, init) => {
+      const request = JSON.parse(String(init?.body)) as { response_format: { json_schema: { name: string } } };
+      if (request.response_format.json_schema.name !== "toonstudio_idea_remix") return response(init);
+      return response(init, { choices: [{ finish_reason: "stop", message: { content: JSON.stringify(repeated) } }] });
+    });
+    const report = await runCreditEvaluation(options({ transport }));
+    expect(report).toMatchObject({ completedAllContracts: false, attempts: 17 });
+    expect(report.results[16]).toMatchObject({
+      fixtureId: "I1-five-angles", outcome: "stopped", errorCode: "output-contract-failed",
+      checks: expect.arrayContaining([{ name: "distinct-idea-pitches", passed: false }]),
+    });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("요청 전 취소는 비용 예약·외부 호출 없이 끝난다", async () => {

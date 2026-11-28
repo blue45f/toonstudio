@@ -67,6 +67,25 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     }
   });
 
+  it("말풍선 경계·유니코드 표현만 다른 대사는 첫 안을 표시하고 원문과 연출 설명을 보존한다", async () => {
+    const balloons = [
+      { toneLabel: "구어체", line: "내일", subBubble: "갈게.", reason: "둘로 나눠 호흡을 둔다." },
+      { toneLabel: "핵심형", line: "내일  갈게.".normalize("NFD"), subBubble: "", reason: "한 말풍선에 두 단어를 담는다." },
+      { toneLabel: "여운형", line: "내일은 갈게.", subBubble: "", reason: "약속하는 시점을 먼저 둔다." },
+    ];
+    const fetchImpl = vi.fn(async () => Response.json({
+      provider: "openai-free-sharing", providerTier: "cloud-free",
+      result: { mode: "dialogue-polish", data: { readabilityNote: "약속을 보존했어요.", balloons } },
+    }));
+    const result = await runFreeAiZeroBillAssist({ mode: "dialogue-polish", inputText: "내일 갈게." }, { fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.bulletsKo[0]).not.toContain("대사 문구 동일");
+    expect(result.bulletsKo[1]).toContain("구어체 안과 대사 문구 동일");
+    expect(result.bulletsKo[1]).toContain(balloons[1].reason);
+    expect(result.bulletsKo[2]).not.toContain("대사 문구 동일");
+    expect(result.rawData.balloons).toEqual(balloons);
+  });
+
   it("기기 배색에서 서로 다른 지정색의 원문 순서를 지키고 부족한 색만 예시로 제시한다", () => {
     const withColors = buildLocalZeroCostAssistResult({
       mode: "color-mood-director", inputText: "원고 팔레트 #aBc, #AABBCC, #1234",
@@ -95,6 +114,100 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     expect(masked.sanitizedText).not.toContain("author@example.com");
     expect(masked.sanitizedText).not.toContain("010-1234-5678");
     expect(masked.sanitizedText).not.toContain(fakeKey);
+  });
+
+  it("발상 다섯 개를 첫 컷 연출과 함께 제작 순서대로 표시한다", async () => {
+    const angles = ["contrarian", "personal-hook", "detail-evidence", "four-cut-playbook", "missed-angle"]
+      .map((lens, index) => ({
+        lens, lensLabelKo: `관점 ${index + 1}`, headline: `제목 ${index + 1}`,
+        pitch: `줄거리 ${index + 1}`, firstCutHint: `반납함을 보여 주는 첫 컷 ${index + 1}`,
+      }));
+    const mode = "idea-remix";
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "반납함에서 시작할 다섯 발상을 제안해 주세요." }, {
+      fetchImpl: async () => Response.json({ provider: "github-models-free", providerTier: "cloud-free",
+        result: { mode, data: { summary: "다섯 개의 도서관 이야기", angles } } }),
+    });
+    expect(result.bulletsKo).toEqual(angles.map((angle) =>
+      `[${angle.lensLabelKo}] ${angle.headline} — ${angle.pitch} · 첫 컷: ${angle.firstCutHint}`));
+  });
+
+  it("마감 결과의 소개글과 10개 점검 항목을 중요도·영역·내용까지 순서대로 보존한다", async () => {
+    const mode = "export-preflight-coach";
+    const checks = Array.from({ length: 9 }, (_, i) => ({
+      category: `영역 ${i + 1}`, severity: i % 2 ? "pass" : "tip", detail: `점검 ${i + 1}`,
+    }));
+    checks.push({ category: "납품 파일", severity: "fix", detail: "마지막 컷에서 글꼴이 잘리는지 확인하세요." });
+    const data = { readinessSummary: "원고 문구를 점검했습니다.", episodeBlurbSuggestion: "막차가 멈춘 밤.", checks };
+    const fetchImpl = vi.fn(async () => Response.json({
+      provider: "github-models-free", providerTier: "cloud-free", result: { mode, data },
+    }));
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "게시 전 확인해 주세요." }, { fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(result.headlineKo).toBe(data.readinessSummary);
+    expect(result.bulletsKo).toHaveLength(11);
+    expect(result.bulletsKo[0]).toContain(data.episodeBlurbSuggestion);
+    checks.forEach(({ category, severity, detail }, i) => {
+      const label = severity === "fix" ? "수정" : severity === "pass" ? "통과" : "참고";
+      expect(result.bulletsKo[i + 1]).toBe(`[${label}] ${category} — ${detail}`);
+    });
+  });
+
+  it("연속성 검수의 마지막 오류도 원고 위치와 심각도·수정안을 함께 표시한다", async () => {
+    const mode = "continuity-plot-audit";
+    const issues = Array.from({ length: 12 }, (_, i) => ({
+      severity: i === 11 ? "critical" : "warn", category: "소품", locationHint: `${i + 1}컷 오른손`,
+      conflictDetail: "접힌 우산을 펼쳐 든다.", fixSuggestion: "우산을 펴는 컷을 먼저 둔다.",
+    }));
+    const data = { summary: "우산 모양이 바뀐다.", overallConsistencyScore: 65, issues };
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "우산 장면을 검수해 주세요." }, {
+      fetchImpl: async () => Response.json({ provider: "github-models-free", providerTier: "cloud-free", result: { mode, data } }),
+    });
+    expect(result.bulletsKo).toHaveLength(13);
+    expect(result.bulletsKo[0]).toBe("일관성 65/100");
+    expect(result.bulletsKo.at(-1)).toBe("[필수 수정] 소품 · 12컷 오른손 — 접힌 우산을 펼쳐 든다. · 수정안 · 우산을 펴는 컷을 먼저 둔다.");
+  });
+
+  it.each(["cloud-free", "local-fallback"] as const)("스크롤 구간별 권장 간격을 보존하고 실제 평가만 점수로 표시한다 (%s)", async (tier) => {
+    const mode = "scroll-pacing-auditor";
+    const gaps = [40, 60, 80, 100, 120];
+    const data = {
+      rhythmVerdict: "빈 좌석이 보이는 순간을 길게 유지하세요.", cliffhangerScore: 73,
+      cliffhangerTip: "마지막 표정을 한 컷 더 잡으세요.", averageGapPx: 80,
+      beatPacing: gaps.map((recommendedGapPx, i) => ({
+        section: `${i + 1}번째 전환`, pacing: "steady", recommendedGapPx, readerRetentionNote: `전환 ${i + 1}을 확인하세요.`,
+      })),
+    };
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "빈 좌석이 드러나는 장면의 호흡을 검토해 주세요." }, {
+      fetchImpl: async () => Response.json({ provider: tier === "cloud-free" ? "github-models-free" : "local-zero-cost-fallback",
+        providerTier: tier, result: { mode, data } }),
+    });
+    const text = result.bulletsKo.join("\n");
+    for (const beat of data.beatPacing) expect(text).toContain(`${beat.section} · ${beat.recommendedGapPx}px`);
+    expect(text).toContain("구간 평균 80px");
+    expect(text).toContain(data.cliffhangerTip);
+    expect(text.includes("73/100")).toBe(tier === "cloud-free");
+  });
+
+  it("필수 번역이 누락된 용어집은 완성된 검수 결과로 표시하지 않고 기기 내 안내로 전환한다", async () => {
+    const mode = "localization-glossary-check";
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "청야의 현지화 표기를 검수해 주세요." }, {
+      fetchImpl: async () => Response.json({
+        provider: "github-models-free", providerTier: "cloud-free",
+        result: {
+          mode,
+          data: {
+            targetLocales: ["en", "ja"],
+            glossary: [
+              { termKo: "청야", en: "Blue Night", ruleNote: "길드 이름은 띄어 쓴다." },
+              { termKo: "잔향", en: "Echo", ja: "残響", ruleNote: "능력명은 대문자로 시작한다." },
+            ],
+            culturalNotes: [{ severity: "warn", topic: "식자", adaptationTip: "여백을 넓힌다." }],
+          },
+        },
+      }),
+    });
+    expect(result.providerTier).toBe("local-fallback");
+    expect(result.fallbackNoticeKo).toContain("응답 형식");
   });
 
   it.each([
