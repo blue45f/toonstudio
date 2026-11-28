@@ -500,6 +500,7 @@ function summarizeStructuredData(
   };
   const sourceLimit = sourceLimits[mode];
   const bullets: string[] = [];
+  const firstToneByDialogue = new Map<string, string>();
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
       for (const entry of value.slice(0, sourceLimit ?? 4)) {
@@ -517,7 +518,14 @@ function summarizeStructuredData(
             const lines = [rec.line, rec.subBubble].filter((line): line is string => typeof line === "string" && Boolean(line));
             const label = typeof rec.toneLabel === "string" ? `[${rec.toneLabel}] ` : "";
             const reason = typeof rec.reason === "string" && rec.reason.trim() ? ` — ${rec.reason}` : "";
-            bullets.push(`${label}${lines.join(" ")}${reason}`);
+            const spoken = lines.join(" ");
+            const comparable = spoken.normalize("NFC").trim().replace(/\s+/gu, " ");
+            const firstTone = firstToneByDialogue.get(comparable);
+            if (comparable && firstTone === undefined) {
+              firstToneByDialogue.set(comparable, typeof rec.toneLabel === "string" && rec.toneLabel.trim() ? rec.toneLabel : "앞선");
+            }
+            const repeated = firstTone ? ` · ${firstTone} 안과 대사 문구 동일` : "";
+            bullets.push(`${label}${spoken}${reason}${repeated}`);
             continue;
           }
           if (mode === "color-mood-director" && key === "palette" && typeof rec.oklch === "string") {

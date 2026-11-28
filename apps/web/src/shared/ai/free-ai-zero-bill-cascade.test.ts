@@ -67,6 +67,25 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     }
   });
 
+  it("말풍선 경계·유니코드 표현만 다른 대사는 첫 안을 표시하고 원문과 연출 설명을 보존한다", async () => {
+    const balloons = [
+      { toneLabel: "구어체", line: "내일", subBubble: "갈게.", reason: "둘로 나눠 호흡을 둔다." },
+      { toneLabel: "핵심형", line: "내일  갈게.".normalize("NFD"), subBubble: "", reason: "한 말풍선에 두 단어를 담는다." },
+      { toneLabel: "여운형", line: "내일은 갈게.", subBubble: "", reason: "약속하는 시점을 먼저 둔다." },
+    ];
+    const fetchImpl = vi.fn(async () => Response.json({
+      provider: "openai-free-sharing", providerTier: "cloud-free",
+      result: { mode: "dialogue-polish", data: { readabilityNote: "약속을 보존했어요.", balloons } },
+    }));
+    const result = await runFreeAiZeroBillAssist({ mode: "dialogue-polish", inputText: "내일 갈게." }, { fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.bulletsKo[0]).not.toContain("대사 문구 동일");
+    expect(result.bulletsKo[1]).toContain("구어체 안과 대사 문구 동일");
+    expect(result.bulletsKo[1]).toContain(balloons[1].reason);
+    expect(result.bulletsKo[2]).not.toContain("대사 문구 동일");
+    expect(result.rawData.balloons).toEqual(balloons);
+  });
+
   it("기기 배색에서 서로 다른 지정색의 원문 순서를 지키고 부족한 색만 예시로 제시한다", () => {
     const withColors = buildLocalZeroCostAssistResult({
       mode: "color-mood-director", inputText: "원고 팔레트 #aBc, #AABBCC, #1234",
