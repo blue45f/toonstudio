@@ -348,6 +348,7 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
           role="group"
           aria-label={compact ? bt("뷰포트 빠른 도구", "Viewport quick tools") : "뷰포트 보기 설정"}
           data-character-hud-tools="true"
+          data-app-tooltip-preferred-side={compact ? undefined : "left"}
           data-compact-tools-open={compact ? (compactToolsOpen ? "true" : "false") : "true"}
           className={cn(
             compact

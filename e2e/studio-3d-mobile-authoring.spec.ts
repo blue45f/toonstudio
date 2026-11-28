@@ -82,8 +82,20 @@ test("실제 캐릭터와 핵심 조작이 화면 안에서 겹치지 않고 도
     await activate(root.getByRole("button", { name: "편집 도구 펼치기", exact: true }), info);
     await activate(root.getByRole("tab", { name: "보기", exact: true }), info);
   }
+  const guide = root.getByRole("region", { name: "화면 조작 안내", exact: true });
+  if (await guide.isVisible()) {
+    if (info.project.name === "small-phone" || info.project.name === "phone") {
+      const guideBox = await guide.boundingBox();
+      if (!guideBox) throw new Error("첫 사용 안내의 표시 영역이 없습니다.");
+      expect(guideBox.y).toBeGreaterThanOrEqual(box.y + box.height - 1);
+      await capture(page, info, "첫-화면-모델과-조작-안내");
+    }
+    await activate(guide.getByRole("button", { name: "확인", exact: true }), info);
+  }
   await activate(root.getByRole("button", { name: "전신", exact: true }), info);
   await expect(root.getByRole("button", { name: "전신", exact: true })).toHaveAttribute("aria-pressed", "true");
+  const showViewTools = root.getByRole("button", { name: "보기 도구 펼치기", exact: true });
+  if (await showViewTools.isVisible()) await activate(showViewTools, info);
   await activate(root.getByRole("button", { name: "확대", exact: true }), info);
   await activate(root.getByRole("button", { name: "축소", exact: true }), info);
   await activate(root.getByRole("button", { name: "시점 초기화", exact: true }), info);

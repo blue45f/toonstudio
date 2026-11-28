@@ -3,6 +3,10 @@
   top: var(--studio-3d-viewport-top, 0px);
   bottom: auto;
   height: var(--studio-3d-viewport-height, 100dvh);
+  padding: max(var(--character-shaper-dialog-inset, 0.5rem), env(safe-area-inset-top))
+    max(var(--character-shaper-dialog-inset, 0.5rem), env(safe-area-inset-right))
+    max(var(--character-shaper-dialog-inset, 0.5rem), env(safe-area-inset-bottom))
+    max(var(--character-shaper-dialog-inset, 0.5rem), env(safe-area-inset-left));
 }
 [data-character-shaper-surface="true"] {
   border-radius: 1.25rem;

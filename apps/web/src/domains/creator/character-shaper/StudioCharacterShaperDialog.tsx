@@ -68,7 +68,7 @@ type MobileSheetTab = "shelf" | "inspector" | "view";
 const COMMIT_NOTICE_MS = 4000;
 
 const DIALOG_ROOT_CLASS = cn(
-  "fixed inset-0 z-[80] isolate overflow-hidden overscroll-none bg-[oklch(0.08_0.01_70/0.86)] p-2 text-fg backdrop-blur-sm sm:p-3",
+  "fixed inset-0 z-[80] isolate overflow-hidden overscroll-none bg-[oklch(0.08_0.01_70/0.86)] text-fg backdrop-blur-sm",
   "pointer-coarse:[&_button]:min-h-11 pointer-coarse:[&_button]:min-w-11",
   "pointer-coarse:[&_input:not([type=range]):not([type=checkbox]):not([type=color])]:min-h-11 pointer-coarse:[&_input[type=range]]:h-11 pointer-coarse:[&_select]:min-h-11 pointer-coarse:[&_summary]:min-h-11",
 );
@@ -758,12 +758,6 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
       data-character-shaper-landscape={touchLandscape ? "true" : undefined}
       data-character-shaper-paint={paintActive ? "true" : undefined}
       className={DIALOG_ROOT_CLASS}
-      style={{
-        paddingTop: "max(0.5rem, env(safe-area-inset-top))",
-        paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
-        paddingLeft: "max(0.5rem, env(safe-area-inset-left))",
-        paddingRight: "max(0.5rem, env(safe-area-inset-right))",
-      }}
     >
       <div data-character-shaper-surface="true" className="relative mx-auto grid h-full max-h-full min-h-0 w-full max-w-[1600px] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
         <div data-character-shaper-header="true" className="min-w-0">

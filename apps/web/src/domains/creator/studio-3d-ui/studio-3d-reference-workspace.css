@@ -181,6 +181,44 @@
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-sheet-panel] > [data-character-shaper-shelf] { height: auto; flex: 1; }
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-shaper-camera-bar] { background: var(--color-canvas); border-bottom-color: var(--color-line); }
 [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-shaper-dock="compact"] { background: var(--color-canvas); padding-top: 7px; }
+/* 짧은 세로 화면에서는 안내와 보기 도구가 같은 행을 번갈아 사용해 모델의 발까지 보인다. */
+@media (orientation: portrait) and (max-height: 719px) {
+  [data-studio-3d-reference][data-character-shaper-layout="mobile"] {
+    --character-shaper-dialog-inset: 0px;
+  }
+  [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-shaper-surface] { border-radius: 0; }
+  [data-character-shaper-layout="mobile"]:not([data-character-shaper-paint]) [data-character-shaper-mobile-body]:not([data-tools-open]) {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) auto;
+  }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-mobile-body]:not([data-tools-open]) > [data-character-shaper-model-workspace] { grid-column: 1 / -1; }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-mobile-tools] > [data-character-shaper-rail] {
+    min-width: 0; overflow-x: auto; overscroll-behavior-x: contain;
+  }
+  [data-studio-3d-reference][data-character-shaper-layout="mobile"] [data-character-shaper-sheet="collapsed"] {
+    height: auto; padding: 0; align-self: stretch; justify-content: center; border-radius: 0; box-shadow: none;
+  }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-sheet="collapsed"] [data-character-shaper-sheet-header] { min-height: 44px; padding: 0; }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-sheet="collapsed"] [data-character-shaper-sheet-header] > :not(button:last-child) { display: none; }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-viewport] > [data-character-shaper-hud],
+  [data-character-shaper-layout="mobile"] [data-character-shaper-viewport] > [data-character-gesture-guide] {
+    grid-area: 2 / 1;
+  }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-viewport] > [data-character-gesture-guide] {
+    position: relative; inset: auto; max-height: none; padding: 4px 8px; border-radius: 0;
+    background: var(--color-panel);
+  }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-viewport]:has(> [data-character-gesture-guide]) [data-character-shaper-hud-controls] {
+    visibility: hidden;
+  }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-viewport] [data-character-shaper-hud-controls]:has([data-compact-tools-open="true"]) {
+    flex-direction: row; align-items: center;
+  }
+  [data-character-shaper-layout="mobile"] [data-character-shaper-viewport] [data-character-hud-tools][data-compact-tools-open="true"] {
+    min-width: 0; flex: 1; flex-wrap: nowrap; justify-content: flex-start;
+    overflow-x: auto; overscroll-behavior-x: contain; padding: 0; border: 0;
+  }
+  [data-character-shaper-layout="mobile"][data-studio-3d-keyboard-open="true"] [data-character-gesture-guide] { display: none; }
+}
 /* 도구가 접혀 있을 때만 우측 상단에 컴팩트 토글과 안내 버튼만 띄워 3D 캐릭터 뷰포트를 열어 둔다. */
 @media (min-height: 720px) {
   [data-studio-3d-reference][data-character-shaper-layout="mobile"]:not([data-character-shaper-landscape]):has([data-character-shaper-sheet="collapsed"]) {
