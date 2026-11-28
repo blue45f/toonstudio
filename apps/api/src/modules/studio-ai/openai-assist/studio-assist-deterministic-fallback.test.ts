@@ -134,6 +134,18 @@ describe("로컬 창작 보조의 원문 보존", () => {
     expect(result.data.cuts[0].dialogue).toBe("민서: 응\n정우: 그래");
   });
 
+  it("화자 표지 앞뒤의 공백·탭과 전각 콜론을 읽고 대사 안의 시각 표기와 말풍선 순서를 보존한다", () => {
+    const result = buildDeterministicAssistResult("script-to-cuts", { inputText: [
+      "도 윤  \t：\t  출발 시각은 18:30이야.",
+      "민서\t:  “응”  \t정우  ：\t“기다릴게.” “여기 있을게.”",
+      "자막  \t：   정류장 18:30",
+    ].join("\n") });
+    if (result.mode !== "script-to-cuts") throw new Error("콘티 모드 필요");
+    expect(result.data.cuts.map(cut => cut.dialogue)).toEqual([
+      "출발 시각은 18:30이야.", "민서: 응\n정우: 기다릴게.\n여기 있을게.", "",
+    ]);
+  });
+
   it("한 화자의 연속 말풍선은 지문이나 다음 화자 표기가 나올 때까지 원래 순서로 보존한다", () => {
     const result = buildDeterministicAssistResult("script-to-cuts", {
       inputText: "1컷: 민지: “가지 마.” “내 말 들려?”\n2컷: 민지: “응” “알았어” 정우: “난 남을게.” “정말이야.”",

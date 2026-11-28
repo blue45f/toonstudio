@@ -14,6 +14,16 @@ function quoteBody(match: RegExpMatchArray): string {
   return match.slice(1).find((body) => body !== undefined)?.trim() ?? "";
 }
 
+function readSpeakerLine(line: string): { speaker: string; body: string } | undefined {
+  const separator = line.search(/[:：]/u);
+  if (separator < 1) return undefined;
+  const speaker = line.slice(0, separator).trimEnd();
+  if (!/^[\p{L}][\p{L}\p{N}_ ·]{0,18}$/u.test(speaker)) return undefined;
+  const body = line.slice(separator + 1).trimStart();
+  if (!body || /[\r\n\u2028\u2029]/u.test(body)) return undefined;
+  return { speaker, body };
+}
+
 function isWholeUtterance(input: string, quote: RegExpMatchArray): boolean {
   const tail = input.slice((quote.index ?? 0) + quote[0].length);
   const next = tail.trimStart();
@@ -23,8 +33,8 @@ function isWholeUtterance(input: string, quote: RegExpMatchArray): boolean {
     if (followingQuote > 0 && connectsSpeakerBalloons(next.slice(0, followingQuote))) return true;
   }
   if (/^(?:이?라고|이?라는)\s*(?:적|쓰|써|새겨|인쇄|표시|문구|글씨)/u.test(next)) return false;
-  const nextSpeaker = next.match(spokenLine);
-  if (nextSpeaker && !stageLabel.test(nextSpeaker[1].trim())) return true;
+  const nextSpeaker = readSpeakerLine(next);
+  if (nextSpeaker && !stageLabel.test(nextSpeaker.speaker)) return true;
   // ‘내일’은 안 돼처럼 발화 안에서 한 낱말만 인용한 경우에는 대사 전체를 보존한다.
   return /^\s/u.test(tail) && (/^[\r\n]/u.test(tail) || /[.!?…。！？]$/u.test(quoteBody(quote)));
 }
@@ -112,7 +122,6 @@ export function buildLocalDialogueLayout(input: string): LocalData<"dialogue-pol
 
 const cutHeader = /^\s*(?:컷\s*\d{1,2}|\d{1,2}\s*컷)(?=[\s.:：)\]-]|$)\s*[.:：)\]-]?\s*/u;
 const requestedCutCount = /^\s*(?:정확히\s*)?(\d{1,2})\s*컷(?:으로|로)\s*(?:나눠|나누어|분할해|구성해)\s*주세요[.!]?\s*/u;
-const spokenLine = /^([\p{L}][\p{L}\p{N}_ ·]{0,18})\s*[:：]\s*(.+)$/u;
 
 function connectsSpeakerBalloons(gap: string): boolean {
   const cue = gap.trim().normalize("NFKC");
@@ -145,7 +154,7 @@ function isNarratedSpeech(beat: string, quote: RegExpMatchArray): boolean {
 }
 
 function spokenText(beat: string): string {
-  const labeled = beat.match(spokenLine);
+  const labeled = readSpeakerLine(beat);
   const turns: Array<{ speaker?: string; text: string }> = [];
   let lastEnd = 0;
   let opening = "";
@@ -169,8 +178,8 @@ function spokenText(beat: string): string {
   if (turns.length && !hasPlainSpeaker) {
     return turns.map(({ speaker, text }) => speaker && turns.length > 1 ? `${speaker}: ${text}` : text).join("\n");
   }
-  if (labeled && !stageLabel.test(labeled[1].trim())) {
-    const body = labeled[2].trim();
+  if (labeled && !stageLabel.test(labeled.speaker)) {
+    const body = labeled.body.trimEnd();
     const quote = [...body.matchAll(quotedText)][0];
     return quote?.[0] === body ? quoteBody(quote) : body;
   }
@@ -238,7 +247,7 @@ export function buildLocalScriptCuts(input: string, title: string): LocalData<"s
     }
   } else {
     for (const line of lines) {
-      if (spokenLine.test(line)) beats.push(line);
+      if (readSpeakerLine(line)) beats.push(line);
       else beats.push(...splitSceneSentences(line).flatMap(splitLongAction));
     }
   }
