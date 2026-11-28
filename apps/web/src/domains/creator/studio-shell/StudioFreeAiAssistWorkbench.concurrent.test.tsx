@@ -109,6 +109,42 @@ it("같은 모드의 연속 실행을 막고 선택한 요청만 취소하며 �
   await finish(pending[1]);
 });
 
+it("다시 실행하는 동안에는 지난 결과를 복사할 수 없고 취소하면 마지막 완료 결과를 되살린다", async () => {
+  const { pending } = setup();
+  edit("1컷: 노란 우산을 접는다.");
+  run();
+  await finish(pending[0]);
+  expect(result().textContent).toContain("노란 우산");
+
+  selectDialogue();
+  edit("작은 등대를 찾자.");
+  run();
+  await finish(pending[1]);
+  selectCuts();
+
+  const nextDraft = "1컷: 파란 우체통을 연다.";
+  edit(nextDraft);
+  run();
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+  expect(screen.queryByRole("button", { name: "결과 복사" })).toBeNull();
+  selectDialogue();
+  expect(result().textContent).toContain("작은 등대");
+  selectCuts();
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: "요청 취소" }));
+  expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe(nextDraft);
+  expect(result().textContent).toContain("노란 우산");
+  expect(within(result()).getByRole("button", { name: "결과 복사" })).toBeTruthy();
+
+  run();
+  await finish(pending[2]);
+  expect(screen.queryByTestId("studio-free-ai-workbench-result")).toBeNull();
+  await finish(pending[3]);
+  expect(result().textContent).toContain("파란 우체통");
+  expect(result().textContent).not.toContain("노란 우산");
+});
+
 it("빈 원고도 유지하고 작업대를 닫으면 모든 요청을 취소해 늦은 응답이 후속 조회를 만들지 않는다", async () => {
   const { pending, fetchImpl, view } = setup();
   edit("");

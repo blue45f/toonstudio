@@ -124,7 +124,7 @@ export function StudioFreeAiAssistWorkbench({
   const workspace = workspaces[selectedMode];
   const inputText = workspace?.draft ?? currentSpec.samplePromptKo;
   const running = workspace?.running ?? false;
-  const result = workspace?.result;
+  const result = running ? undefined : workspace?.result;
   const statusMessage = workspace?.statusMessage;
   const copied = result === copiedResult;
 
