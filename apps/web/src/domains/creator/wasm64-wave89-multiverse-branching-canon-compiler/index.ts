@@ -1,0 +1,98 @@
+/**
+ * Wasm64 Wave 89 공개 배럴 진입점 (`wasm64-wave89-multiverse-branching-canon-compiler`).
+ *
+ * - `multiverse-merkle-cut-store`: 순수 동기 FIPS 180-4 SHA-256 기반 콘텐츠 주소 지정
+ *   분기 에피소드 Merkle DAG 저장소, 공유 레이어 중복 제거 계산기 및 구조 결함 감사기
+ * - `world-state-invariant-verifier`: 전수 분기 경로(BFS + 상태 메모이제이션) 기반
+ *   세계관 상태 불변식 검증기 및 5대 서사 모순 최소 반례 추적기
+ * - `interactive-vn-and-webtoon-exporter`: Merkle 서명 인터랙티브 웹툰 분기 패키지,
+ *   비주얼 노벨 선택지 스크립트 및 안전 따옴표 Mermaid 플로차트 내보내기
+ */
+
+export {
+  DEFAULT_WORLD_STATE_BOUNDS,
+  MultiverseEpisodeDagStore,
+  auditMultiverseDagStructure,
+  bytesToHexMultiverse,
+  canonicalSerializeMultiverse,
+  computeAssetDeduplicationMetrics,
+  computeCutContentMerkleHash,
+  computeEpisodeDagMerkleRoot,
+  sha256MultiverseBytes,
+  sha256MultiverseHex,
+  utf8EncodeMultiverse,
+  type AssetDeduplicationMetrics,
+  type AssetLayerKind,
+  type CharacterAvailabilityStatus,
+  type CharacterWorldState,
+  type ChoiceEdge,
+  type ConditionalLayerVariant,
+  type CostumeCondition,
+  type CutCanonRequirement,
+  type CutNodeKind,
+  type DepictedCostumeAssertion,
+  type DialogueLine,
+  type EndingCategoryTag,
+  type EndingMetadata,
+  type InitialWorldStateConfig,
+  type ItemUsageRequirement,
+  type MultiverseAssetBlob,
+  type MultiverseCutNode,
+  type MultiverseCutNodeInput,
+  type MultiverseEpisodeDag,
+  type MultiverseEpisodeStoreOptions,
+  type PanelLayerRef,
+  type RegisterAssetBlobInput,
+  type SecretReferenceAssertion,
+  type SpeakingCharacterAssertion,
+  type StructuralDagAuditReport,
+  type StructuralDagDefect,
+  type StructuralDefectCode,
+  type WorldStateBounds,
+  type WorldStateEffect,
+  type WorldStateGuardCondition,
+} from "./multiverse-merkle-cut-store";
+
+export {
+  applyWorldStateEffects,
+  computeWorldStateFingerprint,
+  createInitialWorldStateSnapshot,
+  evaluateWorldStateGuard,
+  resolveCutForWorldState,
+  verifyMultiverseWorldStateInvariants,
+  type EndingReachabilityWitness,
+  type MinimalCounterexampleTrace,
+  type MultiverseWorldStateAuditReport,
+  type ResolvedCutProjection,
+  type SilentCostumeRegression,
+  type VerifyWorldStateOptions,
+  type WorldStateContradiction,
+  type WorldStateContradictionCode,
+  type WorldStateSnapshot,
+} from "./world-state-invariant-verifier";
+
+export {
+  DEFAULT_CHOICE_HIT_TARGET_PX,
+  INTERACTIVE_WEBTOON_BUNDLE_FORMAT_VERSION,
+  VISUAL_NOVEL_SCRIPT_FORMAT_VERSION,
+  compileInteractiveWebtoonBundle,
+  exportMultiverseMermaidAndVnScript,
+  verifyInteractiveWebtoonBundle,
+  type BundleIntegrityVerificationResult,
+  type CompileInteractiveWebtoonOptions,
+  type CompiledConditionalVariantOverlay,
+  type CompiledEndingSummary,
+  type CompiledWebtoonCut,
+  type DeduplicatedAssetTableEntry,
+  type ExportMermaidAndVnOptions,
+  type InteractiveWebtoonBranchPackage,
+  type InteractiveWebtoonVerificationStatus,
+  type MultiverseExportMetricsSummary,
+  type MultiverseVnAndMermaidExport,
+  type VisualNovelChoiceCommand,
+  type VisualNovelChoiceScript,
+  type VisualNovelConditionalOverlay,
+  type VisualNovelDialogueStep,
+  type VisualNovelSceneNode,
+  type WebtoonChoiceOverlaySpec,
+} from "./interactive-vn-and-webtoon-exporter";
