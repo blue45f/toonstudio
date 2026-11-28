@@ -58,3 +58,8 @@ export {
   createWave73To80ExtensionSubsystems,
   registerWave73To80Extensions,
 } from "./wave73-80-extensions";
+
+export {
+  createWave81To86ExtensionSubsystems,
+  registerWave81To86Extensions,
+} from "./wave81-86-extensions";

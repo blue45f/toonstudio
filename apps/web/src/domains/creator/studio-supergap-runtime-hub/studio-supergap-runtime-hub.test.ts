@@ -603,16 +603,16 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("createFullStudioSupergapRuntimeHub가 Wave 68~80 실전 확장까지 19종 전체를 오류 0건으로 진단한다", async () => {
+  it("createFullStudioSupergapRuntimeHub가 Wave 68~86 실전 확장까지 25종 전체를 오류 0건으로 진단한다", async () => {
     const hub = createFullStudioSupergapRuntimeHub({
       loopbackConfig: { fetchImpl: unreachableFetch },
     });
-    expect(hub.getRegisteredSubsystems().length).toBe(19);
+    expect(hub.getRegisteredSubsystems().length).toBe(25);
 
     const report = await hub.runDiagnosticSelfCheck();
     expect(report.allHealthy).toBe(true);
     expect(report.errorCount).toBe(0);
-    expect(report.subsystems.length).toBe(19);
+    expect(report.subsystems.length).toBe(25);
 
     const byId = new Map(report.subsystems.map((item) => [item.id, item]));
     expect(byId.get("wave68ShallowWaterFluid")?.status).toBe("live-connected");
@@ -631,6 +631,12 @@ describe("StudioSupergapStatusDrawer React UI 상호작용 및 접근성", () =>
     expect(byId.get("wave78CompanionTabletLan")?.status).toBe("live-connected");
     expect(byId.get("wave79AssistantCheckoutSettlement")?.status).toBe("live-connected");
     expect(byId.get("wave80OnDeviceContinuityGuardrail")?.status).toBe("live-connected");
+    expect(byId.get("wave81SketchToParametric3d")?.status).toBe("live-connected");
+    expect(byId.get("wave82AudioDrivenPacing")?.status).toBe("live-connected");
+    expect(byId.get("wave83CvdMobileReadability")?.status).toBe("live-connected");
+    expect(byId.get("wave84DeltaTileOfflineSync")?.status).toBe("live-connected");
+    expect(byId.get("wave85IpMerchDiecutPack")?.status).toBe("live-connected");
+    expect(byId.get("wave86SaliencyPacingTwin")?.status).toBe("live-connected");
   });
 
   it("StudioSupergapRuntimeHubLazyHost가 열기 전 0 DOM 유지 후 토글 시 11종 허브 드로어를 지연 마운트한다", async () => {
