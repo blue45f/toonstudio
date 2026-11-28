@@ -14,7 +14,6 @@ import { createStudioProjectDefinition } from "../studio-project-definition";
 import { createStudioProject, renameStudioProject } from "../studio-project-library-store";
 import {
   readStudioAssistantSessionState,
-  studioAssistantSessionKey,
   writeStudioAssistantSessionState,
 } from "./guided-flow/studio-assistant-session-store";
 import { StudioProjectAssistantPanel } from "./StudioProjectAssistantPanel";
@@ -487,39 +486,87 @@ describe("StudioProjectAssistantPanel", () => {
     expect(screen.queryByText("첫 계정이 기다리던 결과")).toBeNull();
   });
 
-  it("탭을 다시 열어도 응답을 잃은 요청은 같은 키로 복구하고 성공한 키는 지운다", async () => {
+  it("원고 A의 응답 유실 뒤 B를 완료하고 패널을 다시 열어도 A만 같은 키로 재시도한다", async () => {
     useApp.getState().setSessionIdentity("author-a", null);
-    const keys: (string | null)[] = [];
+    const pending = () => readStudioAssistantSessionState("project-a", undefined, "author-a")?.pendingRequests ?? [];
+    const sent: { prompt: string; key: string | null; hashBeforeSend?: string; hasUserHeader: boolean }[] = [];
+    const promptA = "첫 번째 합성 원고";
+    const promptB = "두 번째 합성 원고";
     const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
       if (init?.method === "GET") return Response.json({ configured: true });
-      const key = new Headers(init?.headers).get("Idempotency-Key");
-      const stored = readStudioAssistantSessionState("project-a", undefined, "author-a")?.pendingRequest;
-      expect(stored?.key).toBe(key);
-      expect(stored?.requestHash).toMatch(/^[a-f0-9]{64}$/u);
-      expect(new Headers(init?.headers).has("x-user-id")).toBe(false);
-      keys.push(key);
-      if (keys.length === 1) throw new TypeError("응답 유실");
-      return makeCutResponse("재전송으로 복구된 원고");
+      const headers = new Headers(init?.headers);
+      const key = headers.get("Idempotency-Key");
+      const prompt = JSON.parse(String(init?.body)).inputText;
+      sent.push({ prompt, key, hashBeforeSend: pending().find((request) => request.key === key)?.requestHash,
+        hasUserHeader: headers.has("x-user-id") });
+      if (sent.length === 1) throw new TypeError("응답 유실");
+      return makeCutResponse(`${prompt} 결과 ${sent.length}`);
     });
     const panel = <MemoryRouter>
       <StudioProjectAssistantPanel projectId="project-a" section="story" locale="ko" fetchImpl={fetchImpl} />
     </MemoryRouter>;
     const view = render(panel);
+    const submit = (value: string) => {
+      fireEvent.change(screen.getByLabelText("요청 내용"), { target: { value } });
+      fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
+    };
     fireEvent.click(screen.getByTestId("openai-mode-script-to-cuts"));
-    fireEvent.change(screen.getByLabelText("요청 내용"), { target: { value: "계정 A의 합성 원고" } });
-    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
-    await screen.findByRole("alert");
+    submit(promptA);
+    expect((await screen.findByRole("alert")).textContent).toContain("NETWORK_ERROR");
+    submit(promptB);
+    expect(await screen.findByText(`${promptB} 결과 2`)).toBeTruthy();
+    const pendingAfterB = pending().map(({ key }) => key);
     view.unmount();
     render(panel);
-    expect(screen.getByLabelText<HTMLTextAreaElement>("요청 내용").value).toBe("계정 A의 합성 원고");
-    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
-    expect(await screen.findByText("재전송으로 복구된 원고")).toBeTruthy();
-    expect(keys).toHaveLength(2);
-    expect(keys[1]).toBe(keys[0]);
-    expect(readStudioAssistantSessionState("project-a", undefined, "author-a")?.pendingRequest).toBeUndefined();
+    expect(screen.getByLabelText<HTMLTextAreaElement>("요청 내용").value).toBe(promptB);
+    submit(promptA);
+    expect(await screen.findByText(`${promptA} 결과 3`)).toBeTruthy();
+    expect(pending()).toHaveLength(0);
+    submit(promptA);
+    expect(await screen.findByText(`${promptA} 결과 4`)).toBeTruthy();
+
+    expect(sent.map(({ prompt }) => prompt)).toEqual([promptA, promptB, promptA, promptA]);
+    const keys = sent.map(({ key }) => key);
+    expect(keys[2]).toBe(keys[0]);
+    expect(pendingAfterB).toEqual([keys[0]]);
+    expect(new Set(keys).size).toBe(3);
+    expect(keys).not.toContain(null);
+    expect(sent.every(({ hashBeforeSend }) => /^[a-f0-9]{64}$/u.test(hashBeforeSend ?? ""))).toBe(true);
+    expect(sent.some(({ hasUserHeader }) => hasUserHeader)).toBe(false);
   });
 
-  it("응답 유실 30분 후에는 별도로 새 생성을 선택하기 전까지 재전송하지 않는다", async () => {
+  it("다른 계정에서 같은 원고를 요청해도 각 계정은 자신의 보류 키만 이어 쓴다", async () => {
+    useApp.getState().setSessionIdentity("author-a", null);
+    const keys: (string | null)[] = [];
+    const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+      if (init?.method === "GET") return Response.json({ configured: true });
+      keys.push(new Headers(init?.headers).get("Idempotency-Key"));
+      throw new TypeError("응답 유실");
+    });
+    render(<MemoryRouter>
+      <StudioProjectAssistantPanel projectId="project-a" section="story" locale="ko" fetchImpl={fetchImpl} />
+    </MemoryRouter>);
+    async function submit() {
+      fireEvent.change(screen.getByLabelText("요청 내용"), { target: { value: "두 작가가 같은 내용으로 요청" } });
+      fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
+      expect((await screen.findByRole("alert")).textContent).toContain("NETWORK_ERROR");
+    }
+    await submit();
+    act(() => useApp.getState().setSessionIdentity("author-b", null));
+    await submit();
+    act(() => useApp.getState().setSessionIdentity("author-a", null));
+    await submit();
+    expect(keys).toHaveLength(3);
+    expect(keys).not.toContain(null);
+    expect(keys[1]).not.toBe(keys[0]);
+    expect(keys[2]).toBe(keys[0]);
+    for (const [actor, key] of [["author-a", keys[0]], ["author-b", keys[1]]] as const) {
+      const pending = readStudioAssistantSessionState("project-a", undefined, actor)?.pendingRequests ?? [];
+      expect(pending.map((request) => request.key)).toEqual([key]);
+    }
+  });
+
+  it("만료한 A는 새 생성 확인을 요구하고 만료 전인 B는 원래 키로 재시도한다", async () => {
     useApp.getState().setSessionIdentity("author-a", null);
     const keys: (string | null)[] = [];
     const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
@@ -531,22 +578,39 @@ describe("StudioProjectAssistantPanel", () => {
       <StudioProjectAssistantPanel projectId="project-a" section="story" locale="ko" fetchImpl={fetchImpl} />
     </MemoryRouter>;
     const first = render(panel);
-    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
-    await screen.findByRole("alert");
-    first.unmount();
-    const key = studioAssistantSessionKey("project-a", "author-a");
-    const saved = JSON.parse(window.sessionStorage.getItem(key) ?? "null");
-    saved.pendingRequest.issuedAt -= 30 * 60 * 1_000;
-    window.sessionStorage.setItem(key, JSON.stringify(saved));
-    render(panel);
-    expect(keys).toHaveLength(1);
-    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
-    expect((await screen.findByRole("alert")).textContent).toContain("OPENAI_RETRY_WINDOW_EXPIRED");
-    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
-    expect(keys).toHaveLength(1);
-    fireEvent.click(await screen.findByRole("button", { name: "새 요청으로 초안 생성" }));
-    await waitFor(() => expect(keys).toHaveLength(2));
-    expect(keys[1]).not.toBe(keys[0]);
+    const submit = (value: string) => {
+      fireEvent.change(screen.getByLabelText("요청 내용"), { target: { value } });
+      fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
+    };
+    const clock = vi.spyOn(Date, "now");
+    const start = Date.now();
+    try {
+      clock.mockReturnValue(start);
+      submit("만료할 원고");
+      expect((await screen.findByRole("alert")).textContent).toContain("NETWORK_ERROR");
+      clock.mockReturnValue(start + 20 * 60 * 1_000);
+      submit("계속 확인할 원고");
+      expect((await screen.findByRole("alert")).textContent).toContain("NETWORK_ERROR");
+      first.unmount();
+      clock.mockReturnValue(start + 30 * 60 * 1_000);
+      render(panel);
+      expect(keys).toHaveLength(2);
+      submit("만료할 원고");
+      expect((await screen.findByRole("alert")).textContent).toContain("OPENAI_RETRY_WINDOW_EXPIRED");
+      fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
+      expect(keys).toHaveLength(2);
+      fireEvent.click(await screen.findByRole("button", { name: "새 요청으로 초안 생성" }));
+      expect((await screen.findByRole("alert")).textContent).toContain("NETWORK_ERROR");
+      submit("계속 확인할 원고");
+      expect((await screen.findByRole("alert")).textContent).toContain("NETWORK_ERROR");
+      expect(keys).toHaveLength(4);
+      expect(keys).not.toContain(null);
+      expect(keys[2]).not.toBe(keys[0]);
+      expect(keys[2]).not.toBe(keys[1]);
+      expect(keys[3]).toBe(keys[1]);
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   it("저장소가 요청 키 쓰기를 거부하면 유료 본문을 보내지 않는다", async () => {
@@ -588,8 +652,8 @@ describe("StudioProjectAssistantPanel", () => {
     act(() => useApp.getState().setSessionIdentity("author-a", null));
     post();
     expect((await screen.findByRole("alert")).textContent).toContain("OPENAI_REQUEST_IN_PROGRESS");
-    expect(readStudioAssistantSessionState("project-a", undefined, "author-a")?.pendingRequest).toBeTruthy();
-    expect(readStudioAssistantSessionState("project-a")?.pendingRequest).toBeUndefined();
+    expect(readStudioAssistantSessionState("project-a", undefined, "author-a")?.pendingRequests).toHaveLength(1);
+    expect(readStudioAssistantSessionState("project-a")?.pendingRequests ?? []).toHaveLength(0);
   });
 
   it("세션 만료 응답을 받으면 화면과 복원할 초안에서 이전 생성 결과를 지운다", async () => {

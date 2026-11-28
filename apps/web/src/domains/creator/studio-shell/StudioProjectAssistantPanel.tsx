@@ -39,7 +39,7 @@ import {
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
 import {
-  clearStudioAssistantSessionState,
+  completeStudioAssistantRequest,
   defaultOpenAiModeForSection,
   prepareStudioAssistantRequest,
   readStudioAssistantSessionState,
@@ -47,6 +47,7 @@ import {
   STUDIO_ASSISTANT_SUGGESTIONS,
   writeStudioAssistantSessionState,
   type AssistantSuggestionSpec,
+  type StudioAssistantPendingRequest,
   type StudioProjectAssistantSectionId,
 } from "./guided-flow/studio-assistant-session-store";
 import { StudioOpenAiAssistResultCard } from "./StudioOpenAiAssistResultCard";
@@ -158,7 +159,6 @@ function StudioProjectAssistantPanelBody({
     [projectId, ownerId],
   );
 
-  const retryRequest = useRef(initialRestored?.pendingRequest);
   const [expiredKey, setExpiredKey] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<StudioAiAssistToolId>(
     suggestions[0]?.tool ?? "composition",
@@ -213,14 +213,8 @@ function StudioProjectAssistantPanelBody({
   }), [prompt, openAiMode, completedRequest]);
 
   useEffect(() => {
-    if (!retryRequest.current && !draftSnapshot.lastResult && (!draftSnapshot.prompt.trim() ||
-        (draftSnapshot.prompt === defaultPrompt && draftSnapshot.openAiMode === defaultMode))) {
-      clearStudioAssistantSessionState(projectId, undefined, ownerId);
-      return;
-    }
-    writeStudioAssistantSessionState(projectId, {
-      ...draftSnapshot, pendingRequest: retryRequest.current,
-    }, undefined, ownerId);
+    const isDefaultDraft = draftSnapshot.prompt === defaultPrompt && draftSnapshot.openAiMode === defaultMode;
+    writeStudioAssistantSessionState(projectId, draftSnapshot, undefined, ownerId, isDefaultDraft);
   }, [projectId, ownerId, draftSnapshot, defaultPrompt, defaultMode]);
 
   const chooseSuggestion = (suggestion: AssistantSuggestionSpec) => {
@@ -314,6 +308,7 @@ function StudioProjectAssistantPanelBody({
     setError(null);
     setStatusMessage(null);
 
+    let dispatchedRequest: StudioAssistantPendingRequest | undefined;
     const localProject = readLocalProjectContext(projectId);
     const response = await runStudioOpenAiCreativeAssist(
       {
@@ -327,13 +322,17 @@ function StudioProjectAssistantPanelBody({
         fetchImpl,
         signal: controller.signal,
         getIdempotencyKey(body) {
-          const prepared = prepareStudioAssistantRequest(projectId, ownerId,
-            { ...draftSnapshot, pendingRequest: retryRequest.current }, body, confirmedExpiredKey);
+          const prepared = prepareStudioAssistantRequest(projectId, ownerId, draftSnapshot, body, confirmedExpiredKey);
           if (prepared.kind === "expired") {
             setExpiredKey(prepared.key);
             return { code: "OPENAI_RETRY_WINDOW_EXPIRED",
               message: bt("이전 요청의 중복 확인 기간이 지났어요. 크레딧을 다시 사용할 수 있는 새 초안을 직접 선택해 주세요.",
                 "The previous request can no longer be checked. Choose a new draft to allow another use of credits.") };
+          }
+          if (prepared.kind === "pending-limit") {
+            return { code: "OPENAI_PENDING_REQUEST_LIMIT",
+              message: bt("이 작품에서 결과를 확인하지 못한 요청이 32개 있어요. 먼저 이전 원고의 결과를 확인한 뒤 새 초안을 요청해 주세요.",
+                "This project has 32 unconfirmed requests. Check a previous draft’s result before starting a new one.") };
           }
           if (prepared.kind === "storage-unavailable") {
             return { code: "OPENAI_RETRY_STORAGE_UNAVAILABLE",
@@ -341,7 +340,7 @@ function StudioProjectAssistantPanelBody({
                 "Drafting could not start because this tab could not save the request key. Check browser storage.") };
           }
           setExpiredKey(null);
-          retryRequest.current = prepared.pending;
+          dispatchedRequest = prepared.pending;
           return prepared.pending.key;
         },
       },
@@ -364,7 +363,9 @@ function StudioProjectAssistantPanelBody({
       }
       return;
     }
-    retryRequest.current = undefined;
+    if (dispatchedRequest) {
+      completeStudioAssistantRequest(projectId, ownerId, dispatchedRequest, { lastResult: response.data, submittedPrompt: trimmed });
+    }
     setCompletedRequest({ result: response.data, submittedPrompt: trimmed });
   };
 
