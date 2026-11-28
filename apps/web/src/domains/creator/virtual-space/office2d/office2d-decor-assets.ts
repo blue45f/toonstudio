@@ -12,7 +12,7 @@ export interface Office2dDecorAssetLoader {
 export function createOffice2dDecorAssetLoader<TImage extends Office2dImageSource>(
   store: Pick<Office2dSpriteStore<TImage>, "loadAll">,
   timeoutMs: number,
-  onImageLoaded: () => void,
+  onImageLoaded: (url: string) => void,
 ): Office2dDecorAssetLoader {
   const requested = new Set<string>();
   let disposed = false;
@@ -23,8 +23,8 @@ export function createOffice2dDecorAssetLoader<TImage extends Office2dImageSourc
         .map(office2dObjectUrl).filter((url) => !requested.has(url));
       if (urls.length === 0) return Promise.resolve(0);
       for (const url of urls) requested.add(url);
-      return store.loadAll(urls, timeoutMs, () => {
-        if (!disposed) onImageLoaded();
+      return store.loadAll(urls, timeoutMs, (url) => {
+        if (!disposed) onImageLoaded(url);
       });
     },
     dispose() { disposed = true; },

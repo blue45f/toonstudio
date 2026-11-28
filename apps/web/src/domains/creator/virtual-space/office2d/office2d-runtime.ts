@@ -33,6 +33,7 @@ import {
 } from "../studio-virtual-space-world-manifest";
 import { studioVirtualWorldPresentation } from "../studio-virtual-space-world-presentation";
 import { advanceOffice2dActor, createOffice2dActor, type Office2dActor } from "./office2d-actors";
+import { office2dActorContainsPoint } from "./office2d-actor-geometry";
 import { Office2dCamera, office2dBaseZoom } from "./office2d-camera";
 import { Office2dCoworkerCrowd } from "./office2d-coworkers";
 import { applyOffice2dActorEmote, office2dEmoteBurstLabel } from "./office2d-emote-motion";
@@ -80,7 +81,6 @@ export interface Office2dRuntimeOptions {
   readonly ambientCoworkers?: boolean;
 }
 
-
 const SELF_BODY = "actor:self";
 const SELF_RADIUS = 12;
 const ACCELERATION = 1900;
@@ -88,7 +88,6 @@ const DECELERATION = 2600;
 const LOCAL_STATE_INTERVAL_MS = 80;
 const METRICS_INTERVAL_MS = 1000;
 const PEER_INTERPOLATION = 11;
-const TAP_ACTOR_RADIUS = 30;
 
 function length(x: number, y: number): number {
   return Math.hypot(x, y);
@@ -117,7 +116,8 @@ export class Office2dRuntime {
   private readonly walkSpeed: number;
   private readonly sprintMultiplier: number;
   private path: StudioVirtualSpacePoint[] = [];
-  private destination: StudioVirtualSpacePoint | null = null;
+  private stopRevision: number;
+  private get destination(): StudioVirtualSpacePoint | null { return this.path.at(-1) ?? null; }
   private pending: { readonly kind: "interaction" | "npc"; readonly id: string } | null = null;
   private lastInteractionId: string | null | undefined = undefined;
   private lastNpcKey: string | null = null;
@@ -136,6 +136,7 @@ export class Office2dRuntime {
 
   constructor(private readonly options: Office2dRuntimeOptions) {
     const { manifest } = options;
+    this.stopRevision = options.bridge.getStopRevision();
     this.scene = office2dSceneFor(manifest);
     this.interactions = studioWorldInteractions(manifest);
     this.portals = studioWorldPortals(manifest);
@@ -212,6 +213,7 @@ export class Office2dRuntime {
   }
 
   keyDown(code: string): void {
+    this.syncMovementStop();
     this.keys.add(code);
     if (STUDIO_INTERACT_KEY_CODES.has(code)) this.options.bridge.requestInteract();
     if (code === "Space" && !this.kickNearbyProp()) {
@@ -239,20 +241,16 @@ export class Office2dRuntime {
 
   /** 화면 탭/클릭(CSS px). 동료·NPC·작업대를 고르거나 그 지점으로 걸어간다. */
   tap(screenX: number, screenY: number): void {
+    this.syncMovementStop();
     const world = this.camera.screenToWorld({ x: screenX, y: screenY });
-    const hitActor = (actor: Office2dActor) => {
-      const footY = actor.seat ? actor.seat.attach.y + 16 : actor.y;
-      const footX = actor.seat ? actor.seat.attach.x : actor.x;
-      return Math.abs(world.x - footX) < TAP_ACTOR_RADIUS * 0.75 && world.y < footY + 8 && world.y > footY - 78;
-    };
     for (const [sessionId, actor] of this.peers) {
-      if (actor.leavingAt === null && hitActor(actor)) {
+      if (actor.leavingAt === null && office2dActorContainsPoint(actor, world)) {
         this.options.getCallbacks().onPeerSelect(sessionId);
         return;
       }
     }
     for (const { state, actor } of this.npcs) {
-      if (!hitActor(actor)) continue;
+      if (!office2dActorContainsPoint(actor, world)) continue;
       this.approach({ x: state.x, y: state.y + 30 }, { kind: "npc", id: state.definition.id });
       return;
     }
@@ -292,11 +290,10 @@ export class Office2dRuntime {
     const free = this.physics.nearestFreePoint(target.x, target.y, SELF_RADIUS, 160);
     if (!free) return;
     if (this.options.bridge.getFollowingPeer()) this.options.getCallbacks().onCancelFollow();
-    const route = findStudioWorldPath(this.options.manifest, this.self, free);
-    if (route.length === 0 && !this.physics.canOccupyCircle((this.self.x + free.x) / 2, (this.self.y + free.y) / 2, SELF_RADIUS)) return;
-    this.path = (route.length ? route : [free]).filter((point) => length(point.x - this.self.x, point.y - this.self.y) > 6).map((point) => ({ x: point.x, y: point.y }));
-    this.destination = free;
-    this.pending = pending;
+    const start = this.physics.navigationStart(this.self, SELF_RADIUS);
+    const route = start ? findStudioWorldPath(this.options.manifest, start, free, SELF_RADIUS) : [];
+    this.path = route.filter((point) => length(point.x - this.self.x, point.y - this.self.y) > 6);
+    this.pending = route.length ? pending : null;
   }
 
   private inputVector(): { readonly x: number; readonly y: number } {
@@ -313,7 +310,18 @@ export class Office2dRuntime {
     return magnitude > 1 ? { x: x / magnitude, y: y / magnitude } : { x, y };
   }
 
+  private syncMovementStop(): void {
+    const revision = this.options.bridge.getStopRevision();
+    if (revision === this.stopRevision) return;
+    this.stopRevision = revision;
+    this.path = [];
+    this.pending = null;
+    this.keys.clear();
+    this.physics.setVelocity(SELF_BODY, 0, 0);
+  }
+
   private consumeBridge(nowMs: number): void {
+    this.syncMovementStop();
     const { bridge, manifest } = this.options;
     const teleport = bridge.consumeTeleport();
     if (teleport) this.teleport(teleport);
@@ -345,7 +353,6 @@ export class Office2dRuntime {
     this.selfPose.reset();
     this.options.bridge.updatePoseState({ position: free, moving: true, seatAnchors: [], openArea: true, now: this.now() });
     this.path = [];
-    this.destination = null;
     this.pending = null;
     this.snapCamera = true;
     this.teleportVeil.trigger(this.now());
@@ -373,7 +380,6 @@ export class Office2dRuntime {
     const directional = length(input.x, input.y) > 0.05;
     if (directional && (this.path.length || this.pending)) {
       this.path = [];
-      this.destination = null;
       this.pending = null;
     }
     if (directional && bridge.getFollowingPeer()) callbacks.onCancelFollow();
@@ -395,7 +401,6 @@ export class Office2dRuntime {
         const distance = length(dx, dy);
         if (distance < 9) {
           this.path.shift();
-          if (this.path.length === 0) this.destination = null;
         } else {
           const arrive = this.path.length === 1 ? Math.min(1, distance / 40) : 1;
           const remaining = this.destination ? length(this.destination.x - this.self.x, this.destination.y - this.self.y) : distance;
@@ -654,7 +659,6 @@ export class Office2dRuntime {
         if (target && reached) {
           this.pending = null;
           this.path = [];
-          this.destination = null;
           const sceneObj = this.scene.objects.find((item) => item.interactionId === target.id);
           this.extensions.interactWithObject(target.id, sceneObj?.sprite ?? null, target.point.x, target.point.y, nowMs, this.particles, callbacks.onObjectStateChange);
           callbacks.onInteract(target);
@@ -664,7 +668,6 @@ export class Office2dRuntime {
         if (npc?.interaction && npc.distance <= 70) {
           this.pending = null;
           this.path = [];
-          this.destination = null;
           callbacks.onNpcInteract?.(npc.interaction, npc.npc);
         }
       }
@@ -696,12 +699,13 @@ export class Office2dRuntime {
     if (this.stuck.sample({ time: nowMs, directional, point: this.self })) callbacks.onStuckChange?.(this.stuck.value);
 
     const point = { x: Math.round(this.self.x), y: Math.round(this.self.y) };
+    const destination = this.destination;
     const pose = this.self.pose;
-    const key = `${point.x}:${point.y}:${this.self.facing}:${this.self.moving}:${pose}`;
+    const key = `${point.x}:${point.y}:${this.self.facing}:${this.self.moving}:${pose}:${destination?.x ?? ""}:${destination?.y ?? ""}`;
     if (key !== this.lastLocalKey && nowMs - this.lastLocalStateAt >= LOCAL_STATE_INTERVAL_MS) {
       this.lastLocalKey = key;
       this.lastLocalStateAt = nowMs;
-      callbacks.onLocalState({ point, facing: this.self.facing, moving: this.self.moving, zoneId: studioWorldRoomAt(manifest, point), pose });
+      callbacks.onLocalState({ point, destination, facing: this.self.facing, moving: this.self.moving, zoneId: studioWorldRoomAt(manifest, point), pose });
     }
   }
 
@@ -750,10 +754,11 @@ export class Office2dRuntime {
   draw(ctx: Office2dCanvas2D, pixelRatio: number): void {
     const props: Office2dPropVisual[] = this.scene.physicsProps.map((prop) => {
       const body = this.physics.getBody(`prop:${prop.id}`);
+      const transform = body ? this.physics.presentationProp(body) : { x: prop.x, y: prop.y, angle: 0, spin: 0 };
       const radius = prop.shape.type === "circle" ? prop.shape.radius : prop.shape.halfHeight;
       return {
-        id: prop.id, sprite: prop.sprite, x: body?.x ?? prop.x, y: body?.y ?? prop.y, width: prop.width, radius,
-        spin: body?.spin ?? 0, rolls: prop.rolls === true, angle: body?.angle ?? 0, angularVelocity: body?.angularVelocity ?? 0,
+        id: prop.id, sprite: prop.sprite, ...transform, width: prop.width, radius,
+        rolls: prop.rolls === true, angularVelocity: body?.angularVelocity ?? 0,
         impactSquash: body?.impactSquash ?? 0, vx: body?.vx ?? 0, vy: body?.vy ?? 0,
       };
     });
@@ -761,7 +766,7 @@ export class Office2dRuntime {
     this.renderer.render(ctx, {
       camera: this.camera, pixelRatio, time: this.elapsed, now: this.now(),
       actors: [{ ...this.self, ...this.presentedSelf }, ...this.npcs.map(({ actor }) => actor), ...this.peers.values(), ...this.coworkers.visibleActors()],
-      selfId: this.self.id, props, nearbyInteractionId: this.lastInteractionId ?? null, destination: this.destination,
+      selfId: this.self.id, props, nearbyInteractionId: this.lastInteractionId ?? null, destination: this.destination, waypoints: this.path,
       locateTarget: this.locateTarget(), daylight: this.daylight(), reducedMotion: this.options.getReducedMotion(),
       language: this.options.getLanguage(), particles: this.particles, ghost: this.options.bridge.isGhostMode(),
       atmosphere: stageProps?.atmosphere, spaceTheme: stageProps?.spaceTheme, tileEffects: stageProps?.tileEffects,

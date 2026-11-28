@@ -255,11 +255,17 @@ describe("모바일의 공통 네 행동 현재 위치", () => {
 
   it("더보기는 연결된 소유자의 메뉴를 열고 작업 화면에서는 독을 숨길 수 있다", () => {
     const onOpenMenu = vi.fn();
-    const navigation = (hidden: boolean) => <MemoryRouter><MobileHeaderNavigation menuOpen={false} menuId="dock-menu" panelRef={createRef<HTMLDivElement>()} closeMenu={() => {}} onOpenMenu={onOpenMenu} isActive={() => false} isPurposeActive={() => false} hideBottomTabs={hidden} /></MemoryRouter>;
+    const navigation = (hidden: boolean) => <MemoryRouter initialEntries={["/sitemap/all"]}>
+      <MobileHeaderNavigation menuOpen={false} menuId="dock-menu" panelRef={createRef<HTMLDivElement>()}
+        closeMenu={() => {}} onOpenMenu={onOpenMenu} isActive={() => false}
+        isPurposeActive={() => false} hideBottomTabs={hidden} />
+    </MemoryRouter>;
     const view = render(navigation(false));
     const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
     expect(within(nav).getAllByRole("link")).toHaveLength(3);
     const more = within(nav).getByRole("button", { name: "더보기" });
+    expect(nav.querySelectorAll("[aria-current]")).toHaveLength(1);
+    expect(more.getAttribute("aria-current")).toBe("true");
     expect(more.getAttribute("aria-haspopup")).toBe("dialog");
     fireEvent.click(more);
     expect(onOpenMenu).toHaveBeenCalledWith(more);
@@ -267,8 +273,8 @@ describe("모바일의 공통 네 행동 현재 위치", () => {
     expect(screen.queryByRole("navigation", { name: "nav.quickAccess" })).toBeNull();
   });
 
-  it("목적별 하위 메뉴에서도 엄지로 전체 메뉴에 돌아가고 현재 탭을 읽는다", () => {
-    render(<MemoryRouter initialEntries={["/sitemap/create"]}><MobileHeaderNavigation
+  it.each(["/sitemap", "/sitemap/all", "/sitemap/create", "/more"])("%s에서도 전체 메뉴의 정본 링크 하나를 현재 탭으로 읽는다", (pathname) => {
+    render(<MemoryRouter initialEntries={[pathname]}><MobileHeaderNavigation
       menuOpen={false} menuId="section-menu" panelRef={createRef<HTMLDivElement>()}
       closeMenu={() => {}} isActive={() => false} isPurposeActive={() => false}
       currentPurposeHref={null} /></MemoryRouter>);

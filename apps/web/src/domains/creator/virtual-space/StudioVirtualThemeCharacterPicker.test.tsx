@@ -6,7 +6,7 @@ import { STUDIO_VIRTUAL_ART_STYLES } from "./studio-virtual-space-art-style";
 import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
 import { STUDIO_VIRTUAL_SPACE_AUTO_AVATAR } from "./studio-virtual-space-model";
 import { office2dCharacterForAvatarSkin } from "./office2d/office2d-avatar-role";
-import { office2dCharacterUrl } from "./office2d/office2d-sprite-catalog";
+import { office2dPreviewUrl } from "./office2d/office2d-sprite-catalog";
 
 afterEach(cleanup);
 
@@ -18,7 +18,7 @@ describe("StudioVirtualThemeCharacterPicker", () => {
       const button = screen.getByRole("button", { name: `${skin.labelKo} 캐릭터 선택` });
       const character = office2dCharacterForAvatarSkin(index, identity);
       expect(button.querySelector("svg")?.getAttribute("data-office-character")).toBe(character);
-      expect(button.querySelector("image")?.getAttribute("href")).toBe(office2dCharacterUrl(character));
+      expect(button.querySelector("image")?.getAttribute("href")).toBe(office2dPreviewUrl(character));
       expect(button.getAttribute("aria-pressed")).toBe(String(index === 0));
     }
     const next = STUDIO_CHARACTER_SKINS[1];
@@ -27,6 +27,21 @@ describe("StudioVirtualThemeCharacterPicker", () => {
     expect(onSelect).toHaveBeenCalledExactlyOnceWith(1);
     view.rerender(<StudioVirtualThemeCharacterPicker mode="all" stageKind="office2d" identity={identity} artStyle="retro" avatarIndex={0} onSelect={onSelect} />);
     expect(view.container.querySelectorAll("[data-office-character]")).toHaveLength(STUDIO_CHARACTER_SKINS.length);
+  });
+  it("직무와 영문 이름을 찾고 결과가 없어도 다시 전체 캐릭터로 돌아간다", () => {
+    const onSelect = vi.fn();
+    render(<StudioVirtualThemeCharacterPicker mode="all" includeAuto artStyle="webtoon" avatarIndex={0} onSelect={onSelect} />);
+    const search = screen.getByRole("searchbox", { name: "캐릭터 이름 또는 직무 검색" });
+    fireEvent.change(search, { target: { value: "사운드 디자이너" } });
+    const nia = screen.getByRole("button", { name: "니아 · 사운드 디자이너 캐릭터 선택" });
+    expect(nia.querySelector("summary")).toBeNull();
+    fireEvent.click(nia);
+    expect(onSelect).toHaveBeenCalledWith(STUDIO_CHARACTER_SKINS.findIndex((skin) => skin.key === "nia"));
+    fireEvent.change(search, { target: { value: "JUNSEO" } });
+    expect(screen.getByRole("button", { name: "준서 · 프로덕션 디자이너 캐릭터 선택" })).toBeTruthy();
+    fireEvent.change(search, { target: { value: "unknown-role" } });
+    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "전체 보기" }));
+    expect(screen.getByRole("button", { name: "자동 캐릭터 선택" })).toBeTruthy();
   });
   it("카드 이름이 좁은 칸에서 잘려도 전체 이름을 title로 확인할 수 있다", () => {
     render(<StudioVirtualThemeCharacterPicker mode="all" stageKind="office2d" identity="title-owner" artStyle="neon" avatarIndex={0} onSelect={vi.fn()} />);

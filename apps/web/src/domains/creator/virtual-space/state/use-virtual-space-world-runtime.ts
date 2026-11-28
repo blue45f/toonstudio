@@ -85,6 +85,7 @@ export interface UseVirtualSpaceWorldRuntimeInput {
   readonly setPanel: (panel: StudioVirtualWorkspacePanel | null) => void;
   readonly setMapOpen: (open: boolean) => void;
   readonly moveDestination: StudioVirtualSpacePoint | null;
+  readonly engineReportsDestination: boolean;
   readonly setMoveDestination: (point: StudioVirtualSpacePoint | null) => void;
   readonly selectedPeerId: string | null;
   readonly socialFocused: boolean;
@@ -108,7 +109,7 @@ export function useVirtualSpaceWorldRuntime(input: UseVirtualSpaceWorldRuntimeIn
     characterCustomization, avatarIndex, setAvatarIndex, persistAvatarChoice, activity, snapshot,
     setSnapshot, selfRef, writeSelfRef, controllerRef, writeControllerRef, engineBridge, writeLocalPoseRef, clearLocalReactionTimer,
     setFollowingPeer, setFollowingPeerId, cancelSlotsAndApproach, markMoved, setPanel, setMapOpen,
-    moveDestination, setMoveDestination, selectedPeerId, socialFocused, cancelFollowing,
+    moveDestination, setMoveDestination, engineReportsDestination, selectedPeerId, socialFocused, cancelFollowing,
     locationPathname, locationSearch, navigate, notify, bt,
   } = input;
 
@@ -259,6 +260,7 @@ export function useVirtualSpaceWorldRuntime(input: UseVirtualSpaceWorldRuntimeIn
   }, [activity, controllerRef, selfRef, setSnapshot, worldManifest, writeSelfRef]);
 
   const handleEngineLocalState = useCallback((next: StudioVirtualSpaceEngineLocalState) => {
+    if (next.destination !== undefined) setMoveDestination(next.destination);
     if (movingRef.current !== next.moving) {
       movingRef.current = next.moving;
       setMoving(next.moving);
@@ -266,15 +268,15 @@ export function useVirtualSpaceWorldRuntime(input: UseVirtualSpaceWorldRuntimeIn
     }
     writeLocalPoseRef(next.pose ?? "stand");
     updatePosition(next.point, next.facing, next.zoneId);
-  }, [markMoved, updatePosition, writeLocalPoseRef]);
+  }, [markMoved, setMoveDestination, updatePosition, writeLocalPoseRef]);
 
   const queuePathTo = useCallback((point: StudioVirtualSpacePoint) => {
     if (!worldReady) return;
     cancelSlotsAndApproach();
     setFollowingPeer(null);
     engineBridge.requestMove(point);
-    setMoveDestination(point);
-  }, [cancelSlotsAndApproach, engineBridge, setFollowingPeer, setMoveDestination, worldReady]);
+    if (!engineReportsDestination) setMoveDestination(point);
+  }, [cancelSlotsAndApproach, engineBridge, engineReportsDestination, setFollowingPeer, setMoveDestination, worldReady]);
 
   const quickTravelTo = useCallback((point: StudioVirtualSpacePoint) => {
     if (!worldReady) return;
@@ -290,9 +292,10 @@ export function useVirtualSpaceWorldRuntime(input: UseVirtualSpaceWorldRuntimeIn
     notify(bt("시작 위치로 돌아왔어요.", "Back at the start position."), "info");
   }, [bt, notify, quickTravelTo, worldManifest, worldReady]);
 
+  useEffect(() => { setMoveDestination(null); }, [engineReportsDestination, setMoveDestination, worldManifest]);
   useEffect(() => {
-    if (moveDestination && Math.hypot(snapshot.self.x - moveDestination.x, snapshot.self.y - moveDestination.y) < 12) setMoveDestination(null);
-  }, [moveDestination, setMoveDestination, snapshot.self]);
+    if (!engineReportsDestination && moveDestination && Math.hypot(snapshot.self.x - moveDestination.x, snapshot.self.y - moveDestination.y) < 12) setMoveDestination(null);
+  }, [engineReportsDestination, moveDestination, setMoveDestination, snapshot.self]);
 
   useEffect(() => { engineBridge.setLocateTarget(selectedPeerId); }, [engineBridge, selectedPeerId]);
 

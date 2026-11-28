@@ -7,6 +7,8 @@ export interface StudioVirtualSpaceEngineLocalState {
   readonly facing: StudioVirtualSpaceFacing;
   readonly moving: boolean;
   readonly zoneId: string;
+  /** 경로를 보고하는 엔진의 실제 종점. 도착·중지는 null이며 지도 표시용 로컬 값이다. */
+  readonly destination?: StudioVirtualSpacePoint | null;
   /** 자세의 의미는 공통 계약이 소유하고 표현 리그는 각 renderer가 소유한다. */
   readonly pose?: StudioSpacePose;
 }

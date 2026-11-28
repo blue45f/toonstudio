@@ -151,7 +151,7 @@ export interface StudioVirtualSpaceMenuSheetItem {
  *
  * StudioVirtualSpaceActionSheet와 같은 네이티브 dialog 패턴을 쓴다:
  * showModal로 배경을 inert 처리·포커스 트랩, Escape로 닫기, 닫을 때 포커스 복원.
- * 항목을 선택하면 onSelect(id) 뒤 자동으로 닫힌다.
+ * 현재 메뉴를 닫고 선택한 동작을 실행해 다음 메뉴로 바로 전환할 수 있다.
  */
 export function StudioVirtualSpaceMenuSheet({ titleKo, titleEn, descriptionKo, descriptionEn, items, onSelect, onClose, variant = "cards" }: {
   readonly titleKo: string;
@@ -206,7 +206,7 @@ export function StudioVirtualSpaceMenuSheet({ titleKo, titleEn, descriptionKo, d
               type="button" role="menuitem" data-menu-item={item.id} aria-current={item.active || undefined}
               aria-disabled={reason ? true : undefined} aria-describedby={reason ? reasonId : undefined}
               aria-keyshortcuts={item.shortcut}
-              onClick={() => { if (reason) return; onSelect(item.id); onClose(); }}>
+              onClick={() => { if (reason) return; onClose(); onSelect(item.id); }}>
               <span className="studio-vspace-action-icon" aria-hidden>{item.icon ?? <ArrowRight size={18} />}</span>
               <span>
                 <strong>{bt(item.labelKo, item.labelEn)}{item.active ? <b>{bt("열림", "Open")}</b> : null}</strong>

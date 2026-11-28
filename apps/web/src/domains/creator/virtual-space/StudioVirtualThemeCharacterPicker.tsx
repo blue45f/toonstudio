@@ -1,9 +1,9 @@
-import { Check, Sparkles } from "lucide-react";
+import { Check, Search, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
+import { StudioVirtualCharacterPortrait } from "./StudioVirtualCharacterPreview";
 import { STUDIO_VIRTUAL_ART_STYLES, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
 import { STUDIO_VIRTUAL_SPACE_AUTO_AVATAR } from "./studio-virtual-space-model";
@@ -34,6 +34,7 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, stageK
   readonly includeAuto?: boolean;
 }) {
   const bt = useBilingual("StudioVirtualThemeCharacterPicker");
+  const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CharacterFilter>("all");
   const activeSpaceTheme = spaceTheme ? studioSpaceTheme(spaceTheme) : null;
   const recommendedKeys = new Set<string>(activeSpaceTheme?.recommendedCharacterKeys ?? []);
@@ -49,7 +50,7 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, stageK
           const matchesTheme = skin.nativeArtStyle === artStyle || recommendedKeys.has(skin.key);
           return <button type="button" key={skin.key} className="studio-vspace-theme-character" aria-pressed={avatarIndex === index}
             aria-label={bt(`${skin.labelKo} 테마 캐릭터 선택`, `Select ${skin.labelEn} theme character`)} onClick={() => onSelect(index)}>
-            <span className="studio-vspace-theme-character__preview">{stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={index} identity={identity} /> : <StudioVirtualCharacterPreview skin={skin} />}</span>
+            <span className="studio-vspace-theme-character__preview">{stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={index} identity={identity} /> : <StudioVirtualCharacterPortrait skin={skin} />}</span>
             <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
             {theme ? <small>{bt(theme.labelKo, theme.labelEn)}</small> : null}
             {matchesTheme ? <em>{bt("현재 테마와 어울려요", "Matches your theme")}</em> : null}
@@ -65,18 +66,26 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, stageK
     ...STUDIO_VIRTUAL_ART_STYLES.filter((style) => THEME_CHARACTERS.some(({ skin }) => skin.nativeArtStyle === style.key))
       .map((style) => ({ id: style.key, ko: style.labelKo, en: style.labelEn })),
   ];
+  const term = query.trim().normalize("NFKC").toLowerCase();
   const shown = CHARACTERS.filter(({ skin }) => filter === "all"
     || (filter === "theme-match" ? recommendedKeys.has(skin.key)
-      : filter === "base" ? !skin.nativeArtStyle : skin.nativeArtStyle === filter));
+      : filter === "base" ? !skin.nativeArtStyle : skin.nativeArtStyle === filter))
+    .filter(({ skin }) => `${skin.labelKo} ${skin.labelEn}`.normalize("NFKC").toLowerCase().includes(term));
   return <fieldset className="studio-vspace-character-picker">
     <legend>{bt("내 캐릭터", "My character")}</legend>
+    <label className="studio-vspace-character-picker__search">
+      <Search size={16} aria-hidden />
+      <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
+        aria-label={bt("캐릭터 이름 또는 직무 검색", "Search characters by name or role")}
+        placeholder={bt("이름 또는 직무 검색", "Search name or role")} />
+    </label>
     <div className="studio-vspace-character-picker__filters" role="group" aria-label={bt("캐릭터 스타일", "Character style")}>
       {filters.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>
         {bt(item.ko, item.en)}
       </button>)}
     </div>
     <div className="studio-vspace-character-picker__grid">
-      {includeAuto && filter === "all" ? <button type="button" className="studio-vspace-character-picker__item" data-auto="true"
+      {includeAuto && filter === "all" && !term ? <button type="button" className="studio-vspace-character-picker__item" data-auto="true"
         aria-pressed={avatarIndex === STUDIO_VIRTUAL_SPACE_AUTO_AVATAR} aria-label={bt("자동 캐릭터 선택", "Select automatic character")}
         onClick={() => onSelect(STUDIO_VIRTUAL_SPACE_AUTO_AVATAR)}>
         <span className="studio-vspace-character-picker__preview"><Sparkles size={22} aria-hidden /></span>
@@ -89,12 +98,16 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, stageK
         return <button key={skin.key} type="button" className="studio-vspace-character-picker__item"
           data-theme-recommended={recommended || undefined} aria-pressed={selected}
           aria-label={bt(`${skin.labelKo} 캐릭터 선택`, `Select ${skin.labelEn} character`)} title={bt(skin.labelKo, skin.labelEn)} onClick={() => onSelect(index)}>
-          <span className="studio-vspace-character-picker__preview">{stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={index} identity={identity} /> : <StudioVirtualCharacterPreview skin={presented} />}</span>
+          <span className="studio-vspace-character-picker__preview">{stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={index} identity={identity} /> : <StudioVirtualCharacterPortrait skin={presented} />}</span>
           <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
           {recommended ? <small className="studio-vspace-character-picker__badge">{bt("테마 추천", "Theme pick")}</small> : null}
           {selected ? <b className="studio-vspace-character-picker__check" aria-hidden><Check size={12} /></b> : null}
         </button>;
       })}
     </div>
+    {!shown.length ? <p role="status" className="studio-vspace-character-picker__empty">
+      {bt("조건에 맞는 캐릭터가 없어요.", "No characters match.")}
+      <button type="button" onClick={() => { setFilter("all"); setQuery(""); }}>{bt("전체 보기", "Show all")}</button>
+    </p> : null}
   </fieldset>;
 }

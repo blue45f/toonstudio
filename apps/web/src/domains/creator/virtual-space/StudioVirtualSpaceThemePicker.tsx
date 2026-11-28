@@ -1,6 +1,6 @@
 import { studioSpaceThemeArtworkUrl } from "./studio-virtual-space-theme-artwork";
 import { Palette } from "lucide-react";
-import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
+import { StudioVirtualCharacterPortrait } from "./StudioVirtualCharacterPreview";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
 
 import "./studio-virtual-space-theme-picker.css";
@@ -84,7 +84,7 @@ export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtual
                 />
                 <span className="studio-theme-picker__accent" style={{ background: swatch.accent }} />
                 {representative ? <span className="studio-theme-picker__nano-cast" data-atelier-cast-preview={theme.key}>
-                  <StudioVirtualCharacterPreview skin={studioCharacterSkinForArtStyle(representative, theme.recommendedArtStyle)} />
+                  <StudioVirtualCharacterPortrait skin={studioCharacterSkinForArtStyle(representative, theme.recommendedArtStyle)} />
                 </span> : null}
               </span>
               <span className="studio-theme-picker__copy">

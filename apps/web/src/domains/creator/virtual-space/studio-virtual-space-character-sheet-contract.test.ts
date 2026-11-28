@@ -10,6 +10,9 @@ import {
   studioCharacterWalkClip,
   type StudioCharacterAction,
 } from "./studio-virtual-space-character-skins";
+import { isStudioCrewKey, STUDIO_CREW_KEYS } from "./studio-virtual-space-crew-characters";
+import { office2dCharacterForAvatarSkin } from "./office2d/office2d-avatar-role";
+import { OFFICE2D_CHARACTERS, Office2dSpriteStore, office2dActorAssetPlan, office2dCharacterUrl, office2dPreviewUrl, office2dWorkSheetUrl } from "./office2d/office2d-sprite-catalog";
 import { STUDIO_NPC_CAST } from "./studio-virtual-space-npc-cast";
 import type { StudioVirtualSpaceFacing } from "./studio-virtual-space-model";
 
@@ -47,7 +50,7 @@ function sizeOf(url: string): { readonly width: number; readonly height: number 
 
 /** v5 팩으로 다시 그려지는 원본인지. 자체 작화(네이티브·픽셀·imagegen25)는 원본 그대로 쓰므로 별도 계약을 따른다. */
 const usesV5Pack = (skin: { readonly key: string; readonly nativeArtStyle?: unknown; readonly pixelArt?: unknown }) =>
-  !skin.nativeArtStyle && !skin.pixelArt && skin.key !== "imagegen25";
+  !skin.nativeArtStyle && !skin.pixelArt && skin.key !== "imagegen25" && !isStudioCrewKey(skin.key);
 
 /** v5 팩으로 다시 그려지는 원본: 드로잉 플레이어와 NPC 캐스트 중 자체 작화가 아닌 것. */
 const V5_SOURCES = [...STUDIO_CHARACTER_SKINS, ...STUDIO_NPC_CAST].filter(usesV5Pack);
@@ -121,6 +124,57 @@ describe("imagegen25(픽셀 메이커) 행동·포즈 시트 계약", () => {
       const pose = skin.poses?.[name];
       const { width, height } = sizeOf(pose!.textureUrl);
       expect(studioCharacterPoseSheetMatches(pose!, width, height), name).toBe(true);
+    }
+  });
+});
+
+describe("제작진 원화와 미리보기", () => {
+  it.each(STUDIO_CREW_KEYS)("%s 선택이 두 엔진의 실제 보행·착석·인사 시트와 연결된다", (key) => {
+    const index = STUDIO_CHARACTER_SKINS.findIndex((skin) => skin.key === key);
+    const skin = STUDIO_CHARACTER_SKINS[index];
+    if (!skin) throw new Error("제작진 스킨 누락");
+    expect(index).toBeGreaterThan(22);
+    expect(office2dCharacterForAvatarSkin(index, "creator")).toBe(key);
+    expect(studioCharacterSkinForArtStyle(skin, "ink")).toBe(skin);
+    expect(office2dActorAssetPlan(key).critical[0]).toBe(office2dCharacterUrl(key));
+    const others = office2dActorAssetPlan("writer");
+    expect(others.critical).not.toContain(office2dCharacterUrl(key));
+    expect(others.deferred).not.toContain(office2dCharacterUrl(key));
+    for (const facing of FACINGS) {
+      const clip = studioCharacterWalkClip(skin, facing);
+      if (!clip) throw new Error("방향별 보행 시트 누락");
+      expect(clip.textureUrl).toBe(office2dCharacterUrl(key));
+      const { width, height } = sizeOf(clip.textureUrl);
+      expect(studioCharacterActionSheetMatches(clip, width, height)).toBe(true);
+    }
+    for (const name of ["sit", "wave"] as const) {
+      const pose = skin.poses?.[name];
+      if (!pose) throw new Error("작업 자세 시트 누락");
+      expect(pose.textureUrl).toBe(office2dWorkSheetUrl(key));
+      const { width, height } = sizeOf(pose.textureUrl);
+      expect(studioCharacterPoseSheetMatches(pose, width, height)).toBe(true);
+    }
+  });
+
+  it("원격 제작진은 화면에 보인 자세만 한 번 요청한다", async () => {
+    const requests: string[] = [];
+    const store = new Office2dSpriteStore(async (url) => {
+      requests.push(url);
+      return { width: 1152, height: 768 };
+    });
+    const walk = office2dCharacterUrl("nia");
+    expect(store.getForDisplay(office2dCharacterUrl("writer"))).toBeNull();
+    expect(store.getForDisplay(walk)).toBeNull();
+    expect(store.getForDisplay(walk)).toBeNull();
+    expect(requests).toEqual([walk]);
+    await store.load(walk);
+    expect(store.getForDisplay(walk)).toEqual({ width: 1152, height: 768 });
+    expect(requests).toEqual([walk]);
+  });
+
+  it("모든 미리보기는 네 방향의 정지 그림이 있는 작은 시트를 쓴다", () => {
+    for (const key of [...OFFICE2D_CHARACTERS, ...STUDIO_CREW_KEYS]) {
+      expect(sizeOf(office2dPreviewUrl(key))).toEqual({ width: 384, height: 144 });
     }
   });
 });

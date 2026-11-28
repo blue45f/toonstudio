@@ -3,12 +3,13 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { creatorRoleDefinition } from "@/shared/lib/creator-role-contract";
+import * as clipboard from "@/shared/lib/copy-text";
 import { createProductionDemoProject } from "../production-hub/production-demo";
 import { StudioVirtualSpaceOfficeStart } from "./StudioVirtualSpaceOfficeStart";
 import { studioVirtualSpaceRolePreset } from "./studio-virtual-space-role-preset";
 import type { StudioVirtualOperationsSnapshot } from "./use-studio-virtual-space-operations";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const empty: StudioVirtualOperationsSnapshot = { phase: "ready", project: null, inbox: [], calendar: [], error: null };
 function options() {
   return { snapshot: empty, workId: "work/one", peerCount: 0, onOpenWork: vi.fn(), onOpenPeople: vi.fn(), onOpenSeats: vi.fn(), onRefresh: vi.fn(), onGuide: vi.fn(), onDismiss: vi.fn() };
@@ -22,7 +23,7 @@ function projectSnapshot(): StudioVirtualOperationsSnapshot {
     aggregate: { ...aggregate, workId: "work/one", tasks: [
       { ...template, id: "done", title: "완료 원고", status: "done", dueAt: "2026-09-01T00:00:00Z" },
       { ...template, id: "undated", title: "마감 없는 자료", processKey: "asset", status: "ready", dueAt: "invalid-date" },
-      { ...template, id: "review", title: "1화 콘티 검수", processKey: "storyboard", status: "changes-requested", dueAt: "2026-09-28T00:00:00Z" },
+      { ...template, id: "review", title: "1화 콘티 검수", processKey: "storyboard", status: "changes-requested", dueAt: "2026-09-28T00:00:00Z", completionCriteria: ["3컷 대사 확인"] },
       { ...template, id: "script", title: "2화 대본", processKey: "script", status: "in-progress", dueAt: "2026-09-29T00:00:00Z" },
     ] },
   } };
@@ -50,6 +51,8 @@ describe("가상 사무실의 첫 작업", () => {
     render(<MemoryRouter><StudioVirtualSpaceOfficeStart {...props} /></MemoryRouter>);
     expect(screen.getByText("팀의 다음 작업")).toBeTruthy();
     expect(screen.getByText("1화 콘티 검수")).toBeTruthy();
+    const taskLink = screen.getByRole("link", { name: "1화 콘티 검수 작업 카드 열기" });
+    expect(taskLink.getAttribute("href")).toBe(`/production/projects/${encodeURIComponent(props.snapshot.project?.aggregate.projectId ?? "")}/production?productionView=board&openTask=review`);
     expect(screen.queryByText("완료 원고")).toBeNull();
     expect(screen.queryByText("2화 대본")).toBeNull();
     expect(screen.queryByText("마감 없는 자료")).toBeNull();
@@ -68,6 +71,24 @@ describe("가상 사무실의 첫 작업", () => {
     view.rerender(<MemoryRouter><StudioVirtualSpaceOfficeStart {...props} snapshot={{ ...props.snapshot, inbox: props.snapshot.inbox.map((item) => ({ ...item, projectId: "other-project" })) }} /></MemoryRouter>);
     expect(screen.queryByText("내 다음 작업")).toBeNull();
     expect(screen.getByText("1화 콘티 검수")).toBeTruthy();
+  });
+
+  it("인계 메모에는 실제 완료 기준과 작업 링크를 넣고 클립보드 거부 시 직접 복사할 수 있다", async () => {
+    const copy = vi.spyOn(clipboard, "copyText").mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    render(<MemoryRouter><StudioVirtualSpaceOfficeStart {...options()} snapshot={projectSnapshot()} /></MemoryRouter>);
+    const button = screen.getByRole("button", { name: "인계 메모 복사" });
+    expect(copy).not.toHaveBeenCalled();
+    fireEvent.click(button);
+    const manual = await screen.findByRole<HTMLTextAreaElement>("textbox", { name: /인계 메모를 선택/u });
+    const link = screen.getByRole<HTMLAnchorElement>("link", { name: "1화 콘티 검수 작업 카드 열기" });
+    expect(manual.value).toContain("1화 콘티 검수");
+    expect(manual.value).toContain("수정 요청");
+    expect(manual.value).toContain("• 3컷 대사 확인");
+    expect(manual.value).toContain(link.href);
+    expect(copy).toHaveBeenCalledWith(manual.value);
+    fireEvent.click(button);
+    expect((await screen.findByRole("status")).textContent).toBe("작업 링크와 인계 메모를 복사했어요.");
+    expect(screen.queryByRole("textbox")).toBeNull();
   });
 
   it.each(["loading", "unavailable"] as const)("%s 중에는 이전 작업을 제안하지 않고 작업함과 상태를 제공한다", (phase) => {
@@ -122,6 +143,7 @@ describe("가상 사무실의 첫 작업", () => {
     const disclosure = disclosures[0] as HTMLDetailsElement;
     disclosure.open = true;
     fireEvent(disclosure, new Event("toggle"));
+    await vi.dynamicImportSettled();
 
     await waitFor(() => {
       expect(screen.getByTestId("studio-hyper-automation-os-panel")).toBeTruthy();

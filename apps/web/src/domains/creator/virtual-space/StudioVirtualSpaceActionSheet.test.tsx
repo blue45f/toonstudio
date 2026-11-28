@@ -118,7 +118,7 @@ describe("StudioVirtualSpaceMenuSheet", () => {
     { id: "today", labelKo: "오늘", labelEn: "Today", descriptionKo: "오늘의 제작 동선", descriptionEn: "Today's flow" },
     { id: "space", labelKo: "장소·꾸미기", labelEn: "Places & settings", active: true },
   ];
-  it("항목을 메뉴로 나열하고 선택하면 onSelect 뒤 자동으로 닫힌다", () => {
+  it("현재 메뉴를 닫은 뒤 다음 동작을 실행해 새 창이 닫히지 않는다", () => {
     const onSelect = vi.fn();
     const onClose = vi.fn();
     render(<StudioVirtualSpaceMenuSheet titleKo="더보기" titleEn="More"
@@ -135,6 +135,7 @@ describe("StudioVirtualSpaceMenuSheet", () => {
     fireEvent.click(activeItem);
     expect(onSelect).toHaveBeenCalledExactlyOnceWith("space");
     expect(onClose).toHaveBeenCalledOnce();
+    expect(onClose.mock.invocationCallOrder[0]).toBeLessThan(onSelect.mock.invocationCallOrder[0] ?? 0);
   });
 
   it("Escape으로 닫고 닫을 때 포커스를 원래 버튼으로 돌린다", () => {

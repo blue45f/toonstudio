@@ -5,8 +5,9 @@ import { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-b
 import { STUDIO_INTERACT_KEY_CODES } from "../studio-virtual-space-interact-prompt";
 import type { StudioVirtualSpacePeer } from "../studio-virtual-space-model";
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
+import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { TOON_HQ_CAMPUS_PORTAL, TOON_HQ_PHYSICS_PROPS } from "./hq/toon-hq-blueprint";
-import { studioVirtualToonHqManifest } from "./hq/toon-hq-manifest";
+import { studioVirtualToonHqManifest, toonHqSeats } from "./hq/toon-hq-manifest";
 import { advanceOffice2dActor, createOffice2dActor, office2dActorBob, office2dActorFrame } from "./office2d-actors";
 import { Office2dParticles } from "./office2d-particles";
 import type { Office2dCanvas2D } from "./office2d-procedural-art";
@@ -93,7 +94,7 @@ function peer(sessionId: string, x: number, y: number): StudioVirtualSpacePeer {
   };
 }
 
-function setup(options: { readonly snapshot?: StudioVirtualSpaceSnapshot; readonly withImages?: boolean; readonly reducedMotion?: boolean } = {}) {
+function setup(options: { readonly snapshot?: StudioVirtualSpaceSnapshot; readonly withImages?: boolean; readonly reducedMotion?: boolean; readonly manifest?: StudioVirtualSpaceWorldManifest } = {}) {
   let clock = Date.UTC(2026, 9, 28, 3, 0, 0);
   let current = options.snapshot ?? snapshot();
   const bridge = new StudioVirtualSpaceEngineBridge();
@@ -120,7 +121,7 @@ function setup(options: { readonly snapshot?: StudioVirtualSpaceSnapshot; readon
     image: (): Office2dDrawable | null => (options.withImages ? image : null),
   };
   const runtime = new Office2dRuntime({
-    manifest: studioVirtualToonHqManifest(false),
+    manifest: options.manifest ?? studioVirtualToonHqManifest(false),
     bridge,
     host,
     selfIdentity: "me",
@@ -307,6 +308,151 @@ describe("Office2dRuntime", () => {
     run(2.5);
     const self = runtime.debugState().self;
     expect(Math.hypot(self.x - 470, self.y - 1500)).toBeLessThan(16);
+  });
+
+  it.each([
+    { kind: "바닥", point: { x: 470, y: 1500 } },
+    { kind: "작업대", point: { x: 190, y: 1330 } },
+    { kind: "NPC", point: { x: 190, y: 1265 } },
+  ])("키보드로 로비 동쪽 벽에 닿은 뒤 $kind 클릭으로 걸어 나온다", ({ kind, point }) => {
+    const { runtime, run, callbacks } = setup();
+    runtime.start();
+    runtime.keyDown("KeyD");
+    run(2);
+    runtime.keyUp("KeyD");
+    run(0.2);
+    const contact = runtime.debugState().self;
+    expect(contact.x).toBeCloseTo(600, 0);
+    const tap = runtime.camera.worldToScreen(point);
+    runtime.tap(tap.x, tap.y);
+    expect(runtime.debugState().self).toEqual(contact);
+    run(0.15);
+    expect(runtime.debugState().self.x).toBeLessThan(contact.x - 3);
+    run(5.5);
+    if (kind === "작업대") {
+      expect(callbacks.onInteract).toHaveBeenCalledWith(expect.objectContaining({ id: "hq-lobby-reception" }));
+    } else if (kind === "NPC") {
+      expect(callbacks.onNpcInteract).toHaveBeenCalled();
+    } else {
+      const arrived = runtime.debugState().self;
+      expect(Math.hypot(arrived.x - point.x, arrived.y - point.y)).toBeLessThan(16);
+    }
+  });
+
+  it("소파에 접촉한 상태에서도 지도 이동이 가구와 같은 쪽에서 시작한다", () => {
+    const { runtime, bridge, run } = setup({ snapshot: snapshot([], 470, 1460) });
+    runtime.start();
+    runtime.keyDown("KeyW");
+    run(1.2);
+    runtime.keyUp("KeyW");
+    run(0.1);
+    const contact = runtime.debugState().self;
+    expect(contact.y).toBeCloseTo(1352, 0);
+    bridge.requestMove({ x: 336, y: 1470 });
+    run(1 / 60);
+    const first = runtime.debugState().self;
+    expect(first.y).toBeGreaterThanOrEqual(contact.y);
+    expect(Math.hypot(first.x - contact.x, first.y - contact.y)).toBeLessThan(3);
+    run(2);
+    const arrived = runtime.debugState().self;
+    expect(Math.hypot(arrived.x - 336, arrived.y - 1470)).toBeLessThan(16);
+  });
+
+  it("자기 발밑·도착·업무 패널의 중지 요청에는 이동 경로와 표식이 남지 않는다", () => {
+    const { runtime, bridge, run } = setup();
+    runtime.start();
+    const render = vi.spyOn(runtime.renderer, "render").mockImplementation(() => undefined);
+    const frame = () => {
+      runtime.draw(new FakeContext(), 1);
+      return render.mock.calls.at(-1)?.[1];
+    };
+    const tap = (point: { x: number; y: number }) => {
+      const screen = runtime.camera.worldToScreen(point);
+      runtime.tap(screen.x, screen.y);
+    };
+    tap(runtime.debugState().self);
+    expect(frame()).toMatchObject({ destination: null, waypoints: [] });
+    const target = { x: 470, y: 1500 };
+    tap(target);
+    run(0.12);
+    expect(frame()?.waypoints?.at(-1)).toEqual(target);
+    bridge.clearMovement();
+    run(1 / 60);
+    expect(frame()).toMatchObject({ destination: null, waypoints: [] });
+    const stopped = runtime.debugState().self;
+    run(0.5);
+    expect(runtime.debugState().self).toEqual(stopped);
+
+    // 같은 프레임에 중지 후 새로 누른 바닥은 가장 최근 입력이다.
+    bridge.clearMovement();
+    tap(target);
+    run(2.5);
+    expect(Math.hypot(runtime.debugState().self.x - target.x, runtime.debugState().self.y - target.y)).toBeLessThan(16);
+    expect(frame()).toMatchObject({ destination: null, waypoints: [] });
+  });
+
+  it.each([0, 20])("몸이 통과할 수 없는 출구(%i px)로 직진하거나 목적지 표식을 남기지 않는다", (gap) => {
+    const hq = studioVirtualToonHqManifest(false);
+    const colliders = [...hq.colliders,
+      { x: 290, y: 1420, width: 88, height: 10 }, { x: 290, y: 1510, width: 88, height: 10 },
+      { x: 290, y: 1430, width: 8, height: 80 },
+      { x: 370, y: 1430, width: 8, height: 40 - gap / 2 },
+      { x: 370, y: 1470 + gap / 2, width: 8, height: 40 - gap / 2 },
+    ];
+    const { runtime, bridge, run } = setup({ manifest: { ...hq, colliders } });
+    runtime.start();
+    const start = runtime.debugState().self;
+    bridge.requestMove({ x: 500, y: 1470 });
+    run(0.4);
+    expect(runtime.debugState().self).toEqual(start);
+
+    runtime.keyDown("KeyD");
+    run(0.6);
+    runtime.keyUp("KeyD");
+    run(0.15);
+    const contact = runtime.debugState().self;
+    expect(contact.x).toBeGreaterThan(357);
+    bridge.requestMove({ x: 500, y: 1470 });
+    run(0.4);
+    expect(runtime.debugState().self.x).toBeCloseTo(contact.x, 3);
+    expect(runtime.debugState().self.y).toBeCloseTo(contact.y, 3);
+    const render = vi.spyOn(runtime.renderer, "render").mockImplementation(() => undefined);
+    runtime.draw(new FakeContext(), 1);
+    expect(render.mock.calls[0]?.[1]).toMatchObject({ destination: null, waypoints: [] });
+  });
+
+  it("지도에서 찾은 도구는 가구 밖의 실제 도착점을 HUD에 보고하고 도착하면 표식을 지운다", () => {
+    const manifest = studioVirtualToonHqManifest(false);
+    const desk = manifest.props.find(({ id }) => id === "hq-lobby-reception");
+    if (!desk) throw new Error("로비 리셉션 데스크가 없습니다.");
+    const { runtime, bridge, callbacks, run } = setup({ manifest });
+    runtime.start();
+    bridge.requestMove({ x: desk.x, y: desk.y });
+    run(0.1);
+    const destination = callbacks.onLocalState.mock.calls.at(-1)?.[0].destination;
+    expect(destination).toBeTruthy();
+    expect(destination).not.toEqual({ x: desk.x, y: desk.y });
+    const render = vi.spyOn(runtime.renderer, "render").mockImplementation(() => undefined);
+    runtime.draw(new FakeContext(), 1);
+    expect(render.mock.calls.at(-1)?.[1].destination).toEqual(destination);
+    run(3);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].destination).toBeNull();
+    expect(callbacks.onInteract).not.toHaveBeenCalled();
+  });
+
+  it("찾은 좌석을 향한 보행을 패널 입력으로 취소하면 지도에서도 실제 종점을 해제한다", () => {
+    const seat = toonHqSeats().find(({ furnitureId }) => furnitureId === "hq-writer-desk-1");
+    if (!seat) throw new Error("시나리오 작업석이 없습니다.");
+    const { runtime, bridge, callbacks, run } = setup();
+    runtime.start();
+    bridge.requestTeleport({ x: seat.anchor.x, y: seat.anchor.y + 96 });
+    run(0.1);
+    bridge.requestMove(seat.approach);
+    run(0.1);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].destination).toEqual(seat.approach);
+    bridge.clearMovement();
+    run(0.12);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].destination).toBeNull();
   });
 
   it("동료를 그리고, 동료를 누르면 선택 콜백을 부른다", () => {

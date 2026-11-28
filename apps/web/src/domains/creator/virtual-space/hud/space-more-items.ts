@@ -34,6 +34,7 @@ export interface SpaceMoreItemActions {
   readonly openPanel: (panel: StudioVirtualWorkspacePanel) => void;
   readonly openSeats: () => void;
   readonly openSearch: () => void;
+  readonly openWorkChoices?: () => void;
   readonly capturePhoto: () => void;
   readonly unstuck: () => void;
   readonly openHelp: () => void;
@@ -97,6 +98,10 @@ export function spaceMoreItems({ personal, desktop, panel: openPanelId = null, p
     ...zoomItems,
   ];
   return [
+    ...(actions.openWorkChoices ? [{
+      id: "work-choices", labelKo: "다른 작업 선택", labelEn: "Choose another task",
+      icon: BookOpen, group: "work" as const, onSelect: actions.openWorkChoices,
+    }] : []),
     ...projectItems,
     { id: "seats", labelKo: personal ? "내 작업 자리로 걷기" : "작업 자리", labelEn: personal ? "Walk to my desk" : "Work desk", icon: Armchair, group: "work", onSelect: actions.openSeats },
     { id: "town", labelKo: "제작 공간·미니게임", labelEn: "Production spaces & games", icon: Sparkles, group: "space", onSelect: panel("town") },

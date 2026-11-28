@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StudioBuildPlacedFixture } from "../studio-virtual-space-build-mode-vitality";
 import { studioVirtualDecorationPreset, type StudioVirtualDecorationState } from "../studio-virtual-space-customization";
 import { studioOfficeEnvironmentManifest } from "../studio-virtual-space-office-environments";
+import { studioVirtualToonHqManifest } from "./hq/toon-hq-manifest";
+import { office2dBackdropAssetUrls, OFFICE2D_ROOM_ART_SPECS } from "./office2d-backdrop-art";
 import { createOffice2dDecorAssetLoader } from "./office2d-decor-assets";
-import { office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
+import { office2dFloorAssetUrls, office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
 import { office2dObjectUrl, Office2dSpriteStore, type Office2dImageSource } from "./office2d-sprite-catalog";
 import { office2dPlacedDecorSpriteKeys } from "./office2d-stage-extensions";
 
@@ -26,10 +28,24 @@ function deferredImage() {
 }
 
 describe("Office2D 꾸미기 이미지 준비", () => {
+  it("본사에서는 벽화와 방 소품만 이어 받고 바닥 캐시는 바닥 레이어 이미지로만 갱신한다", () => {
+    const scene = office2dSceneFor(studioVirtualToonHqManifest(false));
+    const expected = Object.values(OFFICE2D_ROOM_ART_SPECS).flatMap((spec) =>
+      spec.propUrl ? [spec.backdropUrl, spec.propUrl] : [spec.backdropUrl]);
+    expect(new Set(office2dBackdropAssetUrls(scene.kind))).toEqual(new Set(expected));
+    const floor = office2dFloorAssetUrls(scene);
+    expect(floor.has(office2dObjectUrl("rug-rect"))).toBe(true);
+    expect(floor.has(office2dObjectUrl("plant-olive"))).toBe(false);
+    for (const image of expected) expect(floor.has(image)).toBe(false);
+  });
+
   it("장면 소품이 없는 숲 사무실에서도 기본 장식 7개에 필요한 원본 3개를 처음부터 불러온다", async () => {
     const manifest = studioOfficeEnvironmentManifest("forest-atelier");
     if (!manifest) throw new Error("숲 사무실 manifest가 없습니다.");
-    expect(office2dSceneSpriteKeys(office2dSceneFor(manifest))).toEqual([]);
+    const scene = office2dSceneFor(manifest);
+    expect(office2dSceneSpriteKeys(scene)).toEqual([]);
+    expect(office2dBackdropAssetUrls(scene.kind)).toEqual([]);
+    expect(office2dFloorAssetUrls(scene)).toEqual(new Set([manifest.backgroundUrl]));
     const decorations = studioVirtualDecorationPreset("creator-garden");
     expect(decorations.placements).toHaveLength(7);
     expect(office2dPlacedDecorSpriteKeys(decorations, undefined)).toEqual(["plant-olive", "plant-monstera", "floor-lamp"]);

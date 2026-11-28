@@ -2,8 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { office2dCharacterForNpc } from "../office2d/office2d-sprite-catalog";
-import { office2dGeneratedAtlas } from "../office2d/office2d-generated-atlases";
+import { office2dCharacterForNpc, office2dPreviewUrl } from "../office2d/office2d-sprite-catalog";
 import { STUDIO_NPC_CAST } from "../studio-virtual-space-npc-cast";
 import { SpaceNpcPortrait } from "./SpaceNpcPortrait";
 
@@ -18,19 +17,16 @@ function portraitArt() {
 }
 
 describe("NPC 대화 초상화는 본인 스프라이트 흉상이다", () => {
-  it.each([...STUDIO_NPC_CAST.map((npc) => npc.key), "npc-unknown"])("기본 2D %s는 월드 직군의 원본을 흉상으로 표시한다", (skinKey) => {
+  it.each([...STUDIO_NPC_CAST.map((npc) => npc.key), "npc-unknown"])("기본 2D %s는 월드 직군의 정면 축소본을 흉상으로 표시한다", (skinKey) => {
     render(<SpaceNpcPortrait skinKey={skinKey} expression="happy" alt="본인 NPC" artStyle="neon" stageKind="office2d" />);
     const character = office2dCharacterForNpc(skinKey);
-    const atlas = office2dGeneratedAtlas(character, "walk");
     const art = screen.getByRole("img", { name: "본인 NPC" });
     expect(art.getAttribute("data-office-character")).toBe(character);
-    expect(art.querySelector("image")?.getAttribute("href")).toBe(atlas?.url);
+    expect(art.querySelector("image")?.getAttribute("href")).toBe(office2dPreviewUrl(character));
     expect(art.getAttribute("data-character-crop")).toBe("bust");
-    const frame = atlas?.frames[0]?.source;
-    if (!frame) throw new Error("NPC 정면 프레임이 필요합니다.");
     const view = art.getAttribute("viewBox")?.split(" ").map(Number);
-    expect(view?.[1]).toBeCloseTo(frame.y + frame.height * .04);
-    expect(view?.[3]).toBeCloseTo(frame.height * .54);
+    expect(view?.[1]).toBeCloseTo(144 * .04);
+    expect(view?.[3]).toBeCloseTo(144 * .54);
     const clip = art.querySelector("clipPath");
     expect(art.querySelector("image")?.getAttribute("clip-path")).toBe(`url(#${clip?.id})`);
   });
