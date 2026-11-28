@@ -13,6 +13,8 @@
       .panel { position: relative; background: #0e0c0a; border: 1px solid #3a342c; border-radius: 12px; overflow: hidden; min-height: 280px; }
       .panel canvas { width: 100% !important; height: 100% !important; display: block; }
       .label { position: absolute; left: 10px; top: 8px; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 6px; z-index: 2; font-size: 12px; }
+      .note:not([open]) { right: auto; }
+      .note summary { cursor: pointer; }
       .note { position: absolute; left: 10px; bottom: 8px; right: 10px; background: rgba(0,0,0,.55); padding: 6px 8px; border-radius: 6px; z-index: 2; font-size: 11px; white-space: pre-wrap; }
     </style>
   </head>
@@ -30,19 +32,19 @@
     <div id="grid">
       <div class="panel" id="full">
         <div class="label">전신 · 자연 아이들 + 소품</div>
-        <div class="note" id="full-note">캐릭터 선택…</div>
+        <details class="note"><summary>측정값</summary><div id="full-note">캐릭터 선택…</div></details>
       </div>
       <div class="panel" id="right-item">
-        <div class="label">오른손 확대 · 머그컵 handle</div>
-        <div class="note" id="right-note">…</div>
+        <div class="label">오른손 바깥쪽 · 머그컵 손잡이</div>
+        <details class="note"><summary>측정값</summary><div id="right-note">…</div></details>
       </div>
       <div class="panel" id="left-item">
-        <div class="label">왼손 확대 · 책 flat support</div>
-        <div class="note" id="left-note">…</div>
+        <div class="label">왼손 바깥쪽 · 책 표지</div>
+        <details class="note"><summary>측정값</summary><div id="left-note">…</div></details>
       </div>
       <div class="panel" id="close">
-        <div class="label">오른손 접점 초근접 · 손바닥/손목</div>
-        <div class="note" id="close-note">…</div>
+        <div class="label">오른손 뒤·아래 · 손잡이와 옷자락</div>
+        <details class="note"><summary>측정값</summary><div id="close-note">…</div></details>
       </div>
     </div>
     <script type="module" src="./props-compare-main.ts"></script>

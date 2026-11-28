@@ -1,24 +1,29 @@
 /**
  * Dev-only prop attachment comparison page. Open /tools/browser-harnesses/props-compare.html via Vite.
- * Applies the same production path as StudioVrmPoser (pose → metrics → auto-grip → palm correction
- * → product contact pass → follower math) and renders 4 views: full, right hand + mug(handle),
- * left hand + book(flat), and a grip contact closeup.
+ * 원고 포저의 몸통 보정, 손가락·손바닥 자세, 의상 접촉 회피, 소품 추종과 손끝 접점을 차례로 적용한다.
+ * 정면, 양손 바깥쪽, 오른손 뒤·아래를 같은 자세에서 비교한다.
  */
 import { VRMLoaderPlugin, VRMUtils, type VRM } from "@pixiv/three-vrm";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+import { handReviewDirection } from "./vrm-hand-review-camera";
+import { measureReviewPropPixels, type ReviewPropPixelCount } from "./vrm-prop-review-visibility";
+
 import { pickNaturalIdlePose } from "@/domains/creator/studio-pose-presets";
 import { resolveStudioVrmFingerAuthority } from "@/domains/creator/vrm/studio-vrm-auto-grip-authority";
+import { resolveStudioVrmHeldPropContacts } from "@/domains/creator/vrm/studio-vrm-held-prop-contacts";
+import { createIdleGripBodyClearance, idleGripClearanceItems } from "@/domains/creator/vrm/studio-vrm-idle-grip-body-clearance";
+import { extractStudioVrmFingerRotations } from "@/domains/creator/vrm/studio-vrm-poser-helpers";
 import {
   applyFingerRotations,
   applyPoseToVrm,
   correctVrmHangingHandPalmTwist,
   estimateVrmPalmNormal,
   stripFingerBones,
-  type FingerRotationMap,
   type PoseBoneMap,
 } from "@/domains/creator/vrm/studio-vrm-poser-utils";
+import { retargetStudioVrmPresetTorso } from "@/domains/creator/vrm/studio-vrm-preset-torso";
 import { acquireStudioVrmPropAsset } from "@/domains/creator/vrm/studio-vrm-prop-asset-runtime";
 import {
   createAutoGripFingerOverrides,
@@ -29,9 +34,9 @@ import {
 } from "@/domains/creator/vrm/studio-vrm-prop-rig";
 import {
   buildPropObject,
+  createPropInstance,
   propDefById,
   type PropInstance,
-  type PropRigV2,
 } from "@/domains/creator/vrm/studio-vrm-props";
 import { createStudioVrmGripContactPasses } from "@/domains/creator/vrm/StudioVrmGripContactRefine";
 
@@ -52,6 +57,7 @@ type VisualHandMetric = {
 type PropsCompareWindow = Window & {
   __propsCompareReady?: boolean;
   __propsCompareName?: string;
+  __measurePropsCompareVisibility?: () => Record<"rightMug" | "leftBook" | "closeMug", ReviewPropPixelCount>;
   __propsCompareMetrics?: {
     readonly characterId: string;
     readonly characterName: string;
@@ -115,64 +121,14 @@ async function loadVrm(url: string): Promise<VRM> {
   return vrm;
 }
 
-function extractFingers(pose: PoseBoneMap): FingerRotationMap {
-  const fingers: FingerRotationMap = {};
-  for (const [boneName, bone] of Object.entries(pose)) {
-    const rotation = bone?.rotation;
-    if (!boneName.includes("Thumb") && !boneName.includes("Index") && !boneName.includes("Middle")
-      && !boneName.includes("Ring") && !boneName.includes("Little")) continue;
-    if (!rotation) continue;
-    fingers[boneName as keyof FingerRotationMap] = [rotation[0], rotation[1], rotation[2]];
-  }
-  return fingers;
-}
-
-function rigV2(autoFingerPose = true): PropRigV2 {
-  return {
-    version: 2,
-    mode: "auto",
-    anchorId: "",
-    autoScale: true,
-    autoFingerPose,
-    gripFit: 1,
-    deltaPosition: [0, 0, 0],
-    deltaRotationDeg: [0, 0, 0],
-    deltaScale: 1,
-  };
-}
-
-function instance(
-  uid: string,
-  propId: string,
-  bone: "leftHand" | "rightHand",
-): PropInstance {
-  const def = propDefById(propId)!;
-  const mirrored = def.defaultBone !== bone;
-  const mirrorPosition: [number, number, number] = mirrored
-    ? [-def.defaultPosition[0], def.defaultPosition[1], def.defaultPosition[2]]
-    : [...def.defaultPosition];
-  const anchor = def.anchors.find((candidate) => candidate.role === "primary")
-    ?? def.anchors.find((candidate) => candidate.role === "surface")
-    ?? def.anchors[0];
-  return {
-    uid,
-    propId,
-    bone,
-    position: mirrorPosition,
-    rotationDeg: [...def.defaultRotationDeg],
-    scale: def.defaultScale ?? 1,
-    color: def.defaultColor ?? null,
-    rig: { ...rigV2(), anchorId: anchor.id },
-  };
-}
-
 /** The projection's rigid follower math, applied once (pose is static here). */
 async function attachProp(
   scene: THREE.Scene,
   vrm: VRM,
   item: PropInstance,
   metrics: VrmPropRigMetrics,
-): Promise<THREE.Group | null> {
+  correctIdleGrip: boolean,
+): Promise<{ group: THREE.Group; release: () => void } | null> {
   const def = propDefById(item.propId);
   const boneNode = vrm.humanoid?.getNormalizedBoneNode(item.bone);
   if (!def || !boneNode) return null;
@@ -180,9 +136,21 @@ async function attachProp(
   if (!resolved.usesSmartRig) return null;
 
   let object: THREE.Object3D;
+  let release = () => {};
   if (def.geometrySource.kind === "gltf") {
     const lease = await acquireStudioVrmPropAsset(item.propId, def.geometrySource);
     object = lease.object;
+    release = lease.release;
+    if (correctIdleGrip) {
+      try {
+        createIdleGripBodyClearance(vrm, item, metrics, object, [])?.run();
+        vrm.humanoid.update();
+        vrm.scene.updateMatrixWorld(true);
+      } catch (error) {
+        release();
+        throw error;
+      }
+    }
   } else {
     object = buildPropObject(
       THREE as unknown as Parameters<typeof buildPropObject>[0],
@@ -220,7 +188,7 @@ async function attachProp(
   if (secondary && secondary.influence > 0) {
     setStatus(`${item.propId}: secondary ${secondary.bone} influence ${secondary.influence}`);
   }
-  return group;
+  return { group, release };
 }
 
 type ViewKind = "full" | "right-item" | "left-item" | "close";
@@ -250,7 +218,7 @@ class Panel {
     this.camera.updateProjectionMatrix();
   }
 
-  frame(vrm: VRM) {
+  frame(vrm: VRM, groups: ReadonlyMap<string, THREE.Group>) {
     const humanoid = vrm.humanoid;
     if (!humanoid) return;
     const handOf = (side: HandSide) =>
@@ -268,14 +236,20 @@ class Panel {
     const focus = this.kind === "right-item" || this.kind === "close" ? right : left;
     if (!focus) return;
     const side: HandSide = this.kind === "right-item" || this.kind === "close" ? "right" : "left";
-    const outside = side === "left" ? 1 : -1;
-    const distance = this.kind === "close" ? 0.34 : 0.46;
-    this.camera.position.set(
-      focus.x + outside * distance * 0.8,
-      focus.y + 0.13,
-      focus.z + distance,
-    );
-    this.camera.lookAt(focus.x - outside * 0.015, focus.y - 0.025, focus.z);
+    const bounds = new THREE.Box3().setFromPoints([focus]);
+    for (const digit of ["Thumb", "Index", "Middle", "Ring", "Little"] as const) {
+      const tip = humanoid.getNormalizedBoneNode(`${side}${digit}Distal`);
+      if (tip) bounds.expandByPoint(tip.getWorldPosition(new THREE.Vector3()));
+    }
+    const prop = groups.get(side === "right" ? "mug" : "book");
+    if (prop) bounds.expandByObject(prop, true);
+    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+    const close = this.kind === "close";
+    const direction = handReviewDirection(vrm, side, close ? 125 : 78, close ? -30 : -18);
+    const halfFov = Math.atan(Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * Math.min(1, this.camera.aspect));
+    const distance = Math.max(0.025, sphere.radius) * (close ? 1.15 : 1.5) / Math.sin(halfFov);
+    this.camera.position.copy(sphere.center).addScaledVector(direction, distance);
+    this.camera.lookAt(sphere.center);
   }
 
   render(scene: THREE.Scene) {
@@ -293,54 +267,53 @@ const panels = {
 let currentScene: THREE.Scene | null = null;
 let currentVrm: VRM | null = null;
 let requestSequence = 0;
+let currentGroups = new Map<string, THREE.Group>();
+let currentReleases: (() => void)[] = [];
 
 function renderAll() {
   if (!currentScene || !currentVrm) return;
   currentVrm.scene.updateMatrixWorld(true);
   for (const panel of Object.values(panels)) {
-    panel.frame(currentVrm);
+    panel.frame(currentVrm, currentGroups);
     panel.render(currentScene);
   }
 }
 
-function animate() {
-  requestAnimationFrame(animate);
-  if (!currentScene || !currentVrm) return;
+// 자세와 소품이 고정된 검수 화면은 선택·크기 변경 시 실제 정점을 한 번만 측정한다.
+window.addEventListener("resize", () => {
+  for (const panel of Object.values(panels)) panel.resize();
   renderAll();
-}
-animate();
+});
 
 async function selectCharacter(id: string, url: string, name: string) {
   const request = ++requestSequence;
   const auditWindow = window as PropsCompareWindow;
   auditWindow.__propsCompareReady = false;
+  auditWindow.__measurePropsCompareVisibility = undefined;
   setStatus(`${name} 로딩…`);
+  const releases: (() => void)[] = [];
+  let pendingVrm: VRM | null = null;
   try {
     const vrm = await loadVrm(url);
+    pendingVrm = vrm;
     if (request !== requestSequence) return;
     const pose = pickNaturalIdlePose(id);
     const bones = pose.bones as PoseBoneMap;
 
     // Production order: stripped body pose → metrics → auto-grip → finger authority → palm twist.
-    applyPoseToVrm(vrm, stripFingerBones(bones), pose.yOffset ?? 0, undefined, {
+    applyPoseToVrm(vrm, retargetStudioVrmPresetTorso(vrm, stripFingerBones(bones)), pose.yOffset ?? 0, undefined, {
       skipPalmCorrect: true,
     });
     const metrics = measureVrmPropRigMetrics(vrm);
 
-    const items = [
-      instance(`${id}-mug`, "mug", "rightHand"),
-      instance(`${id}-book`, "book", "leftHand"),
-    ];
+    const mug = createPropInstance("mug", `${id}-mug`);
+    const book = createPropInstance("book", `${id}-book`);
+    if (!mug || !book) throw new Error("검수용 머그와 책을 카탈로그에서 찾지 못했습니다.");
+    const items = resolveStudioVrmHeldPropContacts([mug, book], metrics);
     const autoGrip = createAutoGripFingerOverrides(items, propDefById, metrics);
-    const effective = resolveStudioVrmFingerAuthority(extractFingers(bones), autoGrip);
+    const effective = resolveStudioVrmFingerAuthority(extractStudioVrmFingerRotations(bones), autoGrip);
     applyFingerRotations(vrm, effective);
     correctVrmHangingHandPalmTwist(vrm);
-    vrm.humanoid?.update();
-    vrm.scene.updateMatrixWorld(true);
-
-    // Exact product contact authority: no legacy refineVrmGripFingerWrap shortcut.
-    const contactPasses = createStudioVrmGripContactPasses(vrm, items, metrics, []);
-    contactPasses.forEach((pass) => pass.run());
     vrm.humanoid?.update();
     vrm.scene.updateMatrixWorld(true);
 
@@ -351,11 +324,18 @@ async function selectCharacter(id: string, url: string, name: string) {
     scene.add(keyLight);
     scene.add(new THREE.AmbientLight(0xffffff, 0.9));
 
-    const attachedGroups: THREE.Group[] = [];
+    const eligible = idleGripClearanceItems(items, metrics, pose.id);
+    const groups = new Map<string, THREE.Group>();
     for (const item of items) {
-      const group = await attachProp(scene, vrm, item, metrics);
-      if (group) attachedGroups.push(group);
+      const attached = await attachProp(scene, vrm, item, metrics, eligible.includes(item));
+      if (!attached) throw new Error(`${item.propId}의 장착 본 또는 자동 장착 정보를 찾지 못했습니다.`);
+      groups.set(item.propId, attached.group);
+      releases.push(attached.release);
+      if (request !== requestSequence) return;
     }
+    const contactPasses = createStudioVrmGripContactPasses(vrm, items, metrics, []);
+    contactPasses.forEach(pass => pass.run());
+    vrm.humanoid.update();
     const gripLeft = Object.keys(autoGrip).filter((key) => key.startsWith("left")).length;
     const gripRight = Object.keys(autoGrip).filter((key) => key.startsWith("right")).length;
     const resolvedInfo = items.map((item) => {
@@ -365,29 +345,48 @@ async function selectCharacter(id: string, url: string, name: string) {
     }).join("\n");
 
     vrm.scene.updateMatrixWorld(true);
+    currentReleases.forEach(release => release());
+    if (currentVrm) VRMUtils.deepDispose(currentVrm.scene);
+    currentReleases = releases.splice(0);
+    currentGroups = groups;
     currentScene = scene;
     currentVrm = vrm;
+    pendingVrm = null;
     renderAll();
 
     const left = visualHandMetric(vrm, "left");
     const right = visualHandMetric(vrm, "right");
     const note =
       `${name} · mug(오른손 handle) + book(왼손 flat)\n` +
-      `autoGrip L=${gripLeft} R=${gripRight} contactPasses=${contactPasses.length} attached=${attachedGroups.length}/2\n` +
+      `autoGrip L=${gripLeft} R=${gripRight} contactPasses=${contactPasses.length} attached=${groups.size}/2\n` +
       `L ${fmtMetric(left)}\nR ${fmtMetric(right)}\n` +
       resolvedInfo;
     for (const id2 of ["full-note", "right-note", "left-note", "close-note"] as const) {
       const el = document.getElementById(id2);
       if (el) el.textContent = note;
     }
+    function visibleIn(panel: Panel, propId: string) {
+      const group = groups.get(propId);
+      if (!group) throw new Error(`${propId}의 실물 렌더를 찾을 수 없습니다.`);
+      return measureReviewPropPixels(panel.renderer, panel.camera, scene, vrm.scene, group);
+    }
+    auditWindow.__measurePropsCompareVisibility = () => ({
+      rightMug: visibleIn(panels.rightItem, "mug"),
+      leftBook: visibleIn(panels.leftItem, "book"),
+      closeMug: visibleIn(panels.close, "mug"),
+    });
     auditWindow.__propsCompareName = name;
     auditWindow.__propsCompareMetrics = { characterId: id, characterName: name, left, right };
     auditWindow.__propsCompareReady = true;
     setStatus(`${name} 준비`);
   } catch (error) {
+    if (request !== requestSequence) return;
     console.error(error);
     (window as PropsCompareWindow).__propsCompareReady = false;
     setStatus(`실패: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    releases.forEach(release => release());
+    if (pendingVrm) VRMUtils.deepDispose(pendingVrm.scene);
   }
 }
 

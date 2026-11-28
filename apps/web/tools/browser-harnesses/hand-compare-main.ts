@@ -5,6 +5,9 @@
 import { VRMLoaderPlugin, VRMUtils, type VRM, type VRMHumanBoneName } from "@pixiv/three-vrm";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshBVH, StaticGeometryGenerator } from "three-mesh-bvh";
+
+import { handReviewDirection } from "./vrm-hand-review-camera";
 
 import { pickNaturalIdlePose } from "@/domains/creator/studio-pose-presets";
 import {
@@ -12,6 +15,7 @@ import {
   estimateVrmPalmNormal,
   type PoseBoneMap,
 } from "@/domains/creator/vrm/studio-vrm-poser-utils";
+import { retargetStudioVrmPresetTorso } from "@/domains/creator/vrm/studio-vrm-preset-torso";
 
 const statusEl = document.getElementById("status")!;
 
@@ -20,6 +24,7 @@ function setStatus(text: string) {
 }
 
 type HandSide = "left" | "right";
+type HandDirections = Readonly<Record<HandSide, THREE.Vector3>>;
 const handBoneSet = {
   left: [
     "leftHand",
@@ -78,6 +83,46 @@ function collectHandPoints(vrm: VRM, side: HandSide) {
   }).filter((value): value is THREE.Vector3 => value !== null);
 }
 
+/** 실제 자세의 옷·몸 표면이 손끝을 가리면 같은 손의 뒤쪽·아래쪽으로 카메라를 옮긴다. */
+function idleHandDirections(vrm: VRM): HandDirections {
+  const generator = new StaticGeometryGenerator(vrm.scene);
+  generator.attributes = ["position"];
+  const geometry = generator.generate();
+  try {
+    const surface = new MeshBVH(geometry);
+    function choose(side: HandSide) {
+      const first = handReviewDirection(vrm, side, 80, -24);
+      const wrist = vrm.humanoid.getNormalizedBoneNode(`${side}Hand`)?.getWorldPosition(new THREE.Vector3());
+      const tips = (["Thumb", "Index", "Middle", "Ring", "Little"] as const).flatMap(digit => {
+        const tip = vrm.humanoid.getNormalizedBoneNode(`${side}${digit}Distal`);
+        return tip ? [tip.getWorldPosition(new THREE.Vector3())] : [];
+      });
+      if (!wrist || !tips.length) return first;
+      const handLength = Math.max(0.02, ...tips.map(tip => tip.distanceTo(wrist)));
+      const distance = handLength * 4;
+      let best = first;
+      let mostVisible = -1;
+      for (const direction of [first, handReviewDirection(vrm, side, 120, -64), handReviewDirection(vrm, side, 40, -75)]) {
+        const visible = tips.filter(tip => {
+          const ray = new THREE.Ray(tip.clone().addScaledVector(direction, distance), direction.clone().negate());
+          const surfaceHit = surface.raycastFirst(ray, THREE.FrontSide, 0, distance);
+          // 손끝 본은 피부 내부에 있어 손 길이의 1/8까지는 해당 손가락 표면으로 본다.
+          return !surfaceHit || distance - surfaceHit.distance <= handLength / 8;
+        }).length;
+        if (visible > mostVisible) {
+          best = direction;
+          mostVisible = visible;
+        }
+        if (visible === tips.length) break;
+      }
+      return best;
+    }
+    return { left: choose("left"), right: choose("right") };
+  } finally {
+    geometry.dispose();
+  }
+}
+
 function frameByPoints(
   camera: THREE.PerspectiveCamera,
   points: readonly THREE.Vector3[],
@@ -112,7 +157,7 @@ async function loadVrm(url: string): Promise<VRM> {
 function applyNaturalIdle(vrm: VRM, characterId: string) {
   const pose = pickNaturalIdlePose(characterId);
   // Single path: applyPoseToVrm already runs fingers + one palm pass (same as Studio).
-  applyPoseToVrm(vrm, pose.bones as PoseBoneMap, pose.yOffset ?? 0);
+  applyPoseToVrm(vrm, retargetStudioVrmPresetTorso(vrm, pose.bones as PoseBoneMap), pose.yOffset ?? 0);
   vrm.humanoid?.update();
   vrm.scene.updateMatrixWorld(true);
   return pose;
@@ -185,16 +230,7 @@ class Panel {
     this.camera.updateProjectionMatrix();
   }
 
-  setVrm(vrm: VRM) {
-    while (this.root.children.length) this.root.remove(this.root.children[0]!);
-    const clone = vrm.scene.clone(true);
-    this.root.add(clone);
-    // Clone does not carry VRM humanoid; for camera framing use original bone positions.
-    this.frame(vrm);
-    this.render();
-  }
-
-  frame(vrm: VRM) {
+  frame(vrm: VRM, directions: HandDirections) {
     const humanoid = vrm.humanoid;
     if (!humanoid) {
       this.camera.position.set(0, 1.2, 2.4);
@@ -228,23 +264,12 @@ class Panel {
       this.camera.lookAt(mid.x, mid.y - 0.04, mid.z);
       return;
     }
-    if (this.kind === "left" && leftHand) {
-      const l = leftHand.getWorldPosition(new THREE.Vector3());
-      const points = collectHandPoints(vrm, "left");
-      const framed = frameByPoints(this.camera, points.length > 0 ? points : [l], new THREE.Vector3(1, 0.28, 1));
-      if (framed) return;
-      // Pull back + outside + elevated so the whole hand is visible (not a hip crop).
-      this.camera.position.set(l.x + 0.42, l.y + 0.22, l.z + 0.42);
-      this.camera.lookAt(l.x - 0.02, l.y - 0.02, l.z);
-      return;
-    }
-    if (this.kind === "right" && rightHand) {
-      const r = rightHand.getWorldPosition(new THREE.Vector3());
-      const points = collectHandPoints(vrm, "right");
-      const framed = frameByPoints(this.camera, points.length > 0 ? points : [r], new THREE.Vector3(-1, 0.28, 1));
-      if (framed) return;
-      this.camera.position.set(r.x - 0.42, r.y + 0.22, r.z + 0.42);
-      this.camera.lookAt(r.x + 0.02, r.y - 0.02, r.z);
+    if (this.kind === "left" || this.kind === "right") {
+      const hand = this.kind === "left" ? leftHand : rightHand;
+      if (!hand) return;
+      const points = collectHandPoints(vrm, this.kind);
+      frameByPoints(this.camera, points.length ? points : [hand.getWorldPosition(new THREE.Vector3())],
+        directions[this.kind]);
     }
   }
 
@@ -252,16 +277,6 @@ class Panel {
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** Re-frame using live VRM (preferred — clone has no humanoid). */
-  frameLive(vrm: VRM) {
-    // Clear and re-add original scene for accurate bone + mesh binding.
-    while (this.root.children.length) this.root.remove(this.root.children[0]!);
-    this.root.add(vrm.scene);
-    this.frame(vrm);
-    this.render();
-    // Detach so other panels can take the same scene graph.
-    this.root.remove(vrm.scene);
-  }
 }
 
 // Live rendering: one VRM scene, four cameras/renderers sharing via re-attach each frame.
@@ -272,8 +287,7 @@ const panels = {
   right: new Panel("right", "right"),
 };
 
-let current: { vrm: VRM; id: string; name: string; poseId: string } | null = null;
-let raf = 0;
+let current: { vrm: VRM; id: string; name: string; poseId: string; directions: HandDirections } | null = null;
 let requestSequence = 0;
 let isShotAllRunning = false;
 let shotAllEpoch = 0;
@@ -299,69 +313,55 @@ function paintNotes(note: string) {
   }
 }
 
-function tick() {
+/** 네 컷 모두 같은 정지 자세로 비교할 수 있게 선택·크기 변경 시에만 그린다. */
+function renderCurrent() {
   if (!current) return;
-  const { vrm } = current;
-  vrm.update(1 / 60);
+  const { vrm, directions } = current;
   vrm.scene.updateMatrixWorld(true);
   for (const panel of Object.values(panels)) {
     while (panel.root.children.length) panel.root.remove(panel.root.children[0]!);
     panel.root.add(vrm.scene);
-    panel.frame(vrm);
+    panel.frame(vrm, directions);
     panel.render();
     panel.root.remove(vrm.scene);
   }
-  raf = requestAnimationFrame(tick);
 }
 
 async function selectCharacter(id: string, url: string, name: string) {
   const request = ++requestSequence;
-  cancelAnimationFrame(raf);
+  (window as unknown as { __handCompareReady: boolean }).__handCompareReady = false;
   setStatus(`${name} 로딩…`);
   paintNotes(`${name} 로딩 중…`);
   getVrmButtons().forEach((btn) => {
     btn.classList.toggle("active", (btn as HTMLButtonElement).dataset.id === id);
   });
+  let pendingVrm: VRM | null = null;
   try {
-    if (current?.vrm) {
-      // dispose previous
-      current.vrm.scene.traverse((obj) => {
-        const mesh = obj as THREE.Mesh;
-        if (mesh.isMesh) {
-          mesh.geometry?.dispose?.();
-          const mat = mesh.material;
-          if (Array.isArray(mat)) mat.forEach((m) => m.dispose?.());
-          else mat?.dispose?.();
-        }
-      });
-    }
     const vrm = await loadVrm(url);
-    if (request !== requestSequence) {
-      vrm.scene.traverse((obj) => {
-        const mesh = obj as THREE.Mesh;
-        if (mesh.isMesh) {
-          mesh.geometry?.dispose?.();
-          const mat = mesh.material;
-          if (Array.isArray(mat)) mat.forEach((m) => m.dispose?.());
-          else mat?.dispose?.();
-        }
-      });
-      return;
-    }
+    pendingVrm = vrm;
+    if (request !== requestSequence) return;
     const pose = applyNaturalIdle(vrm, id);
-    current = { vrm, id, name, poseId: pose.id };
+    vrm.update(0);
+    vrm.scene.updateMatrixWorld(true);
+    const directions = idleHandDirections(vrm);
+    if (current) VRMUtils.deepDispose(current.vrm.scene);
+    current = { vrm, id, name, poseId: pose.id, directions };
+    pendingVrm = null;
     const note = metricsNote(vrm, name, pose.id);
     paintNotes(note);
     setStatus(`${name} 준비 · ${pose.id}`);
     // expose for screenshot tooling
     (window as unknown as { __handCompareReady: boolean; __handCompareName: string }).__handCompareReady = true;
     (window as unknown as { __handCompareName: string }).__handCompareName = name;
-    tick();
+    renderCurrent();
   } catch (error) {
+    if (request !== requestSequence) return;
     console.error(error);
     setStatus(`실패: ${error instanceof Error ? error.message : String(error)}`);
     paintNotes(String(error));
     (window as unknown as { __handCompareReady: boolean }).__handCompareReady = false;
+  } finally {
+    if (pendingVrm) VRMUtils.deepDispose(pendingVrm.scene);
   }
 }
 
@@ -436,6 +436,7 @@ document.getElementById("shot-all")?.addEventListener("click", () => {
 
 window.addEventListener("resize", () => {
   for (const panel of Object.values(panels)) panel.resize();
+  renderCurrent();
 });
 
 // Auto-load Lumi for immediate capture.

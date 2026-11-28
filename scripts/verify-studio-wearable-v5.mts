@@ -7,6 +7,8 @@ import { extname, join, resolve, sep } from "node:path";
 import { chromium } from "playwright";
 import { build } from "vite";
 
+import { WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
+
 const directory=resolve(".artifacts/studio-wearable-v5");
 await rm(directory,{recursive:true,force:true});await mkdir(join(directory,"screenshots"),{recursive:true});
 const entry=join(directory,"entry.ts");
@@ -19,13 +21,13 @@ const source=[
   "export * as React from 'react';",
   "export {createRoot} from 'react-dom/client';",
   "export {Canvas,useFrame,useThree} from '@react-three/fiber';",
-  ...["studio-vrm-wardrobe","studio-vrm-garment-fit","studio-vrm-props","studio-vrm-prop-rig","studio-vrm-poser-utils","studio-vrm-costume-runtime","StudioVrmWardrobePropsProjection"].map((name)=>`export * from ${JSON.stringify(join(domain,"vrm",name))};`),
+  ...["studio-vrm-wardrobe","studio-vrm-garment-fit","studio-vrm-props","studio-vrm-prop-rig","studio-vrm-poser-utils","studio-vrm-preset-torso","studio-vrm-grip-settlement","studio-vrm-costume-runtime","StudioVrmWardrobePropsProjection"].map((name)=>`export * from ${JSON.stringify(join(domain,"vrm",name))};`),
   `export { StudioVrmGripContactRefine } from ${JSON.stringify(join(domain,"vrm","StudioVrmGripContactRefine"))};`,
   `export { resolveStudioVrmFingerAuthority } from ${JSON.stringify(join(domain,"vrm","studio-vrm-auto-grip-authority"))};`,
   `export * from ${JSON.stringify(join(domain,"studio-pose-presets"))};`,
 ].join("\n");
 await writeFile(entry,source);
-await build({configFile:false,publicDir:false,resolve:{alias:{"@":process.cwd()}},define:{"process.env.NODE_ENV":JSON.stringify("production")},build:{outDir:join(directory,"runtime"),lib:{entry,formats:["es"],fileName:()=>"runtime.mjs"},minify:false,sourcemap:false}});
+await build({configFile:false,publicDir:false,resolve:{alias:[...WEB_VITE_ALIASES]},define:{"process.env.NODE_ENV":JSON.stringify("production")},build:{outDir:join(directory,"runtime"),lib:{entry,formats:["es"],fileName:()=>"runtime.mjs"},minify:false,sourcemap:false}});
 await copyFile("scripts/studio-wearable-review-page.mjs",join(directory,"page.mjs"));
 await copyFile("scripts/studio-wearable-motion-grip.mjs",join(directory,"studio-wearable-motion-grip.mjs"));
 await copyFile("scripts/studio-wearable-frame-evidence.mjs",join(directory,"runtime/frame-evidence.mjs"));
@@ -82,10 +84,10 @@ async function inspect(){return page.evaluate(async()=>{
   return {status:api.status,receipt:api.receipt,distinctColors:colors.size,...measureWearableFramePixels(data,160,160)};
 });}
 async function capture(title:string){
-  await page.waitForFunction(()=>{
+  await page.waitForFunction((expectPropReady)=>{
     const qa=(window as unknown as {studioWearableQA:{frames:number;status:string}}).studioWearableQA;
-    return qa.frames>=4&&(qa.status==="ready"||qa.status==="unavailable");
-  },{},{timeout:45_000});
+    return qa.frames>=4&&(qa.status==="ready"||(!expectPropReady&&qa.status==="unavailable"));
+  },title.includes("-prop-"),{timeout:45_000});
   const info=await inspect();
   const file=`screenshots/${title.replace(/[^a-zA-Z0-9_-]/gu,"_")}.png`;
   await page.locator("canvas").first().screenshot({path:join(directory,file)});
