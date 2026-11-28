@@ -48,9 +48,8 @@ import {
   settleVrmPhysics,
   countSpringBoneJoints,
 } from "./studio-vrm-physics";
-import {
-  createStudioVrmPoseApplyPlan,
-} from "./studio-vrm-pose-apply";
+import { createStudioVrmPoseApplyPlan } from "./studio-vrm-pose-apply";
+import { retargetStudioVrmPresetTorso } from "./studio-vrm-preset-torso";
 import {
   STUDIO_VRM_DIRECT_EDIT_BONES,
   bakeStudioVrmRuntimePose,
@@ -264,7 +263,7 @@ export function useStudioVrmPoserPoseEdit(h: StudioVrmPoserHost): void {
     const nextYOffset = pose.yOffset ?? 0;
     const nextTranslations = cloneStudioVrmPoseTranslations(EMPTY_STUDIO_VRM_POSE_TRANSLATIONS);
     const before = captureFullState();
-    const plan = createStudioVrmPoseApplyPlan({
+    const presetPlan = createStudioVrmPoseApplyPlan({
       currentBones: customBones,
       currentFingerEdits: fingerEdits,
       incomingBones: strippedBones,
@@ -283,6 +282,7 @@ export function useStudioVrmPoserPoseEdit(h: StudioVrmPoserHost): void {
           ))
         : undefined,
     });
+    const plan = { ...presetPlan, bones: retargetStudioVrmPresetTorso(vrmRef.current, presetPlan.bones, presetPlan.appliedBodyBones) };
     const after = serializeFullVrmState({
       ...before,
       poseId,

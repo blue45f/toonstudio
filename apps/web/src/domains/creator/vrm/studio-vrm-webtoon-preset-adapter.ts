@@ -2,7 +2,7 @@
  * 웹툰 포즈 프리셋(휴머노이드 관절 오일러 deg) → VRM 휴머노이드 본 어댑터.
  *
  * VRM 휴머노이드 본 이름(hips, spine, leftUpperArm …)은 프리셋의 관절명과
- * 같은 체계를 쓰므로 deg→rad 변환만으로 PoseBoneMap을 만든다.
+ * 같은 체계를 쓴다. 각도를 라디안으로 바꾸고 몸통을 대상 캐릭터의 정면축에 맞춘다.
  * 적용은 기존 `applyPoseToVrm` 경로를 그대로 재사용한다(원클릭 적용).
  */
 
@@ -10,6 +10,7 @@ import {
   applyPoseToVrm,
   type PoseBoneMap,
 } from "./studio-vrm-poser-utils";
+import { retargetStudioVrmPresetTorso } from "./studio-vrm-preset-torso";
 
 import type { CharacterFullBodyPosePreset } from "../scene-3d/studio-3d-advanced-poses-library";
 import type { VRM } from "@pixiv/three-vrm";
@@ -42,6 +43,7 @@ const WEBTOON_PRESET_VRM_BONES: ReadonlySet<string> = new Set([
 /** 프리셋 → VRM PoseBoneMap(rad). 모르는 관절명은 버린다. */
 export function convertWebtoonPresetToVrmPoseBones(
   preset: CharacterFullBodyPosePreset,
+  vrm?: VRM,
 ): PoseBoneMap {
   const bones: PoseBoneMap = {};
   for (const rotation of preset.jointRotations) {
@@ -52,7 +54,7 @@ export function convertWebtoonPresetToVrmPoseBones(
       rotation: [xDeg * DEG_TO_RAD, yDeg * DEG_TO_RAD, zDeg * DEG_TO_RAD],
     };
   }
-  return bones;
+  return retargetStudioVrmPresetTorso(vrm, bones);
 }
 
 /**
@@ -64,6 +66,6 @@ export function applyWebtoonPresetToVrm(
   preset: CharacterFullBodyPosePreset,
   yOffset: number,
 ): boolean {
-  const bones = convertWebtoonPresetToVrmPoseBones(preset);
+  const bones = convertWebtoonPresetToVrmPoseBones(preset, vrm);
   return applyPoseToVrm(vrm, bones, yOffset);
 }

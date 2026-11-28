@@ -177,7 +177,7 @@ export function StudioVrmPoserPanelBodyB({ h }: { h: StudioVrmPoserHost }) {
     const currentVrm = vrmRef.current ?? vrm;
     if (!currentVrm) return;
     setActivePoseId(`webtoon-${preset.id}`);
-    setCustomBones(convertWebtoonPresetToVrmPoseBones(preset));
+    setCustomBones(convertWebtoonPresetToVrmPoseBones(preset, currentVrm));
     applyWebtoonPresetToVrm(currentVrm, preset, customYOffset);
   }
 

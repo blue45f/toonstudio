@@ -15,6 +15,7 @@ import {
   type StudioVrmJointRotation,
 } from "./studio-vrm-joint-limits";
 import { applyPoseToVrm, type PoseBoneMap, type PosePreset } from "./studio-vrm-poser-utils";
+import { retargetStudioVrmPresetTorso } from "./studio-vrm-preset-torso";
 import { clampVrmPoseAnatomicalJoints, type VrmVec3 } from "./vrm-anatomy-garment-guard";
 import {
   VRM_CANONICAL_WORLD_FORWARD,
@@ -767,7 +768,7 @@ export function applyVrmActionSilhouettePreset(
   if (!preset) {
     return Object.freeze({ applied: false, preset: null, lookAtSolution: null });
   }
-  const applied = applyPoseToVrm(vrm, preset.bones, preset.yOffset);
+  const applied = applyPoseToVrm(vrm, retargetStudioVrmPresetTorso(vrm, preset.bones), preset.yOffset);
   if (!applied) {
     return Object.freeze({ applied: false, preset, lookAtSolution: null });
   }
