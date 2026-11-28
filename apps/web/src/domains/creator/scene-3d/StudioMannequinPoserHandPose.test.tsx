@@ -244,9 +244,9 @@ describe("StudioMannequinPoseSection · StudioMannequinPoserPanel — 손 포즈
   it("라이브러리 손 프리셋을 한 번에 취소·재실행해 양손 굽힘·벌림·손목과 접촉을 복원한다", async () => {
     const { container } = render(<StudioMannequinPoserPanel open presentation="page" onClose={vi.fn()} onInsert={vi.fn()} />);
     await waitFor(() => expect(screen.getByRole("button", { name: "3D 데생 인형 닫기" })).toHaveProperty("disabled", false));
-    const click = (name: string | RegExp) => fireEvent.click(screen.getByRole("button", { name, exact: true }));
+    const click = (name: string | RegExp) => fireEvent.click(screen.getByRole("button", { name }));
     const tabs = within(screen.getByRole("navigation", { name: "데생 인형 설정 탭" }));
-    const showTab = (name: string) => fireEvent.click(tabs.getByRole("button", { name, exact: true }));
+    const showTab = (name: string) => fireEvent.click(tabs.getByRole("button", { name }));
     const readHands = () => {
       const pose = vi.mocked(sceneHandle.setPose).mock.lastCall?.[0];
       const state = sceneMocks.setEcorcheState.mock.lastCall?.[0];
