@@ -589,7 +589,7 @@ export function StudioHybridDccPanel({
   return (
     <section
       ref={sculptScopeRef}
-      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain bg-canvas/35 px-3 pb-6 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-8 sm:pt-3"
+      className="flex h-full min-h-0 scroll-pb-24 flex-col gap-3 overflow-y-auto overscroll-contain bg-canvas/35 px-3 pb-6 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-8 sm:pt-3"
       data-studio-hybrid-dcc-panel="true"
       data-workbench-mode={workbenchMode}
       aria-label={bt("정밀 3D 모델링 작업 공간", "Precision 3D modeling workspace")}
@@ -721,7 +721,7 @@ export function StudioHybridDccPanel({
 
         <div
           className={cn(
-            "order-2 grid min-w-0 grid-cols-1 items-start gap-3 md:grid-cols-2 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:grid-cols-1",
+            "order-2 grid min-w-0 grid-cols-1 items-start gap-3 md:grid-cols-2 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[clamp(20rem,58dvh,42rem)] lg:grid-cols-1 lg:content-start lg:overflow-y-auto lg:overscroll-contain",
             introVisible ? "xl:col-start-2" : "xl:col-start-3",
           )}
         >

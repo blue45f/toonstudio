@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
+import { blendStudioVrmHairRoots } from "./studio-vrm-hair-lock-spine";
+import { createStudioVrmHairDrape } from "./studio-vrm-hair-drape";
 import { avatarForgeHairTipMix } from "./studio-vrm-avatar-forge-hair-color";
 import { smoothStudioVrmCoincidentNormals } from "./studio-vrm-custom-part-material";
 import {
@@ -30,11 +32,12 @@ export type StudioVrmAuthoredHairInstance = Readonly<{
   matrix: THREE.Matrix4;
   /** 매듭에 묶인 뿌리의 폭·두께 배율. 가닥 아래쪽은 작가가 정한 굵기를 유지한다. */
   rootGirthScale?: number;
+  drapeLength?: number;
   /** 있으면 `matrix` 대신 이 중심선을 따라 가닥을 굽혀 깐다(가닥 프리미티브 전용). */
   spine?: StudioVrmAuthoredHairSpine;
 }>;
 
-const RADIAL_SEGMENTS = 28;
+const RADIAL_SEGMENTS = 48;
 const CAP_HEIGHT_SEGMENTS = 18;
 const CLUMP_LENGTH_SEGMENTS = 24;
 const CLUMP_CROSS_SEGMENTS = 8;
@@ -64,21 +67,33 @@ function resolvedHighlight(part: AvatarForgeHairPart): THREE.Color {
   );
 }
 
+// 문자열 색 해석과 HSL 변환은 파츠당 한 번만 수행한다. 결과 색은 정점 배열에 복사 후 재사용한다.
+function hairPalette(part: AvatarForgeHairPart) {
+  return {
+    base: new THREE.Color(part.baseColor),
+    tip: new THREE.Color(part.tipColor),
+    accent: part.accentColor ? new THREE.Color(part.accentColor) : null,
+    shadow: resolvedShadow(part),
+    highlight: resolvedHighlight(part),
+    current: new THREE.Color(),
+  };
+}
+
 /**
  * 정점 색 = 기본색→끝 색 그라데이션(`avatarForgeHairTipMix`, 확장이 없으면 예전 `t × 0.58`) →
  * 하이라이트 색(accent 0~1) → 가장자리 결 그림자·가운데 능선 하이라이트·미세 모발 결.
  */
 function paletteColor(
   part: AvatarForgeHairPart,
+  palette: ReturnType<typeof hairPalette>,
   t: number,
   cross: number,
   back = false,
   accent = 0,
 ): THREE.Color {
-  const base = new THREE.Color(part.baseColor).lerp(new THREE.Color(part.tipColor), avatarForgeHairTipMix(part, t));
-  if (accent > 0 && part.accentColor) base.lerp(new THREE.Color(part.accentColor), clamp01(accent));
-  const shadow = resolvedShadow(part);
-  const highlight = resolvedHighlight(part);
+  const { shadow, highlight } = palette;
+  const base = palette.current.copy(palette.base).lerp(palette.tip, avatarForgeHairTipMix(part, t));
+  if (accent > 0 && palette.accent) base.lerp(palette.accent, clamp01(accent));
   const edge = Math.pow(Math.abs(cross), 1.35);
   const ridge = Math.pow(1 - Math.abs(cross), 2.1);
   base.lerp(shadow, clamp01(edge * 0.34 + (back ? 0.18 : 0)));
@@ -222,7 +237,8 @@ function clumpWidth(t: number, taper: number): number {
     return Math.max(0.014, (0.94 + 0.06 * Math.sin(Math.min(1, t * 2) * Math.PI * 0.5)) * bluntTip);
   }
   const rootSwell = 0.88 + 0.12 * Math.sin(Math.min(1, t * 2.6) * Math.PI * 0.5);
-  const tip = Math.pow(Math.max(0, 1 - t), 0.64 + safeTaper * 0.68);
+  // 모발 다발의 중간 폭을 남겨 옆모습에서도 여러 개의 실 같은 삼각형으로 갈라지지 않게 한다.
+  const tip = Math.pow(Math.max(0, 1 - t ** 1.85), 0.64 + safeTaper * 0.68);
   const featherFinish = 1 - 0.24 * safeTaper * smoothstep(0.65, 1, t);
   return Math.max(0.012, rootSwell * tip * featherFinish);
 }
@@ -242,7 +258,8 @@ export function createStudioVrmAuthoredHairClumpGeometry(
   const colors: number[] = [];
   const uvs: number[] = [];
   const indices: number[] = [];
-  const highlight = resolvedHighlight(part);
+  const palette = hairPalette(part);
+  const { highlight } = palette;
 
   for (const back of [false, true]) {
     for (let row = 0; row < rows; row += 1) {
@@ -257,7 +274,7 @@ export function createStudioVrmAuthoredHairClumpGeometry(
         const crown = Math.pow(Math.max(0, 1 - cross * cross), 0.72);
         const z = centerZ + (back ? -depth.back : depth.front) * crown;
         positions.push(centerX + cross * width, y, z);
-        const color = paletteColor(part, t, cross, back, clumpAccent(part, t, back));
+        const color = paletteColor(part, palette, t, cross, back, clumpAccent(part, t, back));
         if (!back) {
           // 앞머리·옆머리 가닥 상중단에 좁고 또렷한 아치형 엔젤링 대역을 얹되 어두운 모발색이 바래지 않게 제한한다.
           const ringCenter = 0.32 - cross * cross * 0.05;
@@ -334,8 +351,8 @@ function setShellColors(geometry: THREE.BufferGeometry, part: AvatarForgeHairPar
   const box = geometry.boundingBox;
   if (!position || !box) return;
   const height = Math.max(1e-5, box.max.y - box.min.y);
-  const highlight = resolvedHighlight(part);
-  const shadow = resolvedShadow(part);
+  const palette = hairPalette(part);
+  const { highlight, shadow } = palette;
   const colors = new Float32Array(position.count * 3);
   for (let index = 0; index < position.count; index += 1) {
     const px = position.getX(index);
@@ -349,9 +366,9 @@ function setShellColors(geometry: THREE.BufferGeometry, part: AvatarForgeHairPar
     // 캡 외피는 360° 전체가 겉머리이고, 뒷머리 껍질은 목을 보는 +z 쪽만 안쪽 음영이다.
     const isInnerSurface = part.role === "cap" ? ny < -0.55 : part.role === "back" ? nz > 0.25 : nz < -0.25;
     const radialCross = part.role === "cap"
-      ? clamp01(Math.abs(Math.sin(Math.atan2(px, pz) * 7)) * 0.55)
+      ? clamp01(Math.abs(Math.sin(Math.atan2(px - CAP_PARTING_X * Math.max(0, py), pz) * 6 + py * 1.2)) * 0.62)
       : cross * 0.72;
-    const color = paletteColor(part, t * 0.65, radialCross, isInnerSurface, accent);
+    const color = paletteColor(part, palette, t * 0.65, radialCross, isInnerSurface, accent);
     if (part.role === "cap") {
       // 오프센터 가르마 골과 목덜미 하단 자연 음영을 더해 캡이 단색 플라스틱 돔으로 보이지 않게 한다.
       const partMask = smoothstep(0.36, 0.78, py) * smoothstep(-0.48, 0.24, pz);
@@ -423,7 +440,15 @@ const CAP_FRONT_ARCH_POWER = 1.15;
  * 헤어라인(y≈0.14)까지 캡이 내려와 정수리~이마 상단을 매끄럽게 덮고, 관자놀이에서 귀 위·목덜미로
  * 부드럽게 이어진다. 정점 배치·감기 순서는 `THREE.SphereGeometry(…, phiStart=π/2)` 와 같다.
  */
-function createCapGeometry(): THREE.BufferGeometry {
+function capThetaAt(facing: number, pixie = false): number {
+  // 픽시는 눈썹 위의 사선 앞머리와 귀 위를 드러낸다. 같은 캡을 쓰면 짧은 가닥이 캡 안에 묻힌다.
+  const crop = pixie ? 0.36 - 0.13 * Math.abs(facing) : 0;
+  return CAP_THETA_SIDE
+    + (CAP_THETA_FRONT - CAP_THETA_SIDE) * Math.pow(Math.max(0, facing), CAP_FRONT_ARCH_POWER)
+    + (CAP_THETA_BACK - CAP_THETA_SIDE) * Math.pow(Math.max(0, -facing), 1.2) - crop;
+}
+
+function createCapGeometry(pixie: boolean): THREE.BufferGeometry {
   const columns = RADIAL_SEGMENTS;
   const rows = CAP_HEIGHT_SEGMENTS;
   const positions: number[] = [];
@@ -436,15 +461,12 @@ function createCapGeometry(): THREE.BufferGeometry {
       const phi = Math.PI / 2 + u * Math.PI * 2;
       // 정면(+z) 가중치와 후면 가중치. 옆(귀 쪽)은 둘 다 0 이다.
       const facing = Math.sin(phi);
-      const front = Math.pow(Math.max(0, facing), CAP_FRONT_ARCH_POWER);
-      const back = Math.pow(Math.max(0, -facing), 1.2);
-      const thetaMax = CAP_THETA_SIDE
-        + (CAP_THETA_FRONT - CAP_THETA_SIDE) * front
-        + (CAP_THETA_BACK - CAP_THETA_SIDE) * back;
+      const thetaMax = capThetaAt(facing, pixie);
       const theta = v * thetaMax;
       positions.push(-Math.cos(phi) * Math.sin(theta), Math.cos(theta), Math.sin(phi) * Math.sin(theta));
       // v=0(정수리 뿌리)→v=1(헤어라인), 둘레 4회 반복으로 가닥과 동일한 모발결 밀도 유지
-      uvs.push(u * 4, v);
+      // 결이 정수리 가르마에서 비스듬히 흐르도록 위도에 따라 경도를 이동한다.
+      uvs.push(u * 4 + 0.21 * Math.sin(phi) * (1 - v) ** 2 + 0.09 * Math.sin(theta), v);
     }
   }
   const stride = columns + 1;
@@ -507,7 +529,7 @@ function createShellGeometry(
   part: AvatarForgeHairPart,
   options?: StudioVrmHairScalpFitOptions,
 ): THREE.BufferGeometry {
-  const geometry = part.role === "cap" ? createCapGeometry() : new THREE.SphereGeometry(1, 28, 20);
+  const geometry = part.role === "cap" ? createCapGeometry(part.id === "cap-pixie") : new THREE.SphereGeometry(1, 28, 20);
   if (part.role === "cap") shapeCapToScalp(geometry, options);
   else if (part.role === "back") shapeBackShellToDrape(geometry, part);
   else smoothStudioVrmCoincidentNormals(geometry, { creaseAngleDeg: 180 });
@@ -608,13 +630,30 @@ export function mergeStudioVrmAuthoredHairGeometry(
   instances: readonly StudioVrmAuthoredHairInstance[],
   options?: StudioVrmHairScalpFitOptions,
 ): THREE.BufferGeometry | null {
-  const geometries = instances.map(({ part, matrix, spine, rootGirthScale }) => {
+  const geometries = instances.map(({ part, matrix, spine, rootGirthScale, drapeLength }) => {
+    if (drapeLength !== undefined) {
+      const drape = createStudioVrmHairDrape(drapeLength, part.wave ?? 0);
+      setShellColors(drape, part);
+      return drape.applyMatrix4(matrix);
+    }
     const geometry = createStudioVrmAuthoredHairGeometry(part, options, rootGirthScale);
     if (spine && part.primitive === "tapered-capsule") bendStudioVrmAuthoredHairAlongSpine(geometry, spine);
     else geometry.applyMatrix4(matrix);
     return geometry;
   });
   if (geometries.length === 0) return null;
+  const capIndex = instances.findIndex(({ part }) => part.role === "cap");
+  const cap = instances[capIndex];
+  const capGeometry = geometries[capIndex];
+  if (cap && capGeometry) {
+    const thetaAt = (facing: number) => capThetaAt(facing, cap.part.id === "cap-pixie");
+    instances.forEach(({ part, spine, drapeLength }, index) => {
+      if (!spine && drapeLength === undefined) return;
+      const geometry = geometries[index];
+      if (geometry) blendStudioVrmHairRoots(geometry, capGeometry, cap.matrix, RADIAL_SEGMENTS, CAP_HEIGHT_SEGMENTS,
+        thetaAt, cap.part.baseColor === part.baseColor && !part.accentMode);
+    });
+  }
   const merged = mergeGeometries(geometries, false);
   geometries.forEach((geometry) => geometry.dispose());
   if (!merged) return null;

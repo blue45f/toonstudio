@@ -512,6 +512,23 @@ describe("studio-mannequin-model 손가락 관절 분리", () => {
     }
   });
 
+  it("엄지 대립은 각 마디 길이를 유지하면서 엄지 끝을 손바닥 중앙으로 감는다", () => {
+    const rest = buildStudioMannequinSpec(params());
+    const closed = buildStudioMannequinSpec(params(), studioMannequinFingerPoseFromCurls({ left: { thumb: 100 } }));
+    const straight = handCapsules(rest, "leftHand").slice(-3);
+    const bent = handCapsules(closed, "leftHand").slice(-3);
+    const distance = (a: readonly number[], b: readonly number[]) => Math.hypot(a[0]-b[0], a[1]-b[1], a[2]-b[2]);
+    for (const [i, before] of straight.entries()) {
+      const after = bent[i];
+      if (before.kind !== "capsule" || after?.kind !== "capsule") throw new Error("엄지 마디가 필요합니다.");
+      expect(distance(after.from, after.to)).toBeCloseTo(distance(before.from, before.to), 9);
+    }
+    const base = bent[0], tip = bent[2];
+    if (base?.kind !== "capsule" || tip?.kind !== "capsule") throw new Error("엄지 끝이 필요합니다.");
+    expect(tip.to[0]).toBeLessThan(base.from[0]);
+    expect(tip.to[2]).toBeGreaterThan(base.from[2]);
+  });
+
   it("마디별 컬은 지정한 관절만 굽힌다(끝 마디만 굽히면 앞부분은 그대로)", () => {
     const rest = buildStudioMannequinSpec(params());
     const tipOnly = buildStudioMannequinSpec(params(), {

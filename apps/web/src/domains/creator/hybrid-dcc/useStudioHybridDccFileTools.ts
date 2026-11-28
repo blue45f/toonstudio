@@ -124,7 +124,7 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
       }
       if (!current()) return;
       downloadStudioHybridDccFile(exported.bytes, exported.mimeType, studioHybridDccDownloadName(assetId, "glb"));
-      setError(""); setNotice(bt("선택한 메시를 표준 GLB 2.0 바이너리로 저장했습니다.", "Saved the selected mesh as a standard GLB 2.0 binary."));
+      setError(""); setNotice(bt("선택한 메시를 로컬 좌표의 GLB로 저장했습니다. 장면 배치는 .toon3d 작업파일에 보관하세요.", "Saved the selected mesh as GLB in local coordinates. Use a .toon3d workfile to keep the scene layout."));
     } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("GLB 파일을 저장하지 못했습니다.", "Could not save the GLB file.")); }
   };
   const saveStl = () => {
@@ -135,7 +135,7 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
       if (!result) throw new Error(bt("내보낼 원본 메시가 없습니다.", "There is no source mesh to export."));
       if (!current()) return;
       downloadStudioHybridDccFile(result.text, "model/stl;charset=utf-8", studioHybridDccDownloadName(workspace.activeAssetId ?? targetId, "stl"));
-      setError(""); setNotice(bt("선택한 메시를 3D 프린팅·CAD 호환 STL로 저장했습니다.", "Saved the selected mesh as CAD/3D-printing STL."));
+      setError(""); setNotice(bt("선택한 메시를 로컬 좌표의 STL로 저장했습니다. 장면 배치는 .toon3d 작업파일에 보관하세요.", "Saved the selected mesh as STL in local coordinates. Use a .toon3d workfile to keep the scene layout."));
     } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("STL 파일을 저장하지 못했습니다.", "Could not save the STL file.")); }
   };
   return {

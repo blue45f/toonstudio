@@ -17,6 +17,7 @@ import {
 import {
   BLENDER_PROP_GLTF_URLS,
   createPropInstance,
+  parseVrmProps,
   propDefById,
   type PropAnchorDef,
   type VrmPropId,
@@ -46,7 +47,10 @@ const EVERYDAY_PROPS: readonly EverydayPropGate[] = [
     minNodes: 9,
     minTriangles: 2_500,
     requiredNodes: ["Mug_CeramicBody", "Mug_Rim", "Mug_HandleLoop", "Mug_HandleContact"],
-    contacts: [{ anchorId: "primary", node: "Mug_HandleContact" }],
+    contacts: [
+      { anchorId: "handle-grip", node: "Mug_HandleContact" },
+      { anchorId: "primary", node: "Mug_HandleContact" },
+    ],
   },
   {
     id: "book",
@@ -57,6 +61,7 @@ const EVERYDAY_PROPS: readonly EverydayPropGate[] = [
     minTriangles: 2_500,
     requiredNodes: ["Book_PageBlock", "Book_Spine", "Book_LeftGripEdge", "Book_RightGripEdge"],
     contacts: [
+      { anchorId: "cover-grip", node: "Book_LeftGripEdge" },
       { anchorId: "primary", node: "Book_LeftGripEdge" },
       { anchorId: "secondary", node: "Book_RightGripEdge" },
     ],
@@ -170,6 +175,7 @@ function anchorById(id: VrmPropId, anchorId: string): PropAnchorDef {
 
 describe("ToonStudio everyday prop pack v4", () => {
   it.each(EVERYDAY_PROPS)("$filename meets the strict mobile GLB gate", (gate) => {
+    expect(propDefById(gate.id)?.geometrySource).toEqual({ kind: "gltf", url: `/assets/3d/${gate.filename}` });
     const bytes = bundledBytes(gate.filename);
     expect(bytes.byteLength).toBeGreaterThanOrEqual(150 * 1024);
     expect(bytes.byteLength).toBeLessThan(2 * 1024 * 1024);
@@ -228,11 +234,14 @@ describe("ToonStudio everyday prop pack v4", () => {
     }
   });
 
-  it("keeps all recommended-row IDs and semantic profiles stable while changing only geometry authority", () => {
+  it("기존 추천 소품 프로필과 새 머그·책 장착점의 좌표 및 반경을 보존한다", () => {
     expect(propDefById("mug")).toMatchObject({
       label: "머그컵", category: "hand", defaultBone: "rightHand",
       defaultPosition: [0.02, 0.01, 0.02], defaultRotationDeg: [0, 0, 0], defaultScale: 1,
-      defaultColor: "#e8e2d6", anchors: [{ id: "primary", role: "primary", position: [0.07, 0, 0], gripRadius: 0.008 }],
+      defaultColor: "#e8e2d6", anchors: [
+        { id: "handle-grip", role: "primary", position: [0.071, 0, 0], gripRadius: 0.0065 },
+        { id: "primary", role: "primary", position: [0.07, 0, 0], gripRadius: 0.008 },
+      ],
       grip: { kind: "handle", radius: 0.008, fingerCurlDeg: 58, thumbOppositionDeg: 42 },
       fit: { reference: "hand", designReference: 0.075, minScale: 0.72, maxScale: 1.45 },
     });
@@ -241,6 +250,7 @@ describe("ToonStudio everyday prop pack v4", () => {
       defaultPosition: [0.02, 0.01, 0.04], defaultRotationDeg: [60, 0, 0], defaultScale: 1,
       defaultColor: "#7a3b3b", smartRotationDeg: [0, 0, 90], secondaryGripInfluence: 0.65,
       anchors: [
+        { id: "cover-grip", role: "primary", position: [-0.07, -0.045, 0], gripRadius: 0.015 },
         { id: "primary", role: "primary", position: [-0.07, -0.045, 0], gripRadius: 0.015 },
         { id: "secondary", role: "secondary", position: [0.07, -0.045, 0], gripRadius: 0.015 },
       ],
@@ -272,6 +282,21 @@ describe("ToonStudio everyday prop pack v4", () => {
       fit: { reference: "none", designReference: 1, minScale: 0.72, maxScale: 1.45 },
     });
   });
+
+  it.each([["mug", "handle-grip"], ["book", "cover-grip"]])(
+    "%s를 새로 장착하면 실측 그립을 쓰고 접점이 생략된 기존 V2 컷은 primary로 복구한다",
+    (id, measuredAnchor) => {
+      const item = createPropInstance(id, `test-${id}`);
+      if (!item?.rig) throw new Error(`${id} 장착 리그 누락`);
+      expect(item.rig.anchorId).toBe(measuredAnchor);
+      const { anchorId, ...olderRig } = item.rig;
+      const load = (rig: typeof olderRig & { anchorId?: string }) =>
+        parseVrmProps({ version: 2, items: [{ ...item, rig }] }).items[0]?.rig?.anchorId;
+      expect(load({ ...olderRig, anchorId })).toBe(measuredAnchor);
+      expect(load({ ...olderRig, anchorId: "primary" })).toBe("primary");
+      expect(load(olderRig)).toBe("primary");
+    },
+  );
 
   it("reuses the audited phone GLB while preserving stable and legacy color semantics", () => {
     expect(BLENDER_PROP_GLTF_URLS.smartphone).toBe("/assets/3d/modern_smartphone_prop.glb");

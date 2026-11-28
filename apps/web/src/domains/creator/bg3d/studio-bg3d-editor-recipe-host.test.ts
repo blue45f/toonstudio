@@ -27,6 +27,8 @@ import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 // 번들 환경 판정은 카탈로그(정적 자산 매니페스트)에 기대므로, 호스트 시험은 같은 규칙의 가짜로 대체한다.
 vi.mock("./studio-bg3d-environment-catalog", () => ({
   isStudioBg3dEnvironmentAssetId: (id: string) => id.startsWith("ts-bg3d-"),
+  getStudioBg3dEnvironmentAsset: (id: string) => id === "ts-bg3d-office"
+    ? { name: "현대 오피스", camera: { position: [1, 1.5, 2], target: [0, 1, 0], fovDegrees: 64 } } : null,
 }));
 
 const MATERIAL = new THREE.MeshBasicMaterial();
@@ -101,7 +103,7 @@ function createHost(options: HostOptions = {}) {
     modelRootCacheRef: { current: new Map([[studioBg3dModelCacheKey(modelId, materialBackend), cached]]) },
     primitiveObjectsRef: { current: options.sceneObjects ?? new Map<string, THREE.Object3D>() },
     attachmentByStorageModelIdRef: { current: new Map([[modelId, ATTACHMENT]]) },
-    viewportApiRef: { current: { readView: () => ({ target: [2, 0.6, 3] as const }) } },
+    viewportApiRef: { current: { readView: () => ({ ...document.camera, target: [2, 0.6, 3] as const }), applyView: vi.fn(() => true) } },
     isModalAssetSessionCurrent: (candidate) => studioBg3dModalOperationCoordinator.isCurrent(candidate),
     canAdmitSceneNodes: vi.fn(() => true),
     cancelCustomModelPlacement: vi.fn(),
@@ -183,6 +185,51 @@ describe("attachStudioBg3dEditorRecipeHost — 성공 경로", () => {
     expect(host.ensureModelRootCached).toHaveBeenCalledOnce();
   });
 
+  it("빈 장면에 고른 공간은 원래 실내 구도와 한 번에 배치하고 다음 공간은 현재 시점을 유지한다", async () => {
+    const { host, live, refs, calls, modelId } = createHost({ modelId: "ts-bg3d-office" });
+    const viewport = host.viewportApiRef.current;
+    if (!viewport) throw new Error("카메라가 필요합니다.");
+    const before = viewport.readView();
+    const originalLighting = live.document.lighting;
+    const lighting = vi.spyOn(await import("./studio-bg3d-hdri-lighting-presets"), "getStudioBg3dHdriLightingPreset");
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", { frameEmptyScene: true, indoorLighting: true })).resolves.toBe(true);
+    const firstView = live.document.camera;
+    expect(live.customModels[0].name).toBe("현대 오피스 1");
+    expect(live.document.lighting.environment?.assetId).toBe("combination-room");
+    expect(firstView).toMatchObject({ fovDegrees: 64, position: [2.5, 1.5, 4.5], target: [1.5, 1, 2.5] });
+    expect(viewport.applyView).toHaveBeenCalledExactlyOnceWith(firstView);
+    expect(calls.commit.mock.lastCall?.[4]).toMatchObject({ preserveBeforeCamera: true });
+    expect(stepStudioBg3dCommandHistory(refs, "undo")?.state).toMatchObject({ customModels: [], document: { camera: before, lighting: originalLighting } });
+    expect(stepStudioBg3dCommandHistory(refs, "redo")?.state).toMatchObject({ customModels: live.customModels, document: { camera: firstView, lighting: live.document.lighting } });
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", { frameEmptyScene: true, indoorLighting: true })).resolves.toBe(true);
+    expect(lighting).toHaveBeenCalledExactlyOnceWith("studio");
+    expect(viewport.applyView).toHaveBeenCalledOnce();
+    expect(live.document.camera).toEqual(firstView);
+  });
+
+  it("빈 실내의 사용자 조명과 노출은 첫 공간 배치 후에도 보존한다", async () => {
+    const { host, live, modelId } = createHost({ modelId: "ts-bg3d-office" });
+    const readPreset = vi.spyOn(await import("./studio-bg3d-hdri-lighting-presets"), "getStudioBg3dHdriLightingPreset");
+    const lighting = { ...live.document.lighting, ambientIntensity: 1.37 };
+    live.document = { ...live.document, lighting, render: { ...live.document.render, exposure: 1.22 } };
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", { frameEmptyScene: true, indoorLighting: true })).resolves.toBe(true);
+    expect(readPreset).not.toHaveBeenCalled();
+    expect(live.document.lighting).toEqual(lighting);
+    expect(live.document.render.exposure).toBe(1.22);
+  });
+
+  it("실내 조명 로드가 실패하면 빈 장면과 이력을 보존하고 다시 배치할 수 있다", async () => {
+    const { host, live, calls, modelId } = createHost({ modelId: "ts-bg3d-office" });
+    vi.spyOn(await import("./studio-bg3d-hdri-lighting-presets"), "getStudioBg3dHdriLightingPreset")
+      .mockImplementationOnce(() => { throw new Error("조명 모듈 초기화 실패"); });
+    const options = { frameEmptyScene: true, indoorLighting: true };
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", options)).resolves.toBe(false);
+    expect(calls.commit).not.toHaveBeenCalled();
+    expect(live.customModels).toHaveLength(0);
+    expect(calls.status).toHaveBeenLastCalledWith({ tone: "error", message: expect.stringContaining("실내 조명 프리셋") });
+    await expect(host.placeCustomModelWithRecipe(modelId, "floor", options)).resolves.toBe(true);
+  });
+
   it("기존 편집 이력에 명령 하나로 들어가 실행 취소 한 번으로 되돌아가고 다시 실행할 수 있다", async () => {
     const { host, live, refs, calls, modelId } = createHost();
     await host.placeCustomModelWithRecipe(modelId, "floor");
@@ -241,7 +288,7 @@ describe("attachStudioBg3dEditorRecipeHost — 성공 경로", () => {
 });
 
 describe("attachStudioBg3dEditorRecipeHost — 방 빌더의 단면 방(숨긴 벽)", () => {
-  const INSIDE_NEAR_SOUTH = { current: { readView: () => ({ target: [0, 0.6, 2.0] as const }) } };
+  const INSIDE_NEAR_SOUTH = { current: { readView: () => ({ ...createDefaultStudioBg3dSceneDocument().camera, target: [0, 0.6, 2.0] as const }), applyView: vi.fn(() => true) } };
 
   it("숨긴 앞벽 대신 보이는 가장 가까운 옆벽에 붙는다", async () => {
     const room = buildCutawayRoomScene();

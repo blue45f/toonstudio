@@ -7,6 +7,10 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
 import { POSER_FINGER_BONES, pickNaturalIdlePose } from "../studio-pose-presets";
+import { applyCharacterPoseRuntimeV3, captureCharacterPoseRuntimeV3 } from "../character-platform/pose-v3/character-pose-runtime-adapter";
+import { planCharacterPoseAuthoringInput } from "../character-platform/runtime/character-pose-authoring-input";
+import { createStudioVrmVirtualFingertipProbe, sampleStudioVrmVirtualFingertip } from "./studio-vrm-virtual-fingertip";
+import { fitStudioVrmHandPresetEdits } from "./studio-vrm-hand-preset-contact";
 import { createStudioVrmHandPose } from "./studio-vrm-hand-poses";
 
 import {
@@ -73,6 +77,56 @@ function tipPalmDot(vrm: import("@pixiv/three-vrm").VRM, side: "left" | "right")
 }
 
 describe("VRM finger curl polarity", () => {
+  it("VRM 작업실에서 고른 OK·핀치·하트의 손끝 접촉을 원본·다른 손·잠긴 마디를 보존하며 저장한다", async () => {
+    for (const character of [CORE[0], CORE[1]]) {
+      const source = await load(character.file);
+      const previous = captureCharacterPoseRuntimeV3({ source, poseId: "before", generationId: 0, includeFingers: true });
+      for (const side of ["left", "right"] as const) {
+        applyCharacterPoseRuntimeV3(source, previous);
+        const node = (name: Parameters<typeof source.humanoid.getNormalizedBoneNode>[0]) => {
+          const result = source.humanoid.getNormalizedBoneNode(name);
+          if (!result) throw new Error(`손가락 뼈가 없습니다. ${name}`);
+          return result;
+        };
+        const size = node(`${side}Hand`).getWorldPosition(new THREE.Vector3())
+          .distanceTo(node(`${side}MiddleProximal`).getWorldPosition(new THREE.Vector3()));
+        const index = createStudioVrmVirtualFingertipProbe({ distal: node(`${side}IndexDistal`), previousJoint: node(`${side}IndexIntermediate`), handSize: size });
+        const thumb = createStudioVrmVirtualFingertipProbe({ distal: node(`${side}ThumbDistal`), previousJoint: node(`${side}ThumbProximal`), handSize: size, lengthRatio: 0.82 });
+        if (!thumb || !index) throw new Error("손끝 위치를 계산할 수 없습니다.");
+        for (const gesture of ["okSign", "pinch", "fingerHeart"] as const) {
+          applyCharacterPoseRuntimeV3(source, previous);
+          const edits = { source, previous, kind: "manual" as const, bones: {}, fingers: createStudioVrmHandPose(side, gesture) };
+          const before = planCharacterPoseAuthoringInput(edits);
+          const after = planCharacterPoseAuthoringInput({ ...edits, handPreset: gesture });
+          const other = side === "left" ? "rightIndexDistal" : "leftIndexDistal";
+          expect(after.bones[other]).toEqual(previous.bones[other]);
+          const locked = [`${side}ThumbDistal`];
+          expect(planCharacterPoseAuthoringInput({ ...edits, lockedBones: locked, handPreset: gesture }))
+            .toEqual(planCharacterPoseAuthoringInput({ ...edits, lockedBones: locked }));
+          expect(node(`${side}ThumbDistal`).quaternion.toArray()).toEqual(previous.bones[`${side}ThumbDistal`]);
+          const indexPad = { ...index, localTip: new THREE.Vector3(...index.localTip).multiplyScalar(gesture === "fingerHeart" ? 0.28 : 0.87).toArray() };
+          const gap = () => {
+            const a = sampleStudioVrmVirtualFingertip(indexPad, new THREE.Vector3());
+            const b = sampleStudioVrmVirtualFingertip(thumb, new THREE.Vector3());
+            if (!a || !b) throw new Error("손끝 패드를 읽을 수 없습니다.");
+            return a.distanceTo(b);
+          };
+          applyCharacterPoseRuntimeV3(source, before);
+          const originalGap = gap();
+          applyCharacterPoseRuntimeV3(source, after);
+          expect(gap(), `${character.name}/${side}/${gesture}`).toBeLessThan(originalGap);
+          const documentGap = gap();
+          expect(Math.abs(documentGap / size - 0.06)).toBeLessThan(0.05);
+          applyCharacterPoseRuntimeV3(source, previous);
+          const standalone = fitStudioVrmHandPresetEdits(source, side, gesture, edits.fingers);
+          expect(node(`${side}ThumbDistal`).quaternion.toArray()).toEqual(previous.bones[`${side}ThumbDistal`]);
+          applyFingerRotations(source, standalone);
+          expect(gap()).toBeCloseTo(documentGap, 4);
+        }
+      }
+    }
+  }, 60_000);
+
   it("중지를 편집하지 않아도 첫 검지 굽힘이 전체 손 보정과 같은 방향을 유지한다", async () => {
     for (const character of CORE) {
       const vrm = await load(character.file);

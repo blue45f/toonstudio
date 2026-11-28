@@ -41,12 +41,13 @@ export function microphoneGripSocket(
   return { position: [center.x, center.y, center.z], rotationQuaternion: [basis.x, basis.y, basis.z, basis.w], source: socket.source };
 }
 
-export function usesDefaultMicrophoneThumbGrip(item: PropInstance, metrics: VrmPropRigMetrics): boolean {
+export function usesDefaultFittedThumbGrip(item: PropInstance, metrics: VrmPropRigMetrics): boolean {
   const rig = item.rig;
-  const bone = item.bone;
-  return item.propId === "mic" && (bone === "rightHand" || bone === "leftHand")
-    && metrics.handSockets[bone].source === "measured" && rig?.anchorId === "palm-grip"
-    && rig.mode === "auto" && rig.autoScale && rig.autoFingerPose && rig.gripFit === 1
-    && rig.deltaScale === 1 && rig.deltaPosition.every(value => value === 0)
-    && rig.deltaRotationDeg.every(value => value === 0);
+  const hand = item.bone;
+  const fittedAnchor = (item.propId === "mic" && rig?.anchorId === "palm-grip")
+    || (item.propId === "mug" && rig?.anchorId === "handle-grip");
+  return fittedAnchor && (hand === "rightHand" || hand === "leftHand")
+    && metrics.handSockets[hand].source === "measured" && rig?.mode === "auto"
+    && rig.autoScale && rig.autoFingerPose && rig.gripFit === 1 && rig.deltaScale === 1
+    && rig.deltaPosition.every(value => value === 0) && rig.deltaRotationDeg.every(value => value === 0);
 }

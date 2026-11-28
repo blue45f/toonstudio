@@ -1,16 +1,13 @@
 /** 3분할 헤어 조합과 SpringBone 제어의 세션 상태를 소유한다. */
 import { useState } from "react";
+import { HAIR_SECTIONS } from "../vrm/studio-vrm-hair-sections";
+import { AVATAR_FORGE_HAIR_STYLE_RECIPES } from "../vrm/studio-vrm-avatar-forge";
+import { useT } from "@/shared/lib/i18n";
 
 import { resolveHairCommitPatch } from "./character-shaper-custom-quality";
 import { applyHairSpringBoneToVrm } from "./character-shaper-mtoon-uniforms";
-import { CharacterRangeControl } from "./CharacterShaperControls";
+import { CharacterColorControl, CharacterRangeControl } from "./CharacterShaperControls";
 import { InspectorSection, InspectorToggleRow } from "./CharacterShaperInspectorParts";
-import {
-  BACK_HAIR_PART_OPTIONS,
-  FRONT_HAIR_PART_OPTIONS,
-  SIDE_HAIR_PART_OPTIONS,
-} from "./studio-webtoon-21-body-and-3part-hair";
-
 import type { CharacterShaperInspectorProps } from "./character-shaper-ui-contract";
 import type { AvatarForgeHairParams } from "../vrm/studio-vrm-avatar-forge";
 
@@ -26,7 +23,18 @@ type HairAdvancedControlsProps = Pick<CharacterShaperInspectorProps, "h" | "bind
 export function CharacterShaperHairAdvancedControls({
   h, binding, locked, hair, baseColor, tipColor, usingOriginalHair, replaceOriginal,
 }: HairAdvancedControlsProps) {
-  const [lockMainColor, setLockMainColor] = useState(true);
+  const t = useT();
+  const partColors = HAIR_SECTIONS.some(({ id }) => hair[`${id}Tint`]);
+  function commitPart(patch: Partial<AvatarForgeHairParams>, label: string) {
+    const activation = usingOriginalHair || hair.style === "none"
+      ? { ...AVATAR_FORGE_HAIR_STYLE_RECIPES.bob, style: "bob" as const,
+          baseColor: binding.profile.originalHairColors?.baseColor ?? baseColor,
+          tipColor: binding.profile.originalHairColors?.tipColor ?? tipColor }
+      : {};
+    binding.commitHairParams(resolveHairCommitPatch({ ...activation, ...patch }, {
+      style: usingOriginalHair ? "none" : hair.style, replaceOriginal,
+    }), label);
+  }
   const [springStiffness, setSpringStiffness] = useState(1.0);
   const [springGravity, setSpringGravity] = useState(0.35);
   const [springDrag, setSpringDrag] = useState(0.4);
@@ -49,99 +57,51 @@ export function CharacterShaperHairAdvancedControls({
   return (
     <>
       <InspectorSection
-        title="3분할 헤어 파츠 & 메인 색 고정"
-        hint="Tooning Plus처럼 앞·옆·뒷머리를 독립 조합하면서 메인 머리색을 유지합니다."
+        title={t("studio.character.hairParts.title", "앞·옆·뒷머리 조합")}
+        hint={t("studio.character.hairParts.hint", "한 부위씩 커트를 바꾸거나 색을 다르게 칠할 수 있어요.")}
         collapsible
-        defaultOpen={false}
+        defaultOpen
       >
-        <InspectorToggleRow
-          label="메인 헤어 색 고정 (isKeepMainColor)"
-          hint="파츠를 교체해도 현재 머리 기본색과 끝 색을 그대로 유지합니다."
-          checked={lockMainColor}
-          disabled={locked}
-          onToggle={() => setLockMainColor((prev) => !prev)}
-        />
-        <div data-testid="shaper-hair-three-part-strip" className="grid grid-cols-3 gap-1.5 text-xs">
-          <label className="flex flex-col gap-1 text-fg-2">
-            <span>앞머리</span>
-            <select
-              aria-label="3분할 앞머리 파츠"
-              disabled={locked}
-              defaultValue={FRONT_HAIR_PART_OPTIONS[0]?.id}
-              onChange={(event) =>
-                binding.commitHairParams(
-                  {
-                    bangStyle: event.currentTarget.value.includes("split") || event.currentTarget.value.includes("center")
-                      ? "split"
-                      : event.currentTarget.value.includes("side")
-                        ? "side-swept"
-                        : event.currentTarget.value.includes("curtain")
-                          ? "curtain"
-                          : "full",
-                    ...(lockMainColor ? { baseColor, tipColor } : {}),
-                  },
-                  "헤어: 3분할 앞머리",
-                )
-              }
-              className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
-            >
-              {FRONT_HAIR_PART_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>{opt.labelKo}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-fg-2">
-            <span>옆머리</span>
-            <select
-              aria-label="3분할 옆머리 파츠"
-              disabled={locked}
-              defaultValue={SIDE_HAIR_PART_OPTIONS[0]?.id}
-              onChange={() =>
-                binding.commitHairParams(
-                  { volume: Number(Math.min(1.5, Math.max(0.6, hair.volume)).toFixed(2)), ...(lockMainColor ? { baseColor, tipColor } : {}) },
-                  "헤어: 3분할 옆머리",
-                )
-              }
-              className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
-            >
-              {SIDE_HAIR_PART_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>{opt.labelKo}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-fg-2">
-            <span>뒷머리</span>
-            <select
-              aria-label="3분할 뒷머리 파츠"
-              disabled={locked}
-              defaultValue={BACK_HAIR_PART_OPTIONS[0]?.id}
-              onChange={(event) => {
-                const nextStyle = event.currentTarget.value.includes("ponytail")
-                  ? "ponytail"
-                  : event.currentTarget.value.includes("twintail")
-                    ? "twintail"
-                    : event.currentTarget.value.includes("bob")
-                      ? "bob"
-                      : event.currentTarget.value.includes("long")
-                        ? "long"
-                        : hair.style;
-                const patch = resolveHairCommitPatch(
-                  {
-                    style: nextStyle,
-                    ...(lockMainColor ? { baseColor, tipColor } : {}),
-                  },
-                  { style: usingOriginalHair ? "none" : hair.style, replaceOriginal: Boolean(replaceOriginal) },
-                );
-                binding.commitHairParams(patch, "헤어: 3분할 뒷머리");
-              }}
-              className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
-            >
-              {BACK_HAIR_PART_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>{opt.labelKo}</option>
-              ))}
-            </select>
-          </label>
+        <div data-testid="shaper-hair-three-part-strip" className="space-y-2">
+          {HAIR_SECTIONS.map(({ id, name, options }) => {
+            const partKey = `${id}Part` as const;
+            const tintKey = `${id}Tint` as const;
+            const label = t(`studio.character.hairParts.${id}`, name);
+            return (
+              <div key={id} className="space-y-1">
+                <label className="flex items-center justify-between gap-2 text-xs text-fg-2">
+                  <span>{label}</span>
+                  <select
+                    aria-label={t(`studio.character.hairParts.${id}Select`, `3분할 ${name} 파츠`)}
+                    disabled={locked}
+                    value={hair[partKey] ?? ""}
+                    onChange={(event) => commitPart({ [partKey]: event.currentTarget.value || undefined }, `헤어: ${label}`)}
+                    className="min-h-11 min-w-0 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
+                  >
+                    <option value="">{t("studio.character.hairParts.base", "기본 스타일")}</option>
+                    {options.map((option) => (
+                      <option key={option.id} value={option.id}>{t(`studio.character.hairParts.${option.id}`, option.labelKo)}</option>
+                    ))}
+                  </select>
+                </label>
+                {partColors && <CharacterColorControl label={t(`studio.character.hairParts.${id}Color`, `${name} 색`)}
+                  value={hair[tintKey] ?? baseColor} disabled={locked}
+                  onCommit={(color) => { if (color) commitPart({ [tintKey]: color }, `헤어: ${label} 색`); }} />}
+              </div>
+            );
+          })}
         </div>
+        <InspectorToggleRow
+          label={t("studio.character.hairParts.tint", "부위별 색상")}
+          hint={t("studio.character.hairParts.tintHint", "끄면 세 부위가 헤어 팔레트의 기본색을 따라요.")}
+          checked={partColors}
+          disabled={locked}
+          onToggle={() => {
+            const color = partColors ? undefined : usingOriginalHair
+              ? binding.profile.originalHairColors?.baseColor ?? baseColor : baseColor;
+            commitPart({ frontTint: color, sideTint: color, backTint: color }, "헤어: 부위별 색상");
+          }}
+        />
       </InspectorSection>
       <InspectorSection
         title="헤어 번들 SpringBone 탄성 · 중력"

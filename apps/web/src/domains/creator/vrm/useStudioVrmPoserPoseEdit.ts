@@ -83,6 +83,7 @@ import {
 import type {
   StudioVrmFingerName,
 } from "./studio-vrm-finger-curl";
+import { fitStudioVrmHandPresetEdits } from "./studio-vrm-hand-preset-contact";
 import {
   createStudioVrmFingerCurlPose,
   createStudioVrmHandPose,
@@ -1342,8 +1343,7 @@ export function useStudioVrmPoserPoseEdit(h: StudioVrmPoserHost): void {
     setCustomYOffset(value);
   }
 
-  /** Preserve authored state on the other hand, missing bones and locked joints. */
-  function applyFingerPosePatch(patch: FingerRotationMap) {
+  function applyFingerPosePatch(patch: FingerRotationMap, preset?: { side: "left" | "right"; kind: StudioVrmHandPoseType }) {
     const humanoid = vrmRef.current?.humanoid;
     const applicable: FingerRotationMap = {};
     for (const [name, rotation] of Object.entries(patch)) {
@@ -1355,16 +1355,16 @@ export function useStudioVrmPoserPoseEdit(h: StudioVrmPoserHost): void {
         : rotation;
     }
     if (Object.keys(applicable).length === 0) return;
-    setFingerEdits((prev: FingerRotationMap) => ({ ...prev, ...applicable }));
+    const fitted = preset ? fitStudioVrmHandPresetEdits(vrmRef.current, preset.side, preset.kind, applicable) : applicable;
+    setFingerEdits((prev: FingerRotationMap) => ({ ...prev, ...fitted }));
   }
 
-  /** Coupled joint flexion; a selected finger never overwrites the other fingers. */
   function updateFingerCurl(side: 'left' | 'right', curlDeg: number, finger?: StudioVrmFingerName) {
     applyFingerPosePatch(createStudioVrmFingerCurlPose(side, curlDeg, finger));
   }
 
   function applyHandPosePreset(side: 'left' | 'right', poseType: StudioVrmHandPoseType) {
-    applyFingerPosePatch(createStudioVrmHandPose(side, poseType));
+    applyFingerPosePatch(createStudioVrmHandPose(side, poseType), { side, kind: poseType });
   }
 
   function handleExpressionSelect(action: ExpressionAction) {

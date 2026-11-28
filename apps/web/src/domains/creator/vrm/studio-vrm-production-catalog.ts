@@ -1,3 +1,5 @@
+import { STUDIO_VRM_HERO_MANUSCRIPT_SAMPLES } from "./studio-vrm-hero-v1-catalog-entries";
+
 /**
  * Visual-admission authority for deployment-owned VRM cards.
  *
@@ -21,6 +23,7 @@ export const STUDIO_VRM_PREMIUM_CATALOG_IDS = Object.freeze([
   "shion",
   "fumi",
   "kage",
+  ...STUDIO_VRM_HERO_MANUSCRIPT_SAMPLES.filter((sample) => sample.visibility !== "legacy").map((sample) => sample.id),
 ] as const);
 
 const PREMIUM_IDS = new Set<string>(STUDIO_VRM_PREMIUM_CATALOG_IDS);

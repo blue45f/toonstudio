@@ -135,8 +135,8 @@ function phalanxCapsules(frames: Object3D[], handSize: number): SkinPoint[] {
   return cloud;
 }
 
-/** Only called for a new mic with explicit auto-grip authority. The caller owns other digits. */
-export function createMicrophoneThumbContactPass(
+/** 신규 자동 장착에서 엄지 피부와 손잡이 표면의 거리를 맞춘다. */
+export function createFittedThumbContactPass(
   vrm: VRM,
   side: "left" | "right",
   resolved: ResolvedPropAttachment,
@@ -145,7 +145,8 @@ export function createMicrophoneThumbContactPass(
 ): ContactPass | null {
   const handName = `${side}Hand` as const;
   const names = JOINTS.map(joint => `${side}Thumb${joint}` as VRMHumanBoneName);
-  if (resolved.bone !== handName || resolved.anchor.id !== "palm-grip" || !resolved.usesSmartRig
+  const mug = resolved.anchor.id === "handle-grip";
+  if (resolved.bone !== handName || (!mug && resolved.anchor.id !== "palm-grip") || !resolved.usesSmartRig
     || !Number.isFinite(handSize) || handSize <= 0 || !Number.isFinite(resolved.scale) || resolved.scale <= 0
     || locked.includes(handName) || names.some(name => locked.includes(name))) return null;
   const hand = vrm.humanoid?.getNormalizedBoneNode(handName);
@@ -157,7 +158,13 @@ export function createMicrophoneThumbContactPass(
   const localRotation = new Quaternion().setFromEuler(new Euler(
     MathUtils.degToRad(resolved.rotationDeg[0]), MathUtils.degToRad(resolved.rotationDeg[1]), MathUtils.degToRad(resolved.rotationDeg[2]),
   ));
-  const inverseMic = new Matrix4();
+  // 손잡이의 고리 중심·중심선 반경·도자기 두께는 everyday_mug 메시의 로컬 미터 값이다.
+  const scale = resolved.scale;
+  const ringCenterOffset = (resolved.anchor.position[0] - 0.045) * scale;
+  const surfaceDistance = mug
+    ? (p: Vector3) => Math.hypot(Math.hypot(p.x + ringCenterOffset, p.y) - 0.026 * scale, p.z) - 0.0065 * scale
+    : (p: Vector3) => shaftDistance(p, scale, resolved.anchor.position[1]);
+  const inverseGrip = new Matrix4();
   const worldScale = new Vector3(1, 1, 1);
   const rotation = new Quaternion();
   const center = new Vector3();
@@ -183,17 +190,20 @@ export function createMicrophoneThumbContactPass(
   };
 
   function score(input: readonly number[], trial: readonly number[]) {
-    frames.forEach((bone, i) => affine[i]!.multiplyMatrices(inverseMic, bone.matrixWorld));
+    frames.forEach((bone, i) => affine[i]!.multiplyMatrices(inverseGrip, bone.matrixWorld));
     let penetration = 0, nearest = Infinity, terminal = Infinity;
     for (const skin of cloud!) {
       point.set(0, 0, 0);
       for (const { frame, local, weight } of skin.influences) {
         point.addScaledVector(sample.copy(local).applyMatrix4(affine[frame]!), weight);
       }
-      const distance = shaftDistance(point, resolved.scale, resolved.anchor.position[1]) - skin.radius;
+      const distance = surfaceDistance(point) - skin.radius;
       penetration = Math.max(penetration, -distance);
       nearest = Math.min(nearest, Math.abs(distance));
-      if (skin.pad) terminal = Math.min(terminal, Math.abs(distance));
+      if (skin.pad) {
+        const belowHandle = mug ? Math.max(0, 0.012 * scale - point.y) : 0;
+        terminal = Math.min(terminal, Math.hypot(distance, belowHandle));
+      }
     }
     // A single grazing vertex must not hide a deeply intersecting phalanx.
     const angularCost = trial.reduce((sum, value, i) => sum + (value - input[i]!) ** 2, 0);
@@ -213,8 +223,8 @@ export function createMicrophoneThumbContactPass(
       hand.localToWorld(center.set(...resolved.socketPosition));
       if (center.distanceTo(hand.getWorldPosition(sample)) > handSize * 1.8) { release(); return; }
       hand.getWorldQuaternion(rotation).multiply(localRotation).normalize();
-      inverseMic.compose(center, rotation, worldScale).invert();
-      const context = affine[0]!.multiplyMatrices(inverseMic, hand.matrixWorld).elements;
+      inverseGrip.compose(center, rotation, worldScale).invert();
+      const context = affine[0]!.multiplyMatrices(inverseGrip, hand.matrixWorld).elements;
       const current = read(), structure = shape();
       if (![...current, ...structure, ...context].every(Number.isFinite)) { release(); return; }
       const plan = planStudioVrmContactReplay(cache, current, structure, context);

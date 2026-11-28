@@ -284,8 +284,8 @@ const PROP_PROFILES: Record<OriginalVrmPropId, PropProfile> = {
     fit: fit("hand", 0.075, 0.72, 1.4),
   },
   mug: {
-    // 손바닥을 고리의 빈 중심이 아니라 바깥쪽 튜브 중심선에 맞춰 컵 본체 관통을 줄인다.
-    anchors: [handAnchor("primary", "primary", [0.07, 0, 0], 0.008)],
+    anchors: [handAnchor("handle-grip", "primary", [0.071, 0, 0], 0.0065),
+      handAnchor("primary", "primary", [0.07, 0, 0], 0.008)],
     grip: grip("handle", 0.008, 58, 42),
     fit: fit("hand", 0.075, 0.72, 1.45),
     smartRotationDeg: [180, 0, -90],
@@ -321,7 +321,7 @@ const PROP_PROFILES: Record<OriginalVrmPropId, PropProfile> = {
   },
   book: {
     anchors: [
-      // 왼쪽·오른쪽 모서리(Book_Left/RightGripEdge)가 손바닥 접점이다. 책은 XY 평면에 눕고 두께가 Z다.
+      handAnchor("cover-grip", "primary", [-0.07, -0.045, 0], 0.015, [1, 0, 0], [0, -1, 0]),
       handAnchor("primary", "primary", [-0.07, -0.045, 0], 0.015, [1, 0, 0], [0, -1, 0]),
       handAnchor("secondary", "secondary", [0.07, -0.045, 0], 0.015, [1, 0, 0], [0, -1, 0]),
     ],
@@ -935,8 +935,8 @@ function parseV2Rig(raw: unknown, def: PropDef, primaryBone: PropAttachBone): Pr
   if (value.version !== VRM_PROPS_VERSION) return undefined;
 
   const requestedId = typeof value.anchorId === "string" ? value.anchorId : undefined;
-  // A historical V2 microphone could omit its anchor. Repair it at its original coordinates.
-  const selectedAnchor = primaryPropAnchor(def, requestedId, def.id === "mic" ? "primary" : undefined);
+  // 저장한 V2 컷에서 접점이 누락되면 당시의 기본 접점으로 복구한다.
+  const selectedAnchor = primaryPropAnchor(def, requestedId, ["mic", "mug", "book"].includes(def.id) ? "primary" : undefined);
   const secondaryAnchor = def.anchors.find((candidate) => candidate.role === "secondary");
 
   let secondary: PropRigSecondary | undefined;

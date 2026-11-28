@@ -8,6 +8,7 @@
 //  - 사이징은 모델별 골격 실측 치수(WardrobeMetrics)로 계산 → 어떤 VRM에도 자동 핏.
 //  - 부착 본은 VRM 필수 humanoid 본만 사용(spine/hips/팔다리/발) — chest·neck 등 옵셔널 본 미의존.
 
+import { cutStudioVrmBlazerPanels } from "./studio-vrm-blazer-cut";
 import {
   sampleBodySilhouette,
   sanitizeBodySilhouette,
@@ -15,7 +16,7 @@ import {
   type BodySilhouetteRing,
 } from "./studio-vrm-body-silhouette";
 import {
-  maxLimbRadiusBetween,
+  fittedLimbCuffRadius, maxLimbRadiusBetween, taperedLimbClearance,
   sanitizeLimbProfiles,
   type LimbProfiles,
   type LimbSegmentId,
@@ -118,6 +119,7 @@ function wardrobeFitProfile(itemId: string, slot: WardrobeSlot): WardrobeFitProf
       baseBodyClearanceM: itemId === "armor" ? 0.026 : 0.022,
       motionAllowanceM: itemId === "armor" ? 0.014 : 0.012,
       layerClearanceM: itemId === "armor" ? 0.011 : 0.008,
+      ...(itemId === "blazer" ? { baseBodyClearanceM: 0.014, motionAllowanceM: 0.007, layerClearanceM: 0.0065 } : {}),
     };
   }
   if (slot === "top") {
@@ -231,6 +233,7 @@ export interface WardrobeMetrics {
   ankleH: number;
   /** 몸통 위쪽 방향(spine/hips 로컬). */
   up: Vec3;
+  torsoForward?: Vec3; // 몸통 단면을 잰 spine 로컬의 해부학적 정면.
   /** 발이 향하는 앞 방향(발 본 로컬). */
   footForward: { left: Vec3; right: Vec3 };
   upperArm: SideMetric;
@@ -311,6 +314,7 @@ export function sanitizeWardrobeMetrics(raw: Partial<WardrobeMetrics> | null | u
     spineToNeck: clampLen(raw.spineToNeck ?? f.spineToNeck, f.spineToNeck),
     ankleH: clampLen(raw.ankleH ?? f.ankleH, f.ankleH),
     up: normalizeVec(raw.up ?? f.up, f.up),
+    ...(raw.torsoForward ? { torsoForward: normalizeVec(raw.torsoForward, [0, 0, 1]) } : {}),
     footForward: {
       left: normalizeVec(raw.footForward?.left ?? f.footForward.left, f.footForward.left),
       right: normalizeVec(raw.footForward?.right ?? f.footForward.right, f.footForward.right),
@@ -768,8 +772,9 @@ export type GarmentShape =
        * fall back to the part-wide `squash`. Per-ring depth is what lets a chest read wide and
        * shallow while the waist stays narrow — a single squash cannot express both.
        */
-      profile: readonly { radius: number; y: number; depth?: number }[];
+      profile: readonly { radius: number; y: number; depth?: number; centerX?: number; centerZ?: number }[];
       segments?: number;
+      tailoring?: "blazer-body" | "blazer-facing" | "blazer-buttons";
     }
   | { kind: "box"; w: number; h: number; d: number }
   | { kind: "sphere"; r: number }
@@ -782,7 +787,7 @@ export interface GarmentPart {
    * 골반에 매단 원통형 치마는 이 모드에서 밑단으로 갈수록 좌우 허벅지 본을 함께 따른다.
    * 생략한 파츠는 기존 관절 체인 웨이트 규칙을 그대로 사용한다.
    */
-  skinMode?: "lower-body-drape" | "shoulder-yoke";
+  skinMode?: "lower-body-drape" | "shoulder-yoke" | "set-in-sleeve";
   /** Shoulder bridge ends at this arm; its horizontal axis is not a hips-to-chest axis. */
   shoulderBone?: "leftUpperArm" | "rightUpperArm";
   /** Anatomical joint interval along geometry-local Y, independent of garment coverage. */
@@ -791,6 +796,7 @@ export interface GarmentPart {
   offset: Vec3;
   /** 도형의 +Y축을 이 방향(본 로컬 단위 벡터)으로 정렬. 생략 시 그대로. */
   align?: Vec3;
+  forward?: Vec3; // +Z 단면을 부착 본의 어느 방향으로 놓을지 지정한다.
   /** 비균등 스케일(타원 단면 등). 생략 시 [1,1,1]. */
   squash?: Vec3;
   /** 파츠 색 오버라이드(hex). 생략 시 아이템 색. */
@@ -806,9 +812,6 @@ const negVec = (v: Vec3): Vec3 => [-v[0], -v[1], -v[2]];
 type Side = "left" | "right";
 const SIDES: readonly Side[] = ["left", "right"] as const;
 
-/* ── 실측 재단 기준 ──────────────────────────────────────────────────── */
-
-/** 실측 프로파일의 링 수. 5점으로는 허리와 가슴이 한 링에 뭉쳐 결국 원통으로 되돌아간다. */
 const MEASURED_TORSO_RINGS = 17;
 
 /** 소매가 진동 안쪽으로 파고드는 깊이(윗팔 길이 비율). 팔을 올려도 요크와 겹친 채 남는다. */
@@ -841,14 +844,11 @@ function torsoT(m: WardrobeMetrics, spineLocalY: number): number {
   return (spineLocalY + m.hipsToSpine) / (m.hipsToSpine + m.spineToNeck);
 }
 
-/**
- * 실측 단면 하나 → 회전체 링 하나. 반경은 반폭 + 여유분이고 깊이비는 (반깊이+여유)/(반폭+여유)라
- * 가슴은 넓고 얕게, 허리는 좁게 남는다. 단면 중심이 부착 축에서 밀려 있으면 그만큼 더 벌려
- * 축 대칭 회전체가 실제 단면을 반드시 감싸도록 한다.
- */
-function latheRing(ring: BodySilhouetteRing, clearanceM: number): { radius: number; depth: number } {
-  const radius = Math.abs(ring.centerX) + ring.halfWidth + clearanceM;
-  return { radius, depth: (Math.abs(ring.centerZ) + ring.halfDepth + clearanceM) / radius };
+/** 단면 중심에 맞춰 옷감을 재단해 휜 등·기운 가슴의 앞면이 중심 오차만큼 부풀지 않게 한다. */
+function latheRing(ring: BodySilhouetteRing, clearanceM: number) {
+  const [width, depth] = ring.outerEllipse ?? [ring.halfWidth, ring.halfDepth];
+  const radius = width + clearanceM;
+  return { radius, depth: (depth + clearanceM) / radius, centerX: ring.centerX, centerZ: ring.centerZ };
 }
 
 /** 허리선 t 이하에서 가장 넓은 골반 반폭. 골반은 허리보다 아래에서 넓어지므로 밴드는 그쪽을 따른다. */
@@ -864,7 +864,7 @@ function widestHipHalfWidth(silhouette: BodySilhouette, upToT: number): number {
 
 /** 몸통 좌우 축(spine 로컬) = 위 × 앞. 실측 프레임이 쓴 "왼쪽" 규약과 같다. */
 function lateralAxis(m: WardrobeMetrics): Vec3 {
-  const fwd = m.footForward.left;
+  const fwd = m.torsoForward ?? m.footForward.left;
   const x = m.up[1] * fwd[2] - m.up[2] * fwd[1];
   const y = m.up[2] * fwd[0] - m.up[0] * fwd[2];
   const z = m.up[0] * fwd[1] - m.up[1] * fwd[0];
@@ -915,7 +915,7 @@ function torsoShell(
   const base = {
     bone: "spine",
     offset: scaleVec(m.up, centerY),
-    align: m.up,
+    align: m.up, forward: m.torsoForward,
     color: opts.color,
     roughness: opts.roughness,
     metalness: opts.metalness,
@@ -927,7 +927,7 @@ function torsoShell(
     const profile = Array.from({ length: MEASURED_TORSO_RINGS }, (_, index) => {
       const y = bottomY + (h * index) / (MEASURED_TORSO_RINGS - 1);
       const ring = latheRing(sampleBodySilhouette(silhouette, torsoT(m, y)), clearance);
-      return { radius: ring.radius, y: y - centerY, depth: ring.depth };
+      return { ...ring, y: y - centerY };
     });
     // 링마다 깊이를 따로 실었으므로 파츠 전체 squash는 걸지 않는다 — 두 번 눌리면 몸을 파고든다.
     return { ...base, shape: { kind: "lathe", profile, segments: 32 } };
@@ -1201,7 +1201,7 @@ export function measuredTorsoClearanceM(
       // 골반 부착 파츠의 로컬 높이는 hips 관절 기준이라 t로 옮기기 전에 spine 기준으로 맞춘다.
       const spineLocalY = ring.y + centerY - (hipsAnchored ? m.hipsToSpine : 0);
       const body = sampleBodySilhouette(silhouette, torsoT(m, spineLocalY));
-      narrowest = Math.min(narrowest, ring.radius - (Math.abs(body.centerX) + body.halfWidth));
+      narrowest = Math.min(narrowest, ring.radius - Math.abs(body.centerX - (ring.centerX ?? 0)) - (measuredShell ? body.outerEllipse?.[0] ?? body.halfWidth : body.halfWidth));
     }
   }
   return Number.isFinite(narrowest) ? narrowest : null;
@@ -1257,8 +1257,7 @@ export function measuredLimbClearanceM(
     const along = part.offset[0] * axis[0] + part.offset[1] * axis[1] + part.offset[2] * axis[2];
     const fromS = Math.min(1, Math.max(0, (along - part.shape.h / 2) / limb.len));
     const toS = Math.min(1, Math.max(0, (along + part.shape.h / 2) / limb.len));
-    const bodyRadius = maxLimbRadiusBetween(profile, fromS, toS);
-    narrowest = Math.min(narrowest, Math.min(part.shape.rTop, part.shape.rBottom) - bodyRadius);
+    narrowest = Math.min(narrowest, taperedLimbClearance(profile, fromS, toS, part.shape.rBottom, part.shape.rTop));
   }
   return Number.isFinite(narrowest) ? narrowest : null;
 }
@@ -1299,13 +1298,14 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
 
   switch (def.id) {
     case "blazer": {
-      parts.push(torsoShell(cut, { rMul: 1.12 * f, roughness: 0.72 }));
+      parts.push(...cutStudioVrmBlazerPanels(torsoShell(cut, { rMul: 1.12 * f, roughness: 0.72 })));
       for (const s of SIDES) {
-        parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.32), roughness: 0.72 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: foreArmR(s, 1.2), roughness: 0.72 }));
+        parts.push({ ...limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.32), roughness: 0.72 }), skinMode: "set-in-sleeve" });
+        const radius = foreArmR(s, 1.2); const measured = m.limbs?.[s].lowerArm;
+        const cuff = measured ? fittedLimbCuffRadius(measured, radius, 0.94, cut.clearanceM * limbEaseFactor * 1.2 * f)
+          : Math.min(radius, Math.max(0.022, m.lowerArm[s].len * 0.115) + limbClearance);
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: radius, flare: cuff / radius, roughness: 0.72 }));
       }
-      // 카라.
-      parts.push({ bone: "spine", shape: { kind: "torus", r: m.shoulderW * 0.3, tube: m.shoulderW * 0.055 }, offset: scaleVec(m.up, m.spineToNeck * 0.9), align: m.up, squash: [1, 1, 0.72], roughness: 0.72 });
       break;
     }
     case "hoodie": {
@@ -1778,6 +1778,6 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       break;
   }
 
-  parts.push(...shoulderYokes(cut, parts));
+  if (def.id !== "blazer") parts.push(...shoulderYokes(cut, parts));
   return parts;
 }

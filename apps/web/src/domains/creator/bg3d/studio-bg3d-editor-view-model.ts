@@ -302,9 +302,7 @@ export function bindStudioBg3dEditorViewModel(h: Record<string, any>) {
     selectedBackend: engineRuntime.plan.backend,
     canvasFactoryPending: isStudioBg3dCanvasFactoryPending(engineRuntime),
     hasModelRenderer: modelRenderer != null,
-    isRestoringScene: isRestoringScene || (
-      engineRuntime.plan.backend === "webgpu" && engineRuntime.webGpuCanvasStage !== "rendered"
-    ),
+    isRestoringScene: isRestoringScene || engineRuntime.canvasStage !== "rendered",
     deviceLostMessage: engineRuntime.deviceLostMessage,
     planNotice: engineRuntime.plan.notice,
   });

@@ -276,10 +276,16 @@ test("세션 목표 PR은 related 검사가 읽는 VRM·배경·가상 스튜디
     const require = createRequire(import.meta.url);
     const { SAMPLE_VRMS, selectableSampleVrmUrl } = require("./apps/web/src/domains/creator/vrm/vrm-library.ts");
     const { STUDIO_VRM_HERO_V1_SAMPLES } = require("./apps/web/src/domains/creator/vrm/studio-vrm-hero-v1-catalog-entries.ts");
+    const { STUDIO_BG3D_HERO_V1_ENTRIES } = require("./apps/web/src/domains/creator/bg3d/studio-bg3d-hero-v1-catalog-entries.ts");
+    const { listStudioObjectInsertItems } = require("./apps/web/src/domains/creator/studio-object-insert-catalog.ts");
     process.stdout.write(JSON.stringify({
       models: SAMPLE_VRMS.map(({ id }) => selectableSampleVrmUrl(id)).filter(Boolean),
       hero: STUDIO_VRM_HERO_V1_SAMPLES.map(({ url }) => url),
       thumbnails: STUDIO_VRM_HERO_V1_SAMPLES.map(({ thumbnailUrl }) => thumbnailUrl),
+      heroScenes: STUDIO_BG3D_HERO_V1_ENTRIES.flatMap(({ desktopAsset, mobileAsset }) => [
+        desktopAsset.url, mobileAsset.url, desktopAsset.thumbnailUrl,
+      ]),
+      insertAssets: listStudioObjectInsertItems().flatMap(({ assetUrl, thumbnailUrl }) => [assetUrl, thumbnailUrl].filter(Boolean)),
     }));
   `], { cwd: root, encoding: "utf8", env: fixtureGitEnvironment(root) }));
   assert.equal(catalog.models.length, 117);
@@ -296,6 +302,9 @@ test("세션 목표 PR은 related 검사가 읽는 VRM·배경·가상 스튜디
   const pavilion = environments.match(/"(\/assets\/3d\/environments\/riverside-v2\/[^"\n]+\.glb)"/u)?.[1];
   assert(pavilion, "새 한강 쉼터의 실제 GLB 경로가 필요합니다.");
   backgrounds.push(pavilion);
+  const insertPreviews = catalog.insertAssets.filter((url) =>
+    url.startsWith("/assets/3d/environments/hero-v2/") || url.startsWith("/assets/studio/scene-template-previews/"));
+  const prOnly = [...catalog.hero, ...backgrounds, ...catalog.heroScenes, ...insertPreviews];
   const officeBase = "apps/web/public/assets/virtual-studio";
   const officeFiles = execFileSync("git", ["ls-files", "--", `${officeBase}/office-cast-v2/`, `${officeBase}/toon-office-v1/characters/`],
     { cwd: root, encoding: "utf8", env: fixtureGitEnvironment(root) }).trim().split("\n");
@@ -303,13 +312,20 @@ test("세션 목표 PR은 related 검사가 읽는 VRM·배경·가상 스튜디
     "toon-office-v1/characters/artist.webp", "toon-office-v1/characters/work/junseo.webp", "toon-office-v1/characters/preview/nia.webp"]) {
     assert(officeFiles.includes(`${officeBase}/${file}`), `캐릭터 자산 검증 입력 누락: ${file}`);
   }
-  const retained = [...[...catalog.models, ...catalog.thumbnails, ...backgrounds].map((url) => `apps/web/public${url}`), ...officeFiles];
+  const retained = [
+    ...[...new Set([...catalog.models, ...catalog.thumbnails, ...backgrounds, ...catalog.heroScenes, ...catalog.insertAssets])]
+      .map((url) => `apps/web/public${url}`),
+    ...officeFiles,
+  ];
   assertTrackedDocumentInputs(retained.map((file) => `/${file}`), { cwd: root });
   const omitted = [
     "apps/web/public/vrm/unrelated.vrm",
     "apps/web/public/vrm/toonstudio-hero-v1/unrelated.vrm",
     "apps/web/public/assets/3d/environments/glasshouse-v1/unrelated.glb",
     "apps/web/public/assets/3d/environments/glasshouse-v1/unrelated.png",
+    "apps/web/public/assets/3d/environments/hero-v1/lineart/kr_atelier_cafe_interior-lineart.svg",
+    "apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/mobile.glb",
+    "apps/web/public/assets/3d/environments/hero-v2/kr_modern_office_suite/contact_sheet.png",
     "apps/web/public/assets/unrelated/large.glb",
     `${officeBase}/toon-office-v1/objects/desk-artist.webp`,
     "artifacts/large.bin",
@@ -341,7 +357,7 @@ test("세션 목표 PR은 related 검사가 읽는 VRM·배경·가상 스튜디
         assert.deepEqual(missing, [], "PR related 검사가 읽는 정본을 최초 checkout에 포함해야 합니다.");
       } else {
         for (const file of officeFiles) await assert.rejects(fs.access(path.join(directory, file)), { code: "ENOENT" });
-        for (const url of [...catalog.hero, ...backgrounds]) {
+        for (const url of prOnly) {
           await assert.rejects(fs.access(path.join(directory, `apps/web/public${url}`)), { code: "ENOENT" });
         }
       }

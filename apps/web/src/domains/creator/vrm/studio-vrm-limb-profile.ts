@@ -316,3 +316,25 @@ export function limbProfilesSignature(profiles: LimbProfiles | null): string {
   }
   return `limb1:${(hash >>> 0).toString(16).padStart(8, "0")}`;
 }
+
+/** 선형으로 좁아지는 소매와 실측 팔 사이의 최소 간격은 측정 링 또는 두 끝에서 생긴다. */
+export function taperedLimbClearance(profile: LimbSegmentProfile, from: number, to: number, startRadius: number, endRadius: number): number {
+  if (to <= from) return Math.min(startRadius, endRadius) - sampleLimbRadius(profile, from);
+  let minimum = Math.min(startRadius - sampleLimbRadius(profile, from), endRadius - sampleLimbRadius(profile, to));
+  for (const ring of profile.rings) {
+    if (ring.s <= from || ring.s >= to) continue;
+    const t = (ring.s - from) / (to - from);
+    minimum = Math.min(minimum, startRadius + t * (endRadius - startRadius) - ring.radiusM);
+  }
+  return minimum;
+}
+
+/** 팔꿈치에서 손목까지의 모든 실측 단면이 여유를 유지하는 가장 작은 커프를 구한다. */
+export function fittedLimbCuffRadius(profile: LimbSegmentProfile, startRadius: number, coverage: number, clearance: number): number {
+  let cuff = sampleLimbRadius(profile, coverage) + clearance;
+  for (const ring of profile.rings) {
+    if (ring.s <= 0 || ring.s >= coverage) continue;
+    cuff = Math.max(cuff, startRadius + (ring.radiusM + clearance - startRadius) * coverage / ring.s);
+  }
+  return cuff;
+}

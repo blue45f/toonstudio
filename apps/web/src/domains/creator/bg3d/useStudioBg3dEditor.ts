@@ -19,6 +19,7 @@ import { bindStudioBg3dEditorSelectionViewModel } from "./studio-bg3d-editor-sel
 import { bindStudioBg3dEditorLayoutViewModel } from "./studio-bg3d-editor-layout-view-model";
 import { attachStudioBg3dEditorHosts } from "./studio-bg3d-editor-attach-hosts";
 import { bindStudioBg3dEditorSceneGraph } from "./StudioBg3dEditorSceneGraph";
+import { useStudioBg3dCatalogModelSeed } from "./useStudioBg3dCatalogModelSeed";
 import { useStudioBg3dEditorEffects } from "./useStudioBg3dEditorEffects";
 import { useStudioBg3dEditorRestoreEffects } from "./useStudioBg3dEditorRestoreEffects";
 import { useStudioBg3dViewportHostObservers } from "./useStudioBg3dViewportHost";
@@ -94,6 +95,7 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
     cancelCustomModelPlacement: h.cancelCustomModelPlacement,
     captureInFlightRef: h.captureInFlightRef,
     commitSceneEntityRemoval: h.commitSceneEntityRemoval,
+    commitImmediateHistoryTransition: h.commitImmediateHistoryTransition,
     destructiveMutationGuardRef: h.destructiveMutationGuardRef,
     deviceQuality: h.deviceQuality,
     genericModelClassifications: h.genericModelClassifications,
@@ -317,6 +319,15 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
     : undefined;
   useStudioBg3dEditorEffects(h);
   useStudioBg3dEditorRestoreEffects(h);
+  useStudioBg3dCatalogModelSeed({
+    sourceId: props.seedModelSourceId,
+    ready: Boolean(h.open && h.modelRenderer && !h.isRestoringScene),
+    sessionKey: props.sharedStageSessionScopeKey,
+    importModelFiles: actions.importModelFiles,
+    placeBundledEnvironment: h.placeCustomModelWithRecipe,
+    consume: props.onSeedObjectInsertConsumed,
+    setError: h.setError,
+  });
   // 정밀 편집 전환처럼 뷰포트 호스트가 다시 마운트돼도 박스 크기·기기 신호가 지금 호스트를 따라가게 한다.
   useStudioBg3dViewportHostObservers({
     open: h.open,

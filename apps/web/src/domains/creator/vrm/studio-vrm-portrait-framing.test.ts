@@ -7,7 +7,7 @@ const points = { head: [0, 1.55, 0], neck: [0, 1.43, 0], leftEye: [0.032, 1.64, 
 type Vec3 = readonly [number, number, number];
 
 describe("landmark portrait regions", () => {
-  it.each(["closeup", "dramaticEye", "bust"])("follows scale and translation for %s instead of assuming a standing origin", (id) => {
+  it.each(["closeup", "dramaticEye", "bust", "hairFront", "hairProfile", "hairBack"])("follows scale and translation for %s instead of assuming a standing origin", (id) => {
     const original = resolveStudioVrmPortraitBounds(id, body, points)!;
     for (const scale of [0.2, 0.5, 1, 2, 5]) {
       const transform = (v: Vec3): Vec3 => [v[0] * scale + 3, v[1] * scale - 2, v[2] * scale + 4];
@@ -18,6 +18,18 @@ describe("landmark portrait regions", () => {
       });
     }
   });
+  it("헤어의 정면·측면·후면은 같은 두상 중심과 목덜미 여백을 유지한다", () => {
+    const hair = resolveStudioVrmPortraitBounds("hairFront", body, points);
+    expect(hair).not.toBeNull();
+    expect(resolveStudioVrmPortraitBounds("hairProfile", body, points)).toEqual(hair);
+    expect(resolveStudioVrmPortraitBounds("hairBack", body, points)).toEqual(hair);
+    expect(hair?.min[1]).toBeLessThan(points.neck[1]);
+    expect(hair?.max[1]).toBeGreaterThan(points.leftEye[1]);
+    expect(hair?.min[2]).toBeLessThan(-points.leftEye[2]);
+    const longHair = { min: [-0.28, 0.72, -0.35], max: [0.28, 1.85, 0.15] } as const;
+    expect(resolveStudioVrmPortraitBounds("hairBack", body, points, longHair)?.min[1]).toBe(0.72);
+  });
+
   it("includes shoulders and chest for a bust without zooming all the way out", () => {
     const face = resolveStudioVrmPortraitBounds("closeup", body, points)!;
     const bust = resolveStudioVrmPortraitBounds("bust", body, points)!;

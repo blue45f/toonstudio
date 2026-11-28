@@ -134,6 +134,17 @@ function sameScale(
   return left[0] === right[0] && left[1] === right[1] && left[2] === right[2];
 }
 
+/** 얼굴 너비·길이·깊이 배율을 모델 제작자가 선택한 머리 본의 로컬 축으로 옮긴다. */
+function rawHeadFaceScale(raw: THREE.Object3D, normalized: THREE.Object3D, scale: StudioVrmAvatarForgeFaceScale) {
+  if (scale[0] === scale[1] && scale[1] === scale[2]) return scale;
+  const orientation = normalized.getWorldQuaternion(new THREE.Quaternion()).invert()
+    .multiply(raw.getWorldQuaternion(new THREE.Quaternion()));
+  const factors = new THREE.Vector3(...scale);
+  const length = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
+    .applyQuaternion(orientation).multiply(factors).length();
+  return [length(1, 0, 0), length(0, 1, 0), length(0, 0, 1)] as const;
+}
+
 function uniqueHeadNodes(input: StudioVrmAvatarForgeFaceControllerReplaceInput) {
   return [...new Set([input.rawHead, input.normalizedHead].filter(
     (node): node is THREE.Object3D => node !== null,
@@ -271,10 +282,12 @@ export function createStudioVrmAvatarForgeFaceController(): StudioVrmAvatarForge
     }));
     try {
       for (const { node, originalScale } of entries) {
+        const local = node === input.rawHead && input.normalizedHead && node !== input.normalizedHead
+          ? rawHeadFaceScale(node, input.normalizedHead, scale) : scale;
         const next = [
-          originalScale.x * scale[0],
-          originalScale.y * scale[1],
-          originalScale.z * scale[2],
+          originalScale.x * local[0],
+          originalScale.y * local[1],
+          originalScale.z * local[2],
         ] as const;
         if (!next.every(Number.isFinite)) throw new Error("non-finite node scale");
         node.scale.set(...next);

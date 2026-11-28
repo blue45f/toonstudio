@@ -83,6 +83,18 @@ describe("문서 기반 Shaper apply-plan", () => {
     expect(characterDocumentHair(cleared).length).toBe(1.2);
   });
 
+  it("헤어 부위가 저장과 다시 열기를 거치고, 전체 스타일을 바꾸면 새 커트가 적용된다", () => {
+    const custom = planCharacterDocumentSteps(document(), profile, "both", [
+      { kind: "forge-hair", hair: { style: "bob", replaceOriginal: true, sidePart: "side-hime", frontTint: "#554433" } },
+      { kind: "forge-hair", hair: { backPart: "back-twintail" } },
+    ]);
+    const reopened = validateCharacterDocumentV3(JSON.parse(JSON.stringify(custom)));
+    expect(characterDocumentHair(reopened)).toMatchObject({ sidePart: "side-hime", backPart: "back-twintail", frontTint: "#554433" });
+    const replaced = planCharacterDocumentSteps(reopened, profile, "both", [{ kind: "forge-hair", hair: { style: "long" } }]);
+    expect(characterDocumentHair(replaced).sidePart).toBeUndefined();
+    expect(characterDocumentHair(replaced).frontTint).toBeUndefined();
+  });
+
   it("표정 식별자는 기존 호스트와 같으며 방향 포즈를 단위 회전으로 저장하지 않는다", () => {
     const initial = document();
     const entry = findCharacterSlotEntry("expression:xf_joy");

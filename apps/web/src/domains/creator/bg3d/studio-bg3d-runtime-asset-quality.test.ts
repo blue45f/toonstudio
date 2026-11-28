@@ -23,6 +23,34 @@ function applyQuality(root: THREE.Object3D, qualityBudget = 1, maxAnisotropy = 8
 }
 
 describe("imported asset runtime quality", () => {
+  it("배포 ID와 SHA가 모두 일치하는 세 모델의 손상된 normal/ORM만 복구한다", () => {
+    const id = "ts-bg3d-hero-v2-kr_modern_office_suite-desktop";
+    const contentHash = "sha256:93a8f17c88d3a8f16b2356a30f4f402de115f7bd811e61ef63f3e82f40439203";
+    const source = texture();
+    const surface = (name: string) => {
+      const material = new THREE.MeshStandardMaterial({ map: source, normalMap: source, aoMap: source, roughnessMap: source, metalnessMap: source, metalness: 1, vertexColors: true });
+      material.name = name;
+      return material;
+    };
+    const run = (modelId: string, hash: string) => {
+      const materials = ["01_Arch_Trim_Atlas", "02_Wood_Fabric_Atlas", "04_Glass_Emissive"].map(surface);
+      applyStudioBg3dRuntimeAssetQuality(mesh(materials), { verifiedModel: { id: modelId, contentHash: hash }, castShadow: true, receiveShadow: true });
+      return materials;
+    };
+    for (const [modelId, hash] of [
+      [id, contentHash],
+      ["ts-bg3d-hero-v2-kr_hospital_ward_corridor-desktop", "sha256:f8f93f67e62b52d89af2623fe884e736a2b1fd42fda845be2322a545864aab6b"],
+      ["ts-bg3d-hero-v2-kr_seoul_subway_train_platform-desktop", "sha256:528fa4fe3b59dbb4614d2495696d7cf7bc0438b02c33b88c3784ac1c826a1f88"],
+    ] as const) {
+      const [architecture, furniture, glass] = run(modelId, hash);
+      for (const fixed of [architecture, furniture]) {
+        expect(fixed).toMatchObject({ map: source, vertexColors: true, normalMap: null, aoMap: null, metalnessMap: null, roughnessMap: null, metalness: 0, roughness: 1 });
+      }
+      expect(glass.normalMap).toBe(source);
+    }
+    for (const m of [...run("사용자-오피스", contentHash), ...run(id, "다른 파일")]) expect(m.normalMap).toBe(source);
+  });
+
   it("preserves imported base, data, extension, HDR, and shader texture color spaces", () => {
     const baseColor = texture();
     baseColor.colorSpace = THREE.SRGBColorSpace;

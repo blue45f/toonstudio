@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -15,8 +15,9 @@ import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-
 import { STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS } from "./studio-bg3d-webgpu-capability";
 import type { StudioBg3dEngineRuntimeState } from "./useStudioBg3dEngineRuntime";
 
-/** WebGL2 캔버스 마운트부터 onCreated까지의 제한. */
-export const STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS = 6_000;
+const WEBGL2_SLOW_START_MS = 6_000;
+/** 대형 원고의 셰이더와 첫 화면을 준비할 때도 유한한 복구 시점을 둔다. */
+export const STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS = 90_000;
 
 interface WebGlContextEventLike extends Event {
   readonly statusMessage?: string;
@@ -24,7 +25,7 @@ interface WebGlContextEventLike extends Event {
 
 export interface StudioBg3dViewportReadinessOverlayProps {
   readonly open: boolean;
-  readonly engineRuntime: Pick<StudioBg3dEngineRuntimeState, "phase" | "plan" | "canvasKey" | "glFactory" | "webGpuCanvasStage" | "setPreference" | "reportRendererFailure">;
+  readonly engineRuntime: Pick<StudioBg3dEngineRuntimeState, "phase" | "plan" | "canvasKey" | "glFactory" | "canvasStage" | "setPreference" | "reportRendererFailure">;
   readonly modelRenderer: unknown;
   readonly onClearModelRenderer: () => void;
   readonly isRestoringScene: boolean;
@@ -47,26 +48,25 @@ export function StudioBg3dViewportReadinessOverlay({
   const { phase, plan, canvasKey, reportRendererFailure } = engineRuntime;
   const factoryPending = isStudioBg3dCanvasFactoryPending(engineRuntime);
   const backend: StudioBg3dEngineBackend = plan.backend;
-  const deadlineMs = startupTimeoutMs ?? (backend === "webgpu"
-    ? STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS
-    : STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS);
+  const slowStartMs = backend === "webgpu" ? STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS : WEBGL2_SLOW_START_MS;
+  const deadlineMs = startupTimeoutMs ?? STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS;
   const hasModelRenderer = modelRenderer != null;
   const [slowStage, setSlowStage] = useState<string | null>(null);
-  const stage = engineRuntime.webGpuCanvasStage;
-  const pendingFrame = backend === "webgpu" && stage !== "rendered";
-  const stageKey = `${canvasKey}/${stage}`;
+  const stage = engineRuntime.canvasStage;
+  const pendingFrame = stage !== "rendered";
+  const stageKey = backend === "webgpu" ? `${canvasKey}/${stage}` : canvasKey;
   useEffect(() => {
     setSlowStage(null);
     if (!open || phase !== "ready" || plan.status !== "available" || factoryPending || !pendingFrame) return;
-    // 장치의 init 제한은 factory가 관리한다. Suspense·첫 프레임 지연은 사용자에게 선택지를 준다.
-    const timer = window.setTimeout(() => setSlowStage(stageKey), deadlineMs);
-    return () => window.clearTimeout(timer);
-  }, [open, phase, plan.status, factoryPending, pendingFrame, stageKey, deadlineMs]);
-  const hasModelRendererRef = useRef(hasModelRenderer);
-
-  useEffect(() => {
-    hasModelRendererRef.current = hasModelRenderer;
-  }, [hasModelRenderer]);
+    const timer = window.setTimeout(() => setSlowStage(stageKey), slowStartMs);
+    const deadline = backend === "webgl2" ? window.setTimeout(() => {
+      reportRendererFailure(backend, "WebGL2 초기화 후 첫 화면을 제한 시간 안에 그리지 못했습니다");
+    }, deadlineMs) : undefined;
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(deadline);
+    };
+  }, [open, phase, plan.status, factoryPending, pendingFrame, stageKey, slowStartMs, deadlineMs, backend, reportRendererFailure]);
 
   // Clear stale renderer reference whenever the interactive Canvas unmounts.
   useEffect(() => {
@@ -102,24 +102,13 @@ export function StudioBg3dViewportReadinessOverlay({
     };
     host?.addEventListener("webglcontextcreationerror", onContextCreationError, true);
     window.addEventListener("error", onWindowError);
-    const timer = window.setTimeout(() => {
-      if (!hasModelRendererRef.current) {
-        reportRendererFailure(
-          backend,
-          `${STUDIO_BG3D_ENGINE_PREFERENCE_LABELS[backend]} 렌더러 응답이 지연되어 초기화를 중단했습니다`,
-        );
-      }
-    }, deadlineMs);
-
     return () => {
       host?.removeEventListener("webglcontextcreationerror", onContextCreationError, true);
       window.removeEventListener("error", onWindowError);
-      window.clearTimeout(timer);
     };
   }, [
     backend,
     canvasKey,
-    deadlineMs,
     factoryPending,
     hasModelRenderer,
     open,
@@ -139,7 +128,7 @@ export function StudioBg3dViewportReadinessOverlay({
   const engineLabel = STUDIO_BG3D_ENGINE_PREFERENCE_LABELS[backend];
   const headline = backend === "webgpu" && stage === "waiting-for-canvas"
     ? bt("3D 뷰포트를 열고 있습니다…", "Opening the 3D viewport…")
-    : backend === "webgpu" && stage === "waiting-for-frame"
+    : stage === "waiting-for-frame"
     ? bt("장면의 첫 화면을 그리고 있습니다…", "Drawing the first scene frame…")
     : !hasModelRenderer || (backend === "webgpu" && stage === "starting-device")
     ? bt(
@@ -172,10 +161,13 @@ export function StudioBg3dViewportReadinessOverlay({
         )}
       </p>
       {slowStage === stageKey ? (
-        <button type="button" className={studioBg3dClassNames(STUDIO_BG3D_CONTROL_BUTTON, "min-h-11 min-w-11 px-4")}
-          onClick={() => engineRuntime.setPreference("webgl2")}>
-          {bt("WebGL2로 계속", "Continue with WebGL2")}
-        </button>
+        <>
+          {backend === "webgl2" && <p>{bt("첫 화면을 준비하는 데 시간이 걸리고 있습니다.", "The first scene frame is taking longer to prepare.")}</p>}
+          <button type="button" className={studioBg3dClassNames(STUDIO_BG3D_CONTROL_BUTTON, "min-h-11 min-w-11 px-4")}
+            onClick={() => backend === "webgl2" ? engineRuntime.setPreference("webgl2", true) : engineRuntime.setPreference("webgl2")}>
+            {backend === "webgl2" ? bt("WebGL2 다시 시도", "Retry WebGL2") : bt("WebGL2로 계속", "Continue with WebGL2")}
+          </button>
+        </>
       ) : null}
       {onReturnTo2d ? (
         <button

@@ -63,7 +63,7 @@ describe("character preview camera framing", () => {
     expect(narrow.distance).toBeGreaterThan(wide.distance);
   });
 
-  it.each(["bust", "dramaticEye", "closeup", "overShoulder", "custom"])("preserves the authored %s crop", (id) => {
+  it.each(["bust", "dramaticEye", "closeup", "hairFront", "hairProfile", "hairBack", "overShoulder", "custom"])("preserves the authored %s crop", (id) => {
     expect(fitStudioVrmPreviewCamera({ ...DEFAULT, id }, BOXES[0], 1)).toBeNull();
   });
 

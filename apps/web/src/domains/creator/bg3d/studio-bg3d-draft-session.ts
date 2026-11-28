@@ -76,6 +76,7 @@ export function isStudioBg3dUnappliedDraftEligible(props: {
   readonly initialDataUrl?: string;
   readonly seedSceneTemplateId?: string | null;
   readonly seedPrimitiveKind?: string | null;
+  readonly seedModelSourceId?: string | null;
 }): boolean {
   const operation = props.operation ?? "insert";
   return (
@@ -84,6 +85,7 @@ export function isStudioBg3dUnappliedDraftEligible(props: {
     && !props.initialDataUrl
     && !props.seedSceneTemplateId
     && !props.seedPrimitiveKind
+    && !props.seedModelSourceId
   );
 }
 
@@ -100,6 +102,7 @@ export function resolveStudioBg3dPropsWithUnappliedDraft<T extends Record<string
     readonly initialDataUrl?: string;
     readonly seedSceneTemplateId?: string | null;
     readonly seedPrimitiveKind?: string | null;
+    readonly seedModelSourceId?: string | null;
   });
   if (!eligible) {
     return {

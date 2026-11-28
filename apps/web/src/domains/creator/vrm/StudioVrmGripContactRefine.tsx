@@ -13,8 +13,8 @@ import {
   createStudioVrmGripContactTargets,
   type StudioVrmGripDigitOrdinal,
 } from "./studio-vrm-grip-contact-targets";
-import { usesDefaultMicrophoneThumbGrip } from "./studio-vrm-microphone-grip";
-import { createMicrophoneThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
+import { usesDefaultFittedThumbGrip } from "./studio-vrm-microphone-grip";
+import { createFittedThumbContactPass } from "./studio-vrm-microphone-thumb-contact";
 import { createAutoGripFingerOverrides, resolvePropAttachment, resolveSecondaryPropTarget } from "./studio-vrm-prop-rig";
 import { propDefById } from "./studio-vrm-props";
 import {
@@ -76,8 +76,8 @@ export function createStudioVrmGripContactPasses(
       const handSize = side === "left" ? metrics.leftHand : metrics.rightHand;
       if (![radius, handSize].every((value) => Number.isFinite(value) && value > 0)) continue;
 
-      const thumbContact = usesDefaultMicrophoneThumbGrip(item, metrics)
-        ? createMicrophoneThumbContactPass(vrm, side, resolved, handSize, locked) : null;
+      const thumbContact = usesDefaultFittedThumbGrip(item, metrics)
+        ? createFittedThumbContactPass(vrm, side, resolved, handSize, locked) : null;
       if (thumbContact) passes.push(thumbContact);
 
       hand.updateWorldMatrix(true, true);

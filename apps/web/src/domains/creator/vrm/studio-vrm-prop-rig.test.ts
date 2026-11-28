@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
-import { usesDefaultMicrophoneThumbGrip } from "./studio-vrm-microphone-grip";
+import { usesDefaultFittedThumbGrip } from "./studio-vrm-microphone-grip";
 import {
   DEFAULT_VRM_PROP_RIG_METRICS,
   PROP_RIG_FIT_MAX,
@@ -304,6 +304,39 @@ describe("스마트 anchor wrapper", () => {
       result.socketPosition,
       5
     );
+  });
+
+  it.each(["leftHand", "rightHand"] as const)("새 머그와 책을 %s의 손가락과 엄지 사이에 맞추고 저장한 접점을 보존한다", (hand) => {
+    const metrics = createCompleteGripMetrics();
+    const socket = metrics.handSockets[hand];
+    const palmInverse = new THREE.Quaternion(...socket.rotationQuaternion).invert();
+    for (const prop of ["mug", "book"]) {
+      const def = propDefById(prop)!;
+      const item = { ...createPropInstance(prop, prop)!, bone: hand };
+      const fitted = resolvePropAttachment(def, item, metrics);
+      const relative = new THREE.Vector3(...fitted.socketPosition)
+        .sub(new THREE.Vector3(...socket.position)).applyQuaternion(palmInverse);
+      expect(relative.y * (hand === "leftHand" ? 1 : -1)).toBeGreaterThan(0.01);
+      expect(relative.z).toBeGreaterThan(0.02);
+      const orientation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        THREE.MathUtils.degToRad(fitted.rotationDeg[0]),
+        THREE.MathUtils.degToRad(fitted.rotationDeg[1]),
+        THREE.MathUtils.degToRad(fitted.rotationDeg[2]),
+      )).premultiply(palmInverse);
+      if (prop === "mug") {
+        expect(new THREE.Vector3(0, 1, 0).applyQuaternion(orientation).z).toBeLessThan(-0.9);
+      } else {
+        const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(orientation);
+        expect(normal.y * (hand === "leftHand" ? 1 : -1)).toBeGreaterThan(0.8);
+      }
+
+      for (const anchorId of ["primary", "", "missing"]) {
+        const legacy = parseVrmProps({ version: 2, items: [{ ...item, rig: { ...item.rig, anchorId } }] }).items[0];
+        const restored = resolvePropAttachment(def, legacy, metrics);
+        expect(restored.anchorId).toBe("primary");
+        expectVecClose(restored.socketPosition, socket.position);
+      }
+    }
   });
 
   it("rig가 있으면 legacy instance transform은 무시하고 def 기본값+delta만 사용한다", () => {
@@ -790,14 +823,14 @@ describe("마이크 손잡이와 손바닥", () => {
   });
 
   it("새 마이크의 기본 자동 장착에서만 엄지 마디를 보정한다", () => {
-    expect(usesDefaultMicrophoneThumbGrip(mic, metrics)).toBe(true);
+    expect(usesDefaultFittedThumbGrip(mic, metrics)).toBe(true);
     const rig = mic.rig!;
     for (const patch of [
       { mode: "custom" as const }, { autoFingerPose: false }, { autoScale: false }, { anchorId: "primary" },
       { deltaScale: 1.1 }, { gripFit: 1.2 }, { deltaPosition: [0.01, 0, 0] as Vec3 }, { deltaRotationDeg: [0, 1, 0] as Vec3 },
-    ]) expect(usesDefaultMicrophoneThumbGrip({ ...mic, rig: { ...rig, ...patch } }, metrics)).toBe(false);
-    expect(usesDefaultMicrophoneThumbGrip({ ...mic, rig: undefined }, metrics)).toBe(false);
-    expect(usesDefaultMicrophoneThumbGrip({ ...mic, propId: "mug" }, metrics)).toBe(false);
+    ]) expect(usesDefaultFittedThumbGrip({ ...mic, rig: { ...rig, ...patch } }, metrics)).toBe(false);
+    expect(usesDefaultFittedThumbGrip({ ...mic, rig: undefined }, metrics)).toBe(false);
+    expect(usesDefaultFittedThumbGrip({ ...mic, propId: "mug" }, metrics)).toBe(false);
   });
 
   it.each([undefined, "retired-contact"])("이전 V2 마이크의 누락/손상 접점 %s를 원래 위치로 복구한다", (anchorId) => {

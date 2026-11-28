@@ -2,8 +2,9 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-import { resolveStudioVrmInspectionBounds, type StudioVrmInspectionLandmarks } from "./studio-vrm-inspection-framing";
-import { resolveStudioVrmPortraitBounds } from "./studio-vrm-portrait-framing";
+import { classifyMeshName } from "./studio-vrm-costume";
+import { resolveStudioVrmInspectionBounds, STUDIO_VRM_FINGER_DISTALS, type StudioVrmInspectionLandmarks } from "./studio-vrm-inspection-framing";
+import { isStudioVrmHairView, resolveStudioVrmPortraitBounds } from "./studio-vrm-portrait-framing";
 import { findCameraPreset } from "./studio-vrm-poser-helpers";
 import { fitStudioVrmPreviewCamera } from "./studio-vrm-preview-framing";
 import { applyCameraPreset, type OrbitLike } from "./StudioVrmPoserTypes";
@@ -12,7 +13,7 @@ import { normalizeCameraPresetForVrmForward } from "./vrm-forward-axis-normalize
 import type { VRM } from "@pixiv/three-vrm";
 
 /** One-shot measurement after pose commit, ignoring hidden/off-camera meshes. */
-function visibleCharacterBounds(scene: THREE.Object3D, camera: THREE.Camera): THREE.Box3 {
+function visibleCharacterBounds(scene: THREE.Object3D, camera: THREE.Camera, hairBounds?: THREE.Box3): THREE.Box3 {
   const bounds = new THREE.Box3();
   const transformed = new THREE.Box3();
   scene.updateWorldMatrix(true, true);
@@ -29,11 +30,16 @@ function visibleCharacterBounds(scene: THREE.Object3D, camera: THREE.Camera): TH
         if (!skinned.boundingBox) return;
         transformed.copy(skinned.boundingBox).applyMatrix4(mesh.matrixWorld);
       } else {
-        mesh.geometry.computeBoundingBox();
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
         if (!mesh.geometry.boundingBox) return;
         transformed.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld);
       }
-      if ([...transformed.min.toArray(), ...transformed.max.toArray()].every(Number.isFinite) && !transformed.isEmpty()) bounds.union(transformed);
+      if (transformed.isEmpty() || ![...transformed.min.toArray(), ...transformed.max.toArray()].every(Number.isFinite)) return;
+      bounds.union(transformed);
+      if (hairBounds && (mesh.userData.toonstudioComponent === "hair" || classifyMeshName(mesh.name).protected === "hair"
+        || materials.every(material => material && classifyMeshName(material.name).protected === "hair"))) {
+        hairBounds.union(transformed);
+      }
     } catch {
       // A malformed imported primitive must not take down the entire preview.
     }
@@ -41,13 +47,20 @@ function visibleCharacterBounds(scene: THREE.Object3D, camera: THREE.Camera): TH
   return bounds;
 }
 
-function portraitLandmarks(vrm: VRM): StudioVrmInspectionLandmarks {
+function portraitLandmarks(vrm: VRM, presetId: string): StudioVrmInspectionLandmarks {
   const points: Partial<Record<keyof StudioVrmInspectionLandmarks, readonly [number, number, number]>> = {};
-  for (const name of ["head", "neck", "leftEye", "rightEye", "chest", "leftUpperArm", "rightUpperArm", "hips", "spine", "leftHand", "rightHand", "leftMiddleProximal", "rightMiddleProximal", "leftLowerLeg", "rightLowerLeg", "leftFoot", "rightFoot", "leftToes", "rightToes"] as const) {
-    const node = vrm.humanoid?.getNormalizedBoneNode(name);
+  const bones = ["head", "neck", "leftEye", "rightEye", "chest", "leftUpperArm", "rightUpperArm", "hips", "spine", "leftHand", "rightHand", "leftMiddleProximal", "rightMiddleProximal", "leftLowerLeg", "rightLowerLeg", "leftFoot", "rightFoot", "leftToes", "rightToes"] as const;
+  const hand = presetId === "inspectLeftHand" ? "left" : presetId === "inspectRightHand" ? "right" : null;
+  const fingertips = hand ? STUDIO_VRM_FINGER_DISTALS.map((finger) => `${hand}${finger}` as const) : [];
+  const position = new THREE.Vector3();
+  for (const name of [...bones, ...fingertips]) {
+    // 스킨을 구동하는 실제 본이 체형 조절과 리타기팅 결과를 반영한다.
+    const node = vrm.humanoid?.getRawBoneNode(name) ?? vrm.humanoid?.getNormalizedBoneNode(name);
     if (!node) continue;
-    const position = node.getWorldPosition(new THREE.Vector3());
-    if (position.toArray().every(Number.isFinite)) points[name] = [position.x, position.y, position.z];
+    node.getWorldPosition(position);
+    if (Number.isFinite(position.x) && Number.isFinite(position.y) && Number.isFinite(position.z)) {
+      points[name] = [position.x, position.y, position.z];
+    }
   }
   return points;
 }
@@ -85,11 +98,13 @@ export function CameraDirector({ presetId, resetNonce, vrm, interactionLocked = 
     let fitDistance: number | null = null;
     let boundsRadius = 0;
     if (vrm?.scene) {
-      const box = visibleCharacterBounds(vrm.scene, frameCamera);
+      const hairBox = isStudioVrmHairView(presetId) ? new THREE.Box3() : undefined;
+      const box = visibleCharacterBounds(vrm.scene, frameCamera, hairBox);
       const bodyBounds = { min: box.min.toArray() as [number, number, number], max: box.max.toArray() as [number, number, number] };
-      const landmarks = portraitLandmarks(vrm);
+      const landmarks = portraitLandmarks(vrm, presetId);
       const portrait = resolveStudioVrmInspectionBounds(presetId, bodyBounds, landmarks)
-        ?? resolveStudioVrmPortraitBounds(presetId, bodyBounds, landmarks);
+        ?? resolveStudioVrmPortraitBounds(presetId, bodyBounds, landmarks, hairBox && !hairBox.isEmpty()
+          ? { min: hairBox.min.toArray(), max: hairBox.max.toArray() } : undefined);
       // Keep the actual portrait lens/direction, fitting only its landmark region.
       // Custom and over-shoulder crops never enter this automatic subject fit.
       const fitPreset = portrait ? { ...orientedPreset, id: "fullBody" } : orientedPreset;

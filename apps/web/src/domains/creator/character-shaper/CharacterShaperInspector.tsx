@@ -67,7 +67,6 @@ import {
 } from "./studio-3d-head-mixer";
 import {
   createDefaultBodyAndHairState,
-  HAIR_COLOR_TOKEN_PRESETS,
   resolveBodyMatrixTo21Sliders,
   toStudioVrmProportions,
   type StudioWebtoonBodyAndHairState,
@@ -112,17 +111,6 @@ const MORPH_HINTS: Readonly<Record<AvatarForgeSemanticFaceMorphId, string>> = {
   lipFullness: "입술 두께",
   earSize: "귀 크기",
 };
-
-const THREE_PART_COLOR_HEX: Readonly<Record<string, string>> = Object.freeze({
-  "ink-black": "#1c1917",
-  "espresso-brown": "#4a3328",
-  "ash-blond": "#d6c5a3",
-  "rose-pink": "#e69bb8",
-  "silver-blue": "#a9bcd8",
-  "crimson-red": "#b4323c",
-  "emerald-mint": "#4ca88e",
-  "violet-plum": "#7a5ca8",
-});
 
 /* -------------------------------------------------------------------------- */
 /* Inspector                                                                   */
@@ -196,13 +184,7 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
         proportions: nextProportions,
       });
     }
-    if (next.hair.mainColorId !== bodyMatrixState.hair.mainColorId) {
-      const preset = HAIR_COLOR_TOKEN_PRESETS.find((item) => item.id === next.hair.mainColorId);
-      const hex = THREE_PART_COLOR_HEX[next.hair.mainColorId];
-      if (hex) {
-        binding.commitHairParams({ baseColor: hex }, `3분할 헤어: ${preset?.labelKo ?? next.hair.mainColorId}`);
-      }
-    }
+
   };
 
   /* ---------------------------------------------------------------------- */
@@ -395,7 +377,8 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
           collapsible
           defaultOpen={false}
         >
-          <StudioBodyRatioMatrixPad state={bodyMatrixState} disabled={disabled} onChange={handleBodyMatrixChange} />
+          <StudioBodyRatioMatrixPad state={bodyMatrixState} disabled={disabled} onChange={handleBodyMatrixChange}
+            hairEditor={<CharacterShaperHairInspector h={h} binding={binding} locked={locked} />} />
         </Section>
         <CharacterShaperSkinSection h={h} binding={binding} locked={locked} />
         <Section title="정밀 제작" hint="Blender 파이프라인으로 만든 캐릭터 패키지를 이 셰이퍼로 가져옵니다.">

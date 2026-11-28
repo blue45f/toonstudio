@@ -6,7 +6,7 @@ import {
 } from "./studio-vrm-hair-hand-equip-refiner";
 import { measureStudioVrmHeadSurface, studioVrmHeadwearSurfaceSocket } from "./studio-vrm-head-surface";
 import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
-import { microphoneGripSocket } from "./studio-vrm-microphone-grip";
+import { measuredPropGripSocket } from "./studio-vrm-everyday-grip";
 import { primaryPropAnchor } from "./studio-vrm-prop-anchors";
 import {
   VRM_PROP_GRIP_FIT_MAX,
@@ -792,7 +792,6 @@ export function resolvePropAttachment(
   const metrics = sanitizeVrmPropRigMetrics(rawMetrics);
   const anchor = primaryPropAnchor(def, instance.rig?.anchorId);
   const rig = instance.rig;
-
   // V1 문서는 top-level transform이 이미 geometry 원점 기준으로 저작되어 있다.
   // anchor를 소급 적용하면 기존 컷이 이동하므로 스마트 리그는 rig가 명시된 V2에만 적용한다.
   if (!rig) {
@@ -835,13 +834,15 @@ export function resolvePropAttachment(
   const fit = getPropFitStatus(def, instance, metrics);
   const baseScale = clamp(finite(def.defaultScale) ?? 1, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
   const scale = clamp(baseScale * fit.fitScale * deltaScale, PROP_RIG_FIT_MIN, PROP_RIG_FIT_MAX);
-  const micSocket = microphoneGripSocket(def.id, anchor, targetHand, metrics, scale);
-  const activeSocket = micSocket ?? handSocket ?? headwearSocket ?? faceSocket;
+  const measuredGrip = measuredPropGripSocket(def.id, anchor, targetHand, metrics, scale);
+  const activeSocket = measuredGrip ?? handSocket ?? headwearSocket ?? faceSocket;
   const socketBasis = activeSocket
     ? new THREE.Quaternion(...activeSocket.rotationQuaternion).normalize()
     : new THREE.Quaternion();
+  const anchorBasis = anchorBasisQuaternion(anchor);
+  if (measuredGrip) socketBasis.multiply(anchorBasis);
   let adjustedDeltaPosition: Vec3 = [...deltaPosition];
-  let userRotationDeg: Vec3 = micSocket ? [...deltaRotation] : addVec3(def.smartRotationDeg ?? def.defaultRotationDeg, deltaRotation);
+  let userRotationDeg: Vec3 = measuredGrip ? [...deltaRotation] : addVec3(def.smartRotationDeg ?? def.defaultRotationDeg, deltaRotation);
   if (mirrored) {
     adjustedDeltaPosition = mirrorPosition(adjustedDeltaPosition);
     userRotationDeg = mirrorEulerDeg(userRotationDeg);
@@ -854,8 +855,7 @@ export function resolvePropAttachment(
     THREE.MathUtils.degToRad(userRotationDeg[2]),
     "XYZ"
   ));
-  const anchorInverseRotation = anchorBasisQuaternion(anchor).invert();
-  const wrapperRotation = socketBasis.clone().multiply(userRotation).multiply(anchorInverseRotation).normalize();
+  const wrapperRotation = socketBasis.clone().multiply(userRotation).multiply(anchorBasis.invert()).normalize();
   const euler = new THREE.Euler().setFromQuaternion(wrapperRotation, "XYZ");
   const rotationDeg: Vec3 = [
     THREE.MathUtils.radToDeg(euler.x),

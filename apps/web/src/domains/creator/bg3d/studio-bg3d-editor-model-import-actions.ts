@@ -8,6 +8,7 @@ import {
   normalizeStudioGeneric3dSourceFormat,
 } from "../studio-generic-3d-workflow-metadata";
 
+import type { StudioBg3dEditorRecipeHost } from "./studio-bg3d-editor-recipe-run";
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
 import { nameNewStudioBg3dCustomModel } from "./studio-bg3d-instance-naming";
 import {
@@ -113,6 +114,7 @@ export interface StudioBg3dModelImportActionsContext {
   readonly sceneBaseDocument: StudioBg3dSceneDocument;
 
   readonly setCustomModels: Dispatch<SetStateAction<BgCustomModelInstance[]>>;
+  readonly commitImmediateHistoryTransition: StudioBg3dEditorRecipeHost["commitImmediateHistoryTransition"];
   readonly replaceCanonicalDocumentState: (
     mutation: StudioBg3dCanonicalDocumentMutation,
   ) => StudioBg3dCanonicalDocumentSnapshot;
@@ -530,6 +532,9 @@ export function createStudioBg3dModelImportActions(
           );
           if (placements.length > 0) {
             const nextCustomModels = [...current.customModels, ...placements];
+            ctx.commitImmediateHistoryTransition(current.primitives, nextCustomModels, current.document, current, {
+              commandId: "studio.bg3d.model.import", label: "3D 모델 가져오기", source: "menu",
+            });
             replaceCanonicalDocumentState({ customModels: nextCustomModels });
             setSelectedIds(new Set([placements[placements.length - 1].id]));
             setRefTick((n) => n + 1);

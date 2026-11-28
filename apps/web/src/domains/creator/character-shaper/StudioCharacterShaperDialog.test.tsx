@@ -514,6 +514,30 @@ describe("StudioCharacterShaperDialog shell", () => {
     expect(screen.getAllByRole("button", { name: /^확대$/ })).toHaveLength(1);
   });
 
+  it.each([390, 1440])("헤어와 손 슬롯을 열면 %spx에서도 원하는 부위만 한 번에 확대한다", (width) => {
+    const { h } = renderDialog({ width });
+    fireEvent.click(categoryButton("hair"));
+    expect(h.setActiveCameraId).not.toHaveBeenCalled();
+    for (const [name, id] of [["헤어 정면", "hairFront"], ["헤어 측면", "hairProfile"], ["헤어 후면", "hairBack"]]) {
+      fireEvent.click(screen.getByRole("button", { name }));
+      expect(h.setActiveCameraId).toHaveBeenLastCalledWith(id);
+    }
+    fireEvent.click(categoryButton("pose"));
+    fireEvent.click(subslotButton("hand-pose"));
+    for (const [name, id] of [["왼손 확대", "inspectLeftHand"], ["오른손 확대", "inspectRightHand"]]) {
+      fireEvent.click(screen.getByRole("button", { name }));
+      expect(h.setActiveCameraId).toHaveBeenLastCalledWith(id);
+    }
+    expect(h.onClose).not.toHaveBeenCalled();
+  });
+
+  it("선택한 시점을 다시 누르면 자유 회전으로 바뀐 구도를 복구한다", () => {
+    const { h } = renderDialog({ h: makeHost({ activeCameraId: "hairBack" }) });
+    fireEvent.click(categoryButton("hair"));
+    fireEvent.click(screen.getByRole("button", { name: "헤어 후면" }));
+    expect(h.handleViewReset).toHaveBeenCalledOnce();
+  });
+
   it("owns a single viewport chrome and routes contact inspection through the existing camera", () => {
     const { h } = renderDialog({ width: 390 });
     expect(screen.getByTestId("viewport").getAttribute("data-presentation")).toBe("shaper");
@@ -747,7 +771,7 @@ describe("StudioCharacterShaperDialog shell", () => {
     expect(h.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("collapses the inspector column on desktop and folds it into a slide-over on tablet", () => {
+  it("데스크톱과 태블릿에서 정밀 조절을 열고 닫아도 모델을 덮지 않는다", () => {
     const desktop = renderDialog({ width: 1440 });
     fireEvent.click(screen.getByRole("button", { name: "정밀 조절" }));
     expect(screen.queryByRole("complementary", { name: "정밀 조절" })).toBeNull();
@@ -756,7 +780,8 @@ describe("StudioCharacterShaperDialog shell", () => {
     renderDialog({ width: 1024 });
     expect(dialogRoot()?.getAttribute("data-character-shaper-layout")).toBe("tablet");
     const aside = screen.getByRole("complementary", { name: "정밀 조절" });
-    expect(aside.getAttribute("data-character-shaper-inspector")).toBe("slide-over");
+    expect(aside.getAttribute("data-character-shaper-inspector")).toBe("column");
+    expect(aside.closest("[data-character-shaper-viewport]")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "정밀 조절 닫기" }));
     expect(screen.queryByRole("complementary", { name: "정밀 조절" })).toBeNull();
   });

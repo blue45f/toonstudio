@@ -557,6 +557,7 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
     },
     [],
   );
+  const invalidateViewport = useCallback(() => texturePaintInvalidateRef.current?.(), [texturePaintInvalidateRef]);
 
   const handleTexturePaintSettingsChange = useCallback(
     (update: StudioVrmTexturePaintSettingsUpdate) => {
@@ -752,6 +753,7 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
     handleTabKeyDown,
     handleCharacterTabKeyDown,
     handleViewportReady,
+    invalidateViewport,
     handleTexturePaintInvalidateReady,
     handleTexturePaintSettingsChange,
     handleTexturePaintColorSampled,

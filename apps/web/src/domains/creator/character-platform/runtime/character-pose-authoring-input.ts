@@ -2,6 +2,8 @@ import { Euler } from "three";
 
 import { STUDIO_HUMANOID_BONE_NAMES, getStudioHumanoidBoneDescriptor } from "../../studio-humanoid-bones";
 import { createStudioVrmPhotoPoseApplyPlan } from "../../vrm/studio-vrm-photo-pose-apply";
+import { fitStudioVrmHandPresetContact } from "../../vrm/studio-vrm-hand-preset-contact";
+import type { StudioVrmHandPoseType } from "../../vrm/studio-vrm-hand-poses";
 import { applyFingerRotations } from "../../vrm/studio-vrm-poser-utils";
 import { applyCharacterPoseRuntimeV3, captureCharacterPoseRuntimeV3 } from "../pose-v3/character-pose-runtime-adapter";
 import { validateCharacterPoseDocumentV3 } from "../pose-v3/character-pose-v3";
@@ -19,6 +21,7 @@ export interface CharacterPoseAuthoringInput {
   readonly bones: StudioVrmPhotoPoseApplyInput["scannedBones"];
   readonly fingers?: StudioVrmPhotoPoseApplyInput["scannedFingerEdits"];
   readonly lockedBones?: readonly string[];
+  readonly handPreset?: StudioVrmHandPoseType;
   readonly clampRotation?: StudioVrmPhotoPoseApplyInput["clampRotation"];
   readonly yOffset?: number;
   readonly confidence?: number;
@@ -62,6 +65,11 @@ export function planCharacterPoseAuthoringInput(input: CharacterPoseAuthoringInp
     const before = beforeFingers.get(name);
     const target = isolated.humanoid.getNormalizedBoneNode(name);
     if (before && target) target.quaternion.copy(before);
+  }
+  if (input.handPreset && input.kind === "manual") {
+    for (const side of ["left", "right"] as const) {
+      fitStudioVrmHandPresetContact(isolated, side, input.handPreset, plan.fingerEdits);
+    }
   }
   if (input.yOffset !== undefined) isolated.scene.position.y = input.yOffset;
   const captured = captureCharacterPoseRuntimeV3({ source: isolated,

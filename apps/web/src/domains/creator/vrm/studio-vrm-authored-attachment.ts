@@ -11,3 +11,25 @@ export function isStudioAuthoredAttachment(object: Object3D): boolean {
   }
   return false;
 }
+
+export const STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY = "studioVrmCustomPartOutline";
+
+/** 셰이퍼가 추가한 파츠와 원본 VRM·환경을 구분한다. */
+export function isStudioVrmCustomPart(object: Object3D): boolean {
+  let current: Object3D | null = object;
+  while (current) {
+    const data = current.userData;
+    if (
+      data.toonSpectrumAvatarForge === true
+      || data[STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY] === true
+      || typeof data.characterAuthoringDerivative === "string"
+      || data.characterCanonicalPart === true
+      || current.name.startsWith("wardrobe:")
+      || current.name.startsWith("prop:")
+    ) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}

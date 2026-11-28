@@ -97,7 +97,7 @@ describe("createAvatarForgeHairGeometry", () => {
     const parts = planFor("bun");
     const cap = parts.find((part) => part.role === "cap");
     const bun = parts.find((part) => part.id === "bun");
-    expect(positionsOf(cap!).count).toBe(29 * 19);
+    expect(positionsOf(cap!).count).toBe(49 * 19);
     expect(positionsOf(bun!).count).toBe(29 * 21);
   });
 

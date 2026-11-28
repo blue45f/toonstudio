@@ -55,6 +55,8 @@ export function buildStudioVrmHairGeometryIdentity(
   const hair = normalizedHair(hairInput);
   const payload = {
     style: hair.style,
+    frontPart: hair.frontPart, sidePart: hair.sidePart, backPart: hair.backPart,
+    frontTint: hair.frontTint, sideTint: hair.sideTint, backTint: hair.backTint,
     volume: hair.volume,
     length: hair.length,
     strandWidth: hair.strandWidth,

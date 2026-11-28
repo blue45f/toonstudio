@@ -25,31 +25,24 @@
   height: 100%;
 }
 
-/* 기본 <=48px 고밀도 크롬은 단일 획선 글리프를 유지하고, 쇼케이스 카드("art") 또는 사용자 선택 시 아틀라스를 표시한다. */
-.studio-tool-art[data-studio-tool-art-variant="art"] > img[data-ready],
-:root[data-studio-icon-style="illustrated"] .studio-tool-art > img[data-ready] {
-  opacity: 1;
-  visibility: visible;
-}
-
-.studio-tool-art[data-studio-tool-art-variant="art"] > img[data-ready] + svg,
-:root[data-studio-icon-style="illustrated"] .studio-tool-art > img[data-ready] + svg {
-  display: none;
-}
-
 .studio-catalog-category-art { --studio-tool-art-size: 22px; }
 .studio-catalog-row-art { --studio-tool-art-size: 26px; }
 
-/* 어두운 점선 선택 윤곽은 작은 크기에서도 시맨틱 배경 위에 드러난다. */
 @media (forced-colors: none) {
+  /* 일반 색상에서만 쇼케이스와 일러스트 설정의 글리프를 로드된 삽화로 교체한다. */
+  .studio-tool-art[data-studio-tool-art-variant="art"] > img[data-ready],
+  :root[data-studio-icon-style="illustrated"] .studio-tool-art > img[data-ready] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .studio-tool-art[data-studio-tool-art-variant="art"] > img[data-ready] + svg,
+  :root[data-studio-icon-style="illustrated"] .studio-tool-art > img[data-ready] + svg {
+    display: none;
+  }
+
   .studio-tool-art[data-studio-tool-art-variant="art"]:is([data-studio-tool-art="selectRect"], [data-studio-tool-art="selectCircle"]):has(> img[data-ready]) {
     border-radius: 4px;
     background: color-mix(in oklch, var(--color-fg) 10%, var(--color-card));
   }
-}
-
-@media (forced-colors: active) {
-  .studio-tool-art > img,
-  .studio-tool-art > img[data-ready] { display: none; }
-  .studio-tool-art > img[data-ready] + svg { display: block; }
 }

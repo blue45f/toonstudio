@@ -26,13 +26,15 @@ import {
   isStudioBg3dAssetPlacementRecipeId,
 } from "./studio-bg3d-asset-placement-catalog";
 import { createStudioBg3dAssetPlacementPlanner } from "./studio-bg3d-asset-placement-recipes";
-import { readStudioBg3dObjectWorldBounds } from "./studio-bg3d-camera-application";
-import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
+import { readStudioBg3dObjectWorldBounds, type BgViewportApi } from "./studio-bg3d-camera-application";
+import { getStudioBg3dEnvironmentAsset, isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
 import { probeStudioBg3dNearestWall } from "./studio-bg3d-wall-probe";
 import { readStudioBg3dModelCacheEntry, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 
 import type * as THREE from "three";
+import type { StudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
+import type { frameStudioBg3dPlacedEnvironmentCamera } from "./studio-bg3d-environment-camera";
 import type { StudioBg3dAssetPlacementMath, StudioBg3dPlacementBounds } from "./studio-bg3d-asset-placement-recipes";
 import type { createStudioBg3dHistorySnapshot, StudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
 import type {
@@ -61,6 +63,8 @@ const COMMAND_ID = "bg3d.asset.place-recipe";
  * 형식은 원래 함수·클래스의 타입을 그대로 따른다.
  */
 export interface StudioBg3dRecipeRunDeps {
+  readonly frameEnvironmentCamera: typeof frameStudioBg3dPlacedEnvironmentCamera;
+  readonly defaultScene: StudioBg3dSceneDocument;
   readonly isSceneEditReady: typeof isStudioBg3dSceneEditReady;
   readonly isPhysicsTransientPhase: typeof isStudioBg3dPhysicsTransientPhase;
   readonly createHistorySnapshot: typeof createStudioBg3dHistorySnapshot;
@@ -95,9 +99,8 @@ export interface StudioBg3dEditorRecipeHost {
   readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, StudioBg3dModelRootCacheEntry> };
   readonly primitiveObjectsRef: { readonly current: ReadonlyMap<string, THREE.Object3D> };
   readonly attachmentByStorageModelIdRef: { readonly current: ReadonlyMap<string, StudioBg3dModelAttachment> };
-  readonly viewportApiRef: {
-    readonly current: { readonly readView: () => { readonly target: readonly [number, number, number] } } | null;
-  };
+  readonly sharedCharacters?: readonly unknown[];
+  readonly viewportApiRef: { readonly current: Pick<BgViewportApi, "readView" | "applyView"> | null };
   readonly isModalAssetSessionCurrent: (session: StudioBg3dModalSession) => boolean;
   readonly canAdmitSceneNodes: (additionalNodeCount: number) => boolean;
   readonly cancelCustomModelPlacement: (message?: string) => void;
@@ -112,7 +115,7 @@ export interface StudioBg3dEditorRecipeHost {
     customModels: readonly BgCustomModelInstance[],
     document: StudioBg3dCanonicalDocumentState["sceneBaseDocument"],
     before?: StudioBg3dHistorySnapshot,
-    options?: { readonly commandId?: string; readonly label?: string; readonly source?: "menu" },
+    options?: { readonly preserveBeforeCamera?: boolean; readonly commandId?: string; readonly label?: string; readonly source?: "menu" },
   ) => void;
   readonly replaceCanonicalDocumentState: StudioBg3dCanonicalDocumentState["replaceCanonicalDocumentState"];
   readonly setError: (error: string | null) => void;
@@ -120,11 +123,11 @@ export interface StudioBg3dEditorRecipeHost {
   readonly setRefTick: (update: (revision: number) => number) => void;
   readonly setSurfaceSnapStatus: (status: { readonly tone: "info" | "error" | "success"; readonly message: string }) => void;
   /** 카드의 "배치 방식"이 부른다. 장면을 바꿨으면 true, 바꾸지 않았으면 false. */
-  placeCustomModelWithRecipe: (modelId: string, recipe: string) => Promise<boolean>;
+  placeCustomModelWithRecipe: (modelId: string, recipe: string, options?: { frameEmptyScene: boolean; indoorLighting?: boolean }) => Promise<boolean>;
 }
 
 class RecipePlacementUnavailableError extends Error {
-  constructor(readonly code: "model-unavailable" | "model-bounds-unavailable") {
+  constructor(readonly code: "model-unavailable" | "model-bounds-unavailable" | "indoor-lighting-unavailable") {
     super(code);
     this.name = "RecipePlacementUnavailableError";
   }
@@ -179,8 +182,21 @@ function failureMessage(failure: unknown, deps: StudioBg3dRecipeRunDeps): string
   if (failure instanceof StudioBg3dThreeOperationError || failure instanceof deps.PlacementAdmissionError) {
     return failure.message;
   }
-  if (failure instanceof RecipePlacementUnavailableError) return STUDIO_BG3D_RECIPE_BOUNDS_UNAVAILABLE_MESSAGE;
+  if (failure instanceof RecipePlacementUnavailableError) {
+    return failure.code === "indoor-lighting-unavailable"
+      ? "실내 조명 프리셋을 불러오지 못했어요. 연결을 확인한 뒤 다시 배치해 주세요."
+      : STUDIO_BG3D_RECIPE_BOUNDS_UNAVAILABLE_MESSAGE;
+  }
   return STUDIO_BG3D_RECIPE_VERIFY_FAILED_MESSAGE;
+}
+
+async function loadIndoorLightingPreset() {
+  try {
+    const { getStudioBg3dHdriLightingPreset } = await import("./studio-bg3d-hdri-lighting-presets");
+    return getStudioBg3dHdriLightingPreset("studio");
+  } catch {
+    throw new RecipePlacementUnavailableError("indoor-lighting-unavailable");
+  }
 }
 
 /** 지금 장면을 건드리면 안 되는 이유를 하나 고른다(없으면 null). 순서가 안내 우선순위다. */
@@ -208,6 +224,7 @@ export async function placeStudioBg3dModelWithRecipe(
   modelId: string,
   recipe: string,
   deps: StudioBg3dRecipeRunDeps,
+  options?: { frameEmptyScene: boolean; indoorLighting?: boolean },
 ): Promise<boolean> {
   const notify = (tone: "info" | "error" | "success", message: string): void => {
     h.setSurfaceSnapStatus({ tone, message });
@@ -244,6 +261,15 @@ export async function placeStudioBg3dModelWithRecipe(
   }
   h.setError(null);
 
+  const environment = options?.frameEmptyScene ? getStudioBg3dEnvironmentAsset(modelId) : null;
+  const mayFrameEnvironment = () => {
+    const scene = h.physicsRuntimeSourceRef.current;
+    return !scene.primitives.length && !scene.customModels.length && !scene.document.nodes.length
+      && !scene.document.shots?.length && !h.sharedCharacters?.length;
+  };
+  const hasDefaultLighting = (document: StudioBg3dSceneDocument) =>
+    document.render.exposure === deps.defaultScene.render.exposure
+    && JSON.stringify(document.lighting) === JSON.stringify(deps.defaultScene.lighting);
   let placed = false;
   const renderer = h.modelRenderer, backend = h.materialBackend ?? "webgl";
   const isMaterialBackendCurrent = h.isMaterialBackendCurrent;
@@ -269,12 +295,19 @@ export async function placeStudioBg3dModelWithRecipe(
           typeof (record as { readonly name?: unknown }).name === "string"
             ? (record as { readonly name: string }).name
             : undefined;
+        // 조명 탭을 열지 않은 편집기에서는 실내 배경이 기본 장면의 조명을 맡을 때만 HDRI 목록을 요청한다.
+        const indoorPreset = environment && options?.indoorLighting && mayFrameEnvironment()
+          && hasDefaultLighting(h.physicsRuntimeSourceRef.current.document)
+          ? await loadIndoorLightingPreset()
+          : undefined;
         return {
+          indoorPreset,
           localBounds: { min: bounds.min, max: bounds.max } satisfies StudioBg3dPlacementBounds,
           modelLabel: recordName,
+          root,
         };
       },
-      ({ localBounds, modelLabel }) => {
+      ({ localBounds, modelLabel, root, indoorPreset }) => {
         assertRuntimeCurrent();
         // 장면 변경은 직렬로 실행되므로 이 시점의 라이브 장면이 곧 반영 대상이다.
         const runtime = h.physicsRuntimeSourceRef.current;
@@ -295,7 +328,9 @@ export async function placeStudioBg3dModelWithRecipe(
           maximumCumulativeBytes: runtime.document.budgets.complexity.maxModelBytes,
         });
 
-        const target = h.viewportApiRef.current?.readView().target;
+        const viewport = h.viewportApiRef.current;
+        const beforeView = viewport?.readView();
+        const target = beforeView?.target;
         const dropPoint: readonly [number, number] = target && Number.isFinite(target[0]) && Number.isFinite(target[2])
           ? [target[0], target[2]]
           : [0, 0];
@@ -335,20 +370,29 @@ export async function placeStudioBg3dModelWithRecipe(
           scale: [plan.scale[0], plan.scale[1], plan.scale[2]],
         };
         const next = deps.nameNewCustomModel
-          ? deps.nameNewCustomModel(baseNext, modelLabel ?? attachment.name, runtime)
+          ? deps.nameNewCustomModel(baseNext, environment?.name ?? modelLabel ?? attachment.name, runtime)
           : baseNext;
         const nextCustomModels = [...runtime.customModels, next];
-        const before = deps.createHistorySnapshot({
-          primitives: runtime.primitives,
-          customModels: runtime.customModels,
-          document: runtime.document,
-        });
-        h.commitImmediateHistoryTransition(runtime.primitives, nextCustomModels, runtime.document, before, {
+        let beforeDocument = runtime.document;
+        let nextDocument = runtime.document;
+        if (environment && beforeView && mayFrameEnvironment()) {
+          const framed = deps.frameEnvironmentCamera(environment.camera, beforeView, next, root);
+          if (framed && viewport?.applyView(framed)) {
+            beforeDocument = { ...runtime.document, camera: beforeView };
+            nextDocument = { ...runtime.document, camera: framed };
+            if (indoorPreset && hasDefaultLighting(runtime.document)) {
+              nextDocument = { ...nextDocument, lighting: indoorPreset.lighting, render: { ...nextDocument.render, exposure: indoorPreset.exposure } };
+            }
+          }
+        }
+        const before = deps.createHistorySnapshot({ ...runtime, document: beforeDocument });
+        h.commitImmediateHistoryTransition(runtime.primitives, nextCustomModels, nextDocument, before, {
           commandId: COMMAND_ID,
+          preserveBeforeCamera: beforeDocument !== runtime.document,
           label: `Place asset (${recipeId})`,
           source: "menu",
         });
-        h.replaceCanonicalDocumentState({ customModels: nextCustomModels });
+        h.replaceCanonicalDocumentState({ customModels: nextCustomModels, document: nextDocument });
         h.setSelectedIds(new Set([next.id]));
         h.setRefTick((revision) => revision + 1);
         notify("success", describeStudioBg3dRecipePlacedMessage(definition.label));

@@ -106,45 +106,44 @@ function rotateEulerYaw(rotation: [number, number, number], yaw: number): [numbe
 // 격자/반복 배치는 하드코딩된 27~30개 항목을 손으로 나열하는 대신 좌표만 받는 작은 팩토리로 만든다
 // (교실 3×3=9세트, 카페 테이블 3세트) — 오타로 인한 겹침 위험을 줄이기 위한 선택.
 
-/**
- * 교실 책상 한 세트(상판+몸통+의자). x=열 중심, z=책상 중심(의자는 z보다 뒤쪽 +0.38m).
- * 몸통(body) 높이는 바닥(y=0)에서 상판 밑면까지 정확히 닿도록 역산한 값이다: 상판은 y=0.53 중심·
- * 두께 0.06 → 밑면 y=0.50. 몸통이 여기서 살짝(0.02m) 파묻히도록 높이를 0.52로 잡으면(중심
- * y=0.26) 몸통이 [0, 0.52]를 채워 바닥에 닿고 상판 밑면과도 맞닿는다 — 이 파일의 다른 파츠(창문이
- * 벽에 박히는 정도)와 같은 크기의 임베딩이다. 원래 몸통 높이 0.46(중심 0.23)은 상판 밑면(0.50)에
- * 0.04m 못 미쳐 상판이 허공에 떠 보이는 버그였다(node+three.js Box3로 실측 확인 — §검증 스크립트).
- */
-function classroomDesk(x: number, z: number): ScenePrimitivePlacement[] {
+type Triple = [number, number, number];
+
+function furnitureBox(position: Triple, scale: Triple, color: string): ScenePrimitivePlacement {
+  return { type: "primitive", kind: "box", position, scale, rotation: [0, 0, 0], color };
+}
+
+// 좌판 아래 공간을 열어 두어 캐릭터의 무릎과 발이 가구 안으로 들어가지 않게 한다.
+function woodenChair(x: number, z: number, backX: number, backZ: number): ScenePrimitivePlacement[] {
+  const back: Triple = backX === 0 ? [0.40, 0.36, 0.035] : [0.035, 0.36, 0.40];
   return [
-    { type: "primitive", kind: "box", position: [x, 0.53, z], rotation: [0, 0, 0], scale: [0.62, 0.06, 0.42], color: "#c9a876" },
-    { type: "primitive", kind: "box", position: [x, 0.26, z - 0.02], rotation: [0, 0, 0], scale: [0.52, 0.52, 0.32], color: "#a9835c" },
-    { type: "primitive", kind: "box", position: [x, 0.21, z + 0.38], rotation: [0, 0, 0], scale: [0.36, 0.42, 0.36], color: "#6b4a37" },
+    furnitureBox([x, 0.434, z], [0.42, 0.038, 0.42], "#be926f"),
+    furnitureBox([x + 0.19 * backX, 0.633, z + 0.19 * backZ], back, "#ac815e"),
+    ...[-0.17, 0.17].flatMap((dx) => [-0.17, 0.17].map((dz) =>
+      furnitureBox([x + dx, 0.208, z + dz], [0.032, 0.416, 0.032], "#59584e"),
+    )),
   ];
 }
 
-/**
- * 카페 원형 테이블 한 세트(상판+다리+의자2). 의자는 chairAxis가 "z"면 앞뒤로, "x"면 좌우로 마주보게.
- *
- * 상판(kind: "cylinder") scale.x/z는 실제 반지름이 아니다 — makeGeometry("cylinder")의 기본
- * 지오메트리가 이미 반지름 0.3(CylinderGeometry(0.3, 0.3, 1, 16))이라, 렌더링되는 실제 반지름은
- * `0.3 * scale.x`다. 의도한 테이블 반지름 0.5m를 얻으려면 scale.x/z = 0.5 / 0.3 ≈ 1.6667이어야
- * 하는데, 원래 값 0.5를 그대로 써서 실제 반지름이 0.15m(지름 30cm)로 렌더링되는 버그가 있었다 —
- * 의자 반폭(0.2m)보다도 작은 "장난감 크기" 테이블이 되고, 아래 chairOffset 계산이 가정한 반지름
- * (0.5)과 실제 렌더 반지름(0.15)이 어긋나 의자가 테이블 가장자리에서 0.35m 떨어져 뜨는 결과였다
- * (node+three.js Box3로 실측 확인 — §검증 스크립트). prop_trashcan 등 이 저장소의 다른 cylinder
- * 파츠는 이미 이 0.3배율을 감안해 값을 골랐다(예: scale.x=0.9 → 실제 반지름 0.27m).
- */
-function cafeTable(x: number, z: number, chairAxis: "x" | "z"): ScenePrimitivePlacement[] {
-  const tableRadius = 0.5;
-  const tableTopScale = tableRadius / 0.3; // cylinder 기본 반지름(0.3)을 역보정 — 위 함수 주석 참고.
-  const chairOffset = 0.65; // 테이블 반지름(0.5) + 의자 반폭(0.2) - 0.05(맞닿아 앉은 것처럼 살짝 겹침)
-  const chairA: [number, number, number] = chairAxis === "z" ? [x, 0.225, z - chairOffset] : [x - chairOffset, 0.225, z];
-  const chairB: [number, number, number] = chairAxis === "z" ? [x, 0.225, z + chairOffset] : [x + chairOffset, 0.225, z];
+function classroomDesk(x: number, z: number): ScenePrimitivePlacement[] {
   return [
-    { type: "primitive", kind: "cylinder", position: [x, 0.75, z], rotation: [0, 0, 0], scale: [tableTopScale, 0.05, tableTopScale], color: "#caa876" },
-    { type: "primitive", kind: "cylinder", position: [x, 0.375, z], rotation: [0, 0, 0], scale: [0.08, 0.75, 0.08], color: "#3a3a3a" },
-    { type: "primitive", kind: "box", position: chairA, rotation: [0, 0, 0], scale: [0.4, 0.45, 0.4], color: "#5c4632" },
-    { type: "primitive", kind: "box", position: chairB, rotation: [0, 0, 0], scale: [0.4, 0.45, 0.4], color: "#5c4632" },
+    furnitureBox([x, 0.732, z], [0.71, 0.036, 0.49], "#c9a876"),
+    ...[-0.3, 0.3].flatMap((dx) => [-0.19, 0.19].map((dz) =>
+      furnitureBox([x + dx, 0.358, z + dz], [0.035, 0.716, 0.035], "#657570"),
+    )),
+    ...woodenChair(x, z + 0.49, 0, 1),
+  ];
+}
+
+function cafeTable(x: number, z: number, chairAxis: "x" | "z"): ScenePrimitivePlacement[] {
+  // 기본 원기둥의 반지름이 0.3이므로 지름 1m인 원형 상판에 맞춰 보정한다.
+  const topScale = 0.5 / 0.3;
+  const dx = chairAxis === "x" ? 1 : 0;
+  const dz = chairAxis === "z" ? 1 : 0;
+  return [
+    { type: "primitive", kind: "cylinder", position: [x, 0.75, z], rotation: [0, 0, 0], scale: [topScale, 0.05, topScale], color: "#caa876" },
+    { type: "primitive", kind: "cylinder", position: [x, 0.363, z], rotation: [0, 0, 0], scale: [0.5, 0.726, 0.5], color: "#434841" },
+    ...woodenChair(x - 0.74 * dx, z - 0.74 * dz, -dx, -dz),
+    ...woodenChair(x + 0.74 * dx, z + 0.74 * dz, dx, dz),
   ];
 }
 

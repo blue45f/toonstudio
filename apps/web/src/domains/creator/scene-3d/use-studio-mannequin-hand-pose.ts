@@ -8,12 +8,16 @@ import {
 } from "./studio-mannequin-ecorche-anatomy";
 import {
   clampStudioMannequinFingerPose,
+  studioMannequinFingerPoseFromCurls,
+  type StudioMannequinHandFingerPose,
   type StudioMannequinFingerPose,
 } from "./studio-mannequin-model";
 import {
   createStudioMannequinHandPoseChangeHandler,
   studioMannequinFingerPoseToHandPose,
 } from "./studio-mannequin-hand-pose-adapter";
+
+import { getStudioMannequinHandPreset, type StudioHandFingerCurl, type StudioMannequinHandSide } from "./studio-mannequin-hand-presets";
 
 export function useStudioMannequinHandPose() {
   const [fingerPose, setFingerPose] = useState<StudioMannequinFingerPose>(
@@ -22,6 +26,23 @@ export function useStudioMannequinHandPose() {
   const [leftSplayDeg, setLeftSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
   const [rightSplayDeg, setRightSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
   const handScannerPose = studioMannequinFingerPoseToHandPose(fingerPose, rightSplayDeg);
+
+  const setFingerCurls = useCallback((side: StudioMannequinHandSide, curls: Partial<StudioHandFingerCurl>) => {
+    const patch: StudioMannequinHandFingerPose | undefined = studioMannequinFingerPoseFromCurls({ [side]: curls })[side];
+    setFingerPose((previous) => ({ ...previous, [side]: { ...previous[side], ...patch } }));
+  }, []);
+  const setFingerSpread = useCallback((side: StudioMannequinHandSide, spread: Partial<StudioMannequinFingerSplayMap>) => {
+    (side === "left" ? setLeftSplayDeg : setRightSplayDeg)(spread);
+  }, []);
+  const applyLibraryHandPreset = useCallback((id: string) => {
+    const name = id.replace(/^hand-/u, "");
+    const preset = getStudioMannequinHandPreset(name === "chin" ? "chin-rest" : name === "call" ? "phone" : name);
+    if (!preset) return;
+    for (const side of ["left", "right"] as const) {
+      setFingerCurls(side, preset.curl);
+      setFingerSpread(side, preset.splayDeg);
+    }
+  }, [setFingerCurls, setFingerSpread]);
 
   const handleApplyHandPad = useCallback(
     (side: "left" | "right" | "both", output: StudioMannequinHandPadOutput) => {
@@ -42,6 +63,9 @@ export function useStudioMannequinHandPose() {
     handScannerPose,
     leftSplayDeg,
     rightSplayDeg,
+    setFingerCurls,
+    setFingerSpread,
+    applyLibraryHandPreset,
     handleApplyHandPad,
     handleScannerHandPoseChange,
   };

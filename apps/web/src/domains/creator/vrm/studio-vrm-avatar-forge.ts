@@ -16,6 +16,7 @@
 //        (JSON.stringify 결과가 v1과 문자 단위로 같아야 하므로).
 //   studio-vrm-avatar-forge.test.ts의 V1_GEOMETRY_DIGESTS가 이 계약을 SHA-256으로 잠근다.
 
+import { composeHairSections, mergeAvatarForgeHair, sanitizeHairSections, type AvatarForgeHairParams } from "./studio-vrm-hair-sections";
 import {
   decorateAvatarForgeHairParts,
   sanitizeAvatarForgeHairColorExtras,
@@ -26,6 +27,8 @@ import {
   sanitizeStudioVrmProportions,
   type StudioVrmProportions,
 } from "./studio-vrm-proportion-core";
+
+export type { AvatarForgeHairParams } from "./studio-vrm-hair-sections";
 
 export const AVATAR_FORGE_VERSION = 4 as const;
 
@@ -107,37 +110,6 @@ export type AvatarForgeBodyPresetId =
   | "long-line"
   | "compact"
   | "soft";
-
-export type AvatarForgeHairParams = {
-  style: AvatarForgeHairStyle;
-  replaceOriginal: boolean;
-  volume: number;
-  length: number;
-  strandWidth: number;
-  fringe: number;
-  curl: number;
-  shine: number;
-  baseColor: string;
-  /** Optional authored cel-shadow colour. Omitted legacy states derive it from baseColor. */
-  shadowColor?: string;
-  tipColor: string;
-  /** v2: 앞머리 형태. "full"이 v1과 동일한 3가닥 뱅. */
-  bangStyle: AvatarForgeBangStyle;
-  /** v2: 웨이브 진폭(0=직모). 0일 때 파츠에 wave 키가 생기지 않는다. */
-  wave: number;
-  /** v2: 삐침머리 길이(0=없음). */
-  ahoge: number;
-  /** v2: 묶음(포니/트윈/번/하프업) 높이. 0.5가 v1 위치. */
-  tailHeight: number;
-  /** 하이라이트 방식(브릿지·이너 컬러). 생략 = 없음. 색 확장 필드는 전부 기본값이면 키가 없다. */
-  accentMode?: Exclude<AvatarForgeHairAccentMode, "none">;
-  /** 하이라이트 색. 방식을 꺼도 남겨 다시 켤 때 쓴다. */
-  accentColor?: string;
-  /** 끝 색이 시작되는 길이 비율(0 뿌리 ~ 1 끝). 생략 = 0.5(예전 선형 그라데이션). */
-  gradientPosition?: number;
-  /** 기본색→끝 색 경계 폭(0 또렷한 투톤 ~ 1 예전 선형). 생략 = 1. */
-  gradientSoftness?: number;
-};
 
 export type AvatarForgeFaceAccent = {
   id: AvatarForgeFaceAccentId;
@@ -678,6 +650,7 @@ export function sanitizeAvatarForgeState(raw: unknown): AvatarForgeState {
         : clampNumber(hair.tailHeight, AVATAR_FORGE_HAIR_LIMITS.tailHeight, DEFAULT_HAIR.tailHeight),
       // v1 문서가 색 확장 키를 가질 방법은 없다 — 있다면 오염된 입력이므로 v2 필드처럼 무시한다.
       ...(legacy ? {} : sanitizeAvatarForgeHairColorExtras(hair)),
+      ...(legacy ? {} : sanitizeHairSections(hair)),
     },
     faceAccents: DEFAULT_ACCENTS.map((fallback) => {
       const entry = byId.get(fallback.id) ?? {};
@@ -748,9 +721,7 @@ export function applyAvatarForgeHairStyleRecipe(
     ...current,
     presetId: undefined,
     hair: {
-      ...current.hair,
-      ...recipe,
-      style,
+      ...mergeAvatarForgeHair(current.hair, { ...recipe, style }),
       replaceOriginal: current.hair.replaceOriginal,
       baseColor: current.hair.baseColor,
       shadowColor: current.hair.shadowColor,
@@ -950,7 +921,8 @@ function buildBraidStrand(
  * 순수 함수 — 같은 입력이면 항상 같은 배열(난수·시간·전역 상태 없음).
  */
 export function buildAvatarForgeHairParts(
-  stateOrHair: AvatarForgeState | AvatarForgeHairParams
+  stateOrHair: AvatarForgeState | AvatarForgeHairParams,
+  detail?: (parts: AvatarForgeHairPart[], hair: AvatarForgeHairParams) => AvatarForgeHairPart[],
 ): AvatarForgeHairPart[] {
   const hair = "hair" in stateOrHair
     ? sanitizeAvatarForgeState(stateOrHair).hair
@@ -958,6 +930,13 @@ export function buildAvatarForgeHairParts(
     : sanitizeAvatarForgeState({ version: AVATAR_FORGE_VERSION, hair: stateOrHair }).hair;
   if (hair.style === "none") return [];
 
+  return composeHairSections(hair, (section) => {
+    const parts = buildBaseHairParts(section);
+    return detail ? detail(parts, section) : parts;
+  });
+}
+
+function buildBaseHairParts(hair: AvatarForgeHairParams): AvatarForgeHairPart[] {
   const v = hair.volume;
   const l = hair.length;
   const w = hair.strandWidth;

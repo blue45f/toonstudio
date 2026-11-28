@@ -121,6 +121,8 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
   const fallbackTitleId = useId();
   const fallbackDescriptionId = useId();
   const inspectorId = useId();
+  const inspectorTriggerRef = useRef<HTMLButtonElement>(null);
+  const presetScrollRef = useRef<HTMLDivElement>(null);
   const sheetTabsId = useId();
   const drawerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -237,6 +239,7 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
 
   const selectSlot = (slot: CharacterSlotKind) => {
     binding.cancelPreview?.();
+    if (slot !== ui.activeSlot && presetScrollRef.current) presetScrollRef.current.scrollTop = 0;
     dispatch({ type: "select-slot", slot });
     if (layout === "mobile") {
       setMobileTab("shelf");
@@ -493,7 +496,7 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
       binding={binding}
       slot={ui.activeSlot}
       hoveredEntryId={ui.hoveredEntryId}
-      onClose={layout === "desktop" ? undefined : () => dispatch({ type: "set-inspector", open: false })}
+      onClose={layout === "mobile" ? () => changeMobileSheet("collapsed") : undefined}
     />
   );
 
@@ -564,6 +567,7 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
       {layout !== "mobile" && !paintActive ? (
         <button
           type="button"
+          ref={inspectorTriggerRef}
           aria-expanded={ui.inspectorOpen}
           aria-controls={inspectorId}
           title={ui.inspectorOpen ? "정밀 조절 패널 닫기" : "정밀 조절 패널 열기"}
@@ -579,35 +583,11 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
           정밀 조절
         </button>
       ) : null}
-      {layout === "tablet" && ui.inspectorOpen && !paintActive ? (
-        <aside
-          id={inspectorId}
-          aria-label="정밀 조절"
-          data-character-shaper-inspector="slide-over"
-          className="absolute inset-y-0 right-0 z-30 flex w-[320px] max-w-[88%] min-h-0 flex-col border-l border-line bg-panel shadow-[-12px_0_40px_oklch(0.05_0.01_70/0.45)]"
-        >
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2">
-            <p className="text-sm font-bold text-fg">정밀 조절</p>
-            <button
-              type="button"
-              aria-label="정밀 조절 닫기"
-              onClick={() => dispatch({ type: "set-inspector", open: false })}
-              className={cn(
-                "grid size-11 place-items-center rounded-xl text-fg-2 hover:bg-raised hover:text-fg",
-                STUDIO_FOCUS_RING,
-              )}
-            >
-              <X size={16} aria-hidden />
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{inspector}</div>
-        </aside>
-      ) : null}
     </div>
     );
     return (
       <div data-character-shaper-model-workspace="true" className={cn("flex min-h-0 min-w-0 flex-col bg-card", className)}>
-        {!touchLandscape && !paintActive ? <CharacterShaperCameraControls h={h} compact /> : null}
+        {!touchLandscape && !paintActive ? <CharacterShaperCameraControls h={h} slot={ui.activeSlot} compact /> : null}
         {viewport}
       </div>
     );
@@ -661,7 +641,7 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
               /> : null}
               {activeMobileTab === "shelf" ? shelfContent : activeMobileTab === "view" ? (
                 <div data-character-shaper-view-tools="true" className="relative min-h-0">
-                  <CharacterShaperCameraControls h={h} compact />
+                  <CharacterShaperCameraControls h={h} slot={ui.activeSlot} compact />
                   <CharacterShaperViewportHud h={h} binding={binding} onInsertLtLayers={onInsertLtLayers} compact onShowGuide={gestureGuide.show} />
                 </div>
               ) : <div className="h-full overflow-y-auto overscroll-contain">{inspector}</div>}
@@ -691,7 +671,7 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
           <CharacterShaperCategoryRail activeSlot={ui.activeSlot} onSelectSlot={selectSlot} binding={binding} />
           <CharacterShaperSubslotTabs binding={binding} activeSlot={ui.activeSlot} onSelectSlot={selectSlot} />
           {/* 참조 아트처럼 스타일 카드 → 색·슬라이더가 한 번의 스크롤로 이어진다(중첩 스크롤 없음). */}
-          <div data-character-reference-scroll="true" className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
+          <div ref={presetScrollRef} data-character-reference-scroll="true" className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
             <div data-character-reference-shelf="true" className="relative min-w-0">
               {shelfContent}
             </div>
@@ -706,10 +686,11 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
       </div>
     );
   } else {
-    const showInspectorColumn = false;
+    const showInspectorColumn = ui.inspectorOpen && !paintActive;
     middle = (
       <div
         data-character-shaper-main="true"
+        data-character-tablet-workspace="true"
         data-inspector-column={showInspectorColumn ? "true" : undefined}
         className={cn(
           "grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)]",
@@ -733,11 +714,28 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
         {showInspectorColumn ? (
           <aside
             id={inspectorId}
-              aria-label="정밀 조절"
+            aria-label="정밀 조절"
             data-character-shaper-inspector="column"
-            className="flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain border-l border-line bg-panel"
+            className="flex min-h-0 min-w-0 flex-col border-l border-line bg-panel"
           >
-            {inspector}
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2">
+              <p className="text-sm font-bold text-fg">정밀 조절</p>
+              <button
+                type="button"
+                aria-label="정밀 조절 닫기"
+                onClick={() => {
+                  dispatch({ type: "set-inspector", open: false });
+                  inspectorTriggerRef.current?.focus({ preventScroll: true });
+                }}
+                className={cn(
+                  "grid size-11 place-items-center rounded-xl text-fg-2 hover:bg-raised hover:text-fg",
+                  STUDIO_FOCUS_RING,
+                )}
+              >
+                <X size={16} aria-hidden />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{inspector}</div>
           </aside>
         ) : null}
       </div>

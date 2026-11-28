@@ -1,6 +1,15 @@
-import { OrthographicCamera, PerspectiveCamera, Vector3 } from "three";
+import { Box3, Matrix4, OrthographicCamera, PerspectiveCamera, Vector3 } from "three";
 
 import type { CompositionCameraSnapshot } from "../ai/studio-composition-generation-brief";
+
+/** 월드 경계 여덟 꼭짓점이 현재 카메라의 가로·세로·깊이 안에 모두 들어오는지 확인한다. */
+export function studioMannequinBoundsFitCamera(camera: PerspectiveCamera | OrthographicCamera, bounds: Box3): boolean {
+  camera.updateWorldMatrix(true, false);
+  const projection = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  const screen = bounds.clone().applyMatrix4(projection);
+  return screen.min.x >= -1 && screen.max.x <= 1 && screen.min.y >= -1 && screen.max.y <= 1
+    && screen.min.z >= -1 && screen.max.z <= 1;
+}
 
 /** 원고 PNG를 그리는 카메라의 방향과 투영을 읽는다. 직교 카메라에는 화각이 없다. */
 export function readStudioMannequinCaptureCamera(

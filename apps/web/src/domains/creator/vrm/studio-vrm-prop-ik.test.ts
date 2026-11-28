@@ -190,6 +190,30 @@ describe("applyVrmTwoBoneGrip", () => {
     expectFiniteQuaternion(fixture.lowerArm.quaternion);
   });
 
+  it("책을 내리면 닿지 않는 보조팔을 원래 포즈로 복구하고 책을 올리면 다시 잡는다", () => {
+    const { vrm, hand } = createArmFixture();
+    const rest = hand.getWorldPosition(new THREE.Vector3());
+    const near = new THREE.Vector3(1, 1, 0);
+    const options = { state: createVrmTwoBoneGripState(), fadeBeyondReach: true };
+    for (const target of [near, new THREE.Vector3(0, -4, 0), near]) {
+      expect(applyVrmTwoBoneGrip(vrm, "left", target, 1, undefined, options)).toBe(true);
+      expectVectorClose(hand.getWorldPosition(new THREE.Vector3()), target === near ? near : rest);
+    }
+  });
+
+  it("도달 거리 경계의 책만 팔을 점차 놓고 기존 소품은 최대 길이까지 향한다", () => {
+    const target = new THREE.Vector3(0, 2.12, 0);
+    const original = createArmFixture();
+    const fitted = createArmFixture();
+    expect(applyVrmTwoBoneGrip(original.vrm, "left", target, 1)).toBe(true);
+    expect(applyVrmTwoBoneGrip(fitted.vrm, "left", target, 1, undefined, { fadeBeyondReach: true })).toBe(true);
+    const identity = new THREE.Quaternion();
+    const originalTurn = original.upperArm.quaternion.angleTo(identity);
+    const fittedTurn = fitted.upperArm.quaternion.angleTo(identity);
+    expect(originalTurn).toBeGreaterThan(1);
+    expect(fittedTurn).toBeCloseTo(originalTurn * 0.5, 5);
+  });
+
   it("모델 로컬 elbowHint를 이동·회전된 VRM의 world pole로 변환한다", () => {
     const fixture = createArmFixture();
     fixture.scene.position.set(8, -3, 5);
