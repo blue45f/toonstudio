@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
@@ -6,6 +8,7 @@ import { mapStudioHybridDccRayFaceIndex } from "./studio-hybrid-dcc-component-se
 import { createStudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
 import { workspaceAddActiveModifier } from "./studio-hybrid-dcc-modifier-workspace";
 import { createStudioHybridDccUvCheckerTexture } from "./studio-hybrid-dcc-uv-checker-texture";
+import { StudioHybridDccUvCheckerMaterial } from "./StudioHybridDccUvCheckerMaterial";
 import { createStudioHybridDccUvSelection, deriveStudioHybridDccUvEditorModel, workspaceTransformUvIslands, workspaceUnwrapUvActive } from "./studio-hybrid-dcc-uv-edit";
 import { createStudioHybridDccWorkspace, workspaceAddUnitCube, workspaceComponentSelectionSource, type StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
 import { deriveStudioHybridDccViewportSnapshot } from "./StudioHybridDccViewportCore";
@@ -77,6 +80,10 @@ describe("정본 UV와 실제 화면 geometry 연결", () => {
     expect(cage.triangleCount).toBe(12);
     expect(cage.cornerUvs).toHaveLength(72);
     expect(evaluated.triangleCount).toBe(36);
+  });
+
+  it("체크무늬 텍스처가 준비될 때까지 맵 없는 셰이더 재질을 붙이지 않는다", () => {
+    expect(renderToStaticMarkup(createElement(StudioHybridDccUvCheckerMaterial))).toBe("");
   });
 
   it("체크무늬는 UV 범위 밖도 반복하며 외부 이미지 요청을 만들지 않는다", () => {

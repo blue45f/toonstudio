@@ -15,11 +15,11 @@ import {
   type StudioNativeImportResult,
 } from "./studio-hybrid-dcc-native-import-contracts";
 import { estimateStudioNativeObjPartBytes, estimateStudioNativeObjWorkingBytes } from "./studio-hybrid-dcc-native-obj-budget";
-import { studioNativeObjPolygonLoops } from "./studio-hybrid-dcc-native-obj-polygons";
+import { STUDIO_NATIVE_OBJ_MAX_POLYGON_WORK, studioNativeObjPolygonLoops } from "./studio-hybrid-dcc-native-obj-polygons";
 import { assertStudioNativeUvPrecision, StudioNativeUvPrecisionError } from "./studio-hybrid-dcc-native-uv-precision";
 
 export const STUDIO_NATIVE_OBJ_LIMITS = Object.freeze({ maxLineCharacters: 65_536, maxLines: 2_000_000, maxTokens: 6_000_000,
-  maxPolygonWork: 10_000_000, maxSourceFaceCorners: 4096, maxMaterials: 4096, maxNameCharacters: 512 });
+  maxPolygonWork: STUDIO_NATIVE_OBJ_MAX_POLYGON_WORK, maxSourceFaceCorners: 4096, maxMaterials: 4096, maxNameCharacters: 512 });
 interface Corner { readonly vertex: number; readonly uv: number | null }
 interface Face { readonly corners: readonly Corner[]; readonly material: number; readonly smooth: boolean; readonly line: number }
 interface Part { readonly baseKey: string; readonly objectIndex: number; readonly name: string; readonly uv: boolean; readonly faces: Face[];

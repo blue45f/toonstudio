@@ -2,6 +2,7 @@
 import { validateStudioHybridDccFanPolygon, type StudioHybridDccPolygonPoint3 } from "../studio-hybrid-dcc-polygon-validation";
 
 export interface StudioNativeObjPolygonBudget { spend(amount?: number): void }
+export const STUDIO_NATIVE_OBJ_MAX_POLYGON_WORK = 10_000_000;
 type Point2 = readonly [number, number];
 function cross(a: Point2, b: Point2, c: Point2): number {
   return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
