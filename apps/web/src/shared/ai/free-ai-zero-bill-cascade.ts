@@ -1,4 +1,5 @@
 import { buildLocalDialogueLayout, buildLocalScriptCuts } from "@toonstudio/contracts/studio-assist-local-script";
+import { LocalizationGlossaryCheckOutputSchema, OpenAiIdeaRemixOutputSchema, ScrollPacingAuditorOutputSchema } from "@toonstudio/contracts/studio-openai-assist-result";
 import { redactCreatorSensitiveText } from "@toonstudio/contracts/studio-pii-redactor";
 import { buildLocalColorMood } from "@toonstudio/studio-project-model/character-art-style";
 
@@ -431,6 +432,48 @@ const localReviewHeadlines: Partial<Record<FreeAiZeroBillModeId, string>> = {
   "scroll-pacing-auditor": "스크롤 호흡 예시 · 모바일 미리보기에서 컷 사이 여백과 엔딩 호흡을 확인하세요.",
 };
 
+function summarizeServerResult(mode: FreeAiZeroBillModeId, data: Record<string, unknown>, isCloudReview: boolean) {
+  if (mode === "idea-remix") {
+    const parsed = OpenAiIdeaRemixOutputSchema.safeParse(data);
+    if (parsed.success) {
+      return {
+        headlineKo: parsed.data.summary,
+        bulletsKo: parsed.data.angles.map(({ lensLabelKo, headline, pitch, firstCutHint }) =>
+          `[${lensLabelKo}] ${headline} — ${pitch} · 첫 컷: ${firstCutHint}`),
+      };
+    }
+  }
+  if (mode === "scroll-pacing-auditor") {
+    const parsed = ScrollPacingAuditorOutputSchema.safeParse(data);
+    if (parsed.success) {
+      const { rhythmVerdict, averageGapPx, beatPacing, cliffhangerScore, cliffhangerTip } = parsed.data;
+      return {
+        headlineKo: rhythmVerdict,
+        bulletsKo: [
+          `구간 평균 ${averageGapPx}px`,
+          ...beatPacing.map(({ section, recommendedGapPx, readerRetentionNote }) =>
+            `${section} · ${recommendedGapPx}px — ${readerRetentionNote}`),
+          isCloudReview ? `엔딩 몰입도 ${cliffhangerScore}/100 · ${cliffhangerTip}` : cliffhangerTip,
+        ],
+      };
+    }
+  }
+  if (mode !== "localization-glossary-check") return summarizeStructuredData(mode, data);
+
+  const parsed = LocalizationGlossaryCheckOutputSchema.safeParse(data);
+  if (!parsed.success) return null;
+  const { targetLocales, glossary, culturalNotes } = parsed.data;
+  return {
+    headlineKo: `다국어 번역 용어집 · 대상 언어 ${targetLocales.join(", ")}`,
+    bulletsKo: [
+      ...glossary.map(({ termKo, en, ja, ruleNote }) =>
+        `${termKo} · EN: ${en} · JA: ${ja} — ${ruleNote}`),
+      ...culturalNotes.map(({ severity, topic, adaptationTip }) =>
+        `[${severity === "warn" ? "주의" : "참고"}] ${topic} — ${adaptationTip}`),
+    ],
+  };
+}
+
 function summarizeStructuredData(
   mode: FreeAiZeroBillModeId,
   data: Record<string, unknown>,
@@ -710,14 +753,15 @@ export async function runFreeAiZeroBillAssist(
     };
 
     const data = payload.result?.data;
-    if (!data || typeof data !== "object") {
+    const isCloudReview = payload.providerTier === "cloud-free" && payload.provider !== "local-zero-cost-fallback";
+    const summary = data && typeof data === "object" ? summarizeServerResult(input.mode, data, isCloudReview) : null;
+    if (!data || !summary) {
       return buildLocalZeroCostAssistResult(
         input,
         "응답 형식을 확인할 수 없어 로컬 무과금 코치(₩0)로 안전하게 전환했어요.",
       );
     }
 
-    const summary = summarizeStructuredData(input.mode, data);
     return {
       ok: true,
       providerId: payload.provider ?? "local-zero-cost-fallback",

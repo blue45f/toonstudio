@@ -97,6 +97,64 @@ describe("free-ai-zero-bill-cascade (웹 무과금 14모드 캐스케이드)", (
     expect(masked.sanitizedText).not.toContain(fakeKey);
   });
 
+  it("발상 다섯 개를 첫 컷 연출과 함께 제작 순서대로 표시한다", async () => {
+    const angles = ["contrarian", "personal-hook", "detail-evidence", "four-cut-playbook", "missed-angle"]
+      .map((lens, index) => ({
+        lens, lensLabelKo: `관점 ${index + 1}`, headline: `제목 ${index + 1}`,
+        pitch: `줄거리 ${index + 1}`, firstCutHint: `반납함을 보여 주는 첫 컷 ${index + 1}`,
+      }));
+    const mode = "idea-remix";
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "반납함에서 시작할 다섯 발상을 제안해 주세요." }, {
+      fetchImpl: async () => Response.json({ provider: "github-models-free", providerTier: "cloud-free",
+        result: { mode, data: { summary: "다섯 개의 도서관 이야기", angles } } }),
+    });
+    expect(result.bulletsKo).toEqual(angles.map((angle) =>
+      `[${angle.lensLabelKo}] ${angle.headline} — ${angle.pitch} · 첫 컷: ${angle.firstCutHint}`));
+  });
+
+  it.each(["cloud-free", "local-fallback"] as const)("스크롤 구간별 권장 간격을 보존하고 실제 평가만 점수로 표시한다 (%s)", async (tier) => {
+    const mode = "scroll-pacing-auditor";
+    const gaps = [40, 60, 80, 100, 120];
+    const data = {
+      rhythmVerdict: "빈 좌석이 보이는 순간을 길게 유지하세요.", cliffhangerScore: 73,
+      cliffhangerTip: "마지막 표정을 한 컷 더 잡으세요.", averageGapPx: 80,
+      beatPacing: gaps.map((recommendedGapPx, i) => ({
+        section: `${i + 1}번째 전환`, pacing: "steady", recommendedGapPx, readerRetentionNote: `전환 ${i + 1}을 확인하세요.`,
+      })),
+    };
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "빈 좌석이 드러나는 장면의 호흡을 검토해 주세요." }, {
+      fetchImpl: async () => Response.json({ provider: tier === "cloud-free" ? "github-models-free" : "local-zero-cost-fallback",
+        providerTier: tier, result: { mode, data } }),
+    });
+    const text = result.bulletsKo.join("\n");
+    for (const beat of data.beatPacing) expect(text).toContain(`${beat.section} · ${beat.recommendedGapPx}px`);
+    expect(text).toContain("구간 평균 80px");
+    expect(text).toContain(data.cliffhangerTip);
+    expect(text.includes("73/100")).toBe(tier === "cloud-free");
+  });
+
+  it("필수 번역이 누락된 용어집은 완성된 검수 결과로 표시하지 않고 기기 내 안내로 전환한다", async () => {
+    const mode = "localization-glossary-check";
+    const result = await runFreeAiZeroBillAssist({ mode, inputText: "청야의 현지화 표기를 검수해 주세요." }, {
+      fetchImpl: async () => Response.json({
+        provider: "github-models-free", providerTier: "cloud-free",
+        result: {
+          mode,
+          data: {
+            targetLocales: ["en", "ja"],
+            glossary: [
+              { termKo: "청야", en: "Blue Night", ruleNote: "길드 이름은 띄어 쓴다." },
+              { termKo: "잔향", en: "Echo", ja: "残響", ruleNote: "능력명은 대문자로 시작한다." },
+            ],
+            culturalNotes: [{ severity: "warn", topic: "식자", adaptationTip: "여백을 넓힌다." }],
+          },
+        },
+      }),
+    });
+    expect(result.providerTier).toBe("local-fallback");
+    expect(result.fallbackNoticeKo).toContain("응답 형식");
+  });
+
   it.each([
     { mode: "continuity-plot-audit", headlineField: "summary", scoreField: "overallConsistencyScore", score: 84 },
     { mode: "scroll-pacing-auditor", headlineField: "rhythmVerdict", scoreField: "cliffhangerScore", score: 82 },
