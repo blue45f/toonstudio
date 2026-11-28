@@ -7,6 +7,7 @@ import { VRM, VRMHumanoid, VRMLookAt } from "@pixiv/three-vrm";
 import { characterFramedExportSize } from "./character-shaper-framing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createStudioVrmGripSettlement } from "../vrm/studio-vrm-grip-settlement";
 import { CHARACTER_SLOT_KINDS } from "./character-shaper-contract";
 import { CharacterShaperOutputDock } from "./CharacterShaperOutputDock";
 import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
@@ -415,6 +416,19 @@ describe("CharacterShaperOutputDock", () => {
     expect(h.captureOperationRef.current).toBeNull();
     expect(h.setIsCapturing).toHaveBeenLastCalledWith(false);
     expect(h.texturePaintMutationBlockedRef.current).toBe(false);
+  });
+
+  it("머그 파지가 끝나기 전에 누른 PNG 저장은 보정된 프레임만 내려받는다", async () => {
+    const { h } = renderDock();
+    const grip = createStudioVrmGripSettlement(h.vrm, vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: "PNG 저장" }));
+    expect(h.captureOperationRef.current).toBe("export");
+    expect(h.setIsCapturing).not.toHaveBeenCalledWith(true);
+    expect(captureStudioVrmRgbaCooperatively).not.toHaveBeenCalled();
+    await act(async () => { grip.ready(true); });
+    expect(await screen.findByText(/PNG를 저장했습니다/u)).toBeTruthy();
+    expect(captureStudioVrmRgbaCooperatively).toHaveBeenCalledTimes(1);
+    grip.dispose();
   });
 
   it("supports a 4K PNG without altering viewport framing", async () => {

@@ -31,4 +31,15 @@ describe("bundled VRM thumbnail stability", () => {
     expect(preview).toContain('loading="eager"');
     expect(preview).toContain("setDisplayedSrc(candidate.src)");
   });
+
+  it("자동 썸네일은 보정 대기 동안 수동 원고 캡처를 차단하지 않는다", () => {
+    const start = runtime.indexOf("const scheduleCapture = () =>");
+    const pending = runtime.indexOf("const pendingGrip = pendingStudioVrmGripSettlement(vrm, controller.signal)", start);
+    expect(start).toBeGreaterThan(0);
+    expect(pending).toBeGreaterThan(start);
+    expect(runtime.slice(0, start)).not.toContain('acquireVrmCaptureOperation("thumbnail")');
+    expect(runtime.slice(start, pending)).toContain('!acquireVrmCaptureOperation("thumbnail")');
+    expect(runtime.slice(pending)).toContain("pendingGrip.then(scheduleCapture");
+    expect(runtime.slice(pending)).toContain("controller.abort()");
+  });
 });

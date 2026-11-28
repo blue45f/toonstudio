@@ -8,6 +8,7 @@ import { createStudioVrmAuthoredFingerSnapshot } from "./studio-vrm-auto-grip-au
 import { serializeAvatarForgeState } from "./studio-vrm-avatar-forge";
 import { serializeCostume, type CostumeState, type CostumeSlot } from "./studio-vrm-costume";
 import { applyStudioVrmCostumeState } from "./studio-vrm-costume-runtime";
+import { pendingStudioVrmGripSettlement } from "./studio-vrm-grip-settlement";
 import { resolveStudioVrmInsertBackgroundMode } from "./studio-vrm-insert-background-mode";
 import {
   parseVrmPhysicsSettings,
@@ -461,7 +462,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     handleInsertFrame();
   }
 
-  function handleInsertFrame(frame?: LinkedCutFrame) {
+  async function handleInsertFrame(frame?: LinkedCutFrame) {
     if (broadcastPreviewActive || isCapturing || isSharingPose || isThumbnailCapturing) return;
     if (
       proportionRigStatus === "reload-required"
@@ -612,9 +613,9 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
         wardrobeXpbdCaptureSyncRef.current.get(slot) === sync
       ))
     );
+    const ownsCapture = () => captureGeneration === insertCaptureGenerationRef.current && captureRequest === captureRequestRef.current;
     const capturePreconditionsAreCurrent = (): boolean => (
-      captureGeneration === insertCaptureGenerationRef.current
-      && captureRequest === captureRequestRef.current
+      ownsCapture()
       && vrmRef.current === currentVrm
       && captureRef.current.gl === gl
       && captureRef.current.scene === scene
@@ -650,38 +651,38 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     };
     const releaseCaptureMutationLocks = () => {
       if (resumeOrbit) captureController.signal.removeEventListener("abort", resumeOrbit);
-      resumeOrbit?.();
-      if (
-        captureGeneration === insertCaptureGenerationRef.current
-        && captureRequest === captureRequestRef.current
-      ) {
+      if (!captureController.signal.aborted) resumeOrbit?.();
+      if (ownsCapture()) {
         texturePaintMutationBlockedRef.current = false;
         wardrobeMutationBlockedRef.current = false;
       }
     };
     texturePaintMutationBlockedRef.current = true;
     wardrobeMutationBlockedRef.current = true;
-    setIsCapturing(true);
     setError("");
-    insertCaptureFrameRef.current = requestAnimationFrame(() => {
-      insertCaptureFrameRef.current = null;
-      if (!capturePreconditionsAreCurrent()) {
+    const pendingGrip = pendingStudioVrmGripSettlement(currentVrm, captureController.signal);
+    if (pendingGrip) {
+      try {
+        await pendingGrip;
+      } catch (cause) {
+        if (ownsCapture() && !captureController.signal.aborted) {
+          setError(getErrorMessage(cause, frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureAddFailed", "3D 데생 인형 캡처를 추가하지 못했습니다.")));
+        }
+        captureController.abort();
+      }
+      if (captureController.signal.aborted || !capturePreconditionsAreCurrent()) {
         reportWardrobeCaptureAuthorityMismatch();
         if (insertCaptureAbortRef.current === captureController) {
-          captureController.abort();
           insertCaptureAbortRef.current = null;
-        }
-        if (
-          captureGeneration === insertCaptureGenerationRef.current
-          && captureRequest === captureRequestRef.current
-        ) {
           releaseCaptureMutationLocks();
           releaseVrmCaptureOperation("insert");
-          setIsCapturing(false);
         }
         return;
       }
-
+    }
+    setIsCapturing(true);
+    insertCaptureFrameRef.current = requestAnimationFrame(() => {
+      insertCaptureFrameRef.current = null;
       void (async () => {
         let inserted = false;
         let releaseCaptureHelpers: (() => void) | null = null;
@@ -690,6 +691,10 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
           releaseCaptureHelpers = null;
         };
         try {
+          if (captureController.signal.aborted || !capturePreconditionsAreCurrent()) {
+            reportWardrobeCaptureAuthorityMismatch();
+            return;
+          }
           // PNG 인코딩·해시·SQLite/OPFS 저장은 여러 프레임이 걸릴 수 있다. 먼저 표면 텍스처를
           // 영속화한 뒤 전체 캡처 전제를 다시 검사하고 pose bake→scene→RGBA 캡처를 같은
           // 동기 구간에서 수행해 메타데이터와 실제 픽셀이 서로 다른 시점을 기록하지 않는다.
@@ -781,11 +786,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
             displayHeight,
             scene: sceneDocument,
           });
-          if (
-            captureGeneration !== insertCaptureGenerationRef.current
-            || captureRequest !== captureRequestRef.current
-            || vrmRef.current !== currentVrm
-          ) {
+          if (!ownsCapture() || vrmRef.current !== currentVrm) {
             return;
           }
           if (accepted === false) {
@@ -793,10 +794,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
           }
           inserted = true;
         } catch (caughtError: unknown) {
-          if (
-            captureGeneration === insertCaptureGenerationRef.current
-            && captureRequest === captureRequestRef.current
-          ) {
+          if (ownsCapture()) {
             setError(resolveStudioVrmTexturePaintArtifactErrorFromCause(caughtError)
               ?? getErrorMessage(caughtError, frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureAddFailed", "3D 데생 인형 캡처를 추가하지 못했습니다.")));
             setStatus(vrmRef.current ? "ready" : "error");
@@ -806,21 +804,14 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
           if (insertCaptureAbortRef.current === captureController) {
             insertCaptureAbortRef.current = null;
           }
-          if (
-            captureGeneration === insertCaptureGenerationRef.current
-            && captureRequest === captureRequestRef.current
-          ) {
+          if (ownsCapture()) {
             releaseCaptureMutationLocks();
             releaseVrmCaptureOperation("insert");
             setIsCapturing(false);
           }
         }
 
-        if (
-          inserted
-          && captureGeneration === insertCaptureGenerationRef.current
-          && captureRequest === captureRequestRef.current
-        ) {
+        if (inserted && ownsCapture()) {
           onClose();
         }
       })();

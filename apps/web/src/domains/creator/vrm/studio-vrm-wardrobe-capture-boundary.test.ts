@@ -24,6 +24,18 @@ function sourceBetween(
 }
 
 describe("Studio VRM wardrobe capture boundary", () => {
+  it("2D 원고와 연결 컷 삽입은 파지를 마친 포즈를 정지한 뒤 픽셀과 메타데이터를 기록한다", () => {
+    const insert = sourceBetween(poserSource, "function handleInsert()", "if (!open) return null;");
+    const wait = requiredIndex(insert, "await pendingGrip;");
+    const validate = requiredIndex(insert, "!capturePreconditionsAreCurrent()", wait);
+    const freeze = requiredIndex(insert, "setIsCapturing(true);");
+    expect(wait).toBeLessThan(freeze);
+    expect(validate).toBeLessThan(freeze);
+    const pose = requiredIndex(insert, "bakeStudioVrmRuntimePose(currentVrm)", freeze);
+    const pixels = requiredIndex(insert, "captureStudioVrmRgba(", pose);
+    expect(requiredIndex(insert, "await onInsert(", pixels)).toBeGreaterThan(pixels);
+  });
+
   it("rejects changed wardrobe authority after awaited persistence before scene, pixels, or insert commit", () => {
     const authoredIdentity = sourceBetween(
       poserSource,

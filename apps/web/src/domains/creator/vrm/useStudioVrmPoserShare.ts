@@ -2,6 +2,7 @@
  * Studio VRM poser runtime slice extracted from `StudioVrmPoser.tsx` (behavior unchanged).
  * The caller passes one host object; this hook destructures the original local names.
  */
+import { waitForStudioVrmGripSettlement } from "./studio-vrm-grip-settlement";
 import {
   confirmStudioDestructiveAction,
 } from "../studio-destructive-action-preview";
@@ -316,11 +317,13 @@ export function useStudioVrmPoserShare(h: StudioVrmPoserHost): void {
     };
     try {
       const { camera, gl, scene } = currentCapture;
+      await waitForStudioVrmGripSettlement(currentVrm, controller.signal);
       // Give React/R3F one committed paint so ephemeral bone/IK helpers are absent from the
       // explicitly rendered sharing frame. The direct Three visibility lease hides the shadow
       // synchronously as a second line of defence.
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       if (
+        controller.signal.aborted ||
         vrmRef.current !== currentVrm ||
         captureRef.current.gl !== gl ||
         captureRef.current.scene !== scene ||
@@ -422,8 +425,8 @@ export function useStudioVrmPoserShare(h: StudioVrmPoserHost): void {
       if (sharePoseAbortRef.current === controller) {
         sharePoseAbortRef.current = null;
         setIsSharingPose(false);
+        releaseVrmCaptureOperation("share");
       }
-      releaseVrmCaptureOperation("share");
     }
   }
 
