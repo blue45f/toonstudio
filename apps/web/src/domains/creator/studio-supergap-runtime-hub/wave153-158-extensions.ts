@@ -32,7 +32,7 @@ export function createWave153To158ExtensionSubsystems(): readonly SupergapExtens
             dialogueText: "당장 멈춰! 더는 못 참아!",
             dialogueEmotionIntent: "anger-shout" as const,
             bubbleStyle: "shout-jagged" as const,
-            au: { AU06: 0.72, AU12: 0.85 },
+            au: { AU06_cheekRaiser: 0.72, AU12_lipCornerPuller: 0.85 },
           },
         ];
         const before = wave153.auditEpisodeExpressionAlignment(rawPanels, {
